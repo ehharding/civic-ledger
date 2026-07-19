@@ -1,0 +1,18 @@
+# Dependencies & Build Output
+.next/
+node_modules/
+coverage/
+out/
+output/
+playwright-report/
+test-results/
+
+# Local Secrets & Environment Overrides
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Local Tooling
+.DS_Store
+*.tsbuildinfo

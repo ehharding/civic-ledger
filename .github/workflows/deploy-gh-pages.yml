@@ -1,0 +1,72 @@
+name: Deploy (GitHub Pages demo)
+
+# This publishes a STATIC DEMO ONLY. GitHub Pages cannot hold the server-only CONGRESS_API_KEY and cannot run Next.js
+# route handlers or a database, so this build always renders the clearly labeled preview fixtures — never live
+# congressional data. For the real, live-data app, use the Vercel workflow (deploy-vercel.yml) instead. See the "GitHub
+# Pages" section of the README before enabling this workflow.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # /api/bills can't be statically exported (it reads the request URL for pagination) and has no purpose in a
+      # preview-only demo anyway.
+      - name: Remove Routes Incompatible With Static Export
+        run: rm -rf src/app/api/bills
+
+      - name: Build Static Export
+        run: pnpm exec next build
+        env:
+          STATIC_EXPORT: "true"
+          GITHUB_PAGES_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          # Deliberately unset: a static export must never carry a real key.
+          CONGRESS_API_KEY: ""
+
+      - name: Add .nojekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
