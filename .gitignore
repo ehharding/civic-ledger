@@ -8,6 +8,7 @@ playwright-report/
 test-results/
 
 # Local Secrets & Environment Overrides
+.env*
 .env
 .env.local
 .env.*.local
@@ -15,4 +16,5 @@ test-results/
 
 # Local Tooling
 .DS_Store
+.vercel
 *.tsbuildinfo
