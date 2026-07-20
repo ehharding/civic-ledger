@@ -66,3 +66,9 @@ export const previewBills: LegislativeBill[] = [
     officialUrl: "https://www.congress.gov/",
   },
 ];
+
+/**
+ * The first preview fixture, as a plain (never-undefined) reference — a convenience for tests exercising a single
+ * representative bill.
+ */
+export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;

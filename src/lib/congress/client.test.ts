@@ -6,7 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getBillById, getCongressSnapshot, getMoreBills } from "@/lib/congress/client";
-import { previewBills } from "@/lib/congress/fixtures";
+import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
@@ -91,7 +91,7 @@ describe("getBillById", (): void => {
   it("finds a matching preview bill when no API key is configured", async (): Promise<void> => {
     delete process.env.CONGRESS_API_KEY;
 
-    const target: LegislativeBill = previewBills[0];
+    const target: LegislativeBill = firstPreviewBill;
     const bill: LegislativeBill | undefined = await getBillById({
       congress: String(target.congress),
       type: target.type,

@@ -10,7 +10,7 @@ import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
 /** Home route content: hero, a featured bill's journey, the three most recent bills, and static trust/learn sections. */
 export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Element {
-  const featuredBill: LegislativeBill = snapshot.bills[0];
+  const featuredBill: LegislativeBill | undefined = snapshot.bills[0];
 
   return (
     <SiteShell>
