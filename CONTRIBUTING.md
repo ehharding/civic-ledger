@@ -14,5 +14,5 @@ pnpm check
 pnpm build
 ```
 
-Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a
+Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a 
 fixture or unit test for the upstream shape it supports.

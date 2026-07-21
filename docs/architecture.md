@@ -2,7 +2,7 @@
 
 ## Goal
 
-Give people a fast, plain-English path into congressional records while preserving primary-source provenance and  
+Give people a fast, plain-English path into congressional records while preserving primary-source provenance and 
 leaving room for editorial learning content.
 
 ```mermaid
@@ -34,9 +34,9 @@ flowchart LR
 ## Runtime Data Flow
 
 1. A Next.js server route calls `getCongressSnapshot`.
-2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill?format=json` and lets Next  
+2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill?format=json` and lets Next
    cache the result for five minutes.
-3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from  
+3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from
    upstream changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
 5. A user can always leave for the official record from a bill page.
@@ -45,13 +45,13 @@ flowchart LR
 
 The draft includes only the tables needed for a future "saved bill" experience. When a database is provisioned, add:
 
-- `congressional_records`: normalized upstream records with `source_updated_at`, `fetched_at`, raw-response hash,  
+- `congressional_records`: normalized upstream records with `source_updated_at`, `fetched_at`, raw-response hash,
   and provider URL.
 - `record_events`: append-only action/timeline data.
 - `sync_runs`: data freshness, error, and quota observability.
 - `saved_bills`: already sketched for authenticated user collections.
 
-Start with on-demand reads plus cache. Move to scheduled, incremental synchronization after usage requires reliable  
+Start with on-demand reads plus cache. Move to scheduled, incremental synchronization after usage requires reliable
 history, notification delivery, or more than a few API-facing features.
 
 ## Deployment
