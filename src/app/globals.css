@@ -927,6 +927,21 @@ h3 {
   gap: 15px;
 }
 
+.lesson-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lesson-step h2 {
+  margin-top: 6px;
+  font-size: 1.42rem;
+}
+
+.lesson-step .bill-journey {
+  margin-top: 22px;
+}
+
 .glossary-entry {
   min-height: 220px;
   padding: 26px;

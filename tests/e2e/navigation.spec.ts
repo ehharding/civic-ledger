@@ -54,3 +54,40 @@ test("header search submits the query to the bills directory", async ({
 
   await expect(page).toHaveURL(/\/bills\?q=infrastructure/);
 });
+
+test("opening a bill card leads to a detail page with the official-record link", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/bills");
+
+  const firstCardLink: Locator = page.locator(".bill-card h3 a").first();
+  const billTitle: string | null = await firstCardLink.textContent();
+  await firstCardLink.click();
+
+  await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
+  if (billTitle) await expect(page.getByRole("heading", { level: 1, name: billTitle })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the Official Record" })).toBeVisible();
+
+  await page.getByRole("link", { name: "All Bills" }).click();
+  await expect(page).toHaveURL(/\/bills$/);
+});
+
+test("the bill-lifecycle lesson is reachable from /learn and links onward to /bills", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/learn");
+
+  await page.getByRole("link", { name: "Start the Lesson" }).click();
+  await expect(page).toHaveURL(/\/learn\/how-a-bill-becomes-law$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "The Path From an Introduced Bill to a Public Law." }),
+  ).toBeVisible();
+
+  // All five BillJourney stages should appear as lesson step headings, in order.
+  for (const label of ["Introduced", "In Committee", "Passed a Chamber", "To the President", "Became Law"]) {
+    await expect(page.getByRole("heading", { level: 2, name: label })).toBeVisible();
+  }
+
+  await page.getByRole("link", { name: "Explore Bills" }).click();
+  await expect(page).toHaveURL(/\/bills$/);
+});

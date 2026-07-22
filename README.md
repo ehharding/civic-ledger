@@ -14,7 +14,8 @@ make the legislative process more legible without replacing the official record.
 - Bill-record route with an educational journey cue at `/bills/[congress]/[type]/[number]`, resolved via a direct
   single-bill lookup so any real bill works — not just the dozen most recently returned by the list endpoint
 - Loading skeletons for the bills directory and bill detail routes
-- Civic glossary and methodology routes
+- Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
+  at `/learn/how-a-bill-becomes-law`
 - Server-only Congress.gov API adapter with boundary types, five-minute caching, JSON requests, and safe preview
   fallback
 - Initial Drizzle/Postgres schema for future saved bills
@@ -69,9 +70,9 @@ pnpm exec playwright install chromium
 - `inferBillStage` is deliberately presented as an educational cue, not a legal-status determination.
 - Every bill page retains an official-record link.
 
-The Congress.gov API uses v3, pagination, and an hourly request quota; see the official 
-[API repository](https://github.com/LibraryOfCongress/api.congress.gov/) before extending ingestion. The 2026 
-changelog also explicitly recommends setting the response format rather than relying on the default. 
+The Congress.gov API uses v3, pagination, and an hourly request quota; see the official
+[API repository](https://github.com/LibraryOfCongress/api.congress.gov/) before extending ingestion. The 2026 changelog
+also explicitly recommends setting the response format rather than relying on the default.
 [Changelog](https://github.com/LibraryOfCongress/api.congress.gov/blob/main/ChangeLog.md)
 
 ## Deployment
@@ -127,5 +128,6 @@ Read [docs/architecture.md](docs/architecture.md) for the component, data, and d
 1. Add a normalized ingestion table plus scheduled `updatedSince` refreshes—do not attempt to mirror all Congress.gov
    data on day one.
 2. Add sign-in and the `saved_bills` feature.
-3. Build source-linked learning modules for a bill lifecycle, committees, and voting.
+3. Build additional source-linked learning modules for committees and voting (the bill-lifecycle module now lives at
+   `/learn/how-a-bill-becomes-law`).
 4. Add notifications only after freshness, provenance, and opt-in controls are solid.

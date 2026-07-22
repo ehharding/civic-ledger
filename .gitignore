@@ -18,3 +18,8 @@ test-results/
 .DS_Store
 .vercel
 *.tsbuildinfo
+
+# This project standardizes on pnpm (see "packageManager" in package.json and pnpm-lock.yaml) — a stray npm/yarn
+# lockfile from an accidental `npm install` would drift out of sync with it and shouldn't be committed.
+package-lock.json
+yarn.lock

@@ -36,12 +36,12 @@ export default function LearnPage(): JSX.Element {
           <BookOpenCheck aria-hidden="true" size={22} />
         </div>
         <div>
-          <p className="section-kicker">Next Lesson</p>
+          <p className="section-kicker">Lesson 1</p>
           <h2 id="next-lesson-heading">The Path From an Introduced Bill to a Public Law.</h2>
-          <p>This Foundational Visual Lesson Is the First Planned Editorial Module.</p>
+          <p>A Foundational, Source-Conscious Walk Through the Same Five Stages BillJourney Tracks on a Real Record.</p>
         </div>
-        <Link href="/bills" className="secondary-link">
-          Explore the Live Flow <ArrowUpRight aria-hidden="true" size={16} />
+        <Link href="/learn/how-a-bill-becomes-law" className="secondary-link">
+          Start the Lesson <ArrowUpRight aria-hidden="true" size={16} />
         </Link>
       </section>
     </SiteShell>

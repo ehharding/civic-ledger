@@ -5,7 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getBillById, getCongressSnapshot, getMoreBills } from "@/lib/congress/client";
+import { type BillLookupResult, getBillById, getCongressSnapshot, getMoreBills } from "@/lib/congress/client";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
@@ -93,7 +93,7 @@ describe("getBillById", (): void => {
     delete process.env.CONGRESS_API_KEY;
 
     const target: LegislativeBill = firstPreviewBill;
-    const result = await getBillById({
+    const result: BillLookupResult = await getBillById({
       congress: String(target.congress),
       type: target.type,
       number: target.number,
@@ -122,7 +122,7 @@ describe("getBillById", (): void => {
       ),
     );
 
-    const result = await getBillById({ congress: "117", type: "hr", number: "3076" });
+    const result: BillLookupResult = await getBillById({ congress: "117", type: "hr", number: "3076" });
 
     expect(result.source).toBe("live");
     expect(result.bill).toMatchObject({
@@ -137,7 +137,7 @@ describe("getBillById", (): void => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
-    const result = await getBillById({ congress: "119", type: "hr", number: "999999" });
+    const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "999999" });
 
     expect(result.bill).toBeUndefined();
     expect(result.source).toBe("live");
@@ -149,7 +149,7 @@ describe("getBillById", (): void => {
     vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const target: LegislativeBill = firstPreviewBill;
-    const result = await getBillById({
+    const result: BillLookupResult = await getBillById({
       congress: String(target.congress),
       type: target.type,
       number: target.number,

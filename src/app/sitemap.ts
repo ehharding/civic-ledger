@@ -8,7 +8,7 @@ export const dynamic = "force-static";
 
 /** Static top-level routes. Live bill records aren't enumerated here: there are too many, and each is already
  * discoverable through /bills, so listing them individually wouldn't help crawlers or be worth keeping in sync. */
-const routes: string[] = ["", "/bills", "/learn", "/about"];
+const routes: string[] = ["", "/bills", "/learn", "/learn/how-a-bill-becomes-law", "/about"];
 
 /** Generates sitemap.xml, referenced by robots.ts. */
 export default function sitemap(): MetadataRoute.Sitemap {
