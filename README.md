@@ -1,6 +1,6 @@
 # Civic Ledger
 
-An accessible, source-conscious front end for understanding the work of the United States Congress. It is designed to 
+An accessible, source-conscious front end for understanding the work of the United States Congress. It is designed to
 make the legislative process more legible without replacing the official record.
 
 > The app runs with clearly marked preview records until `CONGRESS_API_KEY` is set. Preview content is fictional and is
@@ -76,13 +76,13 @@ changelog also explicitly recommends setting the response format rather than rel
 
 ## Deployment
 
-Civic Ledger holds a secret (`CONGRESS_API_KEY`), uses dynamic route handlers and ISR, and has a Postgres schema 
-waiting for a future auth layer. That combination needs a real Node server — it **cannot** run on GitHub Pages or any 
+Civic Ledger holds a secret (`CONGRESS_API_KEY`), uses dynamic route handlers and ISR, and has a Postgres schema
+waiting for a future auth layer. That combination needs a real Node server — it **cannot** run on GitHub Pages or any
 purely static host in its normal configuration. Two pipelines are provided for two different purposes:
 
 ### Primary: Vercel (`.github/workflows/deploy-vercel.yml`)
 
-This is the real deployment target. It keeps `CONGRESS_API_KEY` server-side, and dynamic routes, ISR, and the future 
+This is the real deployment target. It keeps `CONGRESS_API_KEY` server-side, and dynamic routes, ISR, and the future
 `saved_bills`/auth work all function normally.
 
 1. `pnpm dlx vercel link` locally to create/link the Vercel project.
@@ -96,31 +96,30 @@ This is the real deployment target. It keeps `CONGRESS_API_KEY` server-side, and
    builds independently of the Actions workflow above — left on, every push deploys twice from two separate pipelines,
    only one of which is gated on `pnpm check` passing first.
 
-Any other Node-capable host (Railway, Render, Fly.io, a plain VPS) works the same way — Vercel is just the path with 
+Any other Node-capable host (Railway, Render, Fly.io, a plain VPS) works the same way — Vercel is just the path with
 an official GitHub Action and zero server config.
 
 ### Secondary: GitHub Pages Static Demo (`.github/workflows/deploy-gh-pages.yml`)
 
-This publishes a **static demo only**, built with `STATIC_EXPORT=true`. It always renders the labeled preview 
-fixtures — a static export has no server left at request time, so it structurally cannot hold `CONGRESS_API_KEY` or 
+This publishes a **static demo only**, built with `STATIC_EXPORT=true`. It always renders the labeled preview
+fixtures — a static export has no server left at request time, so it structurally cannot hold `CONGRESS_API_KEY` or
 serve live data. Concretely, this build:
 
 - Sets `output: "export"` and the right `basePath` for a GitHub Pages project site.
-- Pre-renders the four preview bill pages via `generateStaticParams` (a static export can't look up arbitrary bills
-  on demand).
+- Pre-renders the four preview bill pages via `generateStaticParams` (a static export can't look up arbitrary bills on
+  demand).
 - Drops the `/api/bills` pagination route before building — it needs to read the request URL for its `offset` param,
-  which a static export can't do, and it has no purpose in a preview-only build anyway (pagination is only offered
-  when live data is active).
+  which a static export can't do, and it has no purpose in a preview-only build anyway. (Pagination is only offered
+  when live data is active.)
 - Degrades the bills page's shareable `?q=` deep link to an empty starting search (searching itself still works fully
   client-side).
 
-Use this only for a UI/UX preview or portfolio link — never represent it as the live product. Enable it by running the 
-workflow (`workflow_dispatch`) or letting it run on pushes to `main`, and turning on GitHub Pages ("GitHub Actions" 
-source) in the repo settings.
+Use this only for a UI/UX preview or portfolio link — never represent it as the live product. Enable it by running the
+workflow (`workflow_dispatch`) or letting it run on pushes to `main`.
 
 ## Architecture and Scale Path
 
-Read [docs/architecture.md](docs/architecture.md) for the component, data, and deployment shape. Read 
+Read [docs/architecture.md](docs/architecture.md) for the component, data, and deployment shape. Read
 [docs/decisions.md](docs/decisions.md) for the deliberate first-draft tradeoffs.
 
 ### Recommended Next Milestones

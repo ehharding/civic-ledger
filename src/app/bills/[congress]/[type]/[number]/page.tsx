@@ -6,7 +6,7 @@ import type { JSX } from "react";
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
-import { getBillById, getCongressSnapshot } from "@/lib/congress/client";
+import { getBillById } from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/types";
 
@@ -35,7 +35,7 @@ export function generateStaticParams(): { congress: string; type: string; number
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: { congress: string; type: string; number: string } = await params;
-  const [bill, snapshot] = await Promise.all([getBillById(route), getCongressSnapshot()]);
+  const { bill, source, notice } = await getBillById(route);
 
   if (!bill) notFound();
 
@@ -59,7 +59,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
         </div>
       </section>
 
-      <DataSourceNotice snapshot={snapshot} />
+      <DataSourceNotice source={source} notice={notice} />
 
       <div className="detail-grid">
         <section className="detail-panel" aria-labelledby="journey-heading">

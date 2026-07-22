@@ -1,0 +1,66 @@
+name: Bug Report
+description: Something Isn’t Working the Way It Should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please check open issues first to avoid duplicates.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Where did this happen?
+      options:
+        - Local development
+        - Vercel deployment
+        - GitHub Pages demo
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data-source
+    attributes:
+      label: Live data or preview data?
+      description: Check the "Live Congress.gov Data"/"Preview Data" banner shown on the page, if visible.
+      options:
+        - Live data
+        - Preview data
+        - Not sure / not applicable
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, browser/OS, console errors, or anything else that would help.
+    validations:
+      required: false

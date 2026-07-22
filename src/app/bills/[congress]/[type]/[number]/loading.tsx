@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
 
-/** Streamed by Next while the bill detail route's getBillById/getCongressSnapshot calls resolve. */
+/** Streamed by Next while the bill detail route's getBillById call resolves. */
 export default function BillDetailLoading(): JSX.Element {
   return (
     <SiteShell>

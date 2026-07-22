@@ -79,6 +79,7 @@ describe("getCongressSnapshot", (): void => {
   it("falls back to preview data when the upstream request fails", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
+    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const snapshot: CongressSnapshot = await getCongressSnapshot();
 
@@ -92,13 +93,14 @@ describe("getBillById", (): void => {
     delete process.env.CONGRESS_API_KEY;
 
     const target: LegislativeBill = firstPreviewBill;
-    const bill: LegislativeBill | undefined = await getBillById({
+    const result = await getBillById({
       congress: String(target.congress),
       type: target.type,
       number: target.number,
     });
 
-    expect(bill).toEqual(target);
+    expect(result.bill).toEqual(target);
+    expect(result.source).toBe("preview");
   });
 
   it("maps a live detail-endpoint bill using billType/billNumber field names", async (): Promise<void> => {
@@ -120,9 +122,10 @@ describe("getBillById", (): void => {
       ),
     );
 
-    const bill: LegislativeBill | undefined = await getBillById({ congress: "117", type: "hr", number: "3076" });
+    const result = await getBillById({ congress: "117", type: "hr", number: "3076" });
 
-    expect(bill).toMatchObject({
+    expect(result.source).toBe("live");
+    expect(result.bill).toMatchObject({
       congress: 117,
       type: "HR",
       number: "3076",
@@ -134,9 +137,28 @@ describe("getBillById", (): void => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
-    const bill: LegislativeBill | undefined = await getBillById({ congress: "119", type: "hr", number: "999999" });
+    const result = await getBillById({ congress: "119", type: "hr", number: "999999" });
 
-    expect(bill).toBeUndefined();
+    expect(result.bill).toBeUndefined();
+    expect(result.source).toBe("live");
+  });
+
+  it("falls back to a snapshot search and reports that source when the direct lookup throws", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+
+    const target: LegislativeBill = firstPreviewBill;
+    const result = await getBillById({
+      congress: String(target.congress),
+      type: target.type,
+      number: target.number,
+    });
+
+    // The direct lookup's fetch rejects, and so does the snapshot search's own fetch, so both fall back to preview.
+    expect(result.bill).toEqual(target);
+    expect(result.source).toBe("preview");
+    expect(result.notice).toMatch(/temporarily unavailable/i);
   });
 });
 

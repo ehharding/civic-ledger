@@ -1170,3 +1170,16 @@ h3 {
     height: 21px;
   }
 }
+
+/* Motion-sensitive users: stop the loading spinner and skeleton shimmer from animating, since neither conveys
+   information that's lost by holding still — the loading state is still visible without the motion. These target the
+   same selectors as the animations above and are declared after them, so no !important is needed. */
+@media (prefers-reduced-motion: reduce) {
+  .directory-load-more .spin {
+    animation: none;
+  }
+
+  .skeleton {
+    animation: none;
+  }
+}

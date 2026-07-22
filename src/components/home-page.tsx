@@ -52,7 +52,7 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
         ) : null}
       </section>
 
-      <DataSourceNotice snapshot={snapshot} />
+      <DataSourceNotice source={snapshot.source} notice={snapshot.notice} />
 
       <section className="section-heading" aria-labelledby="activity-heading">
         <div>

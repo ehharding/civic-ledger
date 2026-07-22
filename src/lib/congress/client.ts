@@ -1,9 +1,6 @@
 import { previewBills } from "@/lib/congress/fixtures";
 import { inferBillStage } from "@/lib/congress/stage";
-import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
-
-/** Default page size for the bill list endpoint. Congress.gov allows up to 250. */
-export const DEFAULT_PAGE_SIZE = 12;
+import { type CongressSnapshot, DEFAULT_PAGE_SIZE, type LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Subset of a Congress.gov API bill object actually used by this app — both the list and detail endpoint shapes, since
@@ -117,7 +114,8 @@ async function fetchBillsPage(input: {
       .filter((bill: LegislativeBill | null): bill is LegislativeBill => bill !== null);
 
     return bills;
-  } catch {
+  } catch (error) {
+    console.error("[congress] Failed to fetch the live bill list, falling back to preview data:", error);
     return null;
   }
 }
@@ -178,19 +176,29 @@ export async function getMoreBills(offset: number): Promise<LegislativeBill[]> {
   return bills ?? [];
 }
 
+/** What getBillById actually resolved: the bill (if any), and whether that came from live or preview data. */
+export type BillLookupResult = {
+  bill: LegislativeBill | undefined;
+  source: CongressSnapshot["source"];
+  notice?: string;
+};
+
 /**
  * Looks up a single bill directly, rather than searching only the first page of the list snapshot.
  * This lets any real bill resolve correctly, not just the dozen most recently returned by the list endpoint.
+ *
+ * Also reports the source (live/preview) the result actually came from, so callers — namely the bill detail page — can
+ * render an accurate DataSourceNotice without a second, separate snapshot fetch.
  */
 export async function getBillById(input: {
   congress: string;
   type: string;
   number: string;
-}): Promise<LegislativeBill | undefined> {
+}): Promise<BillLookupResult> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
   if (!apiKey) {
-    return findPreviewBill(input);
+    return { bill: findPreviewBill(input), source: "preview" };
   }
 
   const url: URL = new URL(
@@ -208,24 +216,26 @@ export async function getBillById(input: {
       headers: { Accept: "application/json" },
     });
 
-    if (response.status === 404) return undefined;
+    if (response.status === 404) return { bill: undefined, source: "live" };
     if (!response.ok) throw new Error(`Congress.gov Responded With ${response.status}`);
 
     const payload = (await response.json()) as CongressApiDetailResponse;
     const bill: LegislativeBill | null = payload.bill ? mapCongressBill(payload.bill) : null;
 
-    return bill ?? undefined;
-  } catch {
+    return { bill: bill ?? undefined, source: "live" };
+  } catch (error) {
     // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
     // preview data as a last resort.
+    console.error("[congress] Direct bill lookup failed, falling back to a snapshot search:", error);
     const snapshot: CongressSnapshot = await getCongressSnapshot();
-    return (
+    const bill: LegislativeBill | undefined =
       snapshot.bills.find(
-        (bill) =>
-          bill.congress === Number(input.congress) &&
-          bill.type.toLowerCase() === input.type.toLowerCase() &&
-          bill.number === input.number,
-      ) ?? findPreviewBill(input)
-    );
+        (candidate) =>
+          candidate.congress === Number(input.congress) &&
+          candidate.type.toLowerCase() === input.type.toLowerCase() &&
+          candidate.number === input.number,
+      ) ?? findPreviewBill(input);
+
+    return { bill, source: snapshot.source, notice: snapshot.notice };
   }
 }

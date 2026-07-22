@@ -4,7 +4,13 @@ import { Loader2, Search, SlidersHorizontal } from "lucide-react";
 import { type ChangeEvent, type JSX, useMemo, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
-import { type BillStage, billStageLabels, billStages, type LegislativeBill } from "@/lib/congress/types";
+import {
+  type BillStage,
+  billStageLabels,
+  billStages,
+  DEFAULT_PAGE_SIZE,
+  type LegislativeBill,
+} from "@/lib/congress/types";
 
 type StageFilter = "all" | BillStage;
 
@@ -61,7 +67,7 @@ export function BillDirectory({
         setHasMore(false);
       } else {
         setAllBills((current: LegislativeBill[]): LegislativeBill[] => [...current, ...payload.bills]);
-        if (payload.bills.length < 12) setHasMore(false);
+        if (payload.bills.length < DEFAULT_PAGE_SIZE) setHasMore(false);
       }
     } catch {
       setLoadError(true);

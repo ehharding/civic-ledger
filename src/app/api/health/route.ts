@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-// Safe to statically render: this route reads no request data, so it can be included in a STATIC_EXPORT=true build
-// (see next.config.ts).
-// Unlike /api/bills, it doesn't need real request-time behavior to be useful.
-export const dynamic = "force-static";
+// Forced dynamic so `timestamp` reflects the actual request time on the real (Vercel/Node) deployment — useful as a
+// liveness signal. This can't be statically exported (see next.config.ts): the GitHub Pages static-demo workflow
+// removes this route before building, the same way it already removes /api/bills.
+export const dynamic = "force-dynamic";
 
 /**
  * Minimal liveness check. Returns a fixed shape with no upstream calls, so it stays fast and dependency-free — this

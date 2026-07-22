@@ -7,6 +7,13 @@ export const billStages = ["introduced", "committee", "chamber", "president", "l
 export type BillStage = (typeof billStages)[number];
 
 /**
+ * Default/expected page size for the bill list endpoint. Lives here (rather than in client.ts, a server-only module) so
+ * client components like BillDirectory can reference it too (e.g., to detect a final ("no more bills") page).
+ * Congress.gov allows up to 250 per request.
+ */
+export const DEFAULT_PAGE_SIZE = 12;
+
+/**
  * The app's stable internal bill shape.
  * Congress.gov API responses (list or detail) are mapped into this by client.ts before anything else touches them.
  */

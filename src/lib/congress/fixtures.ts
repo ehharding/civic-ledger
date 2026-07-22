@@ -65,6 +65,21 @@ export const previewBills: LegislativeBill[] = [
     stage: "president",
     officialUrl: "https://www.congress.gov/",
   },
+  {
+    congress: 118,
+    type: "HR",
+    number: "1219",
+    title: "Rural Broadband Mapping Accuracy Act",
+    originChamber: "House",
+    introducedDate: "2024-02-12",
+    latestAction: {
+      date: "2024-05-20",
+      text: "Became Public Law No: 118-46.",
+    },
+    policyArea: "Communications",
+    stage: "law",
+    officialUrl: "https://www.congress.gov/",
+  },
 ];
 
 /**

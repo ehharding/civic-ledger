@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import { BillDirectory } from "@/components/bill-directory";
+import { DataSourceNotice } from "@/components/data-source-notice";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { getCongressSnapshot } from "@/lib/congress/client";
@@ -35,6 +36,7 @@ export default async function BillsPage({
         title="Start With the Record."
         description="Search the Current Feed, Then Follow Each Record Back to Its Official Congress.gov Source."
       />
+      <DataSourceNotice source={snapshot.source} notice={snapshot.notice} />
       <BillDirectory bills={snapshot.bills} canLoadMore={snapshot.source === "live"} initialQuery={initialQuery} />
     </SiteShell>
   );
