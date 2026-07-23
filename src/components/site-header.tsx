@@ -14,13 +14,13 @@ export function SiteHeader(): JSX.Element {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <Link className="wordmark" href="/" aria-label="Civic Ledger Home">
+        <Link className="wordmark" href="/" aria-label="Civic Ledger home">
           <span className="wordmark__mark">
             <Compass aria-hidden="true" size={18} strokeWidth={2.25} />
           </span>
           <span>Civic Ledger</span>
         </Link>
-        <nav className="primary-nav" aria-label="Primary Navigation">
+        <nav className="primary-nav" aria-label="Primary navigation">
           {nav.map(([label, href]) => (
             <Link href={href} key={href}>
               {label}
@@ -29,10 +29,10 @@ export function SiteHeader(): JSX.Element {
         </nav>
         <form className="header-search" action="/bills">
           <label className="sr-only" htmlFor="global-search">
-            Search Bills
+            Search bills
           </label>
           <Search aria-hidden="true" size={15} />
-          <input id="global-search" name="q" placeholder="Search Bills" type="search" />
+          <input id="global-search" name="q" placeholder="Search bills" type="search" />
         </form>
       </div>
     </header>

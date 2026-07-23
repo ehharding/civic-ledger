@@ -8,7 +8,7 @@ export default function BillsLoading(): JSX.Element {
   return (
     <SiteShell>
       <PageHeader
-        description="Search the Current Feed, Then Follow Each Record Back to Its Official Congress.gov Source."
+        description="Search the current feed, then follow each record back to its official Congress.gov source."
         eyebrow="Legislation"
         title="Start With the Record."
       />

@@ -6,6 +6,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type BillLookupResult, getBillById, getCongressSnapshot, getMoreBills } from "@/lib/congress/client";
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
@@ -74,6 +75,17 @@ describe("getCongressSnapshot", (): void => {
       title: "A Live Bill",
       stage: "committee",
     });
+  });
+
+  it("requests the bill list scoped to the current Congress, not the unfiltered list", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCongressSnapshot();
+
+    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
   });
 
   it("falls back to preview data when the upstream request fails", async (): Promise<void> => {
@@ -192,6 +204,7 @@ describe("getMoreBills", (): void => {
 
     expect(bills).toHaveLength(1);
     const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
     expect(requestedUrl.searchParams.get("offset")).toBe("24");
   });
 });

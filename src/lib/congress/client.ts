@@ -1,3 +1,4 @@
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/fixtures";
 import { inferBillStage } from "@/lib/congress/stage";
 import { type CongressSnapshot, DEFAULT_PAGE_SIZE, type LegislativeBill } from "@/lib/congress/types";
@@ -53,7 +54,7 @@ function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
 
   if (!bill.congress || !bill.title || !type || !number) return null;
 
-  const actionText: string = bill.latestAction?.text ?? "No Action Text Has Been Published Yet.";
+  const actionText: string = bill.latestAction?.text ?? "No action text has been published yet.";
 
   return {
     congress: bill.congress,
@@ -86,15 +87,21 @@ function findPreviewBill(input: { congress: string; type: string; number: string
 }
 
 /**
- * Fetches one page of the bill list. Returns `null` on any failure so callers can decide how to fall back (preview data
- * for the homepage, an empty page for "load more").
+ * Fetches one page of the bill list for a specific Congress. Returns `null` on any failure so callers can decide
+ * how to fall back (preview data for the homepage, an empty page for "load more").
+ *
+ * Filtered explicitly by congress via the URL path (a documented filter — see BillEndpoint.md) rather than calling
+ * the unfiltered `/v3/bill` list. That unfiltered list isn't sorted by congress number or introduction date, so it
+ * can surface bills from any Congress in the API's history depending on which records happened to update recently;
+ * filtering by congress guarantees every bill returned actually belongs to the one requested.
  */
 async function fetchBillsPage(input: {
   apiKey: string;
   offset: number;
   limit: number;
+  congress: number;
 }): Promise<LegislativeBill[] | null> {
-  const url: URL = new URL("https://api.congress.gov/v3/bill");
+  const url: URL = new URL(`https://api.congress.gov/v3/bill/${input.congress}`);
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", String(input.offset));
@@ -106,7 +113,7 @@ async function fetchBillsPage(input: {
       headers: { Accept: "application/json" },
     });
 
-    if (!response.ok) throw new Error(`Congress.gov Responded With ${response.status}`);
+    if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
 
     const payload = (await response.json()) as CongressApiListResponse;
     const bills: LegislativeBill[] = (payload.bills ?? [])
@@ -121,7 +128,7 @@ async function fetchBillsPage(input: {
 }
 
 /**
- * Fetches the first page of current bills for the homepage and bill directory.
+ * Fetches the first page of the current Congress's bills for the homepage and bill directory.
  *
  * Falls back to the labeled preview fixtures whenever live data isn't available — no `CONGRESS_API_KEY` configured, or
  * the upstream request fails/returns nothing. Callers should read `source` on the returned snapshot rather than
@@ -136,7 +143,7 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
       bills: previewBills,
       source: "preview",
       retrievedAt,
-      notice: "Preview Records Are Shown Until a Server-Only Congress.gov API Key Is Configured.",
+      notice: "Preview records are shown until a server-only Congress.gov API key is configured.",
     };
   }
 
@@ -144,6 +151,7 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
     apiKey,
     offset: 0,
     limit: DEFAULT_PAGE_SIZE,
+    congress: getCurrentCongress(),
   });
 
   if (!bills || bills.length === 0) {
@@ -151,7 +159,7 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
       bills: previewBills,
       source: "preview",
       retrievedAt,
-      notice: "Live Records Are Temporarily Unavailable, So Preview Records Are Shown.",
+      notice: "Live records are temporarily unavailable, so preview records are shown.",
     };
   }
 
@@ -171,6 +179,7 @@ export async function getMoreBills(offset: number): Promise<LegislativeBill[]> {
     apiKey,
     offset,
     limit: DEFAULT_PAGE_SIZE,
+    congress: getCurrentCongress(),
   });
 
   return bills ?? [];
@@ -217,7 +226,7 @@ export async function getBillById(input: {
     });
 
     if (response.status === 404) return { bill: undefined, source: "live" };
-    if (!response.ok) throw new Error(`Congress.gov Responded With ${response.status}`);
+    if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
 
     const payload = (await response.json()) as CongressApiDetailResponse;
     const bill: LegislativeBill | null = payload.bill ? mapCongressBill(payload.bill) : null;

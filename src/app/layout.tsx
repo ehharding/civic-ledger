@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: "Civic Ledger — Congress in Context",
     template: "%s — Civic Ledger",
   },
-  description: "A Source-Conscious Guide to the Work of the United States Congress.",
+  description: "A source-conscious guide to the work of the United States Congress.",
   metadataBase: new URL(getSiteUrl()),
 };
 

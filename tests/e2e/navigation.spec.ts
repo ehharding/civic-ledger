@@ -16,9 +16,9 @@ test("home page renders the hero and primary nav", async ({
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Civic Ledger Home" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Civic Ledger home" })).toBeVisible();
 
-  const primaryNav: Locator = page.getByRole("navigation", { name: "Primary Navigation" });
+  const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
   await expect(primaryNav.getByRole("link", { name: "Bills" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Learn" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeVisible();
@@ -28,7 +28,7 @@ test("primary nav links land on the right page", async ({
   page,
 }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
   await page.goto("/");
-  const primaryNav: Locator = page.getByRole("navigation", { name: "Primary Navigation" });
+  const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
 
   await primaryNav.getByRole("link", { name: "Bills" }).click();
   await expect(page).toHaveURL(/\/bills$/);
@@ -49,8 +49,8 @@ test("header search submits the query to the bills directory", async ({
 }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
   await page.goto("/");
 
-  await page.getByRole("searchbox", { name: "Search Bills" }).fill("infrastructure");
-  await page.getByRole("searchbox", { name: "Search Bills" }).press("Enter");
+  await page.getByRole("searchbox", { name: "Search bills" }).fill("infrastructure");
+  await page.getByRole("searchbox", { name: "Search bills" }).press("Enter");
 
   await expect(page).toHaveURL(/\/bills\?q=infrastructure/);
 });

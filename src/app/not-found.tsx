@@ -10,7 +10,7 @@ export default function NotFound(): JSX.Element {
       <section className="empty-state">
         <p className="eyebrow">Not Found</p>
         <h1>That Record Is Not in This Draft.</h1>
-        <p>Try the Current Bill Directory or Return to the Overview.</p>
+        <p>Try the current bill directory or return to the overview.</p>
         <Link href="/bills" className="button button--primary">
           Browse Bills
         </Link>

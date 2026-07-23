@@ -59,7 +59,7 @@ export function BillDirectory({
 
     try {
       const response: Response = await fetch(`/api/bills?offset=${allBills.length}`);
-      if (!response.ok) throw new Error(`Request Failed With ${response.status}`);
+      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
 
       const payload = (await response.json()) as { bills: LegislativeBill[] };
 
@@ -77,17 +77,17 @@ export function BillDirectory({
   }
 
   return (
-    <section className="bill-directory" aria-label="Bill Directory">
+    <section className="bill-directory" aria-label="Bill directory">
       <div className="directory-controls">
         <div className="directory-search">
           <Search aria-hidden="true" size={18} />
           <label className="sr-only" htmlFor="bill-directory-search">
-            Search Bill Records
+            Search bill records
           </label>
           <input
             id="bill-directory-search"
             onChange={(event: ChangeEvent<HTMLInputElement, HTMLInputElement>): void => setQuery(event.target.value)}
-            placeholder="Search by Bill, Topic, or Action"
+            placeholder="Search by bill, topic, or action"
             type="search"
             value={query}
           />
@@ -125,7 +125,7 @@ export function BillDirectory({
       ) : (
         <div className="no-results">
           <h2>No Records Match That Search.</h2>
-          <p>Try a Shorter Phrase, a Bill Number, or Another Stage.</p>
+          <p>Try a shorter phrase, a bill number, or another stage.</p>
         </div>
       )}
 
@@ -142,7 +142,7 @@ export function BillDirectory({
           </button>
           {loadError ? (
             <p className="directory-load-more__error" role="alert">
-              Could Not Load More Records. Try Again.
+              Could not load more records. Try again.
             </p>
           ) : null}
         </div>

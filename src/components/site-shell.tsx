@@ -10,7 +10,7 @@ export function SiteShell({ children }: { children: ReactNode }): JSX.Element {
       <main className="page-shell">{children}</main>
       <footer className="site-footer">
         <span>Civic Ledger</span>
-        <span>Built for Understanding, Anchored to Primary Sources.</span>
+        <span>Built for understanding, anchored to primary sources.</span>
       </footer>
     </div>
   );

@@ -68,7 +68,7 @@ export default function BillLifecycleLessonPage(): JSX.Element {
       <PageHeader
         eyebrow="Civic Basics · Lesson 1"
         title="The Path From an Introduced Bill to a Public Law."
-        description="Most Bills Never Reach the Last Step. Seeing Why, Stage by Stage, Makes a Bill's Progress Cue Easier to Read Anywhere Else in This App."
+        description="Most bills never reach the last step. Seeing why, stage by stage, makes a bill's progress cue easier to read anywhere else in this app."
       />
 
       <div className="lesson-steps">
@@ -94,8 +94,8 @@ export default function BillLifecycleLessonPage(): JSX.Element {
           <p className="section-kicker">Now See It in a Real Bill</p>
           <h2 id="lesson-next-heading">Every Stage Here Maps to the Same Stepper on a Live Bill Record.</h2>
           <p>
-            Open Any Bill in the Directory and Watch This Same Five-Step Journey Track Its Actual, Source-Linked
-            Progress.
+            Open any bill in the directory and watch this same five-step journey track its actual, source-linked
+            progress.
           </p>
         </div>
         <Link href="/bills" className="secondary-link">

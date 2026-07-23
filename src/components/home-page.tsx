@@ -6,21 +6,24 @@ import { BillCard } from "@/components/bill-card";
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
+import { formatOrdinal } from "@/lib/format";
 
 /** Home route content: hero, a featured bill's journey, the three most recent bills, and static trust/learn sections. */
 export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Element {
   const featuredBill: LegislativeBill | undefined = snapshot.bills[0];
+  const currentCongress: number = getCurrentCongress();
 
   return (
     <SiteShell>
       <section className="hero-grid" aria-labelledby="home-title">
         <div className="hero-copy">
-          <p className="eyebrow">119th Congress · Legislative Guide</p>
+          <p className="eyebrow">{formatOrdinal(currentCongress)} Congress · Legislative Guide</p>
           <h1 id="home-title">See Congress in Context.</h1>
           <p className="hero-copy__lede">
-            Follow the Work of Congress With a Clearer Sense of What Each Action Means, Where a Bill Is Headed, and How
-            To Verify It for Yourself.
+            Follow the work of Congress with a clearer sense of what each action means, where a bill is headed, and how
+            to verify it for yourself.
           </p>
           <div className="hero-actions">
             <Link className="button button--primary" href="/bills">
@@ -46,7 +49,7 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
             <p className="journey-card__title">{featuredBill.title}</p>
             <BillJourney stage={featuredBill.stage} compact={false} />
             <p className="journey-card__caption">
-              The Latest Action Is Interpreted as an Educational Progress Cue, With the Official Record One Click Away.
+              The latest action is interpreted as an educational progress cue, with the official record one click away.
             </p>
           </aside>
         ) : null}
@@ -80,8 +83,8 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
           <p className="section-kicker">Civic basics</p>
           <h2 id="learn-heading">Understand the Verbs Behind the Headlines.</h2>
           <p>
-            “Referred,” “Reported,” and “Passed” Mean Different Things. The Learning Hub Makes the Pathway Legible
-            Without Dumbing It Down.
+            “Referred,” “Reported,” and “Passed” mean different things. The learning hub makes the pathway legible
+            without dumbing it down.
           </p>
         </div>
         <Link href="/learn" className="secondary-link">
@@ -93,17 +96,17 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
         <article>
           <Landmark aria-hidden="true" size={20} />
           <h2>Source-Linked</h2>
-          <p>Every Record Leaves a Path Back to Congress.gov.</p>
+          <p>Every record leaves a path back to Congress.gov.</p>
         </article>
         <article>
           <CircleHelp aria-hidden="true" size={20} />
           <h2>Plain English</h2>
-          <p>Explanations Teach the Process Beside the Data.</p>
+          <p>Explanations teach the process beside the data.</p>
         </article>
         <article>
           <Scale aria-hidden="true" size={20} />
           <h2>Nonpartisan by Design</h2>
-          <p>Clarity and Provenance—Not Persuasion—Are the Product.</p>
+          <p>Clarity and provenance—not persuasion—are the product.</p>
         </article>
       </section>
     </SiteShell>

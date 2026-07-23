@@ -9,21 +9,21 @@ describe("DataSourceNotice", (): void => {
     render(<DataSourceNotice source="live" />);
 
     expect(screen.getByText("Live Congress.gov Data")).toBeInTheDocument();
-    expect(screen.getByText(/Refreshed From the Official API Every Five Minutes/)).toBeInTheDocument();
+    expect(screen.getByText(/Refreshed from the official API every five minutes/)).toBeInTheDocument();
   });
 
   it("announces preview data with the default notice", (): void => {
     render(<DataSourceNotice source="preview" />);
 
     expect(screen.getByText("Preview Data")).toBeInTheDocument();
-    expect(screen.getByText(/Add a Server-Only API Key To Use Live Records/)).toBeInTheDocument();
+    expect(screen.getByText(/Add a server-only API key to use live records/)).toBeInTheDocument();
   });
 
   it("prefers a custom notice string over the default", (): void => {
     render(<DataSourceNotice source="preview" notice="A custom fixture notice." />);
 
     expect(screen.getByText(/A custom fixture notice\./)).toBeInTheDocument();
-    expect(screen.queryByText(/Add a Server-Only API Key/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add a server-only API key/)).not.toBeInTheDocument();
   });
 
   it("reflects the source in its modifier class", (): void => {

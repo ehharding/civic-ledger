@@ -16,7 +16,7 @@ export default function LearnPage(): JSX.Element {
       <PageHeader
         eyebrow="Civic Basics"
         title="Learn the Language As You Go."
-        description="Short, Source-Conscious Explanations That Turn Legislative Jargon Into Useful Understanding."
+        description="Short, source-conscious explanations that turn legislative jargon into plain English."
       />
 
       <div className="glossary-grid">
@@ -38,7 +38,7 @@ export default function LearnPage(): JSX.Element {
         <div>
           <p className="section-kicker">Lesson 1</p>
           <h2 id="next-lesson-heading">The Path From an Introduced Bill to a Public Law.</h2>
-          <p>A Foundational, Source-Conscious Walk Through the Same Five Stages BillJourney Tracks on a Real Record.</p>
+          <p>Walk through the same five stages that Bill Journey tracks on a real record.</p>
         </div>
         <Link href="/learn/how-a-bill-becomes-law" className="secondary-link">
           Start the Lesson <ArrowUpRight aria-hidden="true" size={16} />

@@ -7,12 +7,12 @@ import { SiteHeader } from "@/components/site-header";
 describe("SiteHeader", (): void => {
   it("links the wordmark to the homepage", (): void => {
     render(<SiteHeader />);
-    expect(screen.getByRole("link", { name: "Civic Ledger Home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Civic Ledger home" })).toHaveAttribute("href", "/");
   });
 
   it("renders the primary nav with the expected destinations", (): void => {
     render(<SiteHeader />);
-    const primaryNav: HTMLElement = screen.getByRole("navigation", { name: "Primary Navigation" });
+    const primaryNav: HTMLElement = screen.getByRole("navigation", { name: "Primary navigation" });
 
     expect(primaryNav.querySelector('a[href="/bills"]')).toHaveTextContent("Bills");
     expect(primaryNav.querySelector('a[href="/learn"]')).toHaveTextContent("Learn");
@@ -24,6 +24,6 @@ describe("SiteHeader", (): void => {
     const form: Element | null = container.querySelector("form.header-search");
 
     expect(form).toHaveAttribute("action", "/bills");
-    expect(screen.getByRole("searchbox", { name: "Search Bills" })).toHaveAttribute("name", "q");
+    expect(screen.getByRole("searchbox", { name: "Search bills" })).toHaveAttribute("name", "q");
   });
 });

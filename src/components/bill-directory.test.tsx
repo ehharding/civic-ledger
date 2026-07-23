@@ -40,7 +40,7 @@ describe("BillDirectory", (): void => {
   it("uses the singular label for exactly one match", async (): Promise<void> => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
 
-    await user.type(screen.getByLabelText("Search Bill Records"), firstPreviewBill.title);
+    await user.type(screen.getByLabelText("Search bill records"), firstPreviewBill.title);
 
     expect(await screen.findByText("Showing 1 Record")).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe("BillDirectory", (): void => {
       makeBill({ congress: 119, type: "S", number: "2", title: "Beta Act", policyArea: "Health" }),
     ];
     render(<BillDirectory bills={bills} initialQuery="" canLoadMore={false} />);
-    const search: HTMLElement = screen.getByLabelText("Search Bill Records");
+    const search: HTMLElement = screen.getByLabelText("Search bill records");
 
     await user.type(search, "energy");
     expect(screen.getByText("Alpha Act")).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe("BillDirectory", (): void => {
   it("shows the empty state when nothing matches", async (): Promise<void> => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
 
-    await user.type(screen.getByLabelText("Search Bill Records"), "no such bill anywhere");
+    await user.type(screen.getByLabelText("Search bill records"), "no such bill anywhere");
 
     expect(await screen.findByRole("heading", { name: "No Records Match That Search." })).toBeInTheDocument();
     expect(screen.getByText("Showing 0 Records")).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe("BillDirectory", (): void => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={true} />);
     await user.click(screen.getByRole("button", { name: "Load More Bills" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could Not Load More Records. Try Again.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load more records. Try again.");
     expect(screen.getByRole("button", { name: "Load More Bills" })).toBeEnabled();
   });
 

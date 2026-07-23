@@ -24,8 +24,8 @@ export function DataSourceNotice({
         <strong>{isLive ? "Live Congress.gov Data" : "Preview Data"}</strong>
         <span className="source-notice__copy">
           {isLive
-            ? " Refreshed From the Official API Every Five Minutes."
-            : ` ${notice ?? "Add a Server-Only API Key To Use Live Records."}`}
+            ? " Refreshed from the official API every five minutes."
+            : ` ${notice ?? "Add a server-only API key to use live records."}`}
         </span>
       </span>
     </aside>

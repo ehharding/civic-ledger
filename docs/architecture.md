@@ -23,13 +23,13 @@ flowchart LR
 
 ## Boundaries
 
-| Layer              | Responsibility                                  | Rule                                                              |
-|--------------------|-------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`          | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`   | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/db`           | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
-| `src/lib/congress` | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/glossary` | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
+| Layer                 | Responsibility                                  | Rule                                                              |
+|-----------------------|-------------------------------------------------|-------------------------------------------------------------------|
+| `src/app`             | Routes, metadata, route handlers                | Never expose the government API key.                              |
+| `src/components`      | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/db`              | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/lib/congress`    | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
+| `src/lib/glossary.ts` | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 
 ## Runtime Data Flow
 

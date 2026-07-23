@@ -16,17 +16,17 @@ const principles: {
   {
     icon: Database,
     title: "Primary Sources First",
-    copy: "Every Data-Backed Surface Links People to the Corresponding Official Record Instead of Replacing It.",
+    copy: "Every data-backed surface links people to the corresponding official record instead of replacing it.",
   },
   {
     icon: ShieldCheck,
     title: "Useful Without Persuasion",
-    copy: "The Product Explains Process and Provenance; It Does Not Tell People What Position To Hold.",
+    copy: "The product explains process and provenance; it does not tell people what position to hold.",
   },
   {
     icon: CheckCircle2,
     title: "Clear About Uncertainty",
-    copy: "Status Cues Are Educational Summaries. Source Freshness and Preview States Stay Visible in the Interface.",
+    copy: "Status cues are educational summaries. Source freshness and preview states stay visible in the interface.",
   },
 ];
 
@@ -37,7 +37,7 @@ export default function AboutPage(): JSX.Element {
       <PageHeader
         eyebrow="Methodology"
         title="Civic Information Deserves Good Product Thinking."
-        description="Civic Ledger Is a Source-Conscious Public-Interest Interface for Understanding the Federal Legislative Process."
+        description="Civic Ledger is a source-conscious public-interest interface for understanding the federal legislative process."
       />
       <div className="principle-list">
         {principles.map(

@@ -9,6 +9,7 @@ import { SiteShell } from "@/components/site-shell";
 import { getBillById } from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/types";
+import { formatOrdinal } from "@/lib/format";
 
 type BillPageProps = {
   params: Promise<{ congress: string; type: string; number: string }>;
@@ -49,7 +50,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
 
       <section className="bill-detail-hero" aria-labelledby="bill-title">
         <p className="eyebrow">
-          {bill.type} {bill.number} · {bill.congress}th Congress
+          {bill.type} {bill.number} · {formatOrdinal(bill.congress)} Congress
         </p>
         <h1 id="bill-title">{bill.title}</h1>
         <div className="bill-detail-meta">
@@ -66,8 +67,8 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
           <p className="section-kicker">How This Moves</p>
           <h2 id="journey-heading">The Bill’s Journey</h2>
           <p className="muted-copy">
-            This Is an Orientation Aid, Not an Official Legal Status. Read the Latest Action and Primary Source
-            Alongside It.
+            This is an orientation aid, not an official legal status. Read the latest action and primary source
+            alongside it.
           </p>
           <BillJourney stage={bill.stage} compact={false} />
         </section>
@@ -91,8 +92,8 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
           <p className="section-kicker">Read It With Context</p>
           <h2 id="reading-heading">A Record Is a Starting Point, Not the Whole Story.</h2>
           <p>
-            Use the Official Source for Definitive Text and Actions. Civic Ledger Will Later Layer in Source-Linked
-            Explainers, Committee Context, and Update Alerts Without Obscuring the Original Record.
+            Use the official source for definitive text and actions. Civic Ledger will later layer in source-linked
+            explainers, committee context, and update alerts without obscuring the original record.
           </p>
         </div>
         <Link href="/learn" className="secondary-link">
