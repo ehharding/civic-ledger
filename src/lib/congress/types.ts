@@ -13,6 +13,14 @@ export type BillStage = (typeof billStages)[number];
  */
 export const DEFAULT_PAGE_SIZE = 12;
 
+/** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
+export type BillSponsor = {
+  fullName: string;
+  party?: string;
+  state?: string;
+  bioguideId?: string;
+};
+
 /**
  * The app's stable internal bill shape.
  * Congress.gov API responses (list or detail) are mapped into this by client.ts before anything else touches them.
@@ -31,6 +39,37 @@ export type LegislativeBill = {
   policyArea?: string;
   stage: BillStage;
   officialUrl: string;
+  sponsor?: BillSponsor;
+  cosponsorCount?: number;
+};
+
+/**
+ * One CRS-written summary of a bill, tied to the legislative stage it describes (`actionDesc`, e.g. "Introduced in
+ * House"). Bills can accumulate several of these as they're amended — the most recent describes the bill as it stands
+ * now, but earlier ones aren't deleted, since they describe real earlier versions of the text.
+ */
+export type BillSummary = {
+  versionCode: string;
+  actionDesc: string;
+  actionDate?: string;
+  /** A sanitized HTML fragment (see sanitizeSummaryHtml) — safe to render directly. */
+  html: string;
+};
+
+/** One downloadable rendering (e.g., "Formatted Text", "PDF") of a bill text version, hosted on Congress.gov. */
+export type BillTextFormat = {
+  type: string;
+  url: string;
+};
+
+/**
+ * One stage-specific version of a bill's actual legislative text (e.g., "Introduced in House", "Engrossed in
+ * House").
+ */
+export type BillTextVersion = {
+  type: string;
+  date?: string;
+  formats: BillTextFormat[];
 };
 
 /**

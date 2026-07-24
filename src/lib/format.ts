@@ -20,3 +20,26 @@ export function formatOrdinal(value: number): string {
       return `${value}th`;
   }
 }
+
+/**
+ * Formats an ISO date for display (e.g. "July 14, 2026"). Accepts either a bare `YYYY-MM-DD` date (as bill actions
+ * and summaries use) or a full ISO 8601 datetime (as bill text versions use) — falls back to the raw string if
+ * unparseable.
+ *
+ * `timeZone: "UTC"` is deliberate, not decorative: `Intl.DateTimeFormat` renders in the *runtime's local timezone*
+ * by default, not UTC. Without pinning it, a text-version datetime like "2022-02-15T05:00:00Z" renders as
+ * "February 14" on any machine set to a timezone west of UTC (which is most of the US) — the date silently rolls
+ * back a day depending on where the code happens to run.
+ */
+export function formatDate(value: string): string {
+  const date: Date = value.includes("T") ? new Date(value) : new Date(`${value}T12:00:00Z`);
+
+  if (Number.isNaN(date.valueOf())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}

@@ -5,10 +5,17 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type BillLookupResult, getBillById, getCongressSnapshot, getMoreBills } from "@/lib/congress/client";
+import {
+  type BillLookupResult,
+  getBillById,
+  getBillSummaries,
+  getBillTextVersions,
+  getCongressSnapshot,
+  getMoreBills,
+} from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
-import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
+import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
@@ -206,5 +213,149 @@ describe("getMoreBills", (): void => {
     const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
     expect(requestedUrl.searchParams.get("offset")).toBe("24");
+  });
+});
+
+describe("getBillSummaries", (): void => {
+  it("returns a single labeled preview summary when no API key is configured", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const target: LegislativeBill = firstPreviewBill;
+    const summaries: BillSummary[] = await getBillSummaries({
+      congress: String(target.congress),
+      type: target.type,
+      number: target.number,
+    });
+
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]?.actionDesc).toBe("Preview Summary");
+    expect(summaries[0]?.html).toContain("<p>");
+  });
+
+  it("returns an empty list in preview mode for a bill with no fixture summary", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const summaries: BillSummary[] = await getBillSummaries({ congress: "50", type: "hr", number: "1" });
+
+    expect(summaries).toEqual([]);
+  });
+
+  it("maps and sanitizes live summaries, most recent first", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          summaries: [
+            {
+              versionCode: "00",
+              actionDate: "2021-05-11",
+              actionDesc: "Introduced in House",
+              text: "<p>As introduced.</p>",
+            },
+            {
+              versionCode: "49",
+              actionDate: "2022-04-06",
+              actionDesc: "Public Law",
+              text: "<p>As enacted.</p><script>alert(1)</script>",
+            },
+          ],
+        }),
+      ),
+    );
+
+    const summaries: BillSummary[] = await getBillSummaries({ congress: "117", type: "hr", number: "3076" });
+
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toMatchObject({ actionDesc: "Public Law", actionDate: "2022-04-06" });
+    expect(summaries[0]?.html).toBe("<p>As enacted.</p>alert(1)");
+    expect(summaries[1]).toMatchObject({ actionDesc: "Introduced in House", actionDate: "2021-05-11" });
+  });
+
+  it("returns an empty list on a 404", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+
+    const summaries: BillSummary[] = await getBillSummaries({ congress: "119", type: "hr", number: "999999" });
+
+    expect(summaries).toEqual([]);
+  });
+
+  it("returns an empty list when the upstream request fails", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+
+    const summaries: BillSummary[] = await getBillSummaries({ congress: "117", type: "hr", number: "3076" });
+
+    expect(summaries).toEqual([]);
+  });
+});
+
+describe("getBillTextVersions", (): void => {
+  it("returns an empty list when no API key is configured", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const target: LegislativeBill = firstPreviewBill;
+    const versions: BillTextVersion[] = await getBillTextVersions({
+      congress: String(target.congress),
+      type: target.type,
+      number: target.number,
+    });
+
+    // Deliberate: preview fixtures never fabricate links to specific documents that don't exist.
+    expect(versions).toEqual([]);
+  });
+
+  it("maps live text versions most recent first and drops formats missing a url", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          textVersions: [
+            {
+              type: "Introduced in House",
+              date: "2021-05-11T04:00:00Z",
+              formats: [{ type: "Formatted Text", url: "https://www.congress.gov/117/bills/hr3076/BILLS-ih.htm" }],
+            },
+            {
+              type: "Engrossed in House",
+              date: "2021-09-27T04:00:00Z",
+              formats: [
+                { type: "Formatted Text", url: "https://www.congress.gov/117/bills/hr3076/BILLS-eh.htm" },
+                { type: "PDF" },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "117", type: "hr", number: "3076" });
+
+    expect(versions).toHaveLength(2);
+    expect(versions[0]?.type).toBe("Engrossed in House");
+    expect(versions[0]?.formats).toHaveLength(1);
+    expect(versions[1]?.type).toBe("Introduced in House");
+  });
+
+  it("returns an empty list on a 404", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+
+    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "119", type: "hr", number: "999999" });
+
+    expect(versions).toEqual([]);
+  });
+
+  it("returns an empty list when the upstream request fails", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+
+    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "117", type: "hr", number: "3076" });
+
+    expect(versions).toEqual([]);
   });
 });

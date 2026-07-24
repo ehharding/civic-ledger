@@ -1,15 +1,10 @@
-import { ArrowUpRight, ChevronLeft, ExternalLink, Landmark } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
-import { BillJourney } from "@/components/bill-journey";
-import { DataSourceNotice } from "@/components/data-source-notice";
-import { SiteShell } from "@/components/site-shell";
-import { getBillById } from "@/lib/congress/client";
+import { BillDetail } from "@/components/bill-detail";
+import { type BillLookupResult, getBillById, getBillSummaries, getBillTextVersions } from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
-import { billStageLabels, type LegislativeBill } from "@/lib/congress/types";
-import { formatOrdinal } from "@/lib/format";
+import type { BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 
 type BillPageProps = {
   params: Promise<{ congress: string; type: string; number: string }>;
@@ -32,87 +27,15 @@ export function generateStaticParams(): { congress: string; type: string; number
 /**
  * Individual bill record route. Resolves the bill via a direct lookup (`getBillById`) rather than filtering the
  * homepage snapshot, so any real bill number works — not just the dozen most recently returned by the list endpoint.
- * Renders the 404 page (via `notFound()`) when the lookup comes back empty.
+ * Renders the 404 page (via `notFound()`) when the lookup comes back empty. Fetches the bill alongside its CRS
+ * summaries and official text versions in parallel, then hands everything to BillDetail for rendering.
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: { congress: string; type: string; number: string } = await params;
-  const { bill, source, notice } = await getBillById(route);
+  const [{ bill, source, notice }, summaries, textVersions]: [BillLookupResult, BillSummary[], BillTextVersion[]] =
+    await Promise.all([getBillById(route), getBillSummaries(route), getBillTextVersions(route)]);
 
   if (!bill) notFound();
 
-  return (
-    <SiteShell>
-      <div className="bill-backlink">
-        <Link href="/bills">
-          <ChevronLeft aria-hidden="true" size={16} /> All Bills
-        </Link>
-      </div>
-
-      <section className="bill-detail-hero" aria-labelledby="bill-title">
-        <p className="eyebrow">
-          {bill.type} {bill.number} · {formatOrdinal(bill.congress)} Congress
-        </p>
-        <h1 id="bill-title">{bill.title}</h1>
-        <div className="bill-detail-meta">
-          <span className="stage-label">{billStageLabels[bill.stage]}</span>
-          {bill.policyArea ? <span>{bill.policyArea}</span> : null}
-          <span>Origin: {bill.originChamber}</span>
-        </div>
-      </section>
-
-      <DataSourceNotice source={source} notice={notice} />
-
-      <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="journey-heading">
-          <p className="section-kicker">How This Moves</p>
-          <h2 id="journey-heading">The Bill’s Journey</h2>
-          <p className="muted-copy">
-            This is an orientation aid, not an official legal status. Read the latest action and primary source
-            alongside it.
-          </p>
-          <BillJourney stage={bill.stage} compact={false} />
-        </section>
-
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="next-heading">
-          <p className="section-kicker">Latest Action</p>
-          <h2 id="next-heading">What Happened Most Recently</h2>
-          <p className="latest-action-copy">{bill.latestAction.text}</p>
-          {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
-          <a className="text-link" href={bill.officialUrl} target="_blank" rel="noreferrer">
-            Open the Official Record <ExternalLink aria-hidden="true" size={15} />
-          </a>
-        </aside>
-      </div>
-
-      <section className="reading-card" aria-labelledby="reading-heading">
-        <div className="reading-card__icon">
-          <Landmark aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <p className="section-kicker">Read It With Context</p>
-          <h2 id="reading-heading">A Record Is a Starting Point, Not the Whole Story.</h2>
-          <p>
-            Use the official source for definitive text and actions. Civic Ledger will later layer in source-linked
-            explainers, committee context, and update alerts without obscuring the original record.
-          </p>
-        </div>
-        <Link href="/learn" className="secondary-link">
-          Learn the Terms <ArrowUpRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
-    </SiteShell>
-  );
-}
-
-/** Formats an ISO `YYYY-MM-DD` date for display (e.g. "July 14, 2026"). Falls back to the raw string if unparseable. */
-function formatDate(value: string): string {
-  const date: Date = new Date(`${value}T12:00:00Z`);
-
-  if (Number.isNaN(date.valueOf())) return value;
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+  return <BillDetail bill={bill} source={source} notice={notice} summaries={summaries} textVersions={textVersions} />;
 }
