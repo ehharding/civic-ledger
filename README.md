@@ -9,11 +9,12 @@ make the legislative process more legible without replacing the official record.
 ## What Is in This 1.0 Draft
 
 - A polished responsive civic dashboard at `/`
-- Searchable, client-filtered bill directory at `/bills`, with a "Load More" button that pages through live results
-  (servery proxy at `/api/bills`, key never touches the browser)
+- Searchable, client-filtered bill directory at `/bills` (current Congress) and `/bills/[congress]` (any Congress back
+  to the 93rd, 1973 — see [Data Policy](#data-policy)), with a Congress switcher and a "Load More" button that pages
+  through live results (server proxy at `/api/bills`, key never touches the browser)
 - Bill-record route with an educational journey cue at `/bills/[congress]/[type]/[number]`, resolved via a direct
   single-bill lookup so any real bill works — not just the dozen most recently returned by the list endpoint
-- Loading skeletons for the bills directory and bill detail routes
+- Loading skeletons for both bill directory routes and the bill detail route
 - Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
   at `/learn/how-a-bill-becomes-law`
 - Server-only Congress.gov API adapter with boundary types, five-minute caching, JSON requests, and safe preview
@@ -69,6 +70,9 @@ pnpm exec playwright install chromium
   caches the upstream request for five minutes.
 - `inferBillStage` is deliberately presented as an educational cue, not a legal-status determination.
 - Every bill page retains an official-record link.
+- Congress-scoped browsing (`/bills/[congress]`) is bounded to the 93rd Congress (1973) onward, matching where
+  Congress.gov's own bill and resolution records begin — see `EARLIEST_COVERED_CONGRESS` in
+  `src/lib/congress/congress-history.ts`.
 
 The Congress.gov API uses v3, pagination, and an hourly request quota; see the official
 [API repository](https://github.com/LibraryOfCongress/api.congress.gov/) before extending ingestion. The 2026 changelog
@@ -107,13 +111,13 @@ fixtures — a static export has no server left at request time, so it structura
 serve live data. Concretely, this build:
 
 - Sets `output: "export"` and the right `basePath` for a GitHub Pages project site.
-- Pre-renders the four preview bill pages via `generateStaticParams` (a static export can't look up arbitrary bills on
-  demand).
-- Drops the `/api/bills` pagination route before building — it needs to read the request URL for its `offset` param,
-  which a static export can't do, and it has no purpose in a preview-only build anyway. (Pagination is only offered
-  when live data is active.)
-- Degrades the bills page's shareable `?q=` deep link to an empty starting search (searching itself still works fully
-  client-side).
+- Pre-renders every preview bill's detail page, and one bill-directory page per Congress the preview fixtures cover,
+  via `generateStaticParams` (a static export can't look up arbitrary bills or Congresses on demand).
+- Drops the `/api/bills` pagination route before building — it needs to read the request URL for its `offset` and
+  `congress` params, which a static export can't do, and it has no purpose in a preview-only build anyway.
+  (Pagination is only offered when live data is active.)
+- Degrades both bill-directory routes' shareable `?q=` deep link to an empty starting search (searching itself still
+  works fully client-side).
 
 Use this only for a UI/UX preview or portfolio link — never represent it as the live product. Enable it by running the
 workflow (`workflow_dispatch`) or letting it run on pushes to `main`.

@@ -41,19 +41,22 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
 button,
 a,
-input {
+input,
+select {
   -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 3px solid #80b5d4;
   outline-offset: 3px;
 }
@@ -662,6 +665,27 @@ h3 {
   line-height: 1.65;
 }
 
+.congress-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.congress-switcher select {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--paper);
+  font-weight: 600;
+}
+
 .directory-controls {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
@@ -872,6 +896,12 @@ h3 {
   gap: 16px;
 }
 
+/* The bill detail page stacks two .detail-grid rows back to back; the first gets its spacing from
+   .source-notice's margin-bottom above it, so only the second needs its own rule here. */
+.detail-grid + .detail-grid {
+  margin-top: 24px;
+}
+
 .detail-panel {
   padding: 28px;
   border: 1px solid var(--line);
@@ -909,12 +939,82 @@ h3 {
   font-size: 0.8rem;
 }
 
-.detail-panel .text-link {
+/* Renders sanitized CRS summary HTML (see sanitizeSummaryHtml) — arbitrary paragraphs, lists, emphasis, and links
+   from the API, not markup this app authors itself. Needs its own rules because the global reset zeroes out <p>
+   margin and strips link color/underline sitewide (right for hand-authored UI copy, wrong for a block of prose). */
+.summary-body {
+  margin-top: 13px;
+  max-width: 62ch;
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+.summary-body p + p {
+  margin-top: 14px;
+}
+
+.summary-body ul,
+.summary-body ol {
+  margin-top: 14px;
+  padding-left: 22px;
+}
+
+.summary-body li + li {
+  margin-top: 6px;
+}
+
+.summary-body li::marker {
+  color: var(--burgundy);
+}
+
+.summary-body strong,
+.summary-body b {
+  color: var(--navy-deep);
+  font-weight: 700;
+}
+
+.summary-body a {
+  color: var(--burgundy);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--burgundy) 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.summary-body a:hover {
+  color: var(--burgundy-deep);
+}
+
+.text-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.text-version-list__type {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.text-version-list__formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.detail-panel > .text-link {
   margin-top: 26px;
 }
 
+/* Shared by bill-detail.tsx and the how-a-bill-becomes-law lesson page — both stack this after content with no
+   bottom margin of its own (a .detail-grid, or .lesson-steps), so it carries the full gap by itself. */
 .reading-card {
-  margin-top: 16px;
+  margin-top: 48px;
 }
 
 .reading-card--simple {

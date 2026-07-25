@@ -11,6 +11,7 @@ import {
   DEFAULT_PAGE_SIZE,
   type LegislativeBill,
 } from "@/lib/congress/types";
+import { formatOrdinal } from "@/lib/format";
 
 /** Shape of one entry in a detail-endpoint bill's `sponsors` array. */
 type CongressApiSponsor = {
@@ -197,7 +198,7 @@ function findPreviewBill(input: { congress: string; type: string; number: string
 
 /**
  * Fetches one page of the bill list for a specific Congress. Returns `null` on any failure so callers can decide
- * how to fall back (preview data for the homepage, an empty page for "load more").
+ * how to fall back (preview data for the homepage, an empty page for "Load More").
  *
  * Filtered explicitly by congress via the URL path (a documented filter — see BillEndpoint.md) rather than calling
  * the unfiltered `/v3/bill` list. That unfiltered list isn't sorted by congress number or introduction date, so it
@@ -237,22 +238,32 @@ async function fetchBillsPage(input: {
 }
 
 /**
- * Fetches the first page of the current Congress's bills for the homepage and bill directory.
+ * Fetches the first page of a specific Congress's bills. This is the shared implementation behind both the
+ * current-Congress homepage/directory (`getCongressSnapshot` below) and the `/bills/[congress]` route, so both share
+ * one caching policy and one fallback story rather than drifting apart.
  *
  * Falls back to the labeled preview fixtures whenever live data isn't available — no `CONGRESS_API_KEY` configured, or
- * the upstream request fails/returns nothing. Callers should read `source` on the returned snapshot rather than
- * assuming success; this function never throws.
+ * the upstream request fails/returns nothing. The preview fallback is itself filtered to the requested Congress (a bill
+ * from a different Congress is not a preview of this one), so a Congress with no fixture data honestly reports an
+ * empty, labeled result rather than borrowing bills from elsewhere. Callers should read `source` on the returned
+ * snapshot rather than assuming success; this function never throws.
  */
-export async function getCongressSnapshot(): Promise<CongressSnapshot> {
+export async function getCongressSnapshotForCongress(congress: number): Promise<CongressSnapshot> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
   const retrievedAt: string = new Date().toISOString();
+  const previewForCongress: LegislativeBill[] = previewBills.filter(
+    (bill: LegislativeBill): boolean => bill.congress === congress,
+  );
 
   if (!apiKey) {
     return {
-      bills: previewBills,
+      bills: previewForCongress,
       source: "preview",
       retrievedAt,
-      notice: "Preview records are shown until a server-only Congress.gov API key is configured.",
+      notice:
+        previewForCongress.length > 0
+          ? "Preview records are shown until a server-only Congress.gov API key is configured."
+          : `No preview records are available for the ${formatOrdinal(congress)} Congress. Configure a server-only Congress.gov API key to browse its live records.`,
     };
   }
 
@@ -260,12 +271,12 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
     apiKey,
     offset: 0,
     limit: DEFAULT_PAGE_SIZE,
-    congress: getCurrentCongress(),
+    congress,
   });
 
   if (!bills || bills.length === 0) {
     return {
-      bills: previewBills,
+      bills: previewForCongress,
       source: "preview",
       retrievedAt,
       notice: "Live records are temporarily unavailable, so preview records are shown.",
@@ -276,29 +287,37 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
 }
 
 /**
- * Fetches an additional page of live bills for "load more" pagination.
+ * Fetches the first page of the *current* Congress's bills, for the homepage and the default `/bills` directory.
+ * A thin wrapper around `getCongressSnapshotForCongress` — see that function for the actual fetch/fallback behavior.
+ */
+export async function getCongressSnapshot(): Promise<CongressSnapshot> {
+  return getCongressSnapshotForCongress(getCurrentCongress());
+}
+
+/**
+ * Fetches an additional page of live bills for "Load More" pagination, for a given Congress (the current one by
+ * default, so existing single-argument callers are unaffected).
  * Only meaningful when a live key is configured; returns an empty page otherwise so the UI can simply stop offering
  * more results.
  */
-export async function getMoreBills(offset: number): Promise<LegislativeBill[]> {
+export async function getMoreBills(
+  offset: number,
+  congress: number = getCurrentCongress(),
+): Promise<LegislativeBill[]> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
   if (!apiKey) return [];
 
-  const bills: LegislativeBill[] | null = await fetchBillsPage({
-    apiKey,
-    offset,
-    limit: DEFAULT_PAGE_SIZE,
-    congress: getCurrentCongress(),
-  });
+  const bills: LegislativeBill[] | null = await fetchBillsPage({ apiKey, offset, limit: DEFAULT_PAGE_SIZE, congress });
 
   return bills ?? [];
 }
 
-/** What getBillById actually resolved: the bill (if any), and whether that came from live or preview data. */
+/** What getBillById actually resolved: the bill (if any), whether that came from live or preview data, and when. */
 export type BillLookupResult = {
   bill: LegislativeBill | undefined;
   source: CongressSnapshot["source"];
   notice?: string;
+  retrievedAt: string;
 };
 
 /**
@@ -314,9 +333,10 @@ export async function getBillById(input: {
   number: string;
 }): Promise<BillLookupResult> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
+  const retrievedAt: string = new Date().toISOString();
 
   if (!apiKey) {
-    return { bill: findPreviewBill(input), source: "preview" };
+    return { bill: findPreviewBill(input), source: "preview", retrievedAt };
   }
 
   const url: URL = new URL(
@@ -334,13 +354,13 @@ export async function getBillById(input: {
       headers: { Accept: "application/json" },
     });
 
-    if (response.status === 404) return { bill: undefined, source: "live" };
+    if (response.status === 404) return { bill: undefined, source: "live", retrievedAt };
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
 
     const payload = (await response.json()) as CongressApiDetailResponse;
     const bill: LegislativeBill | null = payload.bill ? mapCongressBill(payload.bill) : null;
 
-    return { bill: bill ?? undefined, source: "live" };
+    return { bill: bill ?? undefined, source: "live", retrievedAt };
   } catch (error) {
     // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
     // preview data as a last resort.
@@ -354,7 +374,9 @@ export async function getBillById(input: {
           candidate.number === input.number,
       ) ?? findPreviewBill(input);
 
-    return { bill, source: snapshot.source, notice: snapshot.notice };
+    // The snapshot's own retrievedAt reflects when that fallback data was actually fetched, which is more accurate here
+    // than this function's own start time.
+    return { bill, source: snapshot.source, notice: snapshot.notice, retrievedAt: snapshot.retrievedAt };
   }
 }
 

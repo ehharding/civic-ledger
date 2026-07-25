@@ -33,9 +33,11 @@ flowchart LR
 
 ## Runtime Data Flow
 
-1. A Next.js server route calls `getCongressSnapshot`.
-2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill?format=json` and lets Next cache
-   the result for five minutes.
+1. A Next.js server route calls `getCongressSnapshot` (current Congress) or `getCongressSnapshotForCongress` (any other
+   Congress `/bills/[congress]` supports — see `src/lib/congress/congress-history.ts` for the supported range).
+   The former is a thin wrapper around the latter, so both share one fetch and one fallback policy.
+2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill/{congress}?format=json` and lets
+   Next cache the result for five minutes.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.

@@ -15,19 +15,23 @@ import {
 type StageFilter = "all" | BillStage;
 
 /**
- * Interactive bill directory: client-side search/stage filtering over the bills passed in from the server,
- * plus "Load more" pagination that fetches additional pages from `/api/bills` (only offered when `canLoadMore`
- * is true, i.e. live data is active — the preview fixture set is small and fixed).
+ * Interactive bill directory: client-side search/stage filtering over the bills passed in from the server, plus "Load
+ * more" pagination that fetches additional pages from `/api/bills` (only offered when `canLoadMore` is true, i.e. live
+ * data is active — the preview fixture set is small and fixed).
  */
 export function BillDirectory({
   bills,
   initialQuery,
   canLoadMore,
+  congress,
 }: {
   bills: LegislativeBill[];
   initialQuery: string;
   /** Only live Congress.gov data supports paging further; preview data is a fixed sample. */
   canLoadMore: boolean;
+  /** Scopes "Load More" to a specific Congress. Omitted on the default (current-Congress) /bills route, where
+   * /api/bills already defaults to the current Congress on its own. */
+  congress?: number;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [stage, setStage] = useState<StageFilter>("all");
@@ -58,7 +62,8 @@ export function BillDirectory({
     setLoadError(false);
 
     try {
-      const response: Response = await fetch(`/api/bills?offset=${allBills.length}`);
+      const congressParam: string = congress ? `&congress=${congress}` : "";
+      const response: Response = await fetch(`/api/bills?offset=${allBills.length}${congressParam}`);
       if (!response.ok) throw new Error(`Request failed with ${response.status}`);
 
       const payload = (await response.json()) as { bills: LegislativeBill[] };
@@ -121,6 +126,11 @@ export function BillDirectory({
               <BillCard bill={bill} key={`${bill.congress}-${bill.type}-${bill.number}`} />
             ),
           )}
+        </div>
+      ) : allBills.length === 0 ? (
+        <div className="no-results">
+          <h2>No Records Yet.</h2>
+          <p>Nothing has been recorded for this Congress yet. Try another Congress above, or check back soon.</p>
         </div>
       ) : (
         <div className="no-results">

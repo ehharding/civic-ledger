@@ -90,6 +90,44 @@ export const previewBills: LegislativeBill[] = [
     sponsor: { fullName: "Rep. Castillo, Ana P. [D-TX-20]", party: "D", state: "TX" },
     cosponsorCount: 47,
   },
+  {
+    congress: 117,
+    type: "HR",
+    number: "5822",
+    title: "Rural Veterans Telehealth Access Act",
+    originChamber: "House",
+    introducedDate: "2021-11-04",
+    latestAction: {
+      date: "2022-12-27",
+      text: "Became Public Law No: 117-263.",
+    },
+    policyArea: "Health",
+    stage: "law",
+    officialUrl: "https://www.congress.gov/",
+    sponsor: { fullName: "Rep. Dupont, Lauren M. [D-NM-2]", party: "D", state: "NM" },
+    cosponsorCount: 58,
+  },
+  {
+    congress: 116,
+    type: "S",
+    number: "3084",
+    title: "Community Composting Infrastructure Act",
+    originChamber: "Senate",
+    introducedDate: "2019-12-11",
+    latestAction: {
+      date: "2020-09-16",
+      text: "Passed Senate without amendment by voice vote.",
+    },
+    policyArea: "Environmental protection",
+    // A deliberate example of a bill that passed one chamber but never became law — the 116th Congress ended before
+    // the House took it up. Illustrates the same "passing one chamber isn't the same as becoming law" point the
+    // /learn/how-a-bill-becomes-law lesson makes, but on a real (if fictional) historical record instead of just in
+    // the abstract.
+    stage: "chamber",
+    officialUrl: "https://www.congress.gov/",
+    sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA" },
+    cosponsorCount: 9,
+  },
 ];
 
 /**
@@ -133,4 +171,12 @@ export const previewSummaries: Record<string, string> = {
     "This bill directs the Federal Communications Commission to work with states to verify the accuracy of broadband " +
     "service-availability maps and establishes a formal process for consumers and local governments to challenge " +
     "incorrect coverage claims.",
+  "117-HR-5822":
+    "This bill would direct the Department of Veterans Affairs to expand telehealth grants for rural VA clinics and " +
+    "to reimburse veterans for broadband costs incurred solely for scheduled telehealth appointments. It also " +
+    "requires an annual report to Congress on rural telehealth usage and outcomes.",
+  "116-S-3084":
+    "This bill would establish a federal grant program to help cities and counties build or expand community " +
+    "composting facilities, and would direct the Department of Agriculture to publish technical guidance for " +
+    "municipalities starting a composting program for the first time.",
 };

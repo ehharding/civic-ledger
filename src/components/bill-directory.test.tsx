@@ -72,6 +72,13 @@ describe("BillDirectory", (): void => {
     expect(screen.getByText("Showing 0 Records")).toBeInTheDocument();
   });
 
+  it("shows a distinct empty state when there are no records to search at all", (): void => {
+    render(<BillDirectory bills={[]} initialQuery="" canLoadMore={false} />);
+
+    expect(screen.getByRole("heading", { name: "No Records Yet." })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "No Records Match That Search." })).not.toBeInTheDocument();
+  });
+
   it("filters by stage and marks the active button pressed", async (): Promise<void> => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
     const introducedBill: LegislativeBill = previewBills.find(
@@ -116,6 +123,18 @@ describe("BillDirectory", (): void => {
     expect(fetchMock).toHaveBeenCalledWith(`/api/bills?offset=${previewBills.length}`);
     expect(await screen.findByText("Extra Bill 0")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Load More Bills" })).toBeInTheDocument();
+  });
+
+  it("scopes the load-more request to the given Congress when provided", async (): Promise<void> => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: (): Promise<unknown> => Promise.resolve({ bills: [] }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={true} congress={118} />);
+    await user.click(screen.getByRole("button", { name: "Load More Bills" }));
+
+    expect(fetchMock).toHaveBeenCalledWith(`/api/bills?offset=${previewBills.length}&congress=118`);
   });
 
   it("stops offering more once a short page comes back", async (): Promise<void> => {

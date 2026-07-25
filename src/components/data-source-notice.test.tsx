@@ -30,4 +30,17 @@ describe("DataSourceNotice", (): void => {
     const { container } = render(<DataSourceNotice source="live" />);
     expect(container.querySelector("aside")).toHaveClass("source-notice--live");
   });
+
+  it("shows how long ago the data was retrieved, when provided", (): void => {
+    const retrievedAt: string = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // ~2 hours ago
+
+    render(<DataSourceNotice source="live" retrievedAt={retrievedAt} />);
+
+    expect(screen.getByText(/Updated about 2 hours ago\./)).toBeInTheDocument();
+  });
+
+  it("omits the updated line entirely when no retrievedAt is provided", (): void => {
+    render(<DataSourceNotice source="live" />);
+    expect(screen.queryByText(/Updated/)).not.toBeInTheDocument();
+  });
 });

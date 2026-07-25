@@ -12,9 +12,8 @@ type BillPageProps = {
 
 /**
  * Pre-renders the preview bills at build time. In the default server build this is just a perf win (other bills
- * still resolve live, on demand).
- * In a static export (STATIC_EXPORT=true, no API key), these are the *only* bill pages that can exist, since a
- * static export has no server to look anything else up on request.
+ * still resolve live, on demand). In a static export (STATIC_EXPORT=true, no API key), these are the *only* bill pages
+ * that can exist, since a static export has no server to look anything else up on request.
  */
 export function generateStaticParams(): { congress: string; type: string; number: string }[] {
   return previewBills.map((bill: LegislativeBill): { congress: string; type: string; number: string } => ({
@@ -32,10 +31,22 @@ export function generateStaticParams(): { congress: string; type: string; number
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: { congress: string; type: string; number: string } = await params;
-  const [{ bill, source, notice }, summaries, textVersions]: [BillLookupResult, BillSummary[], BillTextVersion[]] =
-    await Promise.all([getBillById(route), getBillSummaries(route), getBillTextVersions(route)]);
+  const [{ bill, source, notice, retrievedAt }, summaries, textVersions]: [
+    BillLookupResult,
+    BillSummary[],
+    BillTextVersion[],
+  ] = await Promise.all([getBillById(route), getBillSummaries(route), getBillTextVersions(route)]);
 
   if (!bill) notFound();
 
-  return <BillDetail bill={bill} source={source} notice={notice} summaries={summaries} textVersions={textVersions} />;
+  return (
+    <BillDetail
+      bill={bill}
+      source={source}
+      notice={notice}
+      retrievedAt={retrievedAt}
+      summaries={summaries}
+      textVersions={textVersions}
+    />
+  );
 }

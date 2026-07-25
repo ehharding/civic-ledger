@@ -11,6 +11,7 @@ import {
   getBillSummaries,
   getBillTextVersions,
   getCongressSnapshot,
+  getCongressSnapshotForCongress,
   getMoreBills,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
@@ -39,13 +40,16 @@ afterEach((): void => {
 });
 
 describe("getCongressSnapshot", (): void => {
-  it("returns labeled preview data when no API key is configured", async (): Promise<void> => {
+  it("returns labeled preview data scoped to the current Congress when no API key is configured", async (): Promise<void> => {
     delete process.env.CONGRESS_API_KEY;
 
     const snapshot: CongressSnapshot = await getCongressSnapshot();
+    const currentCongressPreviewBills: LegislativeBill[] = previewBills.filter(
+      (bill: LegislativeBill): boolean => bill.congress === getCurrentCongress(),
+    );
 
     expect(snapshot.source).toBe("preview");
-    expect(snapshot.bills).toEqual(previewBills);
+    expect(snapshot.bills).toEqual(currentCongressPreviewBills);
     expect(snapshot.notice).toMatch(/preview/i);
   });
 
@@ -107,6 +111,39 @@ describe("getCongressSnapshot", (): void => {
   });
 });
 
+describe("getCongressSnapshotForCongress", (): void => {
+  it("filters preview bills to just the requested Congress, not every fixture", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(118);
+
+    expect(snapshot.source).toBe("preview");
+    expect(snapshot.bills).toEqual(previewBills.filter((bill: LegislativeBill): boolean => bill.congress === 118));
+    expect(snapshot.bills.every((bill: LegislativeBill): boolean => bill.congress === 118)).toBe(true);
+  });
+
+  it("reports an honest empty result for a Congress with no preview fixtures, instead of borrowing another Congress's bills", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(100);
+
+    expect(snapshot.source).toBe("preview");
+    expect(snapshot.bills).toEqual([]);
+    expect(snapshot.notice).toMatch(/100th Congress/);
+  });
+
+  it("requests the bill list scoped to the given Congress", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCongressSnapshotForCongress(110);
+
+    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.pathname).toBe("/v3/bill/110");
+  });
+});
+
 describe("getBillById", (): void => {
   it("finds a matching preview bill when no API key is configured", async (): Promise<void> => {
     delete process.env.CONGRESS_API_KEY;
@@ -120,6 +157,19 @@ describe("getBillById", (): void => {
 
     expect(result.bill).toEqual(target);
     expect(result.source).toBe("preview");
+  });
+
+  it("includes a parsable retrievedAt timestamp alongside the result", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const target: LegislativeBill = firstPreviewBill;
+    const result: BillLookupResult = await getBillById({
+      congress: String(target.congress),
+      type: target.type,
+      number: target.number,
+    });
+
+    expect(Number.isNaN(new Date(result.retrievedAt).valueOf())).toBe(false);
   });
 
   it("maps a live detail-endpoint bill using billType/billNumber field names", async (): Promise<void> => {
@@ -213,6 +263,17 @@ describe("getMoreBills", (): void => {
     const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
     expect(requestedUrl.searchParams.get("offset")).toBe("24");
+  });
+
+  it("requests the given Congress when provided, instead of defaulting to the current one", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getMoreBills(0, 110);
+
+    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.pathname).toBe("/v3/bill/110");
   });
 });
 
