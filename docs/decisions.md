@@ -94,3 +94,30 @@ handle a subtle UTC rollback bug in Congress.gov's date-only strings, and swappi
 The genuine use is `DataSourceNotice`'s "Updated 5 minutes ago" line, built on `date-fns`'s `formatDistanceToNow` from
 the `retrievedAt` timestamp every snapshot already carried but never displayed anywhere — directly serving this
 project's own stated goal that source freshness stay visible in the interface, not just computed and discarded.
+
+## Search Sweeps Every Congress Because the API Has No Keyword Search of Its Own
+
+Congress.gov's `/v3/bill` endpoint can only be filtered by congress and bill type — it has no full-text or keyword query
+parameter at all (confirmed against `BillEndpoint.md` and the API's own FAQ material, not assumed). So
+`getSearchResults` in `client.ts` approximates a broad search the only way the API allows: it fetches each supported
+Congress's most recently active bills (`sort=updateDate+desc`, up to the API's own 250-per-request ceiling) and matches
+the query against title, type, number, policy area, and latest action text — the same fields already shown on `BillCard`
+and the bill detail page (`matchesQuery` in `src/lib/congress/search.ts`). It cannot see a bill's full legislative text,
+and for a large or old Congress it only sees that Congress's most recently touched slice, not literally every bill ever
+introduced in it — the result-count copy says as much rather than implying an exhaustive search.
+
+This is materially more expensive than an ordinary page load (one request per Congress, ~27 today), but every one of
+those requests goes through the same `fetchBillsPage`/five-minute cache as ordinary browsing already does, rather than
+a separate cache policy. Concurrent and repeated searches within that window are served from cache, not re-fetched from
+Congress.gov, which is what keeps sweeping "every Congress" on every search well inside the API's 5,000/hour rate limit
+rather than something that needs its own throttling.
+
+A query that parses as a bill citation (`parseBillCitation` — "HR 284", "H.J.Res. 66", "119 HR 284") also gets a direct
+single-bill lookup, pinned first in the results. That's the one case where the API can answer exactly rather than the
+sweep-and-filter approximation above, so it's worth the one extra request.
+
+`BillDirectory` sends every non-empty query to `/api/bills/search` — there's no more client-side instant filter over
+whatever happened to already be loaded. The one exception is when that route can't be reached at all (chiefly the static
+GitHub Pages demo, which has no server left at request time): the component falls back to filtering its own
+already-loaded bills with the same `matchesQuery`, so search still does something rather than going dead in that one
+deployment target.

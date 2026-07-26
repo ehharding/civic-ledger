@@ -1,6 +1,8 @@
+import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills, previewSummaries } from "@/lib/congress/fixtures";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
+import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/search";
 import { inferBillStage } from "@/lib/congress/stage";
 import {
   type BillRouteParams,
@@ -251,10 +253,14 @@ async function fetchBillsPage(input: {
   offset: number;
   limit: number;
   congress: number;
+  /** Optional Congress.gov sort hint (e.g., "updateDate+desc"). Omitted for normal browsing/pagination; the search
+   * sweep (getSearchResults) passes one so each Congress's fetched page favors its most recently active bills. */
+  sort?: string;
 }): Promise<LegislativeBill[] | null> {
   const url: URL = buildCongressUrl(`/bill/${input.congress}`, input.apiKey, {
     limit: String(input.limit),
     offset: String(input.offset),
+    ...(input.sort ? { sort: input.sort } : {}),
   });
 
   try {
@@ -347,6 +353,113 @@ export async function getMoreBills(
   const bills: LegislativeBill[] | null = await fetchBillsPage({ apiKey, offset, limit: DEFAULT_PAGE_SIZE, congress });
 
   return bills ?? [];
+}
+
+/** Max bills fetched per Congress when sweeping for a search — the Congress.gov API's own per-request ceiling. */
+const SEARCH_PAGE_LIMIT: number = 250;
+
+/** Max bills returned from a single search, across every Congress swept together. */
+const MAX_SEARCH_RESULTS: number = 60;
+
+/** Result of a cross-Congress bill search — see getSearchResults. */
+export type BillSearchResult = {
+  bills: LegislativeBill[];
+  source: CongressSnapshot["source"];
+  /** How many Congresses this search actually swept. */
+  congressesSearched: number;
+  /** Whether more matches existed than MAX_SEARCH_RESULTS allows returning. */
+  truncated: boolean;
+};
+
+/**
+ * Sorts search matches for display: a citation-lookup hit (identified by `pinnedKey`, if any) always sorts first, since
+ * it's an exact, deliberate match rather than an incidental text one; everything else sorts by latestAction date, most
+ * recent first, same as the rest of this adapter's date-ordered lists.
+ */
+function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey: string | undefined): number {
+  if (pinnedKey) {
+    const aPinned: boolean = billIdentityKey(a) === pinnedKey;
+    const bPinned: boolean = billIdentityKey(b) === pinnedKey;
+    if (aPinned !== bPinned) return aPinned ? -1 : 1;
+  }
+  return (b.latestAction.date ?? "").localeCompare(a.latestAction.date ?? "");
+}
+
+/**
+ * Searches for bills matching free-text `query` across every Congress this app supports browsing (see
+ * `listCongresses`).
+ *
+ * Congress.gov's API has no full-text search endpoint (see docs/decisions.md) — the list endpoint can only be filtered
+ * by congress and bill type, not by keyword. This approximates a broad search the only way the API allows:
+ *
+ * It sweeps each supported Congress's most recently active bills (sorted by `updateDate`, up to the API's own
+ * 250-per-request ceiling) and matches `query` against their title, type, number, policy area, and latest action text —
+ * the same fields BillCard and the bill detail page already surface (see `matchesQuery`). It cannot see a bill's full
+ * legislative text, and for a large or old Congress it only sees that Congress's most recently touched slice, not
+ * literally every bill ever introduced in it.
+ *
+ * When `query` parses as a bill citation (e.g., "HR 284", "H.J.Res. 66" — see `parseBillCitation`), a direct
+ * single-bill lookup is also attempted (in the cited Congress, or the current one if none was given) and, if found, is
+ * placed first — this resolves instantly and exactly, rather than depending on the swept text happening to contain a
+ * literal match.
+ *
+ * Every swept Congress reuses `fetchBillsPage`, and so the same five-minute cache as ordinary browsing — a search is
+ * not materially more expensive to the upstream API than the traffic this app already generates, since concurrent and
+ * repeated searches within the cache window are served from that same cache rather than each re-fetching every Congress
+ * from Congress.gov.
+ *
+ * Falls back to filtering the small, fixed preview fixture set when no API key is configured, like every other data
+ * path in this adapter.
+ */
+export async function getSearchResults(query: string): Promise<BillSearchResult> {
+  const trimmedQuery: string = query.trim();
+  const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
+
+  if (!apiKey) {
+    const bills: LegislativeBill[] = previewBills.filter((bill: LegislativeBill): boolean =>
+      matchesQuery(bill, trimmedQuery),
+    );
+    return { bills, source: "preview", congressesSearched: 0, truncated: false };
+  }
+
+  const currentCongress: number = getCurrentCongress();
+  const congresses: number[] = listCongresses(currentCongress).map((entry): number => entry.number);
+
+  const citation: ParsedBillCitation | null = parseBillCitation(trimmedQuery);
+  const citationLookup: Promise<LegislativeBill | undefined> = citation
+    ? getBillById({
+        congress: String(citation.congress ?? currentCongress),
+        type: citation.type,
+        number: citation.number,
+      }).then((result: BillLookupResult): LegislativeBill | undefined => result.bill)
+    : Promise.resolve(undefined);
+
+  const [citationBill, pages]: [LegislativeBill | undefined, (LegislativeBill[] | null)[]] = await Promise.all([
+    citationLookup,
+    Promise.all(
+      congresses.map(
+        (congress: number): Promise<LegislativeBill[] | null> =>
+          fetchBillsPage({ apiKey, offset: 0, limit: SEARCH_PAGE_LIMIT, congress, sort: "updateDate+desc" }),
+      ),
+    ),
+  ]);
+
+  const swept: LegislativeBill[] = pages
+    .flatMap((page: LegislativeBill[] | null): LegislativeBill[] => page ?? [])
+    .filter((bill: LegislativeBill): boolean => matchesQuery(bill, trimmedQuery));
+
+  const pinnedKey: string | undefined = citationBill ? billIdentityKey(citationBill) : undefined;
+  const deduped: LegislativeBill[] = citationBill
+    ? [citationBill, ...swept.filter((bill: LegislativeBill): boolean => billIdentityKey(bill) !== pinnedKey)]
+    : swept;
+  deduped.sort((a: LegislativeBill, b: LegislativeBill): number => compareSearchMatches(a, b, pinnedKey));
+
+  return {
+    bills: deduped.slice(0, MAX_SEARCH_RESULTS),
+    source: "live",
+    congressesSearched: congresses.length,
+    truncated: deduped.length > MAX_SEARCH_RESULTS,
+  };
 }
 
 /** What getBillById actually resolved: the bill (if any), whether that came from live or preview data, and when. */

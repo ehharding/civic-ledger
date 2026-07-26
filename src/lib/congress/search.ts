@@ -1,0 +1,67 @@
+import type { LegislativeBill } from "@/lib/congress/types";
+
+/**
+ * Whether `bill` matches free-text `query` — checked against title, type, number, policy area, and latest-action text,
+ * case-insensitively. An empty (or all-whitespace) query matches everything.
+ *
+ * This is the closest approximation of "search" this app can offer: Congress.gov's API has no full-text search endpoint
+ * (see docs/decisions.md), so this filters bill metadata already fetched for other purposes rather than querying
+ * upstream by keyword. Shared by the server-side search sweep (client.ts's getSearchResults) and BillDirectory's
+ * client-side fallback for when that route isn't reachable, so both agree on what counts as a match.
+ */
+export function matchesQuery(bill: LegislativeBill, query: string): boolean {
+  const normalizedQuery: string = query.trim().toLowerCase();
+  if (!normalizedQuery) return true;
+
+  return [bill.title, bill.type, bill.number, bill.policyArea, bill.latestAction.text]
+    .filter(Boolean)
+    .some((value: string | undefined): boolean => Boolean(value?.toLowerCase().includes(normalizedQuery)));
+}
+
+/** The eight bill/resolution type codes Congress.gov uses — see BillEndpoint.md. */
+const CITATION_BILL_TYPES: ReadonlySet<string> = new Set([
+  "HR",
+  "S",
+  "HJRES",
+  "SJRES",
+  "HCONRES",
+  "SCONRES",
+  "HRES",
+  "SRES",
+]);
+
+/** A search query recognized as naming one specific bill, rather than a free-text keyword search. */
+export type ParsedBillCitation = {
+  /** The Congress the citation specified, if any (e.g., the "119" in "119 HR 284"). Absent for a bare "HR 284". */
+  congress?: number;
+  type: string;
+  number: string;
+};
+
+/**
+ * Recognizes a query that names a specific bill by citation — "HR 284", "H.R. 284", "hr284", "119 hjres 66" all parse —
+ * so the search route can attempt a fast, exact direct lookup instead of relying on the broad keyword sweep to happen
+ * to contain a literal match. Returns `null` for anything that doesn't cleanly resolve to one of the eight
+ * bill/resolution types Congress.gov uses, followed by a number.
+ */
+export function parseBillCitation(query: string): ParsedBillCitation | null {
+  const trimmed: string = query.trim();
+  if (!trimmed) return null;
+
+  // An optional leading Congress number ahead of the citation itself, e.g., the "119" in "119 HR 284".
+  const congressMatch: RegExpExecArray | null = /^(\d{1,3})[\s-]+(.+)$/.exec(trimmed);
+  const congress: number | undefined = congressMatch?.[1] ? Number(congressMatch[1]) : undefined;
+  const rest: string = congressMatch?.[2] ?? trimmed;
+
+  // Strips the punctuation and spacing people commonly type around a citation ("H.R. 284", "H. J. Res. 66") down to a
+  // bare TYPE+NUMBER token, so every common way of writing one normalizes to the same shape.
+  const normalized: string = rest.replace(/[.\s-]/g, "").toUpperCase();
+  const citationMatch: RegExpExecArray | null = /^([A-Z]+)(\d{1,6})$/.exec(normalized);
+  if (!citationMatch) return null;
+
+  const type: string | undefined = citationMatch[1];
+  const number: string | undefined = citationMatch[2];
+  if (!type || !number || !CITATION_BILL_TYPES.has(type)) return null;
+
+  return congress === undefined ? { type, number } : { congress, type, number };
+}

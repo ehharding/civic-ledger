@@ -1,7 +1,7 @@
 /**
- * Covers BillDirectory's client-side filtering (search across title/type/number/policyArea/latestAction, plus stage
- * filter), the singular/plural result count, the empty state, and "Load More" pagination — including its three stopping
- * conditions (short page, empty page, request failure).
+ * Covers BillDirectory's server-backed search (`/api/bills/search`, debounced, with a client-side fallback when that
+ * route can't be reached), the stage filter, the singular/plural result count, the empty states, and "Load More"
+ * pagination — including its three stopping conditions (short page, empty page, request failure).
  */
 import { render, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
@@ -15,6 +15,14 @@ import type { LegislativeBill } from "@/lib/congress/types";
 function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
   const base: LegislativeBill = firstPreviewBill;
   return { ...base, ...overrides };
+}
+
+/** A resolved /api/bills/search response for the given bills, with no truncation. */
+function searchResponse(bills: LegislativeBill[]): { ok: true; json: () => Promise<unknown> } {
+  return {
+    ok: true,
+    json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched: 27, truncated: false }),
+  };
 }
 
 describe("BillDirectory", (): void => {
@@ -37,39 +45,66 @@ describe("BillDirectory", (): void => {
     }
   });
 
-  it("uses the singular label for exactly one match", async (): Promise<void> => {
-    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+  it("searches via /api/bills/search (debounced) and uses the singular label for exactly one match", async (): Promise<void> => {
+    const fetchMock = vi.fn().mockResolvedValue(searchResponse([firstPreviewBill]));
+    vi.stubGlobal("fetch", fetchMock);
 
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
     await user.type(screen.getByLabelText("Search bill records"), firstPreviewBill.title);
 
-    expect(await screen.findByText("Showing 1 Record")).toBeInTheDocument();
+    expect(await screen.findByText("1 Match")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(`/api/bills/search?q=${encodeURIComponent(firstPreviewBill.title)}`);
   });
 
-  it("matches search text against title, type, number, policy area, and the latest action", async (): Promise<void> => {
+  it("shows the search results and a scope note once the request resolves", async (): Promise<void> => {
+    const bills: LegislativeBill[] = [
+      makeBill({ congress: 119, type: "HR", number: "1", title: "Alpha Act", policyArea: "Energy" }),
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(bills)));
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+    await user.type(screen.getByLabelText("Search bill records"), "alpha");
+
+    expect(await screen.findByText("Alpha Act")).toBeInTheDocument();
+    expect(screen.getByText(/Matched against titles, policy areas, and latest actions/)).toBeInTheDocument();
+  });
+
+  it("reverts to the plain browse listing once the query is cleared", async (): Promise<void> => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse([firstPreviewBill])));
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+    const search: HTMLElement = screen.getByLabelText("Search bill records");
+
+    await user.type(search, firstPreviewBill.title);
+    await screen.findByText("1 Match");
+
+    await user.clear(search);
+    expect(await screen.findByText(`Showing ${previewBills.length} Records`)).toBeInTheDocument();
+  });
+
+  it("falls back to filtering already-loaded bills when the search route can't be reached", async (): Promise<void> => {
     const bills: LegislativeBill[] = [
       makeBill({ congress: 119, type: "HR", number: "1", title: "Alpha Act", policyArea: "Energy" }),
       makeBill({ congress: 119, type: "S", number: "2", title: "Beta Act", policyArea: "Health" }),
     ];
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
     render(<BillDirectory bills={bills} initialQuery="" canLoadMore={false} />);
-    const search: HTMLElement = screen.getByLabelText("Search bill records");
+    await user.type(screen.getByLabelText("Search bill records"), "energy");
 
-    await user.type(search, "energy");
-    expect(screen.getByText("Alpha Act")).toBeInTheDocument();
+    expect(await screen.findByText("Alpha Act")).toBeInTheDocument();
     expect(screen.queryByText("Beta Act")).not.toBeInTheDocument();
-
-    await user.clear(search);
-    await user.type(search, "2");
-    expect(await screen.findByText("Beta Act")).toBeInTheDocument();
-    expect(screen.queryByText("Alpha Act")).not.toBeInTheDocument();
+    expect(screen.getByText(/Broader search isn't available right now/)).toBeInTheDocument();
   });
 
   it("shows the empty state when nothing matches", async (): Promise<void> => {
-    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse([])));
 
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
     await user.type(screen.getByLabelText("Search bill records"), "no such bill anywhere");
 
     expect(await screen.findByRole("heading", { name: "No Records Match That Search." })).toBeInTheDocument();
-    expect(screen.getByText("Showing 0 Records")).toBeInTheDocument();
+    expect(screen.getByText("0 Matches")).toBeInTheDocument();
   });
 
   it("shows a distinct empty state when there are no records to search at all", (): void => {
@@ -101,9 +136,38 @@ describe("BillDirectory", (): void => {
     expect(screen.getByText(otherBill.title)).toBeInTheDocument();
   });
 
+  it("still filters search results by stage", async (): Promise<void> => {
+    const bills: LegislativeBill[] = [
+      makeBill({ congress: 119, type: "HR", number: "1", title: "Alpha Act", stage: "introduced" }),
+      makeBill({ congress: 119, type: "HR", number: "2", title: "Alpha Amendment Act", stage: "law" }),
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(bills)));
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+    await user.type(screen.getByLabelText("Search bill records"), "alpha");
+    await screen.findByText("Alpha Act");
+
+    await user.click(screen.getByRole("button", { name: "Introduced" }));
+
+    expect(screen.getByText("Alpha Act")).toBeInTheDocument();
+    expect(screen.queryByText("Alpha Amendment Act")).not.toBeInTheDocument();
+  });
+
   it("does not render a load-more control when canLoadMore is false", (): void => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
     expect(screen.queryByRole("button", { name: /Load More Bills/ })).not.toBeInTheDocument();
+  });
+
+  it("hides the load-more control while a search is active", async (): Promise<void> => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse([firstPreviewBill])));
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={true} />);
+    expect(screen.getByRole("button", { name: "Load More Bills" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Search bill records"), firstPreviewBill.title);
+    await screen.findByText("1 Match");
+
+    expect(screen.queryByRole("button", { name: "Load More Bills" })).not.toBeInTheDocument();
   });
 
   it("appends a full page and keeps offering more", async (): Promise<void> => {

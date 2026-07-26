@@ -7,12 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   type BillLookupResult,
+  type BillSearchResult,
   getBillById,
   getBillSummaries,
   getBillTextVersions,
   getCongressSnapshot,
   getCongressSnapshotForCongress,
   getMoreBills,
+  getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
@@ -418,5 +420,126 @@ describe("getBillTextVersions", (): void => {
     const versions: BillTextVersion[] = await getBillTextVersions({ congress: "117", type: "hr", number: "3076" });
 
     expect(versions).toEqual([]);
+  });
+});
+
+describe("getSearchResults", (): void => {
+  it("filters the preview fixtures when no API key is configured", async (): Promise<void> => {
+    const result: BillSearchResult = await getSearchResults(firstPreviewBill.title);
+
+    expect(result.source).toBe("preview");
+    expect(result.congressesSearched).toBe(0);
+    expect(result.bills.map((bill: LegislativeBill): string => bill.title)).toContain(firstPreviewBill.title);
+  });
+
+  it("sweeps every supported Congress and returns matches sorted by most recent action", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const currentCongress: number = getCurrentCongress();
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+      const url: URL = new URL(String(input));
+      if (url.pathname === `/v3/bill/${currentCongress}`) {
+        return Promise.resolve(
+          jsonResponse({
+            bills: [
+              {
+                congress: currentCongress,
+                type: "hr",
+                number: "10",
+                title: "Older Broadband Grant Act",
+                originChamber: "House",
+                latestAction: { actionDate: "2026-01-01", text: "Introduced in House." },
+              },
+              {
+                congress: currentCongress,
+                type: "hr",
+                number: "20",
+                title: "Newer Broadband Access Act",
+                originChamber: "House",
+                latestAction: { actionDate: "2026-06-01", text: "Introduced in House." },
+              },
+            ],
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse({ bills: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result: BillSearchResult = await getSearchResults("broadband");
+
+    expect(result.source).toBe("live");
+    expect(result.congressesSearched).toBeGreaterThan(1);
+    expect(result.bills.map((bill: LegislativeBill): string => bill.title)).toEqual([
+      "Newer Broadband Access Act",
+      "Older Broadband Grant Act",
+    ]);
+  });
+
+  it("requests each Congress's page sorted by most recently updated, at the max page size", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getSearchResults("anything");
+
+    const requestedUrl: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.searchParams.get("sort")).toBe("updateDate+desc");
+    expect(requestedUrl.searchParams.get("limit")).toBe("250");
+  });
+
+  it("pins a direct citation match first, even when its own text wouldn't match the query", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const currentCongress: number = getCurrentCongress();
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+      const url: URL = new URL(String(input));
+      if (url.pathname === `/v3/bill/${currentCongress}/hr/284`) {
+        return Promise.resolve(
+          jsonResponse({
+            bill: {
+              congress: currentCongress,
+              type: "HR",
+              number: "284",
+              title: "Community Water Reliability Act",
+              originChamber: "House",
+              latestAction: { actionDate: "2020-01-01", text: "Introduced in House." },
+            },
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse({ bills: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result: BillSearchResult = await getSearchResults("HR 284");
+
+    expect(result.bills[0]?.title).toBe("Community Water Reliability Act");
+    expect(result.bills[0]?.number).toBe("284");
+  });
+
+  it("caps results and reports truncation once more than the max match", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const currentCongress: number = getCurrentCongress();
+    const manyBills = Array.from({ length: 80 }, (_: unknown, index: number) => ({
+      congress: currentCongress,
+      type: "hr",
+      number: String(index),
+      title: `Broadband Bill ${index}`,
+      originChamber: "House",
+      latestAction: { actionDate: "2026-01-01", text: "Introduced in House." },
+    }));
+
+    const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+      const url: URL = new URL(String(input));
+      if (url.pathname === `/v3/bill/${currentCongress}`) return Promise.resolve(jsonResponse({ bills: manyBills }));
+      return Promise.resolve(jsonResponse({ bills: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result: BillSearchResult = await getSearchResults("broadband");
+
+    expect(result.truncated).toBe(true);
+    expect(result.bills.length).toBeLessThanOrEqual(60);
   });
 });
