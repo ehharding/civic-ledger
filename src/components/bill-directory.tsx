@@ -6,6 +6,7 @@ import { type ChangeEvent, type JSX, useMemo, useState } from "react";
 import { BillCard } from "@/components/bill-card";
 import {
   type BillStage,
+  billIdentityKey,
   billStageLabels,
   billStages,
   DEFAULT_PAGE_SIZE,
@@ -123,7 +124,7 @@ export function BillDirectory({
         <div className="directory-grid">
           {matchingBills.map(
             (bill: LegislativeBill): JSX.Element => (
-              <BillCard bill={bill} key={`${bill.congress}-${bill.type}-${bill.number}`} />
+              <BillCard bill={bill} key={billIdentityKey(bill)} />
             ),
           )}
         </div>

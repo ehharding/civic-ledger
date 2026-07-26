@@ -137,15 +137,6 @@ export const previewBills: LegislativeBill[] = [
 export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;
 
 /**
- * Builds the "{congress}-{TYPE}-{number}" key used to look up preview-only fixture content (like `previewSummaries`) by
- * a bill's natural identifier. Exported so client.ts can build the same key from a route's raw congress/type/number
- * strings without duplicating the format here.
- */
-export function billIdentityKey(input: { congress: number | string; type: string; number: string }): string {
-  return `${input.congress}-${String(input.type).toUpperCase()}-${input.number}`;
-}
-
-/**
  * Fictional, illustrative summaries for the preview fixtures, keyed by `billIdentityKey`. Used only when no API key
  * is configured, so a bill's Summary section has something to show instead of an empty box — never presented as a real
  * Congressional Research Service summary (the UI labels it explicitly; see the bill detail page).

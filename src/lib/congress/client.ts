@@ -1,12 +1,14 @@
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { billIdentityKey, previewBills, previewSummaries } from "@/lib/congress/fixtures";
+import { previewBills, previewSummaries } from "@/lib/congress/fixtures";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { inferBillStage } from "@/lib/congress/stage";
 import {
+  type BillRouteParams,
   type BillSponsor,
   type BillSummary,
   type BillTextFormat,
   type BillTextVersion,
+  billIdentityKey,
   type CongressSnapshot,
   DEFAULT_PAGE_SIZE,
   type LegislativeBill,
@@ -82,6 +84,45 @@ type CongressApiTextVersion = {
 type CongressApiTextResponse = {
   textVersions?: CongressApiTextVersion[];
 };
+
+/** Base URL for every Congress.gov v3 request this adapter makes. */
+const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
+
+/**
+ * How long Next caches a Congress.gov response before revalidating, in seconds. One shared constant so the app's
+ * "five-minute caching" story (see docs/architecture.md and the README's Data Policy) lives in a single place instead
+ * of four separately-edited literals.
+ */
+const REVALIDATE_SECONDS: number = 300;
+
+/**
+ * Builds a Congress.gov v3 request URL: `path` under CONGRESS_API_BASE, `format=json` (requested explicitly per the
+ * API's own changelog recommendation), any endpoint-specific params, and `api_key` last.
+ */
+function buildCongressUrl(path: string, apiKey: string, params: Record<string, string> = {}): URL {
+  const url: URL = new URL(`${CONGRESS_API_BASE}${path}`);
+  url.searchParams.set("format", "json");
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  url.searchParams.set("api_key", apiKey);
+  return url;
+}
+
+/**
+ * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window and headers.
+ * Callers still own status-code handling (e.g., treating 404 as "not found" vs. a real error) since that differs across
+ * endpoints.
+ */
+function fetchCongressGov(url: URL, tags: string[]): Promise<Response> {
+  return fetch(url, {
+    next: { revalidate: REVALIDATE_SECONDS, tags },
+    headers: { Accept: "application/json" },
+  });
+}
+
+/** The two cache tags shared by every request scoped to one specific bill (summaries, text versions, detail lookup). */
+function billCacheTags(input: BillRouteParams): string[] {
+  return ["congress-bills", `bill-${input.congress}-${input.type}-${input.number}`];
+}
 
 /**
  * Narrows an arbitrary API string to the app's closed originChamber union, defaulting to "Unknown" for anything
@@ -187,7 +228,7 @@ function sortTextVersionsByDateDesc(versions: BillTextVersion[]): BillTextVersio
  * Locates a matching fixture in previewBills by natural bill identifier. Used both as the no-key path and as a
  * last-resort fallback when a live lookup fails.
  */
-function findPreviewBill(input: { congress: string; type: string; number: string }): LegislativeBill | undefined {
+function findPreviewBill(input: BillRouteParams): LegislativeBill | undefined {
   return previewBills.find(
     (bill) =>
       bill.congress === Number(input.congress) &&
@@ -211,17 +252,13 @@ async function fetchBillsPage(input: {
   limit: number;
   congress: number;
 }): Promise<LegislativeBill[] | null> {
-  const url: URL = new URL(`https://api.congress.gov/v3/bill/${input.congress}`);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", String(input.limit));
-  url.searchParams.set("offset", String(input.offset));
-  url.searchParams.set("api_key", input.apiKey);
+  const url: URL = buildCongressUrl(`/bill/${input.congress}`, input.apiKey, {
+    limit: String(input.limit),
+    offset: String(input.offset),
+  });
 
   try {
-    const response: Response = await fetch(url, {
-      next: { revalidate: 300, tags: ["congress-bills"] },
-      headers: { Accept: "application/json" },
-    });
+    const response: Response = await fetchCongressGov(url, ["congress-bills"]);
 
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
 
@@ -327,11 +364,7 @@ export type BillLookupResult = {
  * Also reports the source (live/preview) the result actually came from, so callers — namely the bill detail page — can
  * render an accurate DataSourceNotice without a second, separate snapshot fetch.
  */
-export async function getBillById(input: {
-  congress: string;
-  type: string;
-  number: string;
-}): Promise<BillLookupResult> {
+export async function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
   const retrievedAt: string = new Date().toISOString();
 
@@ -339,20 +372,10 @@ export async function getBillById(input: {
     return { bill: findPreviewBill(input), source: "preview", retrievedAt };
   }
 
-  const url: URL = new URL(
-    `https://api.congress.gov/v3/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}`,
-  );
-  url.searchParams.set("format", "json");
-  url.searchParams.set("api_key", apiKey);
+  const url: URL = buildCongressUrl(`/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}`, apiKey);
 
   try {
-    const response: Response = await fetch(url, {
-      next: {
-        revalidate: 300,
-        tags: ["congress-bills", `bill-${input.congress}-${input.type}-${input.number}`],
-      },
-      headers: { Accept: "application/json" },
-    });
+    const response: Response = await fetchCongressGov(url, billCacheTags(input));
 
     if (response.status === 404) return { bill: undefined, source: "live", retrievedAt };
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
@@ -388,11 +411,7 @@ export async function getBillById(input: {
  * and to an empty list on any live-request failure — the caller renders that as "no summary published yet" rather than
  * an error, since that's also a real, valid state for a newly introduced bill.
  */
-export async function getBillSummaries(input: {
-  congress: string;
-  type: string;
-  number: string;
-}): Promise<BillSummary[]> {
+export async function getBillSummaries(input: BillRouteParams): Promise<BillSummary[]> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
   if (!apiKey) {
@@ -409,22 +428,15 @@ export async function getBillSummaries(input: {
     ];
   }
 
-  const url: URL = new URL(
-    `https://api.congress.gov/v3/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}/summaries`,
-  );
-  url.searchParams.set("format", "json");
   // The max page size, requested explicitly so a single call covers the rare bill with more than the default 20.
-  url.searchParams.set("limit", "250");
-  url.searchParams.set("api_key", apiKey);
+  const url: URL = buildCongressUrl(
+    `/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}/summaries`,
+    apiKey,
+    { limit: "250" },
+  );
 
   try {
-    const response: Response = await fetch(url, {
-      next: {
-        revalidate: 300,
-        tags: ["congress-bills", `bill-${input.congress}-${input.type}-${input.number}`],
-      },
-      headers: { Accept: "application/json" },
-    });
+    const response: Response = await fetchCongressGov(url, billCacheTags(input));
 
     if (response.status === 404) return [];
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
@@ -450,29 +462,20 @@ export async function getBillSummaries(input: {
  * preview mode (deliberately — see `previewSummaries` for why fixtures don't fabricate links to specific documents
  * that don't exist) and on any live-request failure.
  */
-export async function getBillTextVersions(input: {
-  congress: string;
-  type: string;
-  number: string;
-}): Promise<BillTextVersion[]> {
+export async function getBillTextVersions(input: BillRouteParams): Promise<BillTextVersion[]> {
   const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
   if (!apiKey) return [];
 
-  const url: URL = new URL(
-    `https://api.congress.gov/v3/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}/text`,
+  const url: URL = buildCongressUrl(
+    `/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}/text`,
+    apiKey,
+    {
+      limit: "250",
+    },
   );
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "250");
-  url.searchParams.set("api_key", apiKey);
 
   try {
-    const response: Response = await fetch(url, {
-      next: {
-        revalidate: 300,
-        tags: ["congress-bills", `bill-${input.congress}-${input.type}-${input.number}`],
-      },
-      headers: { Accept: "application/json" },
-    });
+    const response: Response = await fetchCongressGov(url, billCacheTags(input));
 
     if (response.status === 404) return [];
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);

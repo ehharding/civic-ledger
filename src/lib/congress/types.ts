@@ -13,6 +13,27 @@ export type BillStage = (typeof billStages)[number];
  */
 export const DEFAULT_PAGE_SIZE = 12;
 
+/**
+ * A bill's natural identifier as it appears in a route (e.g. `/bills/119/hr/284`) — congress, type, and number, all as
+ * strings. Shared by every per-bill lookup in client.ts (getBillById, getBillSummaries, getBillTextVersions) and by the
+ * bill detail route's own params, so the same three-field shape isn't independently repeated at each site.
+ */
+export type BillRouteParams = {
+  congress: string;
+  type: string;
+  number: string;
+};
+
+/**
+ * Builds the "{congress}-{TYPE}-{number}" string that uniquely identifies a bill — used as a React list key, and to
+ * look up preview-only fixture content (like `previewSummaries` in fixtures.ts) by a bill's natural identifier. Accepts
+ * a numeric `congress` (as `LegislativeBill` itself has) or a string one (as route params have) so both live-data and
+ * route-lookup callers can use the same function.
+ */
+export function billIdentityKey(input: { congress: number | string; type: string; number: string }): string {
+  return `${input.congress}-${String(input.type).toUpperCase()}-${input.number}`;
+}
+
 /** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
 export type BillSponsor = {
   fullName: string;

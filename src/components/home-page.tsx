@@ -7,7 +7,7 @@ import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
+import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
 
 /** Home route content: hero, a featured bill's journey, the three most recent bills, and static trust/learn sections. */
@@ -70,7 +70,7 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
       <section className="activity-grid" aria-label="Recent bill activity">
         {snapshot.bills.slice(0, 3).map(
           (bill: LegislativeBill): JSX.Element => (
-            <BillCard bill={bill} key={`${bill.congress}-${bill.type}-${bill.number}`} />
+            <BillCard bill={bill} key={billIdentityKey(bill)} />
           ),
         )}
       </section>

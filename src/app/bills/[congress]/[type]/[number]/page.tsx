@@ -4,10 +4,10 @@ import type { JSX } from "react";
 import { BillDetail } from "@/components/bill-detail";
 import { type BillLookupResult, getBillById, getBillSummaries, getBillTextVersions } from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
-import type { BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import type { BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 
 type BillPageProps = {
-  params: Promise<{ congress: string; type: string; number: string }>;
+  params: Promise<BillRouteParams>;
 };
 
 /**
@@ -15,12 +15,14 @@ type BillPageProps = {
  * still resolve live, on demand). In a static export (STATIC_EXPORT=true, no API key), these are the *only* bill pages
  * that can exist, since a static export has no server to look anything else up on request.
  */
-export function generateStaticParams(): { congress: string; type: string; number: string }[] {
-  return previewBills.map((bill: LegislativeBill): { congress: string; type: string; number: string } => ({
-    congress: String(bill.congress),
-    type: bill.type.toLowerCase(),
-    number: bill.number,
-  }));
+export function generateStaticParams(): BillRouteParams[] {
+  return previewBills.map(
+    (bill: LegislativeBill): BillRouteParams => ({
+      congress: String(bill.congress),
+      type: bill.type.toLowerCase(),
+      number: bill.number,
+    }),
+  );
 }
 
 /**
@@ -30,7 +32,7 @@ export function generateStaticParams(): { congress: string; type: string; number
  * summaries and official text versions in parallel, then hands everything to BillDetail for rendering.
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
-  const route: { congress: string; type: string; number: string } = await params;
+  const route: BillRouteParams = await params;
   const [{ bill, source, notice, retrievedAt }, summaries, textVersions]: [
     BillLookupResult,
     BillSummary[],
