@@ -121,6 +121,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const chartRef: RefObject<SVGSVGElement | null> = useRef<SVGSVGElement | null>(null);
   const tabsRef: RefObject<HTMLDivElement | null> = useRef<HTMLDivElement | null>(null);
 
@@ -132,14 +133,15 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
   const seating: ChamberSeating = useMemo((): ChamberSeating => buildChamberSeating(members), [members]);
 
   const isPreview: boolean = composition.source === "preview";
-  // Hover wins over focus, so a pointer isn't fighting a seat left focused by an earlier interaction.
-  const shownIndex: number | null = hoveredIndex ?? focusedIndex;
+  // Hover wins over focus, which wins over a locked click selection
+  const shownIndex: number | null = hoveredIndex ?? focusedIndex ?? selectedIndex;
   const shownSeat: ChamberSeat | undefined = shownIndex === null ? undefined : seating.seats[shownIndex];
 
   function selectChamber(next: CongressChamber): void {
     setChamber(next);
     setHoveredIndex(null);
     setFocusedIndex(null);
+    setSelectedIndex(null);
     setActiveIndex(0);
   }
 
@@ -153,6 +155,14 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
 
   function handleChartKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
     if (seating.seats.length === 0) return;
+
+    // Add Enter and Space key support to lock the selection
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      const targetIndex: number = focusedIndex ?? activeIndex;
+      setSelectedIndex((prev: number | null): number | null => (prev === targetIndex ? null : targetIndex));
+      return;
+    }
 
     const steps: Record<string, number> = {
       ArrowRight: 1,
@@ -179,6 +189,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     } else if (event.key === "Escape") {
       setFocusedIndex(null);
       setHoveredIndex(null);
+      setSelectedIndex(null);
     }
   }
 
@@ -204,6 +215,14 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
 
     setFocusedIndex(index);
     setActiveIndex(index);
+  }
+
+  function handleSeatClick(event: MouseEvent<SVGSVGElement>): void {
+    const index: number | null = seatIndexFromEvent(event.target);
+    if (index !== null) {
+      // Toggle the selection: clicking the same seat deselects it, clicking a new seat selects it
+      setSelectedIndex((prev: number | null): number | null => (prev === index ? null : index));
+    }
   }
 
   function handleSeatHover(event: MouseEvent<SVGSVGElement>): void {
@@ -262,6 +281,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
               aria-describedby={CHART_HELP_ID}
               aria-label={`${chamberLabels[chamber]} seating chart`}
               className="seating__chart"
+              onClick={handleSeatClick}
               onBlur={(): void => setFocusedIndex(null)}
               onFocus={handleSeatFocus}
               onKeyDown={handleChartKeyDown}
