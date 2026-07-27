@@ -4,15 +4,26 @@ import type { JSX } from "react";
 
 import { BillCard } from "@/components/bill-card";
 import { BillJourney } from "@/components/bill-journey";
+import { CongressSeatingChart } from "@/components/congress-seating-chart";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
 import { billHref } from "@/lib/bill-route";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import type { CongressComposition } from "@/lib/congress/members";
 import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
 
-/** Home route content: hero, a featured bill's journey, the three most recent bills, and static trust/learn sections. */
-export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Element {
+/**
+ * Home route content: hero, a featured bill's journey, the current chamber's seating chart, the three most recent
+ * bills, and static trust/learn sections.
+ */
+export function HomePage({
+  composition,
+  snapshot,
+}: {
+  composition: CongressComposition;
+  snapshot: CongressSnapshot;
+}): JSX.Element {
   const featuredBill: LegislativeBill | undefined = snapshot.bills[0];
   const currentCongress: number = getCurrentCongress();
 
@@ -62,6 +73,8 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
       </section>
 
       <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
+
+      <CongressSeatingChart composition={composition} />
 
       <section className="section-heading" aria-labelledby="activity-heading">
         <div>

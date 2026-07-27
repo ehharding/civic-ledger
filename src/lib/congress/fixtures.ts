@@ -1,3 +1,12 @@
+import {
+  buildChamberComposition,
+  type ChamberComposition,
+  type CongressChamber,
+  type CongressComposition,
+  type CongressMember,
+  congressChambers,
+  type PartyTally,
+} from "@/lib/congress/members";
 import type { LegislativeBill } from "@/lib/congress/types";
 
 /**
@@ -171,3 +180,63 @@ export const previewSummaries: Record<string, string> = {
     "composting facilities, and would direct the Department of Agriculture to publish technical guidance for " +
     "municipalities starting a composting program for the first time.",
 };
+
+/**
+ * The party split used to draw the preview chamber diagram.
+ *
+ * These are **illustrative placeholder counts**, chosen to be plainly round rather than to approximate any real
+ * Congress — the point is to exercise the chart's layout, legend, and responsive behavior without an API key, in the
+ * same spirit as `previewBills`. Reporting a real-looking party balance would be a factual claim about the current
+ * Congress that this fixture has no way to keep true, which is exactly the kind of accidental misinformation the
+ * preview-data policy exists to prevent. The chart labels these seats as placeholders wherever they're shown.
+ */
+export const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = {
+  house: [
+    { party: "democratic", count: 218 },
+    { party: "republican", count: 217 },
+  ],
+  senate: [
+    { party: "democratic", count: 49 },
+    { party: "independent", count: 2 },
+    { party: "republican", count: 49 },
+  ],
+};
+
+/**
+ * Builds one chamber's worth of unattributed placeholder seats from `previewChamberPartySplits`. Each seat is named
+ * "Preview seat N" rather than given a fictional member's name and jurisdiction: a chamber diagram invites a reader
+ * to look up their own representative, and a fabricated roster of 535 plausible-looking names and districts is a far
+ * easier thing to mistake for real data than a labeled placeholder is.
+ */
+export function previewChamberMembers(chamber: CongressChamber): CongressMember[] {
+  const members: CongressMember[] = [];
+
+  for (const tally of previewChamberPartySplits[chamber]) {
+    for (let seat: number = 0; seat < tally.count; seat++) {
+      members.push({ name: `Preview seat ${members.length + 1}`, party: tally.party });
+    }
+  }
+
+  return members;
+}
+
+/**
+ * Assembles a complete, clearly labeled placeholder `CongressComposition` from `previewChamberMembers`. Used by the
+ * adapter's no-key and upstream-failure paths, and by tests that need a composition without stubbing a fetch.
+ */
+export function buildPreviewComposition(
+  congress: number,
+  retrievedAt: string,
+  notice: string = "Placeholder seats are shown until a server-only Congress.gov API key is configured.",
+): CongressComposition {
+  return {
+    congress,
+    chambers: congressChambers.map(
+      (chamber: CongressChamber): ChamberComposition =>
+        buildChamberComposition(chamber, previewChamberMembers(chamber)),
+    ),
+    source: "preview",
+    retrievedAt,
+    notice,
+  };
+}

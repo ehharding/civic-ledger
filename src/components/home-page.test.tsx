@@ -7,14 +7,17 @@ import { describe, expect, it } from "vitest";
 
 import { HomePage } from "@/components/home-page";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
+import { buildPreviewComposition, firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
+import type { CongressComposition } from "@/lib/congress/members";
 import type { CongressSnapshot } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
+
+const composition: CongressComposition = buildPreviewComposition(getCurrentCongress(), "2026-07-14T00:00:00Z");
 
 describe("HomePage", (): void => {
   it("renders the hero and a featured journey for the first bill", (): void => {
     const snapshot: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    render(<HomePage snapshot={snapshot} />);
+    render(<HomePage composition={composition} snapshot={snapshot} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeInTheDocument();
     expect(
@@ -26,18 +29,18 @@ describe("HomePage", (): void => {
     const expectedEyebrow = `${formatOrdinal(getCurrentCongress())} Congress · Legislative Guide`;
 
     const populated: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    const { unmount } = render(<HomePage snapshot={populated} />);
+    const { unmount } = render(<HomePage composition={composition} snapshot={populated} />);
     expect(screen.getByText(expectedEyebrow)).toBeInTheDocument();
     unmount();
 
     const empty: CongressSnapshot = { bills: [], source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    render(<HomePage snapshot={empty} />);
+    render(<HomePage composition={composition} snapshot={empty} />);
     expect(screen.getByText(expectedEyebrow)).toBeInTheDocument();
   });
 
   it("shows up to three bills in the activity grid", (): void => {
     const snapshot: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    render(<HomePage snapshot={snapshot} />);
+    render(<HomePage composition={composition} snapshot={snapshot} />);
 
     const activityGrid: HTMLElement = screen.getByRole("region", { name: "Recent bill activity" });
     for (const bill of previewBills.slice(0, 3)) {
@@ -47,15 +50,24 @@ describe("HomePage", (): void => {
 
   it("renders without a featured journey when there are no bills", (): void => {
     const snapshot: CongressSnapshot = { bills: [], source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    render(<HomePage snapshot={snapshot} />);
+    render(<HomePage composition={composition} snapshot={snapshot} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeInTheDocument();
     expect(screen.queryByText(/A bill in motion/)).not.toBeInTheDocument();
   });
 
+  it("renders the chamber seating chart for the current Congress", (): void => {
+    const snapshot: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
+    render(<HomePage composition={composition} snapshot={snapshot} />);
+
+    const seating: HTMLElement = screen.getByRole("region", { name: "Every Seat, and Who Holds It." });
+    expect(within(seating).getByRole("tab", { name: /House/ })).toBeInTheDocument();
+    expect(within(seating).getByRole("tab", { name: /Senate/ })).toBeInTheDocument();
+  });
+
   it('links the featured bill\'s title and its "View This Bill" cue to its detail page', (): void => {
     const snapshot: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
-    render(<HomePage snapshot={snapshot} />);
+    render(<HomePage composition={composition} snapshot={snapshot} />);
 
     const expectedHref = `/bills/${firstPreviewBill.congress}/${firstPreviewBill.type.toLowerCase()}/${firstPreviewBill.number}`;
     const featuredCard: HTMLElement = screen.getByRole("complementary", {

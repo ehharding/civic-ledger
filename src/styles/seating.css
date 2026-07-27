@@ -1,0 +1,288 @@
+/* The home page's chamber seating chart (CongressSeatingChart): the chamber toggle, the half-disc of seats, the
+   hovered/focused seat read-out, and the party legend. Breakpoint overrides live in responsive.css with the rest. */
+
+.seating {
+  padding: clamp(24px, 4vw, 38px);
+  margin-bottom: 62px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.seating__intro h2 {
+  margin-top: 5px;
+  font-size: clamp(1.7rem, 3.4vw, 2.25rem);
+}
+
+.seating__lede {
+  max-width: 62ch;
+  margin-top: 14px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.seating__chambers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 24px;
+}
+
+.seating__chamber-button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 17px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-soft);
+  background: var(--canvas);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+}
+
+.seating__chamber-button:hover {
+  border-color: var(--line-dark);
+  color: var(--ink);
+}
+
+.seating__chamber-button[aria-pressed="true"] {
+  border-color: var(--navy);
+  color: var(--paper);
+  background: var(--navy);
+}
+
+.seating__chamber-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.seating__chamber-count {
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.seating__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.32fr);
+  align-items: start;
+  gap: clamp(20px, 3vw, 40px);
+  margin-top: 26px;
+}
+
+.seating__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.seating__seat {
+  fill: var(--party-other);
+  cursor: pointer;
+  transition:
+    stroke-width 120ms ease,
+    fill-opacity 120ms ease;
+}
+
+.seating__seat--democratic {
+  fill: var(--party-democratic);
+}
+
+.seating__seat--republican {
+  fill: var(--party-republican);
+}
+
+.seating__seat--independent {
+  fill: var(--party-independent);
+}
+
+.seating__seat--libertarian {
+  fill: var(--party-libertarian);
+}
+
+.seating__seat--other {
+  fill: var(--party-other);
+}
+
+/* The active seat is marked with a ring rather than a size change so the arc's spacing stays intact — a seat that
+   grew on hover would overlap its neighbors and shift which one the pointer is actually over. */
+.seating__seat.is-active {
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+
+/* SVG shapes don't inherit the focus styling base.css sets on buttons and links, and outline support on SVG is
+   uneven, so the ring is drawn as a stroke as well. */
+.seating__seat:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  stroke: var(--focus-ring);
+  stroke-width: 3;
+}
+
+.seating__empty {
+  padding: 40px 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.seating__schematic-note {
+  max-width: 68ch;
+  margin-top: 12px;
+  color: var(--ink-faint);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.seating-detail {
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--navy) 14%, transparent);
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--teal-surface), var(--teal-surface-strong));
+  /* Holds its height as the read-out changes between a one-line senator and a delegate with a footnote, so the page
+     doesn't reflow under the pointer while someone sweeps across the chart. */
+  min-height: 210px;
+}
+
+.seating-detail__name {
+  color: var(--ink);
+  font-family: var(--serif), serif;
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.seating-detail__party {
+  margin-top: 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.seating-detail__party--democratic {
+  color: var(--party-democratic);
+}
+
+.seating-detail__party--republican {
+  color: var(--party-republican);
+}
+
+.seating-detail__party--independent {
+  color: var(--party-independent);
+}
+
+.seating-detail__party--libertarian {
+  color: var(--party-libertarian);
+}
+
+.seating-detail__party--other {
+  color: var(--party-other);
+}
+
+.seating-detail__seat {
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.seating-detail__note {
+  margin-top: 12px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.seating-detail__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+}
+
+.seating__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  padding: 0;
+  margin: 24px 0 0;
+  list-style: none;
+}
+
+.seating__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.seating__swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--party-other);
+}
+
+.seating__swatch--democratic {
+  background: var(--party-democratic);
+}
+
+.seating__swatch--republican {
+  background: var(--party-republican);
+}
+
+.seating__swatch--independent {
+  background: var(--party-independent);
+}
+
+.seating__swatch--libertarian {
+  background: var(--party-libertarian);
+}
+
+.seating__swatch--other {
+  background: var(--party-other);
+}
+
+.seating__legend-party {
+  color: var(--ink-soft);
+}
+
+.seating__legend-count {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.seating__legend-share {
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.seating__source {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.seating__source--preview {
+  color: var(--amber-deep);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seating__seat,
+  .seating__chamber-button {
+    transition: none;
+  }
+}

@@ -121,3 +121,52 @@ whatever happened to already be loaded. The one exception is when that route can
 GitHub Pages demo, which has no server left at request time): the component falls back to filtering its own
 already-loaded bills with the same `matchesQuery`, so search still does something rather than going dead in that one
 deployment target.
+
+## The Chamber Diagram Is a Schematic, and Says So
+
+The home page's seating chart draws one dot per seated member from the Congress.gov member endpoint
+(`/v3/member/congress/{congress}`), grouped into contiguous party blocks across a half-disc. That arrangement is the
+convention nearly every published chamber diagram uses, and it is *not* where anyone actually sits: Congress.gov
+publishes no desk assignments, and neither chamber seats its members in a tidy party-ordered arc. The chart therefore
+carries that caveat in its own caption rather than leaving a reader to assume otherwise — the same stance as
+"Educational Status Cues Are Not Legal Status" above, applied to a picture instead of a status string.
+
+The geometry lives in `src/lib/congress/seating.ts`, entirely free of React and of any Congress.gov concern. Seats are
+distributed across arcs in proportion to each arc's radius using the largest-remainder method, which is what guarantees
+the drawn seats sum to exactly the membership — a round-and-hope split drifts by a seat or two, and in a chamber
+diagram a drifted seat is either an unseated member or an empty chair that nobody voted for. Keeping the arithmetic
+in a pure module is what makes "every member gets exactly one seat, no two seats overlap, nothing escapes the viewBox"
+directly testable.
+
+`currentMember=true` is what makes the request "who holds a seat right now" rather than "everyone who served at any
+point in this Congress." Without it, a member who resigned mid-term and the member who replaced them both come back and
+the chamber over-counts. (Congress.gov's documentation makes the mirror-image recommendation for *past* Congresses,
+where `currentMember=false` yields the complete historical roster — the opposite question from the one this chart asks.)
+Vacant seats are simply absent from the diagram rather than drawn as empty placeholders, since the API reports who holds
+a seat, not how many seats are authorized.
+
+The House's six non-voting seats — the five Delegates and Puerto Rico's Resident Commissioner — are counted and labeled
+separately rather than drawn as ordinary seats, because a diagram that renders all 441 identically quietly asserts
+something false about how the chamber votes. The list-level member record doesn't carry the `memberType` field that
+would say so directly (that's item-level only, which would mean one extra request per member, ~540 of them), so it's
+derived from the represented jurisdiction instead, which determines it unambiguously.
+
+## Preview Seats Are Placeholders, Not a Fictional Roster
+
+Every other preview fixture in this app is a small set of clearly labeled fictional records. A chamber diagram can't
+work that way: it needs a full chamber to lay out at all, and a fabricated roster of 535 plausible-looking names,
+parties, and districts is a far easier thing to mistake for real data than a labeled placeholder is — especially since a
+seating chart specifically invites a person to go find their own representative. So the no-key path fills both chambers
+with unattributed "Preview seat N" placeholders, and the party split behind them (`previewChamberPartySplits`) is
+deliberately round rather than realistic. Reporting a real-looking party balance would be a factual claim about the
+current Congress that a checked-in fixture has no way to keep true. The chart labels the seats as placeholders in the
+read-out panel and in its source line, on top of the page-level `DataSourceNotice`.
+
+## The Home Page Costs One More Upstream Round Trip Than It Did
+
+The chamber diagram means the home route now fetches membership alongside the bill snapshot. That is one page-0 request
+to read `pagination.count`, then the remaining pages in parallel — three requests total for a seated Congress, on the
+same five-minute cache as everything else, and issued concurrently with the bill fetch rather than after it. Well inside
+the 5,000/hour quota, and a cheaper addition than the cross-Congress search sweep already documented above. If the home
+page ever needs a fourth independent dataset, that is the point to revisit whether these belong in the
+scheduled-ingestion path in `docs/architecture.md` instead of on-demand reads.

@@ -44,6 +44,16 @@
   --amber: #bd7c2b;
   --amber-deep: #a56315;
 
+  /* Party colors for the chamber seating chart. Deliberately the conventional hues — a diagram that colored the parties
+     unexpectedly would be harder, not fairer, to read — but desaturated to sit inside this palette rather than shout
+     from it. Color is never the only carrier of party here: every seat states its party in its accessible name, and the
+     legend spells out each party and its seat count in text. */
+  --party-democratic: #2f6ba8;
+  --party-republican: #a8323f;
+  --party-independent: #6b5f9e;
+  --party-libertarian: #a9782a;
+  --party-other: #6f7d87;
+
   /* One-off utility colors that don't belong to a family above. */
   --focus-ring: #80b5d4;
   --shadow-color: #172837;
@@ -81,6 +91,12 @@
 
     --amber: #b98444;
     --amber-deep: #e0a24c;
+
+    --party-democratic: #6ea8dc;
+    --party-republican: #e0838f;
+    --party-independent: #a99ae0;
+    --party-libertarian: #d8ab5c;
+    --party-other: #98a4ae;
 
     --focus-ring: #8fc7ea;
     --shadow-color: #000000;

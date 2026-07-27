@@ -11,6 +11,7 @@ import {
   getBillById,
   getBillSummaries,
   getBillTextVersions,
+  getCongressComposition,
   getCongressSnapshot,
   getCongressSnapshotForCongress,
   getMoreBills,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
+import type { ChamberComposition, CongressComposition, CongressMember } from "@/lib/congress/members";
 import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
@@ -541,5 +543,200 @@ describe("getSearchResults", (): void => {
 
     expect(result.truncated).toBe(true);
     expect(result.bills.length).toBeLessThanOrEqual(60);
+  });
+});
+
+/** Builds a member-list entry in the shape the Congress.gov member *list* endpoint actually returns. */
+function apiMember(overrides: {
+  bioguideId?: string;
+  name?: string;
+  partyName?: string;
+  state?: string;
+  district?: number;
+  chamber?: string;
+}): unknown {
+  return {
+    bioguideId: overrides.bioguideId ?? "X000001",
+    name: overrides.name ?? "Doe, Jane",
+    partyName: overrides.partyName ?? "Democratic",
+    state: overrides.state ?? "Ohio",
+    ...(overrides.district === undefined ? {} : { district: overrides.district }),
+    terms: { item: [{ chamber: overrides.chamber ?? "House of Representatives", startYear: 2025 }] },
+  };
+}
+
+/** The composition's entry for one chamber, which is always present even when that chamber came back empty. */
+function chamberOf(composition: CongressComposition, chamber: "house" | "senate"): ChamberComposition {
+  const found: ChamberComposition | undefined = composition.chambers.find(
+    (entry: ChamberComposition): boolean => entry.chamber === chamber,
+  );
+  if (!found) throw new Error(`Composition is missing the ${chamber}`);
+
+  return found;
+}
+
+describe("getCongressComposition", (): void => {
+  it("returns labeled placeholder seats when no API key is configured", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
+    const composition: CongressComposition = await getCongressComposition();
+
+    expect(composition.source).toBe("preview");
+    expect(composition.notice).toMatch(/placeholder/i);
+    // The placeholders still fill both chambers, so the chart's layout and legend work without a key.
+    expect(chamberOf(composition, "house").members.length).toBeGreaterThan(0);
+    expect(chamberOf(composition, "senate").members.length).toBeGreaterThan(0);
+    // And they are never named as if they were real members.
+    expect(chamberOf(composition, "house").members[0]?.name).toMatch(/^Preview seat/);
+  });
+
+  it("maps live members into their chambers", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          members: [
+            apiMember({ bioguideId: "B000001", name: "Bennett, Marcus T.", state: "Ohio", district: 9 }),
+            apiMember({
+              bioguideId: "A000002",
+              name: "Alvarez, Priya R.",
+              partyName: "Republican",
+              state: "Arizona",
+              chamber: "Senate",
+            }),
+          ],
+          pagination: { count: 2 },
+        }),
+      ),
+    );
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    expect(composition.source).toBe("live");
+    expect(composition.congress).toBe(119);
+    expect(chamberOf(composition, "house").members).toEqual([
+      {
+        bioguideId: "B000001",
+        name: "Bennett, Marcus T.",
+        party: "democratic",
+        partyName: "Democratic",
+        state: "Ohio",
+        district: 9,
+      } satisfies CongressMember,
+    ]);
+    expect(chamberOf(composition, "senate").members[0]?.party).toBe("republican");
+  });
+
+  it("asks only for the members currently seated, so a replaced member isn't counted twice", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        members: [apiMember({}), apiMember({ chamber: "Senate" })],
+        pagination: { count: 2 },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCongressComposition(119);
+
+    const requested: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requested.pathname).toBe("/v3/member/congress/119");
+    expect(requested.searchParams.get("currentMember")).toBe("true");
+    expect(requested.searchParams.get("limit")).toBe("250");
+  });
+
+  it("pages through a full Congress rather than stopping at the API's 250-record ceiling", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+      const offset: string = new URL(String(input)).searchParams.get("offset") ?? "0";
+      const chamber: string = offset === "0" ? "House of Representatives" : "Senate";
+
+      return Promise.resolve(
+        jsonResponse({
+          members: Array.from({ length: 250 }, (_unused: unknown, index: number) =>
+            apiMember({ bioguideId: `${offset}-${index}`, chamber }),
+          ),
+          pagination: { count: 540 },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    // 540 records across a 250-per-request ceiling is three pages.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(chamberOf(composition, "house").members).toHaveLength(250);
+    expect(chamberOf(composition, "senate").members).toHaveLength(500);
+  });
+
+  it("drops records with no recognizable chamber instead of misfiling them", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          members: [
+            apiMember({}),
+            apiMember({ chamber: "Senate" }),
+            apiMember({ bioguideId: "Z000009", chamber: "Territorial Assembly" }),
+            { name: "No terms at all" },
+          ],
+          pagination: { count: 4 },
+        }),
+      ),
+    );
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    expect(chamberOf(composition, "house").members).toHaveLength(1);
+    expect(chamberOf(composition, "senate").members).toHaveLength(1);
+  });
+
+  it("counts the House's non-voting seats separately from its voting ones", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          members: [
+            apiMember({ bioguideId: "H000001", state: "Ohio", district: 9 }),
+            apiMember({ bioguideId: "H000002", state: "Guam", district: 0 }),
+            apiMember({ bioguideId: "S000001", chamber: "Senate", state: "Arizona" }),
+          ],
+          pagination: { count: 3 },
+        }),
+      ),
+    );
+
+    const house: ChamberComposition = chamberOf(await getCongressComposition(119), "house");
+
+    expect(house.votingSeats).toBe(1);
+    expect(house.nonVotingSeats).toBe(1);
+  });
+
+  it("falls back to placeholder seats when the upstream request fails", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    expect(composition.source).toBe("preview");
+    expect(composition.notice).toMatch(/temporarily unavailable/i);
+  });
+
+  it("falls back rather than rendering a Congress with one empty chamber", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ members: [apiMember({})], pagination: { count: 1 } })),
+    );
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    // A House-only response would otherwise render as "the Senate has no members", which is never true.
+    expect(composition.source).toBe("preview");
   });
 });

@@ -8,7 +8,9 @@ make the legislative process more legible without replacing the official record.
 
 ## What Is in This 1.0 Draft
 
-- A polished responsive civic dashboard at `/`
+- A polished responsive civic dashboard at `/`, including an interactive chamber diagram of the current Congress — one
+  seat per sitting member, colored by party, with hover/keyboard read-out of who holds each seat and a link to their
+  official biography (see [Data Policy](#data-policy) for what the arrangement does and does not claim)
 - A cross-Congress bill directory at `/bills` (current Congress) and `/bills/[congress]` (any Congress back to the 93rd,
   1973 — see [Data Policy](#data-policy)), with a Congress switcher, a search box that sweeps every supported Congress
   via a server proxy (`/api/bills/search` — see [Data Policy](#data-policy) for why this is a sweep, not a true
@@ -71,6 +73,13 @@ pnpm exec playwright install chromium
 - The client explicitly requests `format=json`, validates the useful shape, maps it into a stable internal model, and
   caches the upstream request for five minutes.
 - `inferBillStage` is deliberately presented as an educational cue, not a legal-status determination.
+- The home page's chamber diagram is a schematic, not a floor plan. Congress.gov publishes no desk assignments, so
+  seats are grouped by party the way chamber composition is conventionally diagrammed, and the chart says so. Members
+  come from `/v3/member/congress/{congress}` with `currentMember=true`, so it shows who holds a seat now rather than
+  everyone who served during the Congress; vacant seats are absent rather than drawn. The House's six non-voting seats
+  are counted and labeled separately. See "The Chamber Diagram Is a Schematic" in `docs/decisions.md`.
+- Without an API key the diagram renders unattributed placeholder seats on a deliberately round, illustrative party
+  split — never a fabricated roster of member names, and never a real-looking party balance a fixture can't keep true.
 - Every bill page retains an official-record link.
 - Congress-scoped browsing (`/bills/[congress]`) is bounded to the 93rd Congress (1973) onward, matching where
   Congress.gov's own bill and resolution records begin — see `EARLIEST_COVERED_CONGRESS` in

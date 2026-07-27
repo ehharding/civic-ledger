@@ -1,6 +1,16 @@
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { previewBills, previewSummaries } from "@/lib/congress/fixtures";
+import { buildPreviewComposition, previewBills, previewSummaries } from "@/lib/congress/fixtures";
+import {
+  buildChamberComposition,
+  type ChamberComposition,
+  type CongressChamber,
+  type CongressComposition,
+  type CongressMember,
+  congressChambers,
+  normalizeChamberName,
+  normalizePartyName,
+} from "@/lib/congress/members";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/search";
 import { inferBillStage } from "@/lib/congress/stage";
@@ -85,6 +95,35 @@ type CongressApiTextVersion = {
 
 type CongressApiTextResponse = {
   textVersions?: CongressApiTextVersion[];
+};
+
+/**
+ * Shape of one entry in GET /v3/member/congress/{congress} (the member *list* endpoint).
+ *
+ * Note that list-level member records are a smaller shape than item-level ones: there's no `memberType`
+ * ("Representative" / "Delegate" / "Senator") and no per-term `congress`, and `terms.item[]` carries only
+ * chamber/startYear/endYear. That's why chamber is read from the last recognizable term rather than from a term matched
+ * on congress number, and why non-voting House seats are derived from the represented jurisdiction (see
+ * `isNonVotingJurisdiction`) — the alternative is one extra request per member, ~540 of them.
+ */
+type CongressApiMemberTerm = {
+  chamber?: string;
+  startYear?: number;
+  endYear?: number;
+};
+
+type CongressApiMember = {
+  bioguideId?: string;
+  name?: string;
+  partyName?: string;
+  state?: string;
+  district?: number;
+  terms?: { item?: CongressApiMemberTerm[] };
+};
+
+type CongressApiMemberListResponse = {
+  members?: CongressApiMember[];
+  pagination?: { count?: number };
 };
 
 /** Base URL for every Congress.gov v3 request this adapter makes. */
@@ -203,6 +242,39 @@ function mapCongressTextVersion(version: CongressApiTextVersion): BillTextVersio
   if (formats.length === 0) return null;
 
   return { type: version.type, date: version.date, formats };
+}
+
+/**
+ * Maps a raw member-list entry into the app's `CongressMember` shape, paired with the chamber that member sits in.
+ * Returns `null` when the record has no name or no recognizable chamber, so callers can filter it out rather than seat
+ * an unidentifiable member.
+ *
+ * Chamber comes from the *last* recognizable entry in `terms.item[]` — a member who moved from the House to the Senate
+ * should be seated in the Senate. List-level term entries don't carry a congress number to match on, so "most recent
+ * term" is the closest available reading, and it's the correct one for a request already scoped to the members
+ * currently serving in one Congress.
+ */
+function mapCongressMember(member: CongressApiMember): { chamber: CongressChamber; member: CongressMember } | null {
+  const name: string | undefined = member.name?.trim();
+  if (!name) return null;
+
+  let chamber: CongressChamber | null = null;
+  for (const term of member.terms?.item ?? []) {
+    chamber = normalizeChamberName(term.chamber) ?? chamber;
+  }
+  if (!chamber) return null;
+
+  return {
+    chamber,
+    member: {
+      bioguideId: member.bioguideId,
+      name,
+      party: normalizePartyName(member.partyName),
+      partyName: member.partyName,
+      state: member.state,
+      district: member.district,
+    },
+  };
 }
 
 /**
@@ -353,6 +425,133 @@ export async function getMoreBills(
   const bills: LegislativeBill[] | null = await fetchBillsPage({ apiKey, offset, limit: DEFAULT_PAGE_SIZE, congress });
 
   return bills ?? [];
+}
+
+/**
+ * Members requested per page — the Congress.gov API's own per-request ceiling, so a chamber needs as few calls as
+ * possible.
+ */
+const MEMBER_PAGE_LIMIT: number = 250;
+
+/**
+ * Hard ceiling on member pages fetched for one Congress. A seated Congress is a little over 540 members (535 voting
+ * seats plus the six non-voting House seats, minus any vacancies), so three pages covers it with room to spare; the cap
+ * exists so a malformed `pagination.count` can't turn one page render into an unbounded fetch loop.
+ */
+const MAX_MEMBER_PAGES: number = 4;
+
+/**
+ * Fetches one page of the member list for a Congress. Returns `null` on any failure so the caller can decide whether a
+ * partial result is still worth rendering.
+ *
+ * `currentMember=true` is what makes this "who holds a seat right now" rather than "everyone who served at any point in
+ * this Congress" — without it, a member who resigned mid-term and the member who replaced them both come back, and the
+ * chamber over-counts. (Congress.gov's own documentation makes the mirror-image recommendation for *past* Congresses,
+ * where `currentMember=false` is what yields the complete historical roster.)
+ */
+async function fetchMemberPage(input: {
+  apiKey: string;
+  congress: number;
+  offset: number;
+}): Promise<CongressApiMemberListResponse | null> {
+  const url: URL = buildCongressUrl(`/member/congress/${input.congress}`, input.apiKey, {
+    limit: String(MEMBER_PAGE_LIMIT),
+    offset: String(input.offset),
+    currentMember: "true",
+  });
+
+  try {
+    const response: Response = await fetchCongressGov(url, ["congress-members"]);
+
+    if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
+
+    return (await response.json()) as CongressApiMemberListResponse;
+  } catch (error) {
+    console.error("[congress] Failed to fetch a member page:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetches every currently-seated member of a Congress, across as many pages as it takes.
+ *
+ * The first page is fetched on its own to read `pagination.count`, and the remaining pages then go out together rather
+ * than one after another — two round trips instead of three sequential ones. Returns `null` only when the *first* page
+ * fails; a later page failing yields the members that did arrive, since a chart of most of the chamber still beats no
+ * chart at all (and the missing seats simply aren't drawn).
+ */
+async function fetchAllMembers(apiKey: string, congress: number): Promise<CongressApiMember[] | null> {
+  const firstPage: CongressApiMemberListResponse | null = await fetchMemberPage({ apiKey, congress, offset: 0 });
+  if (!firstPage) return null;
+
+  const firstMembers: CongressApiMember[] = firstPage.members ?? [];
+  const total: number = firstPage.pagination?.count ?? firstMembers.length;
+  const pageCount: number = Math.min(MAX_MEMBER_PAGES, Math.ceil(total / MEMBER_PAGE_LIMIT));
+
+  if (pageCount <= 1) return firstMembers;
+
+  const laterPages: (CongressApiMemberListResponse | null)[] = await Promise.all(
+    Array.from(
+      { length: pageCount - 1 },
+      (_unused: unknown, index: number): Promise<CongressApiMemberListResponse | null> =>
+        fetchMemberPage({ apiKey, congress, offset: (index + 1) * MEMBER_PAGE_LIMIT }),
+    ),
+  );
+
+  return [
+    ...firstMembers,
+    ...laterPages.flatMap((page: CongressApiMemberListResponse | null): CongressApiMember[] => page?.members ?? []),
+  ];
+}
+
+/** Groups mapped members into one `ChamberComposition` per chamber, in `congressChambers` order. */
+function buildComposition(members: { chamber: CongressChamber; member: CongressMember }[]): ChamberComposition[] {
+  return congressChambers.map(
+    (chamber: CongressChamber): ChamberComposition =>
+      buildChamberComposition(
+        chamber,
+        members.filter((entry): boolean => entry.chamber === chamber).map((entry): CongressMember => entry.member),
+      ),
+  );
+}
+
+/**
+ * Fetches the membership of both chambers of a Congress — who currently holds each seat — for the home page's chamber
+ * diagram.
+ *
+ * Like every other read in this adapter, this never throws and always reports its own provenance: a missing API key or
+ * a failed upstream request yields clearly labeled placeholder seats rather than an empty or broken chart. A chamber
+ * that comes back empty is treated as a failure of the whole fetch rather than rendered as an empty half of Congress,
+ * since "the Senate has no members" is never a true statement about a seated Congress and would read as one.
+ */
+export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
+  const apiKey: string | undefined = process.env.CONGRESS_API_KEY;
+  const retrievedAt: string = new Date().toISOString();
+
+  if (!apiKey) {
+    return buildPreviewComposition(
+      congress,
+      retrievedAt,
+      "Placeholder seats are shown until a server-only Congress.gov API key is configured.",
+    );
+  }
+
+  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress);
+  const mapped: { chamber: CongressChamber; member: CongressMember }[] = (raw ?? [])
+    .map(mapCongressMember)
+    .filter((entry): entry is { chamber: CongressChamber; member: CongressMember } => entry !== null);
+
+  const chambers: ChamberComposition[] = buildComposition(mapped);
+
+  if (chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0)) {
+    return buildPreviewComposition(
+      congress,
+      retrievedAt,
+      "Live membership is temporarily unavailable, so placeholder seats are shown.",
+    );
+  }
+
+  return { congress, chambers, source: "live", retrievedAt };
 }
 
 /** Max bills fetched per Congress when sweeping for a search — the Congress.gov API's own per-request ceiling. */

@@ -25,6 +25,14 @@
     gap: 43px;
   }
 
+  .seating__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .seating-detail {
+    min-height: 0;
+  }
+
   .activity-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -104,6 +112,16 @@
   .bill-card,
   .detail-panel {
     padding: 21px;
+  }
+
+  .seating__chambers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .seating__legend {
+    gap: 8px 18px;
+    font-size: 0.8rem;
   }
 
   .source-notice {

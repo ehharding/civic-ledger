@@ -23,25 +23,34 @@ flowchart LR
 
 ## Boundaries
 
-| Layer                 | Responsibility                                  | Rule                                                              |
-|-----------------------|-------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`             | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`      | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/db`              | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
-| `src/lib/congress`    | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/glossary.ts` | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
+| Layer                         | Responsibility                                  | Rule                                                              |
+|-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
+| `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
+| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/lib/congress`            | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
+| `src/lib/congress/seating.ts` | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
+| `src/lib/glossary.ts`         | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 
 ## Runtime Data Flow
 
 1. A Next.js server route calls `getCongressSnapshot` (current Congress) or `getCongressSnapshotForCongress` (any other
-   Congress `/bills/[congress]` supports — see `src/lib/congress/congress-history.ts` for the supported range).
-   The former is a thin wrapper around the latter, so both share one fetch and one fallback policy.
+   Congress `/bills/[congress]` supports — see `src/lib/congress/congress-history.ts` for the supported range). The
+   former is a thin wrapper around the latter, so both share one fetch and one fallback policy. The home route
+   additionally calls `getCongressComposition` for the chamber diagram, concurrently rather than in sequence; the two
+   datasets carry independent provenance and fall back independently.
 2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill/{congress}?format=json` and lets
    Next cache the result for five minutes.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
-5. A user can always leave for the official record from a bill page.
+5. A user can always leave for the official record from a bill page, and from any seat in the chamber diagram to that
+   member's entry in the Biographical Directory.
+
+Membership follows the same path with one wrinkle: `/v3/member/congress/{congress}` is paginated at the API's 250-record
+ceiling, so `getCongressComposition` reads `pagination.count` from the first page and then requests the remainder in
+parallel. Chart geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing
+about Congress.gov — see "The Chamber Diagram Is a Schematic" in `docs/decisions.md`.
 
 ## Persistence Plan
 
@@ -70,4 +79,8 @@ history, notification delivery, or more than a few API-facing features.
 - No political-affiliation targeting or persuasion logic belongs in the product.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
   real links.
+- Nothing is reachable by pointer alone. The chamber diagram in particular is fully keyboard-operable (one tab stop plus
+  a roving tabindex across seats) and names every seat for assistive technology, so it reads as a list of members rather
+  than an unlabeled picture. Party color is never the only carrier of meaning — each seat states its party in its
+  accessible name and the legend spells out every party and count in text.
 - Preview/fallback content is visibly labeled to avoid accidental misinformation.
