@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
@@ -6,6 +7,7 @@ import { type BillLookupResult, getBillById, getBillSummaries, getBillTextVersio
 import { previewBills } from "@/lib/congress/fixtures";
 import type { BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 
+/** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {
   params: Promise<BillRouteParams>;
 };
@@ -23,6 +25,23 @@ export function generateStaticParams(): BillRouteParams[] {
       number: bill.number,
     }),
   );
+}
+
+/**
+ * Per-bill `<title>`/description, so a bill page reads as itself (in a browser tab, a share card, a search result)
+ * instead of falling back to the site-wide default. Reuses `getBillById` — Next's request-level fetch memoization means
+ * this doesn't cost a second live request alongside the page component's own call for the same route.
+ */
+export async function generateMetadata({ params }: BillPageProps): Promise<Metadata> {
+  const route: BillRouteParams = await params;
+  const { bill }: BillLookupResult = await getBillById(route);
+
+  if (!bill) return { title: "Bill Not Found" };
+
+  return {
+    title: `${bill.type} ${bill.number}: ${bill.title}`,
+    description: bill.latestAction.text,
+  };
 }
 
 /**

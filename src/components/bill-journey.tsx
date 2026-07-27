@@ -15,21 +15,19 @@ export function BillJourney({ stage, compact }: { stage: BillStage; compact: boo
 
   return (
     <ol className={`bill-journey ${compact ? "bill-journey--compact" : ""}`} aria-label="Bill journey">
-      {billStages.map(
-        (item: "chamber" | "committee" | "introduced" | "law" | "president", index: number): JSX.Element => {
-          const isComplete: boolean = index < currentIndex;
-          const isCurrent: boolean = index === currentIndex;
+      {billStages.map((item: BillStage, index: number): JSX.Element => {
+        const isComplete: boolean = index < currentIndex;
+        const isCurrent: boolean = index === currentIndex;
 
-          return (
-            <li className={isCurrent ? "is-current" : isComplete ? "is-complete" : ""} key={item}>
-              <span className="journey-dot" aria-hidden="true">
-                {isComplete ? <Check size={12} strokeWidth={3} /> : index + 1}
-              </span>
-              <span>{billStageLabels[item]}</span>
-            </li>
-          );
-        },
-      )}
+        return (
+          <li className={isCurrent ? "is-current" : isComplete ? "is-complete" : ""} key={item}>
+            <span className="journey-dot" aria-hidden="true">
+              {isComplete ? <Check size={12} strokeWidth={3} /> : index + 1}
+            </span>
+            <span>{billStageLabels[item]}</span>
+          </li>
+        );
+      })}
     </ol>
   );
 }

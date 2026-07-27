@@ -7,12 +7,15 @@ import { SiteShell } from "@/components/site-shell";
 
 export const metadata: Metadata = { title: "About" };
 
-/** The three product principles shown on the /about (Methodology) page. Purely presentational — no data fetching. */
-const principles: {
+/** One product principle shown on the /about (Methodology) page: its icon, title, and one-line explanation. */
+type Principle = {
   icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
   title: string;
   copy: string;
-}[] = [
+};
+
+/** The three product principles shown on the /about (Methodology) page. Purely presentational — no data fetching. */
+const principles: Principle[] = [
   {
     icon: Database,
     title: "Primary Sources First",
@@ -41,15 +44,7 @@ export default function AboutPage(): JSX.Element {
       />
       <div className="principle-list">
         {principles.map(
-          ({
-            icon: Icon,
-            title,
-            copy,
-          }: {
-            icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
-            title: string;
-            copy: string;
-          }) => (
+          ({ icon: Icon, title, copy }: Principle): JSX.Element => (
             <article className="principle" key={title}>
               <Icon aria-hidden="true" size={22} />
               <div>

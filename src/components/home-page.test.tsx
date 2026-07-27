@@ -52,4 +52,20 @@ describe("HomePage", (): void => {
     expect(screen.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeInTheDocument();
     expect(screen.queryByText(/A bill in motion/)).not.toBeInTheDocument();
   });
+
+  it('links the featured bill\'s title and its "View This Bill" cue to its detail page', (): void => {
+    const snapshot: CongressSnapshot = { bills: previewBills, source: "preview", retrievedAt: "2026-07-14T00:00:00Z" };
+    render(<HomePage snapshot={snapshot} />);
+
+    const expectedHref = `/bills/${firstPreviewBill.congress}/${firstPreviewBill.type.toLowerCase()}/${firstPreviewBill.number}`;
+    const featuredCard: HTMLElement = screen.getByRole("complementary", {
+      name: `${firstPreviewBill.type} ${firstPreviewBill.number}`,
+    });
+
+    expect(within(featuredCard).getByRole("link", { name: firstPreviewBill.title })).toHaveAttribute(
+      "href",
+      expectedHref,
+    );
+    expect(within(featuredCard).getByRole("link", { name: /View This Bill/ })).toHaveAttribute("href", expectedHref);
+  });
 });

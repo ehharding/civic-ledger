@@ -14,6 +14,9 @@ import {
 } from "@/lib/congress/types";
 import { formatDate, formatOrdinal } from "@/lib/format";
 
+/**
+ * Props for BillDetail — everything the bill detail route (`/bills/[congress]/[type]/[number]`) resolves server-side.
+ */
 type BillDetailProps = {
   bill: LegislativeBill;
   source: CongressSnapshot["source"];
@@ -26,6 +29,11 @@ type BillDetailProps = {
   textVersions: BillTextVersion[];
 };
 
+/**
+ * Full bill record page: hero (identity, stage, sponsor/cosponsor meta), the BillJourney stepper, the latest action
+ * with a link to the official record, the most recent CRS summary (labeled as preview or real per `source`), and every
+ * official text version. Purely presentational — all data is resolved by the route (`page.tsx`) and passed in as props.
+ */
 export function BillDetail({
   bill,
   source,

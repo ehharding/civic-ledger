@@ -6,6 +6,7 @@ import { BillCard } from "@/components/bill-card";
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
+import { billHref } from "@/lib/bill-route";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
@@ -46,11 +47,16 @@ export function HomePage({ snapshot }: { snapshot: CongressSnapshot }): JSX.Elem
               </div>
               <Scale aria-hidden="true" size={21} />
             </div>
-            <p className="journey-card__title">{featuredBill.title}</p>
+            <p className="journey-card__title">
+              <Link href={billHref(featuredBill)}>{featuredBill.title}</Link>
+            </p>
             <BillJourney stage={featuredBill.stage} compact={false} />
             <p className="journey-card__caption">
               The latest action is interpreted as an educational progress cue, with the official record one click away.
             </p>
+            <Link className="text-link journey-card__link" href={billHref(featuredBill)}>
+              View This Bill <ArrowRight aria-hidden="true" size={15} />
+            </Link>
           </aside>
         ) : null}
       </section>

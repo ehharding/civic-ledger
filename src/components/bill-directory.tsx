@@ -56,7 +56,7 @@ export function BillDirectory({
   /** Scopes "Load More" to a specific Congress. Omitted on the default (current-Congress) /bills route, where
    * /api/bills already defaults to the current Congress on its own. */
   congress?: number;
-}) {
+}): JSX.Element {
   const [query, setQuery] = useState(initialQuery);
   const [stage, setStage] = useState<StageFilter>("all");
   const [allBills, setAllBills] = useState<LegislativeBill[]>(bills);

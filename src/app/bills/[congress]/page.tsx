@@ -15,6 +15,7 @@ import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
 import { resolveInitialQuery } from "@/lib/search-params";
 
+/** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable `?q=` deep link. */
 type CongressBillsPageProps = {
   params: Promise<{ congress: string }>;
   searchParams: Promise<{ q?: string }>;
@@ -32,6 +33,10 @@ export function generateStaticParams(): { congress: string }[] {
   return congresses.map((congress: number): { congress: string } => ({ congress: String(congress) }));
 }
 
+/**
+ * Per-Congress `<title>` (e.g., "118th Congress Bills"), or the generic "Bills" title for an out-of-range Congress —
+ * the page itself renders its 404 in that case (see parseCongressParam), so metadata just avoids implying otherwise.
+ */
 export async function generateMetadata({ params }: CongressBillsPageProps): Promise<Metadata> {
   const { congress: rawCongress } = await params;
   const congress: number | null = parseCongressParam(rawCongress);

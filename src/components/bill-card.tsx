@@ -4,11 +4,12 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bill-journey";
+import { billHref } from "@/lib/bill-route";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/types";
 
 /** Compact bill summary card used in the directory grid and the homepage's "Latest Activity" section. */
 export function BillCard({ bill }: { bill: LegislativeBill }): JSX.Element {
-  const href: Route = `/bills/${bill.congress}/${bill.type.toLowerCase()}/${bill.number}` as Route;
+  const href: Route = billHref(bill);
 
   return (
     <article className="bill-card">

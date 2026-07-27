@@ -290,6 +290,14 @@ h3 {
   border-radius: 13px;
   background: linear-gradient(135deg, #edf3f3, #dfecef);
   box-shadow: var(--shadow);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.journey-card:hover {
+  box-shadow: 0 22px 46px rgba(23, 40, 55, 0.12);
+  transform: translateY(-2px);
 }
 
 .journey-card__header {
@@ -314,11 +322,19 @@ h3 {
   line-height: 1.16;
 }
 
+.journey-card__title a:hover {
+  color: var(--burgundy);
+}
+
 .journey-card__caption {
   margin-top: 22px;
   color: var(--ink-soft);
   font-size: 0.83rem;
   line-height: 1.5;
+}
+
+.journey-card__link {
+  margin-top: 14px;
 }
 
 .bill-journey {
