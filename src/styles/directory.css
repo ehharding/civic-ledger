@@ -1,0 +1,192 @@
+/* DataSourceNotice, and everything specific to the interactive bill directory (BillDirectory + CongressSwitcher):
+   search box, stage filter pills, result counts, empty states, and "Load More" pagination. */
+
+.source-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 52px;
+  padding: 11px 13px;
+  border-left: 3px solid var(--green);
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--paper) 66%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.source-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--green);
+}
+
+.source-notice strong {
+  color: var(--ink);
+}
+
+.source-notice--preview {
+  border-color: var(--amber);
+}
+
+.source-notice--preview svg {
+  color: var(--amber-deep);
+}
+
+.congress-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.congress-switcher select {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--paper);
+  font-weight: 600;
+}
+
+.directory-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 19px;
+}
+
+.directory-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.directory-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+}
+
+.directory-search input::placeholder {
+  color: var(--ink-faint);
+}
+
+.stage-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  color: var(--ink-soft);
+}
+
+.stage-filters button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--ink-soft);
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stage-filters button:hover,
+.stage-filters button.is-active {
+  border-color: var(--teal-border);
+  color: var(--navy);
+  background: var(--teal-surface);
+}
+
+.directory-result-count {
+  margin-bottom: 16px;
+  color: var(--ink-soft);
+  font-size: 0.83rem;
+}
+
+.directory-search-note {
+  margin-top: -10px;
+  margin-bottom: 16px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.directory-grid .bill-card {
+  min-height: 286px;
+}
+
+.no-results {
+  padding: 50px 24px;
+  border: 1px dashed var(--line-dark);
+  text-align: center;
+}
+
+.no-results h2 {
+  font-size: 1.55rem;
+}
+
+.no-results p {
+  margin-top: 7px;
+  color: var(--ink-soft);
+}
+
+.directory-load-more {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.directory-load-more .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.directory-load-more .spin {
+  animation: directory-load-more-spin 0.8s linear infinite;
+}
+
+.directory-load-more__error {
+  color: var(--ink-soft);
+  font-size: 0.83rem;
+}
+
+@keyframes directory-load-more-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Motion-sensitive users: the spinner doesn't convey information that's lost by holding still — the loading state is
+   still visible without the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .directory-load-more .spin {
+    animation: none;
+  }
+}

@@ -1,0 +1,169 @@
+/* The bill detail route (/bills/[congress]/[type]/[number]): hero, the two-column detail panels, the CRS summary body,
+   and the text-version list. */
+
+.bill-backlink {
+  margin-bottom: 24px;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.bill-backlink a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bill-backlink a:hover {
+  color: var(--burgundy);
+}
+
+.bill-detail-hero {
+  max-width: 880px;
+  padding-bottom: 46px;
+}
+
+/* Sized separately from the hero/page-header/empty-state/error-page h1s in typography.css: those are short, fixed
+   marketing copy this app authors itself (e.g. "See Congress in Context."), while a bill's title is real-world text of
+   unpredictable — often much longer — length pulled from Congress.gov. A shared punchy display-type scale reads fine on
+   "Bills" but turns a long official bill title into many wrapped lines of huge text, especially on mobile. One fluid
+   clamp is enough on its own (matching how .section-heading h2 etc. scale in typography.css) without a separate
+   mobile-breakpoint override. No ch cap here — .bill-detail-hero's own 880px max-width already governs wrap. */
+.bill-detail-hero h1 {
+  margin-top: 16px;
+  color: var(--navy-deep);
+  font-size: clamp(1.75rem, 4.2vw, 2.75rem);
+  line-height: 1.15;
+}
+
+.bill-detail-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(310px, 0.85fr);
+  gap: 16px;
+}
+
+/* The bill detail page stacks two .detail-grid rows back to back; the first gets its spacing from .source-notice's
+   margin-bottom above it, so only the second needs its own rule here. */
+.detail-grid + .detail-grid {
+  margin-top: 24px;
+}
+
+.detail-panel {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--paper) 75%, transparent);
+}
+
+.detail-panel--accent {
+  border-color: var(--teal-border);
+  background: var(--teal-surface);
+}
+
+.muted-copy,
+.latest-action-copy {
+  max-width: 58ch;
+  margin-top: 13px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.detail-panel .bill-journey {
+  margin-top: 35px;
+}
+
+.latest-action-copy {
+  color: var(--ink);
+  font-family: var(--serif), serif;
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+
+.date-label {
+  margin-top: 15px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+/* Renders sanitized CRS summary HTML (see sanitizeSummaryHtml) — arbitrary paragraphs, lists, emphasis, and links from
+   the API, not markup this app authors itself. Needs its own rules because base.css's reset zeroes out <p> margin and
+   strips link color/underline sitewide (right for hand-authored UI copy, wrong for a block of prose). */
+.summary-body {
+  margin-top: 13px;
+  max-width: 62ch;
+  color: var(--ink);
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+.summary-body p + p {
+  margin-top: 14px;
+}
+
+.summary-body ul,
+.summary-body ol {
+  margin-top: 14px;
+  padding-left: 22px;
+}
+
+.summary-body li + li {
+  margin-top: 6px;
+}
+
+.summary-body li::marker {
+  color: var(--burgundy);
+}
+
+.summary-body strong,
+.summary-body b {
+  color: var(--navy-deep);
+  font-weight: 700;
+}
+
+.summary-body a {
+  color: var(--burgundy);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--burgundy) 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.summary-body a:hover {
+  color: var(--burgundy-deep);
+}
+
+.text-version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.text-version-list__type {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.text-version-list__formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.detail-panel > .text-link {
+  margin-top: 26px;
+}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { JSX, ReactNode } from "react";
 
 import { getSiteUrl } from "@/lib/site";
@@ -12,6 +12,19 @@ export const metadata: Metadata = {
   },
   description: "A source-conscious guide to the work of the United States Congress.",
   metadataBase: new URL(getSiteUrl()),
+};
+
+/**
+ * Light/dark mode itself is automatic (see the `prefers-color-scheme` overrides in src/styles/tokens.css) — this just
+ * keeps the browser chrome (scrollbars, form controls, the mobile address bar) in sync with whichever palette that
+ * media query resolved to, instead of defaulting to light.
+ */
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f3ed" },
+    { media: "(prefers-color-scheme: dark)", color: "#12181f" },
+  ],
 };
 
 /** Root HTML shell shared by every route. Page-level chrome (header/footer) lives in SiteShell, not here. */

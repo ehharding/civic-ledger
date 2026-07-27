@@ -78,14 +78,14 @@ route existed.
 
 ## Tailwind Stays Out; `@tailwindcss/typography`'s Job Is Done by Hand-Written CSS
 
-The project has no Tailwind installation at all — no config, no PostCSS setup, just handwritten CSS in `globals.css`
-built on the same custom-property design tokens throughout. Adding Tailwind at this point would mean rewriting every
-component's className from scratch, which is a large, risky change for the "tooling stays small" stance above to absorb
-for a single typography plugin. The actual need behind reaching for `@tailwindcss/typography` was real, though:
-`.summary-body` (the CRS summary HTML) and `.text-version-list` had no CSS rules at all, so the sitewide reset (`p`
-margin zeroed, link color/underline stripped) made injected paragraphs run together and made links invisible. Both now
-have handwritten rules built on the same design tokens as everything else, which gets the actual visual outcome without
-a second styling system running alongside the first.
+The project has no Tailwind installation at all — no config, no PostCSS setup, just handwritten CSS split across
+`src/styles/` and imported from `globals.css` built on the same custom-property design tokens throughout. Adding
+Tailwind at this point would mean rewriting every component's className from scratch, which is a large, risky change for
+the "tooling stays small" stance above to absorb for a single typography plugin. The actual need behind reaching for
+`@tailwindcss/typography` was real, though: `.summary-body` (the CRS summary HTML) and `.text-version-list` had no CSS
+rules at all, so the sitewide reset (`p` margin zeroed, link color/underline stripped) made injected paragraphs run
+together and made links invisible. Both now have handwritten rules built on the same design tokens as everything else,
+which gets the actual visual outcome without a second styling system running alongside the first.
 
 ## `date-fns` Powers Data-Freshness Display, Not Bill-Date Formatting
 

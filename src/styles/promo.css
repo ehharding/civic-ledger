@@ -1,0 +1,76 @@
+/* Promo/callout blocks reused across routes: the warm "strip" card (home's learn-strip, the learn and bill-detail
+   pages' reading-card) and the home page's three-up trust grid. */
+
+.learn-strip,
+.reading-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  margin-top: 72px;
+  padding: 28px 30px;
+  border: 1px solid var(--warm-border);
+  border-radius: 12px;
+  background: var(--warm);
+}
+
+.learn-strip__icon,
+.reading-card__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--burgundy);
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+}
+
+.learn-strip h2,
+.reading-card h2 {
+  max-width: 28ch;
+}
+
+.learn-strip p:not(.section-kicker),
+.reading-card p:not(.section-kicker) {
+  max-width: 65ch;
+  margin-top: 9px;
+  color: var(--ink-soft);
+  font-size: 0.91rem;
+}
+
+/* Shared by bill-detail.tsx and the how-a-bill-becomes-law lesson page — both stack this after content with no bottom
+   margin of its own (a .detail-grid, or .lesson-steps), so it carries the full gap by itself. */
+.reading-card {
+  margin-top: 48px;
+}
+
+.reading-card--simple {
+  margin-top: 0;
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 34px;
+  margin-top: 46px;
+}
+
+.trust-grid article {
+  border-top: 1px solid var(--line-dark);
+  padding-top: 16px;
+}
+
+.trust-grid svg {
+  color: var(--burgundy);
+}
+
+.trust-grid h2 {
+  margin-top: 12px;
+  font-size: 1.12rem;
+}
+
+.trust-grid p {
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}

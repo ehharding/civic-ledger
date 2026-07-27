@@ -1,0 +1,53 @@
+/* Buttons and button-styled links used across every page. */
+
+.button,
+.secondary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 43px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 750;
+  transition:
+    transform 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.button:hover,
+.secondary-link:hover {
+  transform: translateY(-1px);
+}
+
+.button--primary {
+  padding: 11px 17px;
+  color: var(--paper);
+  background: var(--navy);
+}
+
+.button--primary:hover {
+  background: var(--navy-deep);
+}
+
+.button--quiet {
+  padding: 10px 8px;
+  color: var(--navy);
+}
+
+.button--quiet:hover {
+  color: var(--burgundy);
+}
+
+.secondary-link {
+  padding: 9px 11px;
+  border: 1px solid var(--warm-border);
+  color: var(--navy);
+  white-space: nowrap;
+}
+
+.secondary-link:hover {
+  border-color: var(--burgundy);
+  color: var(--burgundy);
+}

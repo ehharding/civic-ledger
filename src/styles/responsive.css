@@ -1,0 +1,170 @@
+/* Breakpoint overrides for every component above. Kept together (rather than split back into each component's own file)
+   because most of these routes share the same two breakpoints and reasoning about the layout at a given width is easier
+   with its overrides in one place than scattered across a dozen files. */
+
+@media (max-width: 900px) {
+  .site-header__inner {
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+  }
+
+  .primary-nav {
+    justify-self: end;
+  }
+
+  .header-search {
+    display: none;
+  }
+
+  .hero-grid,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-grid {
+    gap: 43px;
+  }
+
+  .activity-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .activity-grid .bill-card:last-child {
+    grid-column: span 2;
+  }
+
+  .directory-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .stage-filters {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .learn-strip,
+  .reading-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .learn-strip .secondary-link,
+  .reading-card .secondary-link {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header__inner,
+  .page-shell,
+  .site-footer {
+    width: min(100% - 32px, 1180px);
+  }
+
+  .site-header__inner {
+    min-height: 64px;
+  }
+
+  .wordmark {
+    font-size: 1.1rem;
+  }
+
+  .wordmark__mark {
+    width: 27px;
+    height: 27px;
+  }
+
+  .primary-nav {
+    gap: 15px;
+    font-size: 0.78rem;
+  }
+
+  .page-shell {
+    padding-block: 40px 60px;
+  }
+
+  .site-footer {
+    display: grid;
+    gap: 5px;
+  }
+
+  .hero-grid {
+    min-height: unset;
+    padding: 10px 0 46px;
+  }
+
+  .hero-copy h1,
+  .page-header h1,
+  .empty-state h1,
+  .error-page h1 {
+    font-size: clamp(2.9rem, 15vw, 4.2rem);
+  }
+
+  .journey-card,
+  .bill-card,
+  .detail-panel {
+    padding: 21px;
+  }
+
+  .source-notice {
+    margin-bottom: 40px;
+  }
+
+  .section-heading {
+    display: grid;
+    align-items: start;
+  }
+
+  .activity-grid,
+  .directory-grid,
+  .glossary-grid,
+  .trust-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-grid .bill-card:last-child {
+    grid-column: auto;
+  }
+
+  .learn-strip,
+  .reading-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .learn-strip .secondary-link,
+  .reading-card .secondary-link {
+    grid-column: auto;
+  }
+
+  .trust-grid {
+    gap: 22px;
+  }
+
+  .stage-filters {
+    gap: 5px;
+  }
+
+  .stage-filters svg {
+    display: none;
+  }
+
+  .stage-filters button {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+
+  .bill-detail-hero {
+    padding-bottom: 35px;
+  }
+
+  .detail-panel .bill-journey li {
+    font-size: 0.57rem;
+  }
+
+  .detail-panel .journey-dot {
+    width: 21px;
+    height: 21px;
+  }
+}

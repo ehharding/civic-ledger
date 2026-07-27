@@ -1,0 +1,73 @@
+/* /learn (glossary + lesson steps) and /about (product principles). */
+
+.lesson-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lesson-step h2 {
+  margin-top: 6px;
+  font-size: 1.42rem;
+}
+
+.lesson-step .bill-journey {
+  margin-top: 22px;
+}
+
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.glossary-entry {
+  min-height: 220px;
+  padding: 26px;
+  border-top: 3px solid var(--navy);
+  background: var(--paper);
+}
+
+.glossary-entry:nth-child(2n) {
+  border-color: var(--burgundy);
+}
+
+.glossary-entry h2 {
+  max-width: 21ch;
+  font-size: 1.58rem;
+}
+
+.glossary-entry p:not(.section-kicker) {
+  margin-top: 17px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.principle-list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line-dark);
+}
+
+.principle {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 19px;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.principle svg {
+  color: var(--burgundy);
+}
+
+.principle h2 {
+  margin: 0;
+  font-size: 1.65rem;
+}
+
+.principle p {
+  max-width: 65ch;
+  margin-top: 7px;
+  color: var(--ink-soft);
+}

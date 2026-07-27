@@ -1,0 +1,185 @@
+/* The BillJourney stepper and BillCard — the two building blocks reused across the home page, bill directory, and bill
+   detail route. */
+
+.bill-journey {
+  display: flex;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0;
+  margin: 28px 0 0;
+  list-style: none;
+}
+
+.bill-journey li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 20%;
+  gap: 7px;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.bill-journey li::after {
+  position: absolute;
+  z-index: 0;
+  top: 12px;
+  left: calc(50% + 14px);
+  width: calc(100% - 28px);
+  height: 1px;
+  content: "";
+  background: var(--teal-border);
+}
+
+.bill-journey li:last-child::after {
+  display: none;
+}
+
+.journey-dot {
+  z-index: 1;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid var(--teal-border);
+  border-radius: 50%;
+  color: var(--ink-faint);
+  background: var(--teal-surface);
+  font-size: 0.68rem;
+}
+
+.bill-journey .is-complete,
+.bill-journey .is-current {
+  color: var(--navy);
+}
+
+.bill-journey .is-complete .journey-dot {
+  border-color: var(--green);
+  color: var(--paper);
+  background: var(--green);
+}
+
+.bill-journey .is-current .journey-dot {
+  border: 5px solid var(--burgundy);
+  color: var(--burgundy);
+  background: var(--paper);
+}
+
+.bill-journey--compact {
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+.bill-journey--compact li {
+  font-size: 0;
+}
+
+.bill-journey--compact .journey-dot {
+  width: 18px;
+  height: 18px;
+  font-size: 0.56rem;
+}
+
+.bill-journey--compact li::after {
+  top: 9px;
+  left: calc(50% + 10px);
+  width: calc(100% - 20px);
+}
+
+.bill-journey--compact .is-current .journey-dot {
+  border-width: 3px;
+}
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bill-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease;
+}
+
+.bill-card:hover {
+  border-color: var(--teal-border);
+  box-shadow: 0 15px 34px color-mix(in srgb, var(--shadow-color) 7%, transparent);
+  transform: translateY(-2px);
+}
+
+.bill-card__topline,
+.bill-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stage-label {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--navy);
+  background: var(--teal-surface);
+  font-size: 0.69rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bill-card h3 {
+  margin-top: 18px;
+  color: var(--navy-deep);
+  font-size: 1.35rem;
+  line-height: 1.12;
+}
+
+.bill-card h3 a:hover {
+  color: var(--burgundy);
+}
+
+.bill-card__action {
+  display: -webkit-box;
+  margin-top: 13px;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.48;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.bill-card__footer {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.73rem;
+}
+
+.bill-card__footer > span {
+  max-width: 88%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bill-card__footer a {
+  display: grid;
+  place-items: center;
+  color: var(--burgundy);
+}

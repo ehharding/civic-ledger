@@ -1,0 +1,79 @@
+/* Home-page-only pieces: the hero split (copy + featured-bill journey card). Everything else on the home route
+   (BillCard grid, the learn-strip promo, the trust grid) is shared with other pages and lives in its own file. */
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(350px, 0.78fr);
+  align-items: center;
+  gap: clamp(48px, 9vw, 128px);
+  min-height: 420px;
+  padding: 26px 0 62px;
+}
+
+.hero-copy__lede {
+  max-width: 55ch;
+  margin-top: 26px;
+  color: var(--ink-soft);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 31px;
+}
+
+.journey-card {
+  padding: 30px;
+  border: 1px solid color-mix(in srgb, var(--navy) 14%, transparent);
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--teal-surface), var(--teal-surface-strong));
+  box-shadow: var(--shadow);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.journey-card:hover {
+  box-shadow: 0 22px 46px color-mix(in srgb, var(--shadow-color) 12%, transparent);
+  transform: translateY(-2px);
+}
+
+.journey-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--navy);
+}
+
+.journey-card__header h2 {
+  margin-top: 5px;
+  font-size: 1.55rem;
+}
+
+.journey-card__title {
+  max-width: 30ch;
+  margin-top: 25px;
+  color: var(--ink);
+  font-family: var(--serif), serif;
+  font-size: 1.38rem;
+  line-height: 1.16;
+}
+
+.journey-card__title a:hover {
+  color: var(--burgundy);
+}
+
+.journey-card__caption {
+  margin-top: 22px;
+  color: var(--ink-soft);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.journey-card__link {
+  margin-top: 14px;
+}

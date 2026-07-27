@@ -1,0 +1,26 @@
+/* Full-page empty/error states: not-found.tsx and error.tsx. */
+
+.empty-state,
+.error-page {
+  min-height: 50vh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+}
+
+.empty-state > p,
+.error-page > p:not(.eyebrow) {
+  max-width: 48ch;
+  margin-top: 20px;
+  color: var(--ink-soft);
+}
+
+.empty-state .button,
+.error-page .button {
+  margin-top: 25px;
+}
+
+.error-page {
+  width: min(700px, calc(100% - 48px));
+  margin: 0 auto;
+}
