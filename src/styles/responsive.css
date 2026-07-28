@@ -45,6 +45,14 @@
     grid-template-columns: 1fr;
   }
 
+  .member-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-facet select {
+    min-width: 0;
+  }
+
   .stage-filters {
     justify-content: flex-start;
     flex-wrap: wrap;
@@ -82,8 +90,12 @@
     height: 27px;
   }
 
+  /* Four destinations no longer fit on one line at this width. Wrapping (rather than shrinking the type further) keeps
+     every label readable and right-aligned under the wordmark. */
   .primary-nav {
-    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 15px;
     font-size: 0.78rem;
   }
 
@@ -136,8 +148,14 @@
   .activity-grid,
   .directory-grid,
   .glossary-grid,
+  .member-grid,
   .trust-grid {
     grid-template-columns: 1fr;
+  }
+
+  .member-facet,
+  .member-facet select {
+    width: 100%;
   }
 
   .activity-grid .bill-card:last-child {

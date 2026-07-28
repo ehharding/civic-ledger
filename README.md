@@ -21,7 +21,11 @@ make the legislative process more legible without replacing the official record.
 - Individual member route at `/members/[bioguideId]` — portrait, party, seat, term-by-term service record, leadership
   roles, and the legislation they sponsored and cosponsored. Reachable from anywhere a person is named: every seat in
   the chamber diagram is a link, and so is every bill's sponsor line
-- Loading skeletons for both bill directory routes, the bill detail route, and the member route
+- A browsable member directory at `/members`, searchable by name or the place a member represents and filterable by
+  chamber, party, and state or territory. It reads the same cached roster the chamber diagram does — so it costs
+  nothing extra upstream — and every filter runs in the browser against a roster that arrives whole, with no request per
+  keystroke (see [Data Policy](#data-policy) for what the list does and does not claim to cover)
+- Loading skeletons for both bill directory routes, the bill detail route, the member directory, and the member route
 - Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
   at `/learn/how-a-bill-becomes-law`
 - Server-only Congress.gov API adapter with boundary types, five-minute caching, JSON requests, and safe preview
@@ -94,6 +98,11 @@ pnpm exec playwright install chromium
   (`PREVIEW-1`…) deliberately cannot be valid Bioguide IDs, so a placeholder is never requested from Congress.gov and
   can never render a link to a real person's biography. The chamber diagram's placeholder seats stay unattributed and
   unlinked — see "Placeholder Members Exist Where a Placeholder Roster Still Doesn't" in `docs/decisions.md`.
+- The member directory (`/members`) lists whoever currently holds a seat, from the same `currentMember=true` request
+  the chamber diagram uses — so it is a roster of *now*, not of everyone who served during a Congress, and vacant seats
+  are absent rather than listed. A member whose upstream record carries no Bioguide ID is omitted rather than shown as a
+  card that opens nothing. Without an API key it lists the same seven placeholder people the preview bills name, and
+  says so instead of claiming they hold seats — some of them are marked as former members.
 - Congress-scoped browsing (`/bills/[congress]`) is bounded to the 93rd Congress (1973) onward, matching where
   Congress.gov's own bill and resolution records begin — see `EARLIEST_COVERED_CONGRESS` in
   `src/lib/congress/congress-history.ts`.
@@ -143,6 +152,8 @@ serve live data. Concretely, this build:
 - Pre-renders every preview bill's detail page, one bill-directory page per Congress the preview fixtures cover, and a
   member page per placeholder member, via `generateStaticParams` (a static export can't look up arbitrary bills,
   Congresses, or members on demand).
+- Serves the member directory unchanged. Its filtering is entirely client-side, so it is the one directory in this app
+  that behaves identically in the static demo and the live deployment — only the roster behind it differs.
 - Drops the `/api/bills` pagination route and the `/api/bills/search` search route before building — both need to read
   the request URL (for `offset`/`congress`, or `q`, respectively), which a static export can't do. Pagination is only
   offered when live data is active anyway, and search falls back to filtering whatever preview bills are already loaded
@@ -166,5 +177,6 @@ Read [docs/architecture.md](docs/architecture.md) for the component, data, and d
 2. Add sign-in and the `saved_bills` feature.
 3. Build additional source-linked learning modules for committees and voting (the bill-lifecycle module now lives at
    `/learn/how-a-bill-becomes-law`).
-4. Add a browsable member directory and committee membership, now that individual member pages exist to link into.
+4. Add committee membership and committee pages — the browsable member directory now lives at `/members`, so a
+   committee roster has both people to link to and a directory to link back into.
 5. Add notifications only after freshness, provenance, and opt-in controls are solid.

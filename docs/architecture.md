@@ -40,15 +40,17 @@ flowchart LR
 `src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
 components, and tests import one stable path while the internals stay free to move.
 
-| Module              | Responsibility                                                                |
-|---------------------|-------------------------------------------------------------------------------|
-| `api-schema.ts`     | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
-| `http.ts`           | Key access, URL building, caching policy, one request helper, route guards.   |
-| `mappers.ts`        | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
-| `bills.ts`          | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
-| `composition.ts`    | Chamber membership, including the member list's pagination.                   |
-| `member-profile.ts` | One member's own record, plus the legislation they sponsored and cosponsored. |
-| `client.ts`         | Public surface. Re-exports only.                                              |
+| Module                | Responsibility                                                                |
+|-----------------------|-------------------------------------------------------------------------------|
+| `api-schema.ts`       | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
+| `http.ts`             | Key access, URL building, caching policy, one request helper, route guards.   |
+| `mappers.ts`          | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
+| `bills.ts`            | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
+| `composition.ts`      | Chamber membership, including the member list's pagination.                   |
+| `member-directory.ts` | The same membership, reshaped into one browsable alphabetical roster.         |
+| `member-filter.ts`    | The directory's narrowing rules. Pure and isomorphic; performs no I/O.        |
+| `member-profile.ts`   | One member's own record, plus the legislation they sponsored and cosponsored. |
+| `client.ts`           | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:
 
@@ -83,6 +85,14 @@ ceiling, so `getCongressComposition` (in `composition.ts`) reads `pagination.cou
 requests the remainder in parallel. Chart geometry is computed separately, in a pure module
 (`src/lib/congress/seating.ts`) that knows nothing about Congress.gov — see "The Chamber Diagram Is a Schematic" in
 `docs/decisions.md`.
+
+The member directory (`/members`) is not a fourth endpoint. `getMemberDirectory` (in `member-directory.ts`) calls the
+same `getCongressComposition` the chamber diagram does, so the two share one cached fetch inside the five-minute window
+and cannot disagree about who is serving; what it adds is reshaping — flattening both chambers into one alphabetical
+list, carrying `chamber` down onto each row (a flat list no longer has a grouping to imply it), and dropping any member
+whose record carries no Bioguide ID, since a directory row that opens nothing is dead weight. Narrowing then happens
+entirely in the browser against `member-filter.ts`, which is pure and imports no server module — see "The Member
+Directory Filters in the Browser" in `docs/decisions.md`.
 
 An *individual* member (`/members/[bioguideId]`) is a separate read in `member-profile.ts`, against a different
 endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list

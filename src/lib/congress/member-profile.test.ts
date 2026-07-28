@@ -15,6 +15,18 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
+/**
+ * A fetch mock that answers every call with a *fresh* `Response`.
+ *
+ * `mockResolvedValue(jsonResponse(...))` hands the same object to every caller, and `getMemberProfile` issues its three
+ * reads concurrently — so the first to read the body consumes it and the other two fail with "Body is unusable". The
+ * profile assertions still pass, which is exactly what makes the mistake easy to keep: the legislation lists come back
+ * silently empty and the failure only ever surfaces as console noise.
+ */
+function alwaysRespond(body: unknown, status = 200): () => Promise<Response> {
+  return (): Promise<Response> => Promise.resolve(jsonResponse(body, status));
+}
+
 /** A minimal live item-endpoint payload, with the bare `terms` array that endpoint actually returns. */
 function liveMemberPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -89,7 +101,7 @@ describe("getMemberProfile without an API key", (): void => {
 describe("getMemberProfile with an API key", (): void => {
   it("maps a live item-endpoint record, including its bare terms array", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(liveMemberPayload())));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(alwaysRespond(liveMemberPayload())));
 
     const result: MemberProfileResult = await getMemberProfile("L000174");
 
@@ -108,8 +120,8 @@ describe("getMemberProfile with an API key", (): void => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse(
+      vi.fn().mockImplementation(
+        alwaysRespond(
           liveMemberPayload({
             terms: { item: [{ chamber: "House of Representatives", congress: 118, startYear: 2023 }] },
           }),

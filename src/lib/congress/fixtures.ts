@@ -4,7 +4,9 @@ import {
   type CongressChamber,
   type CongressComposition,
   type CongressMember,
+  compareMembersByName,
   congressChambers,
+  type MemberDirectoryEntry,
   type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members";
@@ -334,6 +336,36 @@ export const previewMemberProfiles: MemberProfile[] = [
 export function findPreviewMemberProfile(bioguideId: string): MemberProfile | undefined {
   const wanted: string = bioguideId.trim().toUpperCase();
   return previewMemberProfiles.find((profile: MemberProfile): boolean => profile.bioguideId === wanted);
+}
+
+/**
+ * The placeholder members as directory rows.
+ *
+ * Derived from {@link previewMemberProfiles} rather than kept as a second hand-maintained list, so the directory and
+ * the member pages it links to can never disagree about who exists.
+ *
+ * This is a smaller claim than the chamber diagram's, and stays within the same policy: these seven names are already
+ * printed on the preview bills, and the directory is the same length as that list — plainly seven placeholder people,
+ * not a plausible-looking roster of a chamber. Note that some of them are *former* members, which a live directory of
+ * currently-seated members would never contain; the route says which kind of list a reader is looking at rather than
+ * quietly filtering the fixtures down to match a shape they were never built for.
+ *
+ * @returns One row per placeholder member, alphabetically.
+ */
+export function previewMemberDirectory(): MemberDirectoryEntry[] {
+  return previewMemberProfiles
+    .map(
+      (profile: MemberProfile): MemberDirectoryEntry => ({
+        bioguideId: profile.bioguideId,
+        name: profile.name,
+        party: profile.party,
+        partyName: profile.partyName,
+        state: profile.state,
+        district: profile.district,
+        chamber: profile.chamber,
+      }),
+    )
+    .sort(compareMembersByName);
 }
 
 /**

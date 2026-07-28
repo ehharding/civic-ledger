@@ -190,6 +190,11 @@ everywhere is worth more than the transition. `Enter` on a seat is consequently 
 intercepted, since intercepting it would break open-in-new-tab; the read-out lock that `Enter` used to perform survives
 only on placeholder seats, which have nowhere to go.
 
+A browsable directory of those pages now exists at `/members` — see "The Directory Reuses the Chamber Diagram's Roster"
+below — so a member page's backlink points there rather than at the home page. "Back" from one person is far more
+usefully the list of everyone than the front door, particularly for a reader who arrived from a bill's sponsor line and
+would otherwise have no sideways move available.
+
 The page reports service and leaves scoring alone — no vote ratings, effectiveness scores, or ideological placement.
 Those are editorial judgments, and this project's stated position is that clarity and provenance, not persuasion, are
 the product. It says so in its own closing card rather than leaving the omission to be inferred.
@@ -238,3 +243,52 @@ and a healthy upstream at build time. That is a meaningful new failure mode for 
 cheaply and reliably generated. Every member page is already reachable from the chamber diagram and from the bills its
 member sponsored, which is the same reasoning that keeps individual bill records out. Revisit this alongside the
 scheduled-ingestion path in `docs/architecture.md`, where a roster will already be on hand locally.
+
+The `/members` directory route itself *is* listed, and it strengthens the case for leaving the individual pages out:
+the route is fixed, needs no key to resolve, and is now a single crawlable page that links to every member — which is
+what a crawler actually needed, without making sitemap generation depend on a live upstream.
+
+## The Member Directory Filters in the Browser
+
+`/bills` and `/members` are both directories with a search box, and they work in opposite ways on purpose.
+
+Bills number in the hundreds of thousands, and Congress.gov has no keyword-search parameter, so bill search has to be a
+debounced request to a server-side sweep ("Search Sweeps Every Congress..." above). A Congress is a little over 540
+people. The whole roster is already in memory once the composition resolves, and it is already being serialized into
+the page to draw the grid — so it is handed to the browser whole, and every subsequent search, chamber toggle, party
+choice, and state selection runs there instantly. No request per keystroke, no debounce, no loading state, no failure
+mode when a route handler is unreachable, and nothing to special-case for the static export: the member directory is
+the one directory in this app that behaves identically in the GitHub Pages demo and the live deployment.
+
+That is why the narrowing rules live in `src/lib/congress/member-filter.ts`, pure and importing nothing server-side —
+the same boundary `search.ts` keeps for bills, and for the same reason: a client component must be able to import them
+without dragging the adapter, and the API key it reads, into the browser bundle.
+
+Free-text search covers a member's name and the jurisdiction they represent, including the seat as it reads on screen —
+so "Ohio", "9th district", "at-large", and "non-voting" all find what a reader would expect. Party is deliberately
+excluded from it, because party has a dedicated filter beside the box and matching it in free text would make typing
+"d" return every Democrat alongside everyone whose name happens to contain the letter.
+
+## The Directory Reuses the Chamber Diagram's Roster Rather Than Adding an Endpoint
+
+`getMemberDirectory` calls `getCongressComposition` — the same `/v3/member/congress/{congress}` read, with the same
+`currentMember=true` filter, on the same cache tag and five-minute window — instead of issuing its own request. Two
+things follow, both of which were the point:
+
+- **It costs nothing extra upstream.** Within the cache window, a visitor who lands on the home page and then opens
+  `/members` makes no additional Congress.gov requests at all. Adding a page did not add a quota cost.
+- **The two views cannot disagree.** A separate fetch could return a different roster on either side of a membership
+  change, and "the diagram shows 435 seats but the directory lists 434 people" is exactly the kind of quiet
+  inconsistency that erodes trust in a source-provenance product.
+
+It also inherits the diagram's honest limits rather than restating them: this is who holds a seat *now*, not everyone
+who served during the Congress, and vacant seats are absent rather than listed. The directory says so in its own scope
+note rather than leaving a reader to assume a complete historical roster.
+
+One rule is the directory's own. A member whose upstream record carries no Bioguide ID is dropped at the boundary
+(`buildMemberDirectory`) rather than rendered, because a directory exists to reach a person's page and a row that opens
+nothing is dead weight. That rule is what makes the preview path a genuinely separate branch: every placeholder seat in
+the diagram is unattributed and ID-less, so a preview directory built from the composition would be empty. It is built
+from `previewMemberProfiles` instead — the same seven placeholder people the preview bills already name, and the same
+ones their member pages already exist for. The scope note says they are placeholders and that some no longer hold a
+seat, rather than filtering the fixtures down to fake a shape they were never built for.

@@ -15,6 +15,7 @@ describe("SiteHeader", (): void => {
     const primaryNav: HTMLElement = screen.getByRole("navigation", { name: "Primary navigation" });
 
     expect(primaryNav.querySelector('a[href="/bills"]')).toHaveTextContent("Bills");
+    expect(primaryNav.querySelector('a[href="/members"]')).toHaveTextContent("Members");
     expect(primaryNav.querySelector('a[href="/learn"]')).toHaveTextContent("Learn");
     expect(primaryNav.querySelector('a[href="/about"]')).toHaveTextContent("Methodology");
   });

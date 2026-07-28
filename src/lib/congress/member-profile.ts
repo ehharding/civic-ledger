@@ -123,9 +123,15 @@ export async function getMemberProfile(rawBioguideId: string): Promise<MemberPro
       ...previewMemberLegislation(profile?.bioguideId),
       source: "preview",
       retrievedAt,
+      // Three genuinely different situations land here, and only one of them is "no key". A malformed ID with a key
+      // configured is a bad URL, not a configuration problem, and shouldn't be reported as one — even though the route
+      // renders an unresolved profile as a 404 before this notice can be read, since that is exactly the kind of
+      // almost-unreachable wording that goes quietly wrong the first time it becomes reachable.
       notice: profile
         ? "This is an illustrative placeholder member, not a real member of Congress."
-        : "Placeholder records are shown until a server-only Congress.gov API key is configured.",
+        : apiKey
+          ? "That is not a valid Bioguide ID, so no member could be looked up."
+          : "Placeholder records are shown until a server-only Congress.gov API key is configured.",
     };
   }
 

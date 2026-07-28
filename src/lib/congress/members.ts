@@ -412,6 +412,48 @@ export type MemberProfile = {
 };
 
 /**
+ * One row of the browsable member directory (`/members`).
+ *
+ * A third member shape, deliberately, sitting between the other two: {@link CongressMember} is what the chamber chart
+ * draws (no chamber field — it's implied by the composition a member is grouped under — and no guaranteed ID, since a
+ * placeholder seat has none), while {@link MemberProfile} is the whole item-level record and far more than a list row
+ * needs. A directory row is the small set of facts a person scans and filters on, plus the two things a list of
+ * *links* can't do without: a chamber to filter by and an ID to open.
+ *
+ * `bioguideId` is required here for that reason. A row nobody can open is dead weight in a directory whose entire
+ * purpose is to reach a person's page, so a record without one is dropped at the boundary rather than rendered as an
+ * inert entry.
+ * @see buildMemberDirectory
+ */
+export type MemberDirectoryEntry = {
+  bioguideId: string;
+  /** Last-name-first, as Congress.gov publishes it — the form that sorts correctly without re-parsing a name. */
+  name: string;
+  party: PartyGroup;
+  partyName?: string;
+  state?: string;
+  district?: number;
+  chamber: CongressChamber;
+};
+
+/**
+ * Orders members alphabetically by their last-name-first name.
+ *
+ * `localeCompare` rather than `<`, so names carrying diacritics or apostrophes (Núñez, O'Halleran) sort where a reader
+ * expects rather than where their code points fall.
+ *
+ * Declared structurally so it can order any named member shape — a directory entry, a `CongressMember`, a profile —
+ * rather than only the one it was written for.
+ *
+ * @param a - One member to compare.
+ * @param b - The other member to compare.
+ * @returns A standard comparator result.
+ */
+export function compareMembersByName(a: { name: string }, b: { name: string }): number {
+  return a.name.localeCompare(b.name);
+}
+
+/**
  * The title a member holds, for headings and prose.
  *
  * @param profile - The member to title.

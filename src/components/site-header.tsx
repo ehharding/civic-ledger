@@ -10,11 +10,12 @@ type NavLink = {
 };
 
 /**
- * Primary navigation, in the order the site is meant to be understood: the records first, then how to read them, then
- * how they were gathered.
+ * Primary navigation, in the order the site is meant to be understood: the records first, then the people behind them,
+ * then how to read both, then how they were gathered.
  */
 const NAV_LINKS: readonly NavLink[] = [
   { label: "Bills", href: "/bills" as Route },
+  { label: "Members", href: "/members" as Route },
   { label: "Learn", href: "/learn" as Route },
   { label: "Methodology", href: "/about" as Route },
 ];

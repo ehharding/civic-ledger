@@ -7,8 +7,21 @@ import { getSiteUrl } from "@/lib/site";
 // required explicitly because `output: "export"` won't infer it.
 export const dynamic = "force-static";
 
-/** Static top-level routes. Their content changes rarely, so they carry a low change frequency. */
-const STATIC_ROUTES: readonly string[] = ["", "/bills", "/learn", "/learn/how-a-bill-becomes-law", "/about"];
+/**
+ * Static top-level routes. Their content changes rarely, so they carry a low change frequency.
+ *
+ * `/members` belongs here even though the roster behind it is live data: the *route* is fixed and reachable without an
+ * API key, which is all a crawler needs. Individual member pages still stay out — see "Member Routes Stay Out of the
+ * Sitemap" in `docs/decisions.md` — and the directory is now the page that leads a crawler to all of them.
+ */
+const STATIC_ROUTES: readonly string[] = [
+  "",
+  "/bills",
+  "/members",
+  "/learn",
+  "/learn/how-a-bill-becomes-law",
+  "/about",
+];
 
 /**
  * Generates `sitemap.xml`, referenced by `robots.ts`.

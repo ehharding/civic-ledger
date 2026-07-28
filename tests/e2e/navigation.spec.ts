@@ -20,6 +20,7 @@ test("home page renders the hero and primary nav", async ({
 
   const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
   await expect(primaryNav.getByRole("link", { name: "Bills" })).toBeVisible();
+  await expect(primaryNav.getByRole("link", { name: "Members" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Learn" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeVisible();
 });
@@ -34,6 +35,11 @@ test("primary nav links land on the right page", async ({
   await expect(page).toHaveURL(/\/bills$/);
   await expect(page.getByRole("heading", { level: 1, name: "Start With the Record." })).toBeVisible();
   await expect(page).toHaveTitle("Bills — Civic Ledger");
+
+  await primaryNav.getByRole("link", { name: "Members" }).click();
+  await expect(page).toHaveURL(/\/members$/);
+  await expect(page.getByRole("heading", { level: 1, name: "The People Who Write It." })).toBeVisible();
+  await expect(page).toHaveTitle("Members — Civic Ledger");
 
   await primaryNav.getByRole("link", { name: "Learn" }).click();
   await expect(page).toHaveURL(/\/learn$/);
@@ -113,6 +119,29 @@ test("a bill's sponsor leads to their member page", async ({
     const surname: string = (sponsorName.split(",")[0] ?? "").replace(/^(Rep\.|Sen\.)\s*/, "").trim();
     if (surname) await expect(page.getByRole("heading", { level: 1 })).toContainText(surname);
   }
+});
+
+test("the member directory filters in place and opens a member's page", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/members");
+
+  const firstCardLink: Locator = page.locator(".member-card h3 a").first();
+  const memberName: string | null = await firstCardLink.textContent();
+  expect(memberName).toBeTruthy();
+
+  // Filtering is entirely client-side, so narrowing should take effect without a navigation.
+  const surname: string = (memberName ?? "").split(",")[0] ?? "";
+  await page.getByRole("searchbox", { name: /Search members/ }).fill(surname);
+  await expect(page).toHaveURL(/\/members$/);
+
+  await page.locator(".member-card h3 a").first().click();
+  await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(surname);
+
+  // A member page leads back to the list it came from, not only to the home page.
+  await page.getByRole("link", { name: "All Members" }).click();
+  await expect(page).toHaveURL(/\/members$/);
 });
 
 test("the skip link is the first tab stop and moves focus to the main landmark", async ({

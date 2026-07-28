@@ -66,8 +66,6 @@
   margin-top: 10px;
 }
 
-/* Motion-sensitive users: the shimmer doesn't convey information that's lost by holding still — the skeleton is still
-   visible without the motion. */
 /* Member page skeleton (app/members/[bioguideId]/loading.tsx). */
 .skeleton--portrait {
   width: 160px;
@@ -90,6 +88,15 @@
   height: 34px;
 }
 
+/* Member directory skeleton (app/members/loading.tsx). Shorter than .skeleton--card: a member card carries three short
+   lines, not a bill card's title, action text, and journey stepper. */
+.skeleton--member-card {
+  min-height: 108px;
+  border-radius: 10px;
+}
+
+/* Motion-sensitive users: the shimmer doesn't convey information that's lost by holding still — the skeleton is still
+   visible without the motion. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

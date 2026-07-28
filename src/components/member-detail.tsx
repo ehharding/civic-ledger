@@ -194,9 +194,12 @@ export function MemberDetail({
 
   return (
     <SiteShell>
+      {/* Points at the directory rather than the home page: a person who reached a member from a bill's sponsor line or
+          a seat in the chamber diagram has nowhere sideways to go otherwise, and "back" from one person is far more
+          usefully the list of everyone than the front door. */}
       <div className="bill-backlink">
-        <Link href="/">
-          <ChevronLeft aria-hidden="true" size={16} /> The Chamber
+        <Link href="/members">
+          <ChevronLeft aria-hidden="true" size={16} /> All Members
         </Link>
       </div>
 

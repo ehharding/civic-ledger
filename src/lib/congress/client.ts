@@ -8,14 +8,16 @@
  *
  * Where things now live:
  *
- * | Module          | Responsibility                                                                |
- * |-----------------|-------------------------------------------------------------------------------|
- * | `api-schema.ts` | Runtime shapes for Congress.gov v3 payloads — the untrusted-input boundary.   |
- * | `http.ts`       | Key access, URL building, caching policy, one request helper, route guards.   |
- * | `mappers.ts`    | Upstream shapes to this app's stable model. Pure; no I/O.                     |
- * | `bills.ts`      | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
- * | `composition.ts`| Chamber membership, including the member list's pagination.                   |
- * | `member-profile.ts` | One member's record, plus the legislation they sponsored and cosponsored. |
+ * | Module                | Responsibility                                                              |
+ * |-----------------------|-----------------------------------------------------------------------------|
+ * | `api-schema.ts`       | Runtime shapes for Congress.gov v3 payloads — the untrusted-input boundary. |
+ * | `http.ts`             | Key access, URL building, caching policy, one request helper, route guards. |
+ * | `mappers.ts`          | Upstream shapes to this app's stable model. Pure; no I/O.                   |
+ * | `bills.ts`            | Bill snapshots, pagination, lookup, summaries, text versions, search.       |
+ * | `composition.ts`      | Chamber membership, including the member list's pagination.                 |
+ * | `member-directory.ts` | The same membership, reshaped into one browsable alphabetical roster.       |
+ * | `member-filter.ts`    | The directory's narrowing rules. Pure and isomorphic; no I/O.               |
+ * | `member-profile.ts`   | One member's record, plus the legislation they sponsored and cosponsored.   |
  *
  * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an
  * exception), and anything that can come from either live or preview data reports which it was, on the returned value
@@ -37,6 +39,11 @@ export {
 } from "@/lib/congress/bills";
 export { getCongressComposition } from "@/lib/congress/composition";
 export { getCongressApiKey, REVALIDATE_SECONDS } from "@/lib/congress/http";
+export {
+  buildMemberDirectory,
+  getMemberDirectory,
+  type MemberDirectoryResult,
+} from "@/lib/congress/member-directory";
 export {
   getMemberProfile,
   MEMBER_LEGISLATION_LIMIT,
