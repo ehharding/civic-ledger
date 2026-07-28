@@ -129,6 +129,39 @@ type CongressApiMemberListResponse = {
 /** Base URL for every Congress.gov v3 request this adapter makes. */
 const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
 
+/** The only bill/resolution type path segments Congress.gov's bill endpoint accepts. */
+const BILL_PATH_TYPES: ReadonlySet<string> = new Set([
+  "hr",
+  "s",
+  "hjres",
+  "sjres",
+  "hconres",
+  "sconres",
+  "hres",
+  "sres",
+]);
+
+const CONGRESS_SEGMENT_PATTERN: RegExp = /^\d{1,3}$/;
+const BILL_NUMBER_SEGMENT_PATTERN: RegExp = /^\d{1,6}$/;
+
+/**
+ * Narrows potentially user-influenced bill route params to the exact path-segment formats we allow before constructing
+ * an outbound Congress.gov URL.
+ */
+function normalizeBillRouteParams(
+  input: BillRouteParams,
+): { congress: string; type: string; number: string } | null {
+  const congress: string = input.congress.trim();
+  const type: string = input.type.trim().toLowerCase();
+  const number: string = input.number.trim();
+
+  if (!CONGRESS_SEGMENT_PATTERN.test(congress)) return null;
+  if (!BILL_PATH_TYPES.has(type)) return null;
+  if (!BILL_NUMBER_SEGMENT_PATTERN.test(number)) return null;
+
+  return { congress, type, number };
+}
+
 /**
  * How long Next caches a Congress.gov response before revalidating, in seconds. One shared constant so the app's
  * "five-minute caching" story (see docs/architecture.md and the README's Data Policy) lives in a single place instead
@@ -684,7 +717,12 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
     return { bill: findPreviewBill(input), source: "preview", retrievedAt };
   }
 
-  const url: URL = buildCongressUrl(`/bill/${input.congress}/${input.type.toLowerCase()}/${input.number}`, apiKey);
+  const normalized: { congress: string; type: string; number: string } | null = normalizeBillRouteParams(input);
+  if (!normalized) {
+    return { bill: undefined, source: "live", retrievedAt };
+  }
+
+  const url: URL = buildCongressUrl(`/bill/${normalized.congress}/${normalized.type}/${normalized.number}`, apiKey);
 
   try {
     const response: Response = await fetchCongressGov(url, billCacheTags(input));
