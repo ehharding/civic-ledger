@@ -170,3 +170,71 @@ same five-minute cache as everything else, and issued concurrently with the bill
 the 5,000/hour quota, and a cheaper addition than the cross-Congress search sweep already documented above. If the home
 page ever needs a fourth independent dataset, that is the point to revisit whether these belong in the
 scheduled-ingestion path in `docs/architecture.md` instead of on-demand reads.
+
+## Member Pages Link Inward Before They Link Outward
+
+`/members/[bioguideId]` gives every person named anywhere in the app a page of their own, reachable from any seat in
+the chamber diagram and from a bill's sponsor line. Before it existed, both of those pointed straight out to the
+Biographical Directory — which answers "who is this person" but not "what else have they introduced," and takes the
+reader off the site to do it.
+
+The sponsor line therefore now links to the member page rather than to bioguide.congress.gov. Nothing is lost by the
+change: the member page carries the official-biography link onward, alongside the member's own house.gov/senate.gov
+site when the record has one. The route is keyed on the Bioguide ID for the same reason `bioguideUrl` was — it is
+already unique and, unlike a name slug, never changes.
+
+Chart seats are real SVG `<a>` elements rather than click handlers, so a seat can be opened in a new tab, copied, or
+followed by a crawler. That does mean a full page load instead of client-side navigation: inside `<svg>` React creates
+the anchor in the SVG namespace, where `next/link`'s navigation has nothing to attach to. Behaving like a link
+everywhere is worth more than the transition. `Enter` on a seat is consequently left to the browser rather than
+intercepted, since intercepting it would break open-in-new-tab; the read-out lock that `Enter` used to perform survives
+only on placeholder seats, which have nowhere to go.
+
+The page reports service and leaves scoring alone — no vote ratings, effectiveness scores, or ideological placement.
+Those are editorial judgments, and this project's stated position is that clarity and provenance, not persuasion, are
+the product. It says so in its own closing card rather than leaving the omission to be inferred.
+
+## Placeholder Members Exist Where a Placeholder Roster Still Doesn't
+
+"Preview Seats Are Placeholders, Not a Fictional Roster" above stands: the no-key chamber diagram is still filled with
+unattributed "Preview seat N" placeholders, and those seats are deliberately *not* links, because they name nobody.
+
+Member pages for the seven fictional sponsors already printed on `previewBills` are a different and much smaller claim.
+A reader who clicks a sponsor's name has already been shown a labeled preview bill; a chamber diagram of 535 plausible
+names invites someone to look up their *own* representative and be quietly misinformed about who that is. Giving a page
+to a name the fixtures already print doesn't add a claim the fixtures weren't already making.
+
+Two safeguards keep the fiction unmistakable, both structural rather than editorial:
+
+- **The IDs cannot be real.** `PREVIEW-1` and friends fail `isBioguideId`, which only accepts the letter-plus-six-digits
+  form Congress.gov issues. That single guard means a placeholder is never sent upstream *and* never produces a
+  Biographical Directory link — the page cannot point at a real person's biography even by mistake.
+- **No official website.** Same reasoning as the fixtures' bare congress.gov link: a fabricated deep link is the easiest
+  way for preview content to be taken for the official record.
+
+## The Official-Record Link Is Derived, Not Passed Through
+
+Congress.gov's `url` field on a bill record is a *self-referential API* link
+(`https://api.congress.gov/v3/bill/119/hr/284?format=json`), not the public page a reader wants. Passing it straight
+through to `LegislativeBill.officialUrl` meant the bill detail page's "Open the Official Record" link — the single most
+important link in an app whose whole premise is source provenance — served raw JSON, or a 403 to anyone without an API
+key of their own.
+
+`congressGovBillUrl` in `src/lib/congress/types.ts` now derives the public URL
+(`https://www.congress.gov/bill/119th-congress/house-bill/284`) from the bill's own identity, which `mapCongressBill`
+already requires to be present before it will map a record at all. An unrecognized bill type falls back to the
+Congress.gov home page rather than emitting a confidently wrong deep link — the same instinct behind the preview
+fixtures' home-page links. The fixtures themselves are hand-written records that never pass through the mapper, so they
+keep their bare home-page link and gain no plausible-looking deep link from this change.
+
+## Member Routes Stay Out of the Sitemap
+
+The sitemap enumerates every supported Congress because that list is computed — `listCongresses` derives it from a fixed
+constitutional cadence with no I/O — which is what lets `sitemap.ts` stay `force-static` and work in the static export.
+
+Members are bounded (~540) and individually useful, so they look like they belong there. They don't, yet: knowing who
+currently holds a seat requires a live Congress.gov request, which would make sitemap generation depend on an API key
+and a healthy upstream at build time. That is a meaningful new failure mode for a file whose entire job is to be
+cheaply and reliably generated. Every member page is already reachable from the chamber diagram and from the bills its
+member sponsored, which is the same reasoning that keeps individual bill records out. Revisit this alongside the
+scheduled-ingestion path in `docs/architecture.md`, where a roster will already be on hand locally.

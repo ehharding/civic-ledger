@@ -18,7 +18,10 @@ make the legislative process more legible without replacing the official record.
   `/api/bills`, key never touches the browser)
 - Bill-record route with an educational journey cue at `/bills/[congress]/[type]/[number]`, resolved via a direct
   single-bill lookup so any real bill works — not just the dozen most recently returned by the list endpoint
-- Loading skeletons for both bill directory routes and the bill detail route
+- Individual member route at `/members/[bioguideId]` — portrait, party, seat, term-by-term service record, leadership
+  roles, and the legislation they sponsored and cosponsored. Reachable from anywhere a person is named: every seat in
+  the chamber diagram is a link, and so is every bill's sponsor line
+- Loading skeletons for both bill directory routes, the bill detail route, and the member route
 - Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
   at `/learn/how-a-bill-becomes-law`
 - Server-only Congress.gov API adapter with boundary types, five-minute caching, JSON requests, and safe preview
@@ -80,7 +83,17 @@ pnpm exec playwright install chromium
   are counted and labeled separately. See "The Chamber Diagram Is a Schematic" in `docs/decisions.md`.
 - Without an API key the diagram renders unattributed placeholder seats on a deliberately round, illustrative party
   split — never a fabricated roster of member names, and never a real-looking party balance a fixture can't keep true.
-- Every bill page retains an official-record link.
+- Every bill page retains an official-record link, pointing at the *public* Congress.gov page for that record
+  (`https://www.congress.gov/bill/119th-congress/house-bill/284`). It is derived from the bill's own identity rather
+  than taken from the API's `url` field, which is a self-referential API endpoint that serves JSON — see "The
+  Official-Record Link Is Derived, Not Passed Through" in `docs/decisions.md`.
+- Member pages report what Congress.gov publishes — service record, party, jurisdiction, and the legislation a member
+  put their name to. There are no vote ratings, effectiveness scores, or ideological placements: those are editorial
+  judgments, and this project's stance is that clarity and provenance, not persuasion, are the product.
+- Without an API key, member pages exist only for the fictional sponsors the preview bills already name. Their IDs
+  (`PREVIEW-1`…) deliberately cannot be valid Bioguide IDs, so a placeholder is never requested from Congress.gov and
+  can never render a link to a real person's biography. The chamber diagram's placeholder seats stay unattributed and
+  unlinked — see "Placeholder Members Exist Where a Placeholder Roster Still Doesn't" in `docs/decisions.md`.
 - Congress-scoped browsing (`/bills/[congress]`) is bounded to the 93rd Congress (1973) onward, matching where
   Congress.gov's own bill and resolution records begin — see `EARLIEST_COVERED_CONGRESS` in
   `src/lib/congress/congress-history.ts`.
@@ -127,8 +140,9 @@ fixtures — a static export has no server left at request time, so it structura
 serve live data. Concretely, this build:
 
 - Sets `output: "export"` and the right `basePath` for a GitHub Pages project site.
-- Pre-renders every preview bill's detail page, and one bill-directory page per Congress the preview fixtures cover,
-  via `generateStaticParams` (a static export can't look up arbitrary bills or Congresses on demand).
+- Pre-renders every preview bill's detail page, one bill-directory page per Congress the preview fixtures cover, and a
+  member page per placeholder member, via `generateStaticParams` (a static export can't look up arbitrary bills,
+  Congresses, or members on demand).
 - Drops the `/api/bills` pagination route and the `/api/bills/search` search route before building — both need to read
   the request URL (for `offset`/`congress`, or `q`, respectively), which a static export can't do. Pagination is only
   offered when live data is active anyway, and search falls back to filtering whatever preview bills are already loaded
@@ -152,4 +166,5 @@ Read [docs/architecture.md](docs/architecture.md) for the component, data, and d
 2. Add sign-in and the `saved_bills` feature.
 3. Build additional source-linked learning modules for committees and voting (the bill-lifecycle module now lives at
    `/learn/how-a-bill-becomes-law`).
-4. Add notifications only after freshness, provenance, and opt-in controls are solid.
+4. Add a browsable member directory and committee membership, now that individual member pages exist to link into.
+5. Add notifications only after freshness, provenance, and opt-in controls are solid.

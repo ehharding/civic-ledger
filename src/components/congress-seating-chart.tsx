@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ArrowUpRight, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import {
   type FocusEvent,
   type JSX,
@@ -12,6 +13,7 @@ import {
   useState,
 } from "react";
 
+import { ExternalLinkHint } from "@/components/external-link-hint";
 import {
   bioguideUrl,
   type ChamberComposition,
@@ -31,6 +33,7 @@ import {
 } from "@/lib/congress/members";
 import { buildChamberSeating, type ChamberSeat, type ChamberSeating } from "@/lib/congress/seating";
 import { formatOrdinal } from "@/lib/format";
+import { memberHref } from "@/lib/member-route";
 
 /** How far PageUp/PageDown jump along the arc, in seats. */
 const PAGE_STEP: number = 10;
@@ -72,13 +75,17 @@ function tabId(chamber: CongressChamber): string {
  * cheaper than attaching separate listeners per seat, and it keeps hover, focus, and keyboard movement on a single code
  * path.
  *
+ * `closest` rather than a direct attribute read, because a seat that links to its member is an `<a>` wrapping the
+ * `<circle>`: a pointer event lands on the circle while a focus event lands on the anchor. Walking up finds the seat
+ * either way, so linked and unlinked seats share one code path.
+ *
  * @param target - The event target, typically `event.target`.
  * @returns The seat index, or `null` when the event landed somewhere that isn't a seat.
  */
 function seatIndexFromEvent(target: EventTarget | null): number | null {
   if (!(target instanceof Element)) return null;
 
-  const raw: string | null = target.getAttribute("data-seat-index");
+  const raw: string | null = target.closest("[data-seat-index]")?.getAttribute("data-seat-index") ?? null;
   if (raw === null) return null;
 
   const index: number = Number(raw);
@@ -86,16 +93,90 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
 }
 
 /**
+ * One drawn seat.
+ *
+ * A seat whose member has a Bioguide ID is a real SVG `<a>` to that member's page: it can be opened in a new tab,
+ * copied, or followed by a crawler, none of which a scripted click handler offers. A seat without one — every seat in
+ * preview mode, where the roster is deliberately unattributed — has nowhere to go, so it stays a `<circle>` whose
+ * activation only locks the read-out.
+ *
+ * A plain SVG anchor rather than `next/link`, because inside `<svg>` React creates the element in the SVG namespace,
+ * where Link's client-side navigation has nothing to attach to. A full page load is a fair trade for a control that
+ * behaves like the link it is.
+ *
+ * `data-seat-index` sits on the outermost element either way, so the chart's delegated pointer, focus, and keyboard
+ * handlers reach it identically for both forms.
+ * @see seatIndexFromEvent
+ *
+ * @param seat - The seat to draw, carrying its member and resolved position.
+ * @param chamber - The chamber it belongs to, which decides how the accessible name describes it.
+ * @param radius - The chart's shared seat radius.
+ * @param isShown - Whether this seat is the one currently read out, which draws the active ring.
+ * @param isActive - Whether this seat holds the chart's single tab stop.
+ * @returns The seat element.
+ */
+function Seat({
+  seat,
+  chamber,
+  radius,
+  isShown,
+  isActive,
+}: {
+  seat: ChamberSeat;
+  chamber: CongressChamber;
+  radius: number;
+  isShown: boolean;
+  isActive: boolean;
+}): JSX.Element {
+  const label: string = formatMemberSummary(seat.member, chamber);
+  const className: string = `seating__seat seating__seat--${seat.member.party}${isShown ? " is-active" : ""}`;
+  // Rounded to a fixed precision so the server's and the client's rendering of the same float agree exactly — an
+  // unrounded trailing digit reads to React as a hydration mismatch.
+  const cx: string = seat.position.x.toFixed(4);
+  const cy: string = seat.position.y.toFixed(4);
+  const r: string = radius.toFixed(4);
+
+  if (seat.member.bioguideId) {
+    return (
+      <a
+        aria-label={label}
+        data-seat-index={seat.index}
+        href={memberHref(seat.member.bioguideId) as string}
+        tabIndex={isActive ? 0 : -1}
+      >
+        <circle className={className} cx={cx} cy={cy} r={r} />
+      </a>
+    );
+  }
+
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: an HTML <button> cannot be a child of <svg>.
+    <circle
+      aria-label={label}
+      className={className}
+      cx={cx}
+      cy={cy}
+      data-seat-index={seat.index}
+      r={r}
+      role="button"
+      tabIndex={isActive ? 0 : -1}
+    />
+  );
+}
+
+/**
  * The read-out shown when a seat is hovered, focused, or locked by a click.
  *
  * @param chamber - The chamber the seat belongs to, which decides how the seat is described.
  * @param member - The member holding it.
- * @returns The detail panel's contents: name, party, seat, the non-voting caveat where it applies, and a link to the
- *   official biography when the record carries a Bioguide ID.
+ * @returns The detail panel's contents: name, party, seat, the non-voting caveat where it applies, a link to the
+ *   member's own page, and a link to the official biography when the record carries a real Bioguide ID.
  */
 function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: CongressMember }): JSX.Element {
   const seat: string = formatMemberSeat(member, chamber);
   const nonVoting: boolean = chamber === "house" && isNonVotingJurisdiction(member.state);
+  // `undefined` for a placeholder seat, whose ID cannot resolve to a real person's biography. @see bioguideUrl
+  const biographyUrl: string | undefined = member.bioguideId ? bioguideUrl(member.bioguideId) : undefined;
 
   return (
     <>
@@ -109,8 +190,14 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
         </p>
       ) : null}
       {member.bioguideId ? (
-        <a className="text-link seating-detail__link" href={bioguideUrl(member.bioguideId)}>
+        <Link className="text-link seating-detail__link" href={memberHref(member.bioguideId)}>
+          View Full Profile <ArrowUpRight aria-hidden="true" size={14} />
+        </Link>
+      ) : null}
+      {biographyUrl ? (
+        <a className="text-link seating-detail__link" href={biographyUrl} target="_blank" rel="noreferrer">
           Official Biography <ExternalLink aria-hidden="true" size={14} />
+          <ExternalLinkHint />
         </a>
       ) : null}
     </>
@@ -128,9 +215,11 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
  * seat additionally carries its full description as its accessible name, so the diagram reads as a list of
  * members to a screen reader rather than as an unlabeled picture.
  *
- * Seats are `<circle role="button">` rather than real buttons because an HTML `<button>` cannot be a child of `<svg>`.
- * A seat is genuinely an activatable control, so the role is declared explicitly and the roving tabindex supplies the
- * keyboard behavior a real button would otherwise have brought with it.
+ * A seat whose member has a Bioguide ID is an SVG `<a>` linking to that member's own page, so opening it behaves like
+ * any other link — new tab, middle click, copy address. A seat without one (every seat in preview mode, where the
+ * roster is deliberately unattributed) has nowhere to go, so it stays a `<circle role="button">` whose activation just
+ * locks the read-out. The role is declared explicitly in that case because an HTML `<button>` cannot be a child of
+ * `<svg>`; either way the roving tabindex supplies the keyboard behavior a real control would have brought with it.
  *
  * @param composition - Both chambers' membership plus its live/preview provenance, resolved server-side.
  * @returns The chamber tabs, the SVG diagram, the seat read-out panel, the party legend, and the provenance line.
@@ -165,21 +254,30 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     setActiveIndex(0);
   }
 
-  /** Moves the roving tab stop to `index` and follows it with real DOM focus, so the browser announces the seat. */
+  /**
+   * Moves the roving tab stop to `index` and follows it with real DOM focus, so the browser announces the seat.
+   *
+   * Typed as `SVGElement` rather than `SVGCircleElement` because a seat is an `<a>` when its member has a page and a
+   * bare `<circle>` when they don't — the focusable element differs, the lookup doesn't.
+   */
   function moveActiveSeat(index: number): void {
     const clamped: number = Math.max(0, Math.min(seating.seats.length - 1, index));
 
     setActiveIndex(clamped);
-    chartRef.current?.querySelector<SVGCircleElement>(`[data-seat-index="${clamped}"]`)?.focus();
+    chartRef.current?.querySelector<SVGElement>(`[data-seat-index="${clamped}"]`)?.focus();
   }
 
   function handleChartKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
     if (seating.seats.length === 0) return;
 
-    // Add Enter and Space key support to lock the selection
+    // Enter and Space lock the read-out on a seat that has nowhere to go. A seat whose member has a page is a real
+    // link, so activation is left to the browser: intercepting it would break "Enter opens the link", and with it
+    // opening the profile in a new tab or window.
     if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
       const targetIndex: number = focusedIndex ?? activeIndex;
+      if (seating.seats[targetIndex]?.member.bioguideId) return;
+
+      event.preventDefault();
       setSelectedIndex((prev: number | null): number | null => (prev === targetIndex ? null : targetIndex));
       return;
     }
@@ -262,7 +360,8 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
         <h2 id="seating-heading">Every Seat, and Who Holds It.</h2>
         <p className="seating__lede">
           Legislation is written by people, not institutions. Point at any seat — or tab into the chart and use the
-          arrow keys — to see who occupies it, which party they sit with, and where they were elected.
+          arrow keys — to see who occupies it, which party they sit with, and where they were elected. Open a seat to
+          read that member&rsquo;s full record.
         </p>
       </div>
 
@@ -299,7 +398,8 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
           <p className="sr-only" id={CHART_HELP_ID}>
             {chamberLabels[chamber]} of the {formatOrdinal(composition.congress)} Congress,{" "}
             {describeChamberSeats(selected)}. Use the left and right arrow keys to move between seats, Page Up and Page
-            Down to jump by ten, and Home or End to reach the first or last seat.
+            Down to jump by ten, and Home or End to reach the first or last seat. Press Enter on a seat to open that
+            member&rsquo;s page.
           </p>
 
           {seating.seats.length > 0 ? (
@@ -319,21 +419,13 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
             >
               {seating.seats.map(
                 (seat: ChamberSeat): JSX.Element => (
-                  // biome-ignore lint/a11y/useSemanticElements: an HTML <button> cannot be a child of <svg>.
-                  <circle
-                    aria-label={formatMemberSummary(seat.member, chamber)}
-                    className={`seating__seat seating__seat--${seat.member.party}${
-                      seat.index === shownIndex ? " is-active" : ""
-                    }`}
-                    // Rounded to a fixed precision so the server's and the client's rendering of the same float agree
-                    // exactly — an unrounded trailing digit reads to React as a hydration mismatch.
-                    cx={seat.position.x.toFixed(4)}
-                    cy={seat.position.y.toFixed(4)}
-                    data-seat-index={seat.index}
+                  <Seat
+                    chamber={chamber}
+                    isActive={seat.index === activeIndex}
+                    isShown={seat.index === shownIndex}
                     key={seat.key}
-                    r={seating.geometry.seatRadius.toFixed(4)}
-                    role="button"
-                    tabIndex={seat.index === activeIndex ? 0 : -1}
+                    radius={seating.geometry.seatRadius}
+                    seat={seat}
                   />
                 ),
               )}

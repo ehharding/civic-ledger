@@ -154,9 +154,27 @@ export type CongressMember = {
   party: PartyGroup;
   /** The upstream party label, kept verbatim so a nuance like "Independent Democrat" isn't flattened away. */
   partyName?: string;
-  /** The represented state, territory, or district, by full name (e.g. "Vermont"). */
+  /** The represented state, territory, or district, by full name (e.g., "Vermont"). */
   state?: string;
   /** House only. `0` means the state, territory, or district has a single at-large seat. */
+  district?: number;
+};
+
+/**
+ * The party fields the display helpers below read.
+ *
+ * Declared structurally rather than as `CongressMember` so the same helpers serve both the compact list-level
+ * {@link CongressMember} the chart draws and the fuller {@link MemberProfile} the member page renders — one definition
+ * of how a party reads on screen, not two that can drift apart.
+ */
+export type MemberPartyFields = {
+  party: PartyGroup;
+  partyName?: string;
+};
+
+/** The jurisdiction fields the display helpers below read. @see MemberPartyFields for why this is structural. */
+export type MemberSeatFields = {
+  state?: string;
   district?: number;
 };
 
@@ -239,7 +257,7 @@ export function buildChamberComposition(chamber: CongressChamber, members: Congr
  * @returns The verbatim upstream label when there is one — so a nuance like "Independent Democrat" survives to the
  *   page — otherwise the normalized group's label.
  */
-export function formatMemberParty(member: CongressMember): string {
+export function formatMemberParty(member: MemberPartyFields): string {
   const upstream: string = (member.partyName ?? "").trim();
   return upstream.length > 0 ? upstream : partyGroupLabels[member.party];
 }
@@ -253,7 +271,7 @@ export function formatMemberParty(member: CongressMember): string {
  *   state, and "… (non-voting seat)" for the six House seats that carry no floor vote. An empty string when the
  *   upstream record has no jurisdiction, so callers can omit the line rather than print a placeholder.
  */
-export function formatMemberSeat(member: CongressMember, chamber: CongressChamber): string {
+export function formatMemberSeat(member: MemberSeatFields, chamber: CongressChamber): string {
   const state: string = (member.state ?? "").trim();
   if (state.length === 0) return "";
 
@@ -273,14 +291,37 @@ export function formatMemberSeat(member: CongressMember, chamber: CongressChambe
  *
  * @param member - The member holding the seat.
  * @param chamber - The chamber they sit in.
- * @returns e.g. `"Bennett, Marcus T., Democratic, Ohio's 9th district"`, or name and party alone when the record
+ * @returns e.g., `"Bennett, Marcus T., Democratic, Ohio's 9th district"`, or name and party alone when the record
  *   carries no jurisdiction.
  */
-export function formatMemberSummary(member: CongressMember, chamber: CongressChamber): string {
+export function formatMemberSummary(
+  member: MemberPartyFields & MemberSeatFields & { name: string },
+  chamber: CongressChamber,
+): string {
   const seat: string = formatMemberSeat(member, chamber);
   const party: string = formatMemberParty(member);
 
   return seat.length > 0 ? `${member.name}, ${party}, ${seat}` : `${member.name}, ${party}`;
+}
+
+/**
+ * The shape of a real Biographical Directory ID: one letter followed by six digits (e.g., `"L000174"`).
+ *
+ * Used both as a route guard — these arrive from the URL bar, so they're untrusted by definition — and to decide
+ * whether an official-biography link can honestly be offered. The preview fixtures deliberately use IDs that *cannot*
+ * match this pattern (see `previewMemberProfiles`), so a placeholder member can never be handed a link to a real
+ * person's biography.
+ */
+const BIOGUIDE_ID_PATTERN: RegExp = /^[A-Z]\d{6}$/;
+
+/**
+ * Whether `value` is a well-formed Biographical Directory ID.
+ *
+ * @param value - The candidate ID, in any case.
+ * @returns `true` only for the letter-plus-six-digits form Congress.gov actually issues.
+ */
+export function isBioguideId(value: string | undefined): boolean {
+  return BIOGUIDE_ID_PATTERN.test((value ?? "").trim().toUpperCase());
 }
 
 /**
@@ -289,11 +330,152 @@ export function formatMemberSummary(member: CongressMember, chamber: CongressCha
  * Preferred over a congress.gov member URL because that form embeds a name slug that can change; a Bioguide ID never
  * does. This is the same directory Congress.gov's own member pages cite.
  *
- * @param bioguideId - The member's Biographical Directory ID, e.g. `"L000174"`.
- * @returns The absolute URL of their official biography.
+ * @param bioguideId - The member's Biographical Directory ID, e.g., `"L000174"`.
+ * @returns The absolute URL of their official biography, or `undefined` when the ID isn't one the Biographical
+ *   Directory could resolve — which is how a preview placeholder is prevented from linking out as though it were a
+ *   real person.
  */
-export function bioguideUrl(bioguideId: string): string {
-  return `https://bioguide.congress.gov/search/bio/${bioguideId}`;
+export function bioguideUrl(bioguideId: string): string | undefined {
+  if (!isBioguideId(bioguideId)) return undefined;
+
+  return `https://bioguide.congress.gov/search/bio/${bioguideId.trim().toUpperCase()}`;
+}
+
+/** One office a member has held in the leadership of their chamber, as Congress.gov records it. */
+export type MemberLeadershipRole = {
+  /** e.g., `"President Pro Tempore"`, `"Minority Whip"`. */
+  type: string;
+  /** The Congress they held it in. */
+  congress?: number;
+};
+
+/**
+ * One term a member has served.
+ *
+ * Only available from the *item*-level member endpoint — the list endpoint's term entries carry chamber and years but
+ * no congress number and no `memberType`, which is why the chart derives what it can from the jurisdiction instead
+ * (see {@link isNonVotingJurisdiction}).
+ */
+export type MemberTerm = {
+  chamber: CongressChamber;
+  congress?: number;
+  startYear?: number;
+  /** Absent for a term still being served. */
+  endYear?: number;
+  /** e.g., `"Senator"`, `"Representative"`, `"Delegate"`, `"Resident Commissioner"`. */
+  memberType?: string;
+  state?: string;
+  district?: number;
+};
+
+/**
+ * Everything the individual member page renders about one person.
+ *
+ * A superset of {@link CongressMember} rather than a replacement for it: the chart serializes one `CongressMember` per
+ * seat into the home page's payload, ~540 of them, so that shape stays deliberately minimal. This one is fetched for a
+ * single member at a time and can afford the full record.
+ */
+export type MemberProfile = {
+  bioguideId: string;
+  /** Last-name-first, as Congress.gov's `invertedOrderName` — the form that sorts and matches the chart's labels. */
+  name: string;
+  /** Reading order (`"Patrick J. Leahy"`), preferred wherever the name is displayed as prose rather than sorted. */
+  directOrderName?: string;
+  party: PartyGroup;
+  partyName?: string;
+  state?: string;
+  district?: number;
+  /** The chamber of their most recent term. */
+  chamber: CongressChamber;
+  /** Whether they currently hold a seat. A former member's page is a valid, useful page — just not a current one. */
+  currentMember: boolean;
+  /** Their official portrait, when Congress.gov publishes one. */
+  depiction?: {
+    imageUrl: string;
+    /**
+     * Credit line for the portrait, required by the API's terms whenever it's shown. A sanitized HTML fragment (see
+     * `sanitizeSummaryHtml`) — Congress.gov returns it as a link to the holding archive — so it's safe to render
+     * directly.
+     */
+    attribution?: string;
+  };
+  /** Their own house.gov / senate.gov site, when the record carries one. */
+  officialWebsiteUrl?: string;
+  /** Every term on file, most recent first. */
+  terms: MemberTerm[];
+  /** Every leadership office on file, most recent first. */
+  leadership: MemberLeadershipRole[];
+  /** Total bills sponsored across their whole service, as Congress.gov counts them. */
+  sponsoredCount?: number;
+  /** Total bills cosponsored across their whole service. */
+  cosponsoredCount?: number;
+};
+
+/**
+ * The title a member holds, for headings and prose.
+ *
+ * @param profile - The member to title.
+ * @returns Congress.gov's own `memberType` from the most recent term when there is one — which is the only thing that
+ *   distinguishes a Delegate or the Resident Commissioner from a Representative — otherwise the chamber's generic
+ *   title.
+ */
+export function formatMemberTitle(profile: MemberProfile): string {
+  const memberType: string = (profile.terms[0]?.memberType ?? "").trim();
+  if (memberType.length > 0) return memberType;
+
+  return profile.chamber === "senate" ? "Senator" : "Representative";
+}
+
+/**
+ * The member's name as it should read in prose.
+ *
+ * @param profile - The member to name.
+ * @returns Their reading-order name when the record carries one, otherwise the last-name-first form — never an empty
+ *   string, since a page with no name on it is worse than one with an awkwardly ordered name.
+ */
+export function formatMemberName(profile: MemberProfile): string {
+  const direct: string = (profile.directOrderName ?? "").trim();
+  return direct.length > 0 ? direct : profile.name;
+}
+
+/**
+ * One term's calendar span, in plain English.
+ *
+ * @param term - The term to describe.
+ * @returns e.g., `"2019–2021"`, or `"2025–present"` for a term still being served. An empty string when the record
+ *   carries no start year, so callers can omit the line rather than print a dash with nothing around it.
+ */
+export function formatTermYears(term: MemberTerm): string {
+  if (term.startYear === undefined) return "";
+
+  return `${term.startYear}–${term.endYear ?? "present"}`;
+}
+
+/**
+ * How long a member has served, across every term on file.
+ *
+ * Deliberately reports the *span* from their earliest term to now (or to their last term's end) rather than summing
+ * term lengths: service can be non-contiguous, and "in Congress since 1975" is both the more useful fact and the one
+ * that can't be quietly wrong about a gap the way a summed total can.
+ *
+ * @param profile - The member whose service to describe.
+ * @returns e.g., `"Serving since 2019"` or `"Served 1975–2023"`. An empty string when no term carries a start year.
+ */
+export function describeMemberService(profile: MemberProfile): string {
+  const startYears: number[] = profile.terms
+    .map((term: MemberTerm): number | undefined => term.startYear)
+    .filter((year: number | undefined): year is number => year !== undefined);
+
+  if (startYears.length === 0) return "";
+
+  const earliest: number = Math.min(...startYears);
+  if (profile.currentMember) return `Serving since ${earliest}`;
+
+  const endYears: number[] = profile.terms
+    .map((term: MemberTerm): number | undefined => term.endYear)
+    .filter((year: number | undefined): year is number => year !== undefined);
+
+  return endYears.length > 0 ? `Served ${earliest}–${Math.max(...endYears)}` : `Served from ${earliest}`;
 }
 
 /**

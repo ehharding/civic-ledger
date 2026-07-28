@@ -186,3 +186,15 @@
     height: 21px;
   }
 }
+
+@media (max-width: 640px) {
+  /* The portrait and the identity copy stop fitting side by side well before this; stacking keeps the name on one line
+     instead of wrapping into a narrow column. */
+  .member-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .member-portrait__image {
+    width: 128px;
+  }
+}

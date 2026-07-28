@@ -190,3 +190,10 @@
     animation: none;
   }
 }
+
+/* The advisory on the Congress picker's label — see CongressSwitcher on why selecting navigates (WCAG 3.2.2). */
+.congress-switcher__hint {
+  color: var(--ink-faint);
+  font-weight: 400;
+  font-size: 0.8rem;
+}

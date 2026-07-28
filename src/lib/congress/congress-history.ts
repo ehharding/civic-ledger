@@ -38,7 +38,7 @@ export function isValidCongress(congress: number, currentCongress: number = getC
  * The digits-only guard runs *before* `Number()` on purpose: `Number("-5")` is `-5`, not `NaN`, and `Number(" 119 ")`
  * is `119`, so coercing first would quietly accept several strings that are not the URL they claim to be.
  *
- * @param raw - The raw route param, e.g. `"119"`.
+ * @param raw - The raw route param, e.g., `"119"`.
  * @param currentCongress - The upper bound, forwarded to {@link isValidCongress}.
  * @returns The Congress number, or `null` for anything that isn't a clean whole number in the supported range —
  *   non-numeric input, decimals, and signed strings all included. Callers should treat `null` as "not found".

@@ -56,7 +56,7 @@ describe("sanitizeSummaryHtml", (): void => {
   });
 
   it("tolerates the malformed nested-list markup the upstream API is known to emit", (): void => {
-    // See BillEndpoint.md: "The HTML codes may not be valid" — e.g. an empty <ul><ul></ul></ul>.
+    // See BillEndpoint.md: "The HTML codes may not be valid" — e.g., an empty <ul><ul></ul></ul>.
     expect(sanitizeSummaryHtml("<ul><ul> </ul></ul>")).toBe("<ul><ul> </ul></ul>");
   });
 

@@ -99,7 +99,7 @@ describe("BillDetail", (): void => {
     expect(screen.queryByText(/earlier summar/)).not.toBeInTheDocument();
   });
 
-  it("links the sponsor to their official biography when a Bioguide ID is on file", (): void => {
+  it("links the sponsor to their member page when a Bioguide ID is on file", (): void => {
     const withBioguide: LegislativeBill = {
       ...bill,
       sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]", bioguideId: "T000001" },
@@ -107,8 +107,10 @@ describe("BillDetail", (): void => {
     render(<BillDetail bill={withBioguide} source="live" summaries={[]} textVersions={[]} />);
 
     const link = screen.getByRole("link", { name: /Rep. Test, Sample A./ });
-    expect(link).toHaveAttribute("href", "https://bioguide.congress.gov/search/bio/T000001");
-    expect(link).toHaveAttribute("target", "_blank");
+    // Inward, to this app's own page for the sponsor — which carries the official biography link onward. Staying
+    // in-app is what makes a sponsor's other legislation reachable in one step rather than none.
+    expect(link).toHaveAttribute("href", "/members/T000001");
+    expect(link).not.toHaveAttribute("target");
   });
 
   it("shows the sponsor as plain text when no Bioguide ID is on file", (): void => {

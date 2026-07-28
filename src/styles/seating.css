@@ -52,7 +52,10 @@
   color: var(--ink);
 }
 
-.seating__chamber-button[aria-pressed="true"] {
+/* Matches the ARIA tabs pattern the component actually implements. This selector previously readc[aria-pressed="true"],
+   left over from an earlier toggle-button version — it matched nothing, so the selected chamber was styled identically
+   to the unselected one. */
+.seating__chamber-button[aria-selected="true"] {
   border-color: var(--navy);
   color: var(--paper);
   background: var(--navy);
@@ -285,4 +288,21 @@
   .seating__chamber-button {
     transition: none;
   }
+}
+
+/* A seat whose member has a page is an <a> wrapping the <circle>, so focus lands on the anchor rather than on the shape
+   that draws the ring. These mirror the plain-circle rules above onto that wrapper. */
+.seating__chart a {
+  cursor: pointer;
+}
+
+.seating__chart a:focus-visible {
+  outline: none;
+}
+
+.seating__chart a:focus-visible .seating__seat {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  stroke: var(--focus-ring);
+  stroke-width: 3;
 }

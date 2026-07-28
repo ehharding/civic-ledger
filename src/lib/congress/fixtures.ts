@@ -5,6 +5,7 @@ import {
   type CongressComposition,
   type CongressMember,
   congressChambers,
+  type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members";
 import type { LegislativeBill } from "@/lib/congress/types";
@@ -35,7 +36,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Public works and water resources",
     stage: "committee",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Rep. Bennett, Marcus T. [D-OH-9]", party: "D", state: "OH" },
+    sponsor: { fullName: "Rep. Bennett, Marcus T. [D-OH-9]", party: "D", state: "OH", bioguideId: "PREVIEW-1" },
     cosponsorCount: 12,
   },
   {
@@ -52,7 +53,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Government operations and politics",
     stage: "chamber",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Sen. Alvarez, Priya R. [R-AZ]", party: "R", state: "AZ" },
+    sponsor: { fullName: "Sen. Alvarez, Priya R. [R-AZ]", party: "R", state: "AZ", bioguideId: "PREVIEW-2" },
     cosponsorCount: 34,
   },
   {
@@ -69,7 +70,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Education",
     stage: "introduced",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Rep. Okafor, Daniel K. [D-GA-4]", party: "D", state: "GA" },
+    sponsor: { fullName: "Rep. Okafor, Daniel K. [D-GA-4]", party: "D", state: "GA", bioguideId: "PREVIEW-3" },
     cosponsorCount: 3,
   },
   {
@@ -86,7 +87,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Government operations and politics",
     stage: "president",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Sen. Whitmore, Louise B. [R-ME]", party: "R", state: "ME" },
+    sponsor: { fullName: "Sen. Whitmore, Louise B. [R-ME]", party: "R", state: "ME", bioguideId: "PREVIEW-4" },
     cosponsorCount: 21,
   },
   {
@@ -103,7 +104,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Communications",
     stage: "law",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Rep. Castillo, Ana P. [D-TX-20]", party: "D", state: "TX" },
+    sponsor: { fullName: "Rep. Castillo, Ana P. [D-TX-20]", party: "D", state: "TX", bioguideId: "PREVIEW-5" },
     cosponsorCount: 47,
   },
   {
@@ -120,7 +121,7 @@ export const previewBills: LegislativeBill[] = [
     policyArea: "Health",
     stage: "law",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Rep. Dupont, Lauren M. [D-NM-2]", party: "D", state: "NM" },
+    sponsor: { fullName: "Rep. Dupont, Lauren M. [D-NM-2]", party: "D", state: "NM", bioguideId: "PREVIEW-6" },
     cosponsorCount: 58,
   },
   {
@@ -141,7 +142,7 @@ export const previewBills: LegislativeBill[] = [
     // the abstract.
     stage: "chamber",
     officialUrl: "https://www.congress.gov/",
-    sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA" },
+    sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA", bioguideId: "PREVIEW-7" },
     cosponsorCount: 9,
   },
 ];
@@ -189,6 +190,173 @@ export const previewSummaries: Record<string, string> = {
     "composting facilities, and would direct the Department of Agriculture to publish technical guidance for " +
     "municipalities starting a composting program for the first time.",
 };
+
+/**
+ * Placeholder member records for the fictional sponsors named in {@link previewBills}, so the member page renders
+ * without an API key.
+ *
+ * This does *not* loosen the policy that keeps the preview chamber diagram unattributed. The distinction is that these
+ * seven people are already named on the preview bill records, so a reader who clicks a sponsor's name has already been
+ * told they're looking at preview data — whereas a chamber diagram of 535 plausible names invites a reader to look up
+ * their *own* representative and be quietly misinformed about who that is. Adding a page for a name the fixtures
+ * already print is a smaller claim than inventing a roster.
+ *
+ * Two safeguards make the fiction impossible to mistake for a record:
+ *
+ * - **The IDs cannot be real.** `PREVIEW-1` and friends fail {@link isBioguideId}, so they're never sent upstream and
+ *   never produce a Biographical Directory link — the page structurally cannot point at a real person's biography.
+ * - **No official website.** Same reasoning as `previewBills`' bare congress.gov link: a fabricated deep link is the
+ *   single easiest way for preview content to be mistaken for the official record.
+ */
+export const previewMemberProfiles: MemberProfile[] = [
+  {
+    bioguideId: "PREVIEW-1",
+    name: "Bennett, Marcus T.",
+    directOrderName: "Marcus T. Bennett",
+    party: "democratic",
+    partyName: "Democratic",
+    state: "Ohio",
+    district: 9,
+    chamber: "house",
+    currentMember: true,
+    terms: [{ chamber: "house", congress: 119, startYear: 2025, memberType: "Representative", state: "Ohio" }],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-2",
+    name: "Alvarez, Priya R.",
+    directOrderName: "Priya R. Alvarez",
+    party: "republican",
+    partyName: "Republican",
+    state: "Arizona",
+    chamber: "senate",
+    currentMember: true,
+    terms: [{ chamber: "senate", congress: 119, startYear: 2025, memberType: "Senator", state: "Arizona" }],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-3",
+    name: "Okafor, Daniel K.",
+    directOrderName: "Daniel K. Okafor",
+    party: "democratic",
+    partyName: "Democratic",
+    state: "Georgia",
+    district: 4,
+    chamber: "house",
+    currentMember: true,
+    terms: [{ chamber: "house", congress: 119, startYear: 2025, memberType: "Representative", state: "Georgia" }],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-4",
+    name: "Whitmore, Louise B.",
+    directOrderName: "Louise B. Whitmore",
+    party: "republican",
+    partyName: "Republican",
+    state: "Maine",
+    chamber: "senate",
+    currentMember: true,
+    terms: [{ chamber: "senate", congress: 119, startYear: 2025, memberType: "Senator", state: "Maine" }],
+    leadership: [{ type: "Preview Leadership Role", congress: 119 }],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-5",
+    name: "Castillo, Ana P.",
+    directOrderName: "Ana P. Castillo",
+    party: "democratic",
+    partyName: "Democratic",
+    state: "Texas",
+    district: 20,
+    chamber: "house",
+    currentMember: false,
+    terms: [
+      { chamber: "house", congress: 118, startYear: 2023, endYear: 2025, memberType: "Representative", state: "Texas" },
+    ],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-6",
+    name: "Dupont, Lauren M.",
+    directOrderName: "Lauren M. Dupont",
+    party: "democratic",
+    partyName: "Democratic",
+    state: "New Mexico",
+    district: 2,
+    chamber: "house",
+    currentMember: false,
+    terms: [
+      {
+        chamber: "house",
+        congress: 117,
+        startYear: 2021,
+        endYear: 2023,
+        memberType: "Representative",
+        state: "New Mexico",
+      },
+    ],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+  {
+    bioguideId: "PREVIEW-7",
+    name: "Halloran, Peter J.",
+    directOrderName: "Peter J. Halloran",
+    party: "republican",
+    partyName: "Republican",
+    state: "Iowa",
+    chamber: "senate",
+    currentMember: false,
+    terms: [{ chamber: "senate", congress: 116, startYear: 2019, endYear: 2021, memberType: "Senator", state: "Iowa" }],
+    leadership: [],
+    sponsoredCount: 1,
+    cosponsoredCount: 0,
+  },
+];
+
+/**
+ * Locates a preview member by ID.
+ *
+ * @param bioguideId - The raw route param, matched case-insensitively so a hand-typed URL still resolves.
+ * @returns The matching placeholder member, or `undefined` — which the route renders as a 404, exactly as it would for
+ *   a real ID that doesn't exist.
+ */
+export function findPreviewMemberProfile(bioguideId: string): MemberProfile | undefined {
+  const wanted: string = bioguideId.trim().toUpperCase();
+  return previewMemberProfiles.find((profile: MemberProfile): boolean => profile.bioguideId === wanted);
+}
+
+/**
+ * The preview bills a placeholder member sponsored.
+ *
+ * Derived from `previewBills` by matching on the sponsor's ID rather than kept as a second hand-maintained list, so a
+ * fixture bill and its sponsor's page can't disagree about who sponsored what.
+ *
+ * @param bioguideId - The placeholder member's ID, or `undefined` when no member resolved.
+ * @returns Their sponsored bills, and an always-empty cosponsored list — the fixtures record a single sponsor per bill
+ *   and nothing about cosponsors, and inventing a cosponsorship history would be a claim with nothing behind it.
+ */
+export function previewMemberLegislation(bioguideId: string | undefined): {
+  sponsored: LegislativeBill[];
+  cosponsored: LegislativeBill[];
+} {
+  if (!bioguideId) return { sponsored: [], cosponsored: [] };
+
+  return {
+    sponsored: previewBills.filter((bill: LegislativeBill): boolean => bill.sponsor?.bioguideId === bioguideId),
+    cosponsored: [],
+  };
+}
 
 /**
  * The party split used to draw the preview chamber diagram.

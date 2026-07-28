@@ -24,7 +24,7 @@ const NAV_LINKS: readonly NavLink[] = [
  *
  * The search control is a real `<form>` with `action="/bills"` rather than a JavaScript handler, so it works on a plain
  * page load, from any route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads
- * as its initial query.
+ * as its initial query. It carries `role="search"` so it is a landmark in its own right.
  * @see resolveInitialQuery
  *
  * @returns The site header.
@@ -48,7 +48,10 @@ export function SiteHeader(): JSX.Element {
             ),
           )}
         </nav>
-        <form className="header-search" action="/bills">
+        {/* biome-ignore lint/a11y/useSemanticElements: the suggested <search> element would have to wrap this form
+            rather than replace it, and it is still mapped inconsistently by assistive technology; form[role="search"]
+            is the spelling that produces the landmark everywhere. */}
+        <form className="header-search" action="/bills" role="search">
           <label className="sr-only" htmlFor="global-search">
             Search bills
           </label>

@@ -56,7 +56,7 @@ export function sanitizeSummaryHtml(html: string): string {
         return `<a href="${safeHref}" target="_blank" rel="noreferrer">`;
       }
 
-      // Self-closing form (e.g. "<br/>") collapses to the same bare opening tag; void elements like <br> don't need a
+      // Self-closing form (e.g., "<br/>") collapses to the same bare opening tag; void elements like <br> don't need a
       // closing tag in HTML.
       return `<${tag}>`;
     });

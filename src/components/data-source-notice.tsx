@@ -36,7 +36,10 @@ export function DataSourceNotice({
     : undefined;
 
   return (
-    <aside className={`source-notice source-notice--${source}`} aria-live="polite">
+    // Not a live region: this renders with the page and never updates in place, and an aria-live container that is
+    // present at load makes some screen readers announce it out of order, ahead of the heading it belongs to. A route
+    // change remounts it, which assistive technology already reports as a new page.
+    <aside aria-label="Data source" className={`source-notice source-notice--${source}`}>
       <Radio aria-hidden="true" size={16} />
       <span>
         <strong>{isLive ? "Live Congress.gov Data" : "Preview Data"}</strong>

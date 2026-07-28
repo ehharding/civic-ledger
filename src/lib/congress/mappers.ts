@@ -1,6 +1,9 @@
 import type {
   CongressApiBill,
+  CongressApiLeadership,
   CongressApiMember,
+  CongressApiMemberDetail,
+  CongressApiMemberDetailTerm,
   CongressApiSponsor,
   CongressApiSummary,
   CongressApiTextFormat,
@@ -9,12 +12,22 @@ import type {
 import {
   type CongressChamber,
   type CongressMember,
+  type MemberLeadershipRole,
+  type MemberProfile,
+  type MemberTerm,
   normalizeChamberName,
   normalizePartyName,
 } from "@/lib/congress/members";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { inferBillStage } from "@/lib/congress/stage";
-import type { BillSponsor, BillSummary, BillTextFormat, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import {
+  type BillSponsor,
+  type BillSummary,
+  type BillTextFormat,
+  type BillTextVersion,
+  congressGovBillUrl,
+  type LegislativeBill,
+} from "@/lib/congress/types";
 
 /**
  * Translation from Congress.gov's wire shapes into this app's stable internal model.
@@ -76,7 +89,9 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     },
     policyArea: bill.policyArea?.name,
     stage: inferBillStage(actionText),
-    officialUrl: bill.url ?? "https://www.congress.gov/",
+    // Deliberately *not* `bill.url`: that field is the record's own API endpoint, which serves JSON (and 403s without
+    // a key of the reader's own). @see congressGovBillUrl
+    officialUrl: congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
     sponsor: sponsor?.fullName
       ? ({
           fullName: sponsor.fullName,
@@ -159,6 +174,99 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
       district: member.district,
     },
   };
+}
+
+/**
+ * Maps one item-level term entry.
+ *
+ * @param term - A validated term from the member item endpoint.
+ * @returns The mapped term, or `null` when its chamber isn't recognizable — a term that names no chamber can't be
+ *   placed in a service history, and dropping it is better than rendering a blank row.
+ */
+export function mapMemberTerm(term: CongressApiMemberDetailTerm): MemberTerm | null {
+  const chamber: CongressChamber | null = normalizeChamberName(term.chamber);
+  if (!chamber) return null;
+
+  return {
+    chamber,
+    congress: term.congress,
+    startYear: term.startYear,
+    endYear: term.endYear,
+    memberType: term.memberType,
+    state: term.stateName,
+    district: term.district,
+  };
+}
+
+/**
+ * Maps a raw member item-endpoint record into the app's {@link MemberProfile} shape.
+ *
+ * Terms are sorted newest first and drive three separate things the rest of the page depends on — the member's chamber,
+ * their title, and their represented jurisdiction — so a member who moved between chambers, or whose state is only
+ * recorded per-term, still reads correctly. The top-level `state`/`district` fields are preferred when present and the
+ * most recent term fills in for them when they aren't.
+ *
+ * @param member - A validated record from the member item endpoint.
+ * @param bioguideId - The ID that was looked up, used when the payload itself omits one.
+ * @returns The mapped profile, or `null` when the record carries no name or no recognizable term — without a chamber
+ *   there's no way to describe the seat, and without a name there's nothing to title the page with.
+ */
+export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: string): MemberProfile | null {
+  const name: string = (member.invertedOrderName ?? member.directOrderName ?? "").trim();
+  if (!name) return null;
+
+  const rawTerms: CongressApiMemberDetailTerm[] = Array.isArray(member.terms)
+    ? member.terms
+    : (member.terms?.item ?? []);
+
+  // Newest first, so `terms[0]` is "their current (or final) seat" everywhere it's read below and on the page itself.
+  const terms: MemberTerm[] = sortByDateDesc(mapUsable(rawTerms, mapMemberTerm), "startYear");
+  const latestTerm: MemberTerm | undefined = terms[0];
+  if (!latestTerm) return null;
+
+  // The API reports the party only as a history; the most recent entry is the one that describes them now.
+  const partyName: string | undefined = member.partyName ?? member.partyHistory?.at(-1)?.partyName;
+  const imageUrl: string | undefined = member.depiction?.imageUrl;
+
+  return {
+    bioguideId: (member.bioguideId ?? bioguideId).trim().toUpperCase(),
+    name,
+    directOrderName: member.directOrderName,
+    party: normalizePartyName(partyName),
+    partyName,
+    state: member.state ?? latestTerm.state,
+    district: member.district ?? latestTerm.district,
+    chamber: latestTerm.chamber,
+    // Absent means "the API didn't say", which for a member record it only does for former members.
+    currentMember: member.currentMember ?? false,
+    depiction: imageUrl
+      ? {
+          imageUrl,
+          // Congress.gov returns the credit line as an HTML fragment containing a link to the holding archive.
+          // Sanitized here rather than at render time, so — exactly as with CRS summaries — no unsanitized markup ever
+          // exists inside the app's own model.
+          attribution: member.depiction?.attribution ? sanitizeSummaryHtml(member.depiction.attribution) : undefined,
+        }
+      : undefined,
+    officialWebsiteUrl: member.officialWebsiteUrl,
+    terms,
+    leadership: mapUsable(member.leadership, mapLeadershipRole),
+    sponsoredCount: member.sponsoredLegislation?.count,
+    cosponsoredCount: member.cosponsoredLegislation?.count,
+  };
+}
+
+/**
+ * Maps one leadership entry.
+ *
+ * @param role - A validated leadership entry from the member item endpoint.
+ * @returns The mapped role, or `null` when it names no office — a congress number on its own says nothing.
+ */
+export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadershipRole | null {
+  const type: string = (role.type ?? "").trim();
+  if (!type) return null;
+
+  return { type, congress: role.congress };
 }
 
 /**

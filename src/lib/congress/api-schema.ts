@@ -134,6 +134,89 @@ export const congressApiMemberListResponseSchema = z.looseObject({
   pagination: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
 });
 
+/**
+ * One term entry inside an *item*-level member record.
+ *
+ * Richer than its list-level counterpart above: item-level terms carry the `congress` they belong to and the
+ * `memberType` that distinguishes a Delegate or the Resident Commissioner from a Representative — neither of which the
+ * list endpoint returns. That difference is the whole reason the member page fetches the item endpoint rather than
+ * reusing what the chamber chart already has.
+ */
+export const congressApiMemberDetailTermSchema = z.looseObject({
+  chamber: optionalString,
+  congress: optionalNumber,
+  startYear: optionalNumber,
+  endYear: optionalNumber,
+  memberType: optionalString,
+  stateName: optionalString,
+  district: optionalNumber,
+});
+
+/** One leadership office inside an item-level member record. */
+export const congressApiLeadershipSchema = z.looseObject({
+  type: optionalString,
+  congress: optionalNumber,
+});
+
+/**
+ * Shape of `GET /v3/member/{bioguideId}` (the member *item* endpoint).
+ *
+ * Note the `terms` shape: the list endpoint nests them under `terms.item[]`, while this endpoint returns a bare
+ * array. Both forms are accepted here rather than assumed, so a future upstream alignment in either direction can't
+ * silently empty out a member's service history.
+ *
+ * `birthYear` is typed as a string because that is how the API returns it (`"1940"`), and coercing it here would only
+ * move the parsing somewhere less obvious.
+ */
+export const congressApiMemberDetailSchema = z.looseObject({
+  bioguideId: optionalString,
+  invertedOrderName: optionalString,
+  directOrderName: optionalString,
+  honorificName: optionalString,
+  partyName: optionalString,
+  partyHistory: z
+    .array(z.looseObject({ partyName: optionalString, partyAbbreviation: optionalString, startYear: optionalNumber }))
+    .optional()
+    .catch(undefined),
+  state: optionalString,
+  district: optionalNumber,
+  birthYear: optionalString,
+  currentMember: z.boolean().optional().catch(undefined),
+  officialWebsiteUrl: optionalString,
+  depiction: z.looseObject({ imageUrl: optionalString, attribution: optionalString }).optional().catch(undefined),
+  leadership: z.array(congressApiLeadershipSchema).optional().catch(undefined),
+  sponsoredLegislation: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  cosponsoredLegislation: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  terms: z
+    .union([
+      z.array(congressApiMemberDetailTermSchema),
+      z.looseObject({ item: z.array(congressApiMemberDetailTermSchema).optional().catch(undefined) }),
+    ])
+    .optional()
+    .catch(undefined),
+});
+
+/** Shape of `GET /v3/member/{bioguideId}`. */
+export const congressApiMemberDetailResponseSchema = z.looseObject({
+  member: congressApiMemberDetailSchema.optional().catch(undefined),
+});
+
+/**
+ * Shape of `GET /v3/member/{bioguideId}/sponsored-legislation`.
+ *
+ * Entries reuse {@link congressApiBillSchema}: the fields are the same bill fields the list endpoint returns, minus
+ * `originChamber`, which `mapCongressBill` already degrades to `"Unknown"`. Sharing the schema means sponsored
+ * legislation is mapped by exactly the same rules — and so renders in exactly the same `BillCard` — as any other bill.
+ */
+export const congressApiSponsoredLegislationResponseSchema = z.looseObject({
+  sponsoredLegislation: z.array(congressApiBillSchema).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/member/{bioguideId}/cosponsored-legislation`. */
+export const congressApiCosponsoredLegislationResponseSchema = z.looseObject({
+  cosponsoredLegislation: z.array(congressApiBillSchema).optional().catch(undefined),
+});
+
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;
 export type CongressApiBill = z.infer<typeof congressApiBillSchema>;
 export type CongressApiListResponse = z.infer<typeof congressApiListResponseSchema>;
@@ -146,3 +229,9 @@ export type CongressApiTextResponse = z.infer<typeof congressApiTextResponseSche
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;
 export type CongressApiMemberListResponse = z.infer<typeof congressApiMemberListResponseSchema>;
+export type CongressApiMemberDetailTerm = z.infer<typeof congressApiMemberDetailTermSchema>;
+export type CongressApiLeadership = z.infer<typeof congressApiLeadershipSchema>;
+export type CongressApiMemberDetail = z.infer<typeof congressApiMemberDetailSchema>;
+export type CongressApiMemberDetailResponse = z.infer<typeof congressApiMemberDetailResponseSchema>;
+export type CongressApiSponsoredLegislationResponse = z.infer<typeof congressApiSponsoredLegislationResponseSchema>;
+export type CongressApiCosponsoredLegislationResponse = z.infer<typeof congressApiCosponsoredLegislationResponseSchema>;

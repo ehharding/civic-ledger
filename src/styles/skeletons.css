@@ -68,6 +68,28 @@
 
 /* Motion-sensitive users: the shimmer doesn't convey information that's lost by holding still — the skeleton is still
    visible without the motion. */
+/* Member page skeleton (app/members/[bioguideId]/loading.tsx). */
+.skeleton--portrait {
+  width: 160px;
+  height: 200px;
+  border-radius: 10px;
+}
+
+.skeleton--line {
+  height: 15px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.skeleton--line-short {
+  width: 34%;
+}
+
+.skeleton--line-title {
+  width: 68%;
+  height: 34px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton {
     animation: none;

@@ -94,7 +94,7 @@ function previewBillsForCongress(congress: number): LegislativeBill[] {
  * filtering by congress guarantees every bill returned actually belongs to the one requested.
  *
  * @param input - The API key, the Congress to read, the page window, and an optional Congress.gov sort hint
- *   (e.g. `"updateDate+desc"`). The sort is omitted for ordinary browsing and passed by the search sweep, so each
+ *   (e.g., `"updateDate+desc"`). The sort is omitted for ordinary browsing and passed by the search sweep, so each
  *   Congress's fetched page favors its most recently active bills.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
  *   page render, an empty page for "Load More").
@@ -135,7 +135,7 @@ async function fetchBillsPage(input: {
  * request failed or returned nothing. The preview fallback is itself scoped to the requested Congress, so a Congress
  * with no fixture data honestly reports an empty, labeled result rather than borrowing bills from elsewhere.
  *
- * @param congress - The Congress to read (e.g. `119`).
+ * @param congress - The Congress to read (e.g., `119`).
  * @returns A snapshot that always states its own provenance. Read `source` rather than assuming success; this never
  *   throws.
  */
@@ -356,7 +356,7 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
 }
 
 /**
- * Fetches every official text version on file for a bill (e.g. "Introduced in House", "Engrossed in House"), most
+ * Fetches every official text version on file for a bill (e.g., "Introduced in House", "Engrossed in House"), most
  * recent first, each with links to its Formatted Text / PDF / XML renderings on Congress.gov.
  *
  * These are links to the official record, not text this app fetches and re-hosts itself — consistent with the

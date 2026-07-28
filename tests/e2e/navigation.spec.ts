@@ -91,3 +91,41 @@ test("the bill-lifecycle lesson is reachable from /learn and links onward to /bi
   await page.getByRole("link", { name: "Explore Bills" }).click();
   await expect(page).toHaveURL(/\/bills$/);
 });
+
+test("a bill's sponsor leads to their member page", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/bills");
+  await page.locator(".bill-card h3 a").first().click();
+  await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
+
+  // The sponsor line links inward to this app's own page for that person, not out to the Biographical Directory.
+  const sponsorLink: Locator = page.locator('.bill-detail-meta a[href^="/members/"]').first();
+  const sponsorName: string | null = await sponsorLink.textContent();
+  await sponsorLink.click();
+
+  await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Bills They Introduced" })).toBeVisible();
+
+  // The member page names the same person the bill credited, even though it renders the name in reading order.
+  if (sponsorName) {
+    const surname: string = (sponsorName.split(",")[0] ?? "").replace(/^(Rep\.|Sen\.)\s*/, "").trim();
+    if (surname) await expect(page.getByRole("heading", { level: 1 })).toContainText(surname);
+  }
+});
+
+test("the skip link is the first tab stop and moves focus to the main landmark", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/");
+
+  await page.keyboard.press("Tab");
+  const skipLink: Locator = page.getByRole("link", { name: "Skip to main content" });
+  await expect(skipLink).toBeFocused();
+  // Hidden until focused, then a normal visible control — a skip link nobody can see is a skip link nobody can use.
+  await expect(skipLink).toBeVisible();
+
+  await skipLink.press("Enter");
+  await expect(page.getByRole("main")).toBeFocused();
+});

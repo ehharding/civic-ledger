@@ -23,30 +23,32 @@ flowchart LR
 
 ## Boundaries
 
-| Layer                         | Responsibility                                  | Rule                                                              |
-|-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/hooks`                   | Client-side async behavior extracted from views | Depend only on isomorphic modules, never on the server adapter.   |
-| `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
-| `src/lib/api-query.ts`        | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/congress`            | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/congress/seating.ts` | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
-| `src/lib/glossary.ts`         | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
+| Layer                                              | Responsibility                                  | Rule                                                              |
+|----------------------------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
+| `src/app`                                          | Routes, metadata, route handlers                | Never expose the government API key.                              |
+| `src/components`                                   | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/hooks`                                        | Client-side async behavior extracted from views | Depend only on isomorphic modules, never on the server adapter.   |
+| `src/db`                                           | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/lib/api-query.ts`                             | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/congress`                                 | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
+| `src/lib/congress/seating.ts`                      | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
+| `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
+| `src/lib/glossary.ts`                              | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 
 ### Inside the Congress Adapter
 
 `src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
 components, and tests import one stable path while the internals stay free to move.
 
-| Module           | Responsibility                                                              |
-|------------------|-----------------------------------------------------------------------------|
-| `api-schema.ts`  | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.     |
-| `http.ts`        | Key access, URL building, caching policy, one request helper, route guards. |
-| `mappers.ts`     | Upstream shapes into this app's stable model. Pure; performs no I/O.        |
-| `bills.ts`       | Bill snapshots, pagination, lookup, summaries, text versions, search.       |
-| `composition.ts` | Chamber membership, including the member list's pagination.                 |
-| `client.ts`      | Public surface. Re-exports only.                                            |
+| Module              | Responsibility                                                                |
+|---------------------|-------------------------------------------------------------------------------|
+| `api-schema.ts`     | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
+| `http.ts`           | Key access, URL building, caching policy, one request helper, route guards.   |
+| `mappers.ts`        | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
+| `bills.ts`          | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
+| `composition.ts`    | Chamber membership, including the member list's pagination.                   |
+| `member-profile.ts` | One member's own record, plus the legislation they sponsored and cosponsored. |
+| `client.ts`         | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:
 
@@ -71,14 +73,24 @@ page. Only a payload that isn't an object at all is rejected outright.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
-5. A user can always leave for the official record from a bill page, and from any seat in the chamber diagram to that
-   member's entry in the Biographical Directory.
+5. A user can always leave for the official record: from a bill page to its public Congress.gov record (derived from the
+   bill's identity by `congressGovBillUrl` — the upstream `url` field is an API self-link, not a readable page), and
+   from any member's page to their entry in the Biographical Directory. Seats in the chamber diagram and sponsor lines
+   on bill pages both link inward first, to that member's own page, which carries the outbound link onward.
 
 Membership follows the same path with one wrinkle: `/v3/member/congress/{congress}` is paginated at the API's 250-record
 ceiling, so `getCongressComposition` (in `composition.ts`) reads `pagination.count` from the first page and then
 requests the remainder in parallel. Chart geometry is computed separately, in a pure module
 (`src/lib/congress/seating.ts`) that knows nothing about Congress.gov — see "The Chamber Diagram Is a Schematic" in
 `docs/decisions.md`.
+
+An *individual* member (`/members/[bioguideId]`) is a separate read in `member-profile.ts`, against a different
+endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list
+endpoint omits, plus the portrait and leadership history. It issues three requests concurrently — the member, their
+sponsored legislation, and their cosponsored legislation — and a failure in either legislation list still yields a page,
+because the profile is the substance of it. The route param is narrowed by `normalizeBioguideId` before it is
+interpolated into any URL, on the same "validate the shape, never escape" rule as `normalizeBillRouteParams`; an ID
+that fails the guard is resolved against the preview fixtures rather than sent upstream.
 
 ## Persistence Plan
 
@@ -111,6 +123,13 @@ history, notification delivery, or more than a few API-facing features.
 - No political-affiliation targeting or persuasion logic belongs in the product.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
   real links.
+- Every page begins with a skip link to the `<main>` landmark, which takes `tabIndex={-1}` so the jump actually moves
+  focus rather than only scrolling. The header's search form is a `search` landmark in its own right.
+- Links that open a new tab say so in their accessible name (`ExternalLinkHint`); the external-link glyph beside them is
+  decorative and `aria-hidden`, so on its own it told a screen-reader user nothing.
+- The Congress picker navigates on selection, and its label says so before it is used — the advisory that WCAG 3.2.2
+  (On Input) requires for that pattern. It also ignores a selection matching the Congress already shown, so arrowing
+  through the list on browsers that fire `change` per option doesn't walk the reader through pages they never chose.
 - Nothing is reachable by pointer alone. The chamber diagram in particular is fully keyboard-operable (one tab stop plus
   a roving tabindex across seats) and names every seat for assistive technology, so it reads as a list of members rather
   than an unlabeled picture. Party color is never the only carrier of meaning — each seat states its party in its

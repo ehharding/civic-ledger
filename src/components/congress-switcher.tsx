@@ -32,16 +32,31 @@ export function CongressSwitcher({
 
   /**
    * Navigates on selection. A `<select>` that needs a separate "Go" button to do anything is a needless second step.
+   *
+   * Changing a control's value to cause navigation is the pattern WCAG 3.2.2 (On Input) cautions about, and its stated
+   * exception is that the behavior be advised *before* the control is used — which is what the label's hint and the
+   * `aria-describedby` note do. The guard against re-navigating to the Congress already showing matters for the same
+   * reason: on browsers where arrowing through a `<select>` fires `change` per option, it keeps a keyboard user from
+   * bouncing through pages they never chose.
    */
   function handleChange(event: ChangeEvent<HTMLSelectElement>): void {
     const nextCongress: string = event.target.value;
+    if (Number(nextCongress) === selected) return;
+
     router.push(`/bills/${nextCongress}` as Route);
   }
 
   return (
     <div className="congress-switcher">
-      <label htmlFor="congress-switcher-select">Browsing</label>
-      <select id="congress-switcher-select" onChange={handleChange} value={selected}>
+      <label htmlFor="congress-switcher-select">
+        Browsing <span className="congress-switcher__hint">(selecting a Congress opens it)</span>
+      </label>
+      <select
+        aria-describedby="congress-switcher-hint"
+        id="congress-switcher-select"
+        onChange={handleChange}
+        value={selected}
+      >
         {congresses.map(
           (congress: CongressHistoryEntry): JSX.Element => (
             <option key={congress.number} value={congress.number}>
@@ -51,6 +66,9 @@ export function CongressSwitcher({
           ),
         )}
       </select>
+      <p className="sr-only" id="congress-switcher-hint">
+        Choosing a Congress from this list opens that Congress&rsquo;s bill directory.
+      </p>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 /**
  * Covers CongressSeatingChart's interaction surface: one seat per member with a descriptive accessible name, the
- * chamber tabs, the hover/focus read-out, the roving tabindex that keeps the chart to a single tab stop, and the
- * preview-mode labeling that keeps placeholder seats from reading as real membership.
+ * chamber tabs, the hover/focus read-out, the roving tabindex that keeps the chart to a single tab stop, the links
+ * from each seat to that member's page, and the preview-mode labeling that keeps placeholder seats from reading as
+ * real membership.
  */
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -56,9 +57,20 @@ function composition(overrides: Partial<CongressComposition> = {}): CongressComp
   };
 }
 
-/** Every seat in the currently-shown chamber. Seats are the only role="button" elements; the tabs are role="tab". */
+/**
+ * Every seat in the currently-shown chamber, in chart order.
+ *
+ * Queried by `data-seat-index` rather than by role, because a seat's element depends on its member: one with a
+ * Bioguide ID is a link to their page, one without (every placeholder seat) is a `role="button"` circle. The attribute
+ * is what both forms share, and what the component's own delegated handlers key on.
+ */
 function seats(): HTMLElement[] {
-  return screen.getAllByRole("button");
+  return Array.from(document.querySelectorAll<HTMLElement>("[data-seat-index]"));
+}
+
+/** One seat, addressed the way a person using assistive technology would reach it. */
+function seat(name: RegExp | string): HTMLElement {
+  return screen.getByRole("link", { name });
 }
 
 describe("CongressSeatingChart", (): void => {
@@ -71,12 +83,8 @@ describe("CongressSeatingChart", (): void => {
   it("names every seat with its member, party, and jurisdiction", (): void => {
     render(<CongressSeatingChart composition={composition()} />);
 
-    expect(
-      screen.getByRole("button", { name: "Bennett, Marcus T., Democratic, Ohio's 9th district" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Nakamura, Lena, Democratic, Guam (non-voting seat)" }),
-    ).toBeInTheDocument();
+    expect(seat("Bennett, Marcus T., Democratic, Ohio's 9th district")).toBeInTheDocument();
+    expect(seat("Nakamura, Lena, Democratic, Guam (non-voting seat)")).toBeInTheDocument();
   });
 
   it("switches chambers from the tabs", (): void => {
@@ -89,7 +97,7 @@ describe("CongressSeatingChart", (): void => {
 
     expect(senateTab).toHaveAttribute("aria-selected", "true");
     expect(seats()).toHaveLength(senators.length);
-    expect(screen.getByRole("button", { name: "Alvarez, Priya R., Republican, Arizona" })).toBeInTheDocument();
+    expect(seat("Alvarez, Priya R., Republican, Arizona")).toBeInTheDocument();
   });
 
   it("moves between chambers with the arrow keys, per the ARIA tabs pattern", (): void => {
@@ -107,7 +115,7 @@ describe("CongressSeatingChart", (): void => {
     // Before any interaction the panel summarizes the chamber rather than sitting empty.
     expect(within(detail).getByText("House of Representatives")).toBeInTheDocument();
 
-    fireEvent.mouseOver(screen.getByRole("button", { name: /Bennett/ }));
+    fireEvent.mouseOver(seat(/Bennett/));
 
     expect(within(detail).getByText("Bennett, Marcus T.")).toBeInTheDocument();
     expect(within(detail).getByText("Democratic")).toBeInTheDocument();
@@ -118,7 +126,7 @@ describe("CongressSeatingChart", (): void => {
     const { container } = render(<CongressSeatingChart composition={composition()} />);
     const detail: HTMLElement = screen.getByRole("complementary", { name: "Selected seat" });
 
-    fireEvent.mouseOver(screen.getByRole("button", { name: /Bennett/ }));
+    fireEvent.mouseOver(seat(/Bennett/));
     expect(within(detail).getByText("Bennett, Marcus T.")).toBeInTheDocument();
 
     const chart: Element | null = container.querySelector("svg.seating__chart");
@@ -131,7 +139,7 @@ describe("CongressSeatingChart", (): void => {
     render(<CongressSeatingChart composition={composition()} />);
     const detail: HTMLElement = screen.getByRole("complementary", { name: "Selected seat" });
 
-    fireEvent.mouseOver(screen.getByRole("button", { name: /Nakamura/ }));
+    fireEvent.mouseOver(seat(/Nakamura/));
 
     expect(within(detail).getByText(/cannot vote on final passage/)).toBeInTheDocument();
   });
@@ -139,7 +147,7 @@ describe("CongressSeatingChart", (): void => {
   it("links a member to their official biography", (): void => {
     render(<CongressSeatingChart composition={composition()} />);
 
-    fireEvent.mouseOver(screen.getByRole("button", { name: /Bennett/ }));
+    fireEvent.mouseOver(seat(/Bennett/));
 
     expect(screen.getByRole("link", { name: /Official Biography/ })).toHaveAttribute(
       "href",
@@ -228,6 +236,6 @@ describe("CongressSeatingChart", (): void => {
     );
 
     expect(screen.getByText(/No membership records are available/)).toBeInTheDocument();
-    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(seats()).toHaveLength(0);
   });
 });

@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 
+import { isBioguideId } from "@/lib/congress/members";
 import type { BillRouteParams } from "@/lib/congress/types";
 
 /**
@@ -140,6 +141,32 @@ export const BILL_LIST_CACHE_TAG: string = "congress-bills";
 
 /** Cache tag shared by every member-list request. */
 export const MEMBER_LIST_CACHE_TAG: string = "congress-members";
+
+/**
+ * The two cache tags shared by every request scoped to one member (the profile itself and their legislation lists), so
+ * one member's records can be revalidated without dropping the whole roster.
+ */
+export function memberCacheTags(bioguideId: string): string[] {
+  return [MEMBER_LIST_CACHE_TAG, `member-${bioguideId}`];
+}
+
+/**
+ * Narrows a potentially user-influenced Bioguide ID to the exact path-segment format Congress.gov accepts, before it is
+ * interpolated into an outbound URL.
+ *
+ * Same reasoning as {@link normalizeBillRouteParams}: this arrives from the URL bar, so validating the *shape* rather
+ * than escaping means a malformed value can never reach Congress.gov at all.
+ *
+ * @param raw - The raw `bioguideId` route param.
+ * @returns The upper-cased ID, or `null` when it isn't the letter-plus-six-digits form Congress.gov issues. A `null` is
+ *   not the same as "not found": the preview fixtures use IDs that deliberately fail this guard and are resolved
+ *   locally instead, never upstream.
+ *   @see isBioguideId
+ */
+export function normalizeBioguideId(raw: string): string | null {
+  const value: string = raw.trim().toUpperCase();
+  return isBioguideId(value) ? value : null;
+}
 
 /** The only bill/resolution type path segments Congress.gov's bill endpoint accepts. */
 export const BILL_PATH_TYPES: ReadonlySet<string> = new Set([

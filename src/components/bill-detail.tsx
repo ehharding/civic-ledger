@@ -4,8 +4,8 @@ import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
+import { ExternalLinkHint } from "@/components/external-link-hint";
 import { SiteShell } from "@/components/site-shell";
-import { bioguideUrl } from "@/lib/congress/members";
 import {
   type BillSummary,
   type BillTextVersion,
@@ -14,6 +14,7 @@ import {
   type LegislativeBill,
 } from "@/lib/congress/types";
 import { formatDate, formatOrdinal } from "@/lib/format";
+import { memberHref } from "@/lib/member-route";
 
 /** Props for {@link BillDetail} — everything the bill detail route resolves server-side. */
 type BillDetailProps = {
@@ -116,12 +117,12 @@ export function BillDetail({
             <span>
               Sponsor:{" "}
               {bill.sponsor.bioguideId ? (
-                // The sponsor's name is the most natural place in the whole page to leave for the official record about
-                // *them* rather than about the bill, and the adapter already carries the Bioguide ID that makes it a
-                // permanent link rather than a name slug that can change.
-                <a className="text-link" href={bioguideUrl(bill.sponsor.bioguideId)} target="_blank" rel="noreferrer">
-                  {bill.sponsor.fullName} <ExternalLink aria-hidden="true" size={13} />
-                </a>
+                // Links inward rather than straight out to the Biographical Directory: the sponsor's own page collects
+                // their seat, service record, and the rest of what they've introduced — and carries the official
+                // biography link onward, so nothing is lost by making this the first stop instead of the last.
+                <Link className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
+                  {bill.sponsor.fullName}
+                </Link>
               ) : (
                 bill.sponsor.fullName
               )}
@@ -155,6 +156,7 @@ export function BillDetail({
           {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
           <a className="text-link" href={bill.officialUrl} target="_blank" rel="noreferrer">
             Open the Official Record <ExternalLink aria-hidden="true" size={15} />
+            <ExternalLinkHint />
           </a>
         </aside>
       </div>
@@ -220,6 +222,7 @@ export function BillDetail({
                       {version.formats.map((format) => (
                         <a key={format.url} className="text-link" href={format.url} target="_blank" rel="noreferrer">
                           {format.type} <ExternalLink aria-hidden="true" size={13} />
+                          <ExternalLinkHint />
                         </a>
                       ))}
                     </div>

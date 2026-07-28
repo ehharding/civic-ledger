@@ -24,7 +24,7 @@
 }
 
 /* Sized separately from the hero/page-header/empty-state/error-page h1s in typography.css: those are short, fixed
-   marketing copy this app authors itself (e.g. "See Congress in Context."), while a bill's title is real-world text of
+   marketing copy this app authors itself (e.g., "See Congress in Context."), while a bill's title is real-world text of
    unpredictable — often much longer — length pulled from Congress.gov. A shared punchy display-type scale reads fine on
    "Bills" but turns a long official bill title into many wrapped lines of huge text, especially on mobile. One fluid
    clamp is enough on its own (matching how .section-heading h2 etc. scale in typography.css) without a separate

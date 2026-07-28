@@ -101,3 +101,38 @@
   color: var(--ink-soft);
   font-size: 0.82rem;
 }
+
+/* Skip link (SiteShell). Visually hidden until focused, then pinned to the top-left as an ordinary visible control — a
+   skip link that stays invisible while focused is useless to the sighted keyboard users who most rely on it. */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 11px 18px;
+  border: 1px solid var(--navy);
+  border-radius: 8px;
+  color: var(--paper);
+  background: var(--navy);
+  font-size: 0.9rem;
+  font-weight: 700;
+  /* Moved out of view rather than display:none, so it stays focusable. */
+  transform: translateY(-160%);
+  transition: transform 130ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* The main landmark takes tabIndex={-1} so the skip link can focus it; that focus is programmatic, not a control the
+   user chose, so it gets no ring. */
+.page-shell:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}

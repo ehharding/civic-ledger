@@ -1,3 +1,5 @@
+import { formatOrdinal } from "@/lib/format";
+
 /**
  * The five stages of `BillJourney`'s educational progress cue, in order.
  *
@@ -44,6 +46,47 @@ export function billIdentityKey(input: { congress: number | string; type: string
   return `${input.congress}-${String(input.type).toUpperCase()}-${input.number}`;
 }
 
+/**
+ * Congress.gov's own URL path segment for each bill/resolution type.
+ *
+ * The public site spells these out in full (`/bill/119th-congress/house-bill/284`) while the API uses short codes
+ * (`hr`). Keyed by the upper-cased code, since that's the form `LegislativeBill.type` is normalized to.
+ */
+const CONGRESS_GOV_BILL_PATHS: Readonly<Record<string, string>> = {
+  HR: "house-bill",
+  S: "senate-bill",
+  HJRES: "house-joint-resolution",
+  SJRES: "senate-joint-resolution",
+  HCONRES: "house-concurrent-resolution",
+  SCONRES: "senate-concurrent-resolution",
+  HRES: "house-resolution",
+  SRES: "senate-resolution",
+};
+
+/** Congress.gov's home page — the honest fallback whenever a specific record's public URL can't be derived. */
+export const CONGRESS_GOV_HOME: string = "https://www.congress.gov/";
+
+/**
+ * Builds the public Congress.gov page for a bill, e.g., `https://www.congress.gov/bill/119th-congress/house-bill/284`.
+ *
+ * Derived from the bill's own identity rather than taken from the upstream `url` field, because that field is a
+ * *self-referential API* link (`https://api.congress.gov/v3/bill/119/hr/284?format=json`) — sending a reader there
+ * hands them raw JSON, or a 403 if they have no key of their own, when what the interface promised was the official
+ * record.
+ *
+ * @param bill - Anything carrying a bill's natural identifier, in either the numeric or string `congress` form.
+ * @returns The record's public URL, or {@link CONGRESS_GOV_HOME} for an unrecognized type — a link to the right site
+ *   beats a confidently-wrong deep link to a page that doesn't exist.
+ */
+export function congressGovBillUrl(bill: { congress: number | string; type: string; number: string }): string {
+  const typePath: string | undefined = CONGRESS_GOV_BILL_PATHS[String(bill.type).toUpperCase()];
+  const congress: number = Number(bill.congress);
+
+  if (!typePath || !Number.isInteger(congress) || congress <= 0) return CONGRESS_GOV_HOME;
+
+  return `https://www.congress.gov/bill/${formatOrdinal(congress)}-congress/${typePath}/${bill.number}`;
+}
+
 /** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
 export type BillSponsor = {
   fullName: string;
@@ -75,7 +118,7 @@ export type LegislativeBill = {
 };
 
 /**
- * One CRS-written summary of a bill, tied to the legislative stage it describes (`actionDesc`, e.g. "Introduced in
+ * One CRS-written summary of a bill, tied to the legislative stage it describes (`actionDesc`, e.g., "Introduced in
  * House"). Bills can accumulate several of these as they're amended — the most recent describes the bill as it stands
  * now, but earlier ones aren't deleted, since they describe real earlier versions of the text.
  */
