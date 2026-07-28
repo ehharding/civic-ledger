@@ -14,9 +14,14 @@ import { resolveInitialQuery } from "@/lib/search-params";
 export const metadata: Metadata = { title: "Bills" };
 
 /**
- * Bill directory route for the *current* Congress. Fetches the current snapshot server-side, then hands off to the
- * interactive BillDirectory. Any other Congress lives at /bills/[congress] instead — reachable from the Congress
- * switcher rendered here.
+ * Bill directory route for the *current* Congress.
+ *
+ * Any other Congress lives at `/bills/[congress]`, reachable from the switcher rendered here. The two fetches — the
+ * deep-link query and the snapshot — are awaited together, since neither depends on the other.
+ *
+ * @param searchParams - Carries the shareable `?q=` deep link.
+ *   @see resolveInitialQuery
+ * @returns The directory page for the current Congress.
  */
 export default async function BillsPage({
   searchParams,

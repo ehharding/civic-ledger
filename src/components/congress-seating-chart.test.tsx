@@ -6,7 +6,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { CongressSeatingChart, describeChamberSeats, formatSeatShare } from "@/components/congress-seating-chart";
+import { CongressSeatingChart } from "@/components/congress-seating-chart";
 import {
   buildChamberComposition,
   type ChamberComposition,
@@ -60,33 +60,6 @@ function composition(overrides: Partial<CongressComposition> = {}): CongressComp
 function seats(): HTMLElement[] {
   return screen.getAllByRole("button");
 }
-
-describe("formatSeatShare", (): void => {
-  it("reports a share to one decimal place", (): void => {
-    expect(formatSeatShare(220, 441)).toBe("49.9%");
-    expect(formatSeatShare(1, 2)).toBe("50.0%");
-  });
-
-  it("does not divide by zero on an empty chamber", (): void => {
-    expect(formatSeatShare(0, 0)).toBe("0%");
-  });
-});
-
-describe("describeChamberSeats", (): void => {
-  it("splits out non-voting seats when a chamber has them", (): void => {
-    expect(describeChamberSeats(buildChamberComposition("house", representatives))).toBe(
-      "3 seats — 2 voting, 1 non-voting",
-    );
-  });
-
-  it("reports a plain seat count when every seat votes", (): void => {
-    expect(describeChamberSeats(buildChamberComposition("senate", senators))).toBe("2 seats");
-  });
-
-  it("uses the singular for a lone seat", (): void => {
-    expect(describeChamberSeats(buildChamberComposition("senate", [senators[0] as CongressMember]))).toBe("1 seat");
-  });
-});
 
 describe("CongressSeatingChart", (): void => {
   it("draws one seat per member of the House by default", (): void => {

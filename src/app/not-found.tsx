@@ -3,7 +3,12 @@ import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
 
-/** Rendered for any unmatched route, and for a bill lookup that resolves to no record (see notFound() in the bill detail page). */
+/**
+ * Rendered for any unmatched route, and for a bill lookup that resolved to no record.
+ *
+ * @returns The not-found page, with a route back into the bill directory rather than a dead end.
+ * @see BillPage, which calls `notFound()` when a bill can't be resolved.
+ */
 export default function NotFound(): JSX.Element {
   return (
     <SiteShell>

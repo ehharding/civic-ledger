@@ -4,11 +4,16 @@ import type { JSX } from "react";
 import { type BillStage, billStageLabels, billStages } from "@/lib/congress/types";
 
 /**
- * Renders the five-stage legislative journey (`billStages`) as a stepper, highlighting the bill's current
- * stage and marking earlier stages complete. `compact` switches to the condensed layout used inside BillCard.
+ * Renders the five-stage legislative journey as a stepper, highlighting the bill's current stage and marking earlier
+ * stages complete.
  *
- * This is an educational progress cue derived from `inferBillStage`, not an authoritative legal status —
- * see the caveat surfaced alongside it on the bill detail page.
+ * This is an educational progress cue derived from `inferBillStage`, not an authoritative legal status — the bill
+ * detail page says so directly beside it, and links to the official record for anything definitive.
+ *
+ * @param stage - The bill's inferred stage. Its index in `billStages` is what decides which steps read as already
+ *   complete, which is why that array's order is load-bearing rather than cosmetic.
+ * @param compact - Switches to the condensed layout used inside `BillCard`.
+ * @returns An ordered list of the five stages, each marked complete, current, or upcoming.
  */
 export function BillJourney({ stage, compact }: { stage: BillStage; compact: boolean }): JSX.Element {
   const currentIndex: number = billStages.indexOf(stage);

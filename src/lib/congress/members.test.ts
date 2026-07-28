@@ -10,9 +10,11 @@ import {
   buildChamberComposition,
   type ChamberComposition,
   type CongressMember,
+  describeChamberSeats,
   formatMemberParty,
   formatMemberSeat,
   formatMemberSummary,
+  formatSeatShare,
   isNonVotingJurisdiction,
   normalizeChamberName,
   normalizePartyName,
@@ -204,5 +206,36 @@ describe("formatMemberSummary", (): void => {
 describe("bioguideUrl", (): void => {
   it("points at the Biographical Directory entry for the ID", (): void => {
     expect(bioguideUrl("L000174")).toBe("https://bioguide.congress.gov/search/bio/L000174");
+  });
+});
+
+describe("formatSeatShare", (): void => {
+  it("reports a share to one decimal place", (): void => {
+    expect(formatSeatShare(220, 441)).toBe("49.9%");
+    expect(formatSeatShare(1, 2)).toBe("50.0%");
+  });
+
+  it("does not divide by zero on an empty chamber", (): void => {
+    expect(formatSeatShare(0, 0)).toBe("0%");
+  });
+});
+
+describe("describeChamberSeats", (): void => {
+  const voting: CongressMember = { name: "Bennett, Marcus T.", party: "democratic", state: "Ohio", district: 9 };
+  const alsoVoting: CongressMember = { name: "Alvarez, Priya R.", party: "republican", state: "Arizona" };
+  const delegate: CongressMember = { name: "Norton, Eleanor", party: "democratic", state: "District of Columbia" };
+
+  it("splits out non-voting seats when a chamber has them", (): void => {
+    expect(describeChamberSeats(buildChamberComposition("house", [voting, alsoVoting, delegate]))).toBe(
+      "3 seats — 2 voting, 1 non-voting",
+    );
+  });
+
+  it("reports a plain seat count when every seat votes", (): void => {
+    expect(describeChamberSeats(buildChamberComposition("senate", [voting, alsoVoting]))).toBe("2 seats");
+  });
+
+  it("uses the singular for a lone seat", (): void => {
+    expect(describeChamberSeats(buildChamberComposition("senate", [voting]))).toBe("1 seat");
   });
 });

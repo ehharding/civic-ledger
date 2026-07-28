@@ -5,9 +5,17 @@ import type { JSX } from "react";
 import type { CongressSnapshot } from "@/lib/congress/types";
 
 /**
- * Banner that honestly discloses whether the surrounding data is live Congress.gov data or preview fixtures.
- * Takes `source`/`notice` directly (rather than a full CongressSnapshot) so callers that only have a single bill lookup
- * result — not a whole snapshot — can render it without fetching one just for this.
+ * Banner that discloses whether the surrounding data is live Congress.gov data or preview fixtures.
+ *
+ * This is the single mechanism behind the project's central promise — that preview content is never mistakable for the
+ * official record — so it takes `source` and `notice` as loose values rather than a whole `CongressSnapshot`. A caller
+ * holding only a single bill lookup result can render an accurate banner without fetching a snapshot purely to satisfy
+ * a type, which is what makes "always disclose" cheap enough to actually do everywhere.
+ *
+ * @param source - Whether the surrounding data is live or preview.
+ * @param notice - Why preview data is being shown, when it is. Ignored for live data.
+ * @param retrievedAt - When the data was fetched, if the caller has it.
+ * @returns The disclosure banner, with a relative "Updated …" timestamp when one is available.
  */
 export function DataSourceNotice({
   source,
@@ -16,9 +24,10 @@ export function DataSourceNotice({
 }: {
   source: CongressSnapshot["source"];
   notice?: string;
-  /** When this data was actually fetched, if the caller has it. Rendered as "Updated 5 minutes ago" — see
-   * docs/decisions.md's note on keeping source freshness visible in the interface. Optional so existing callers that
-   * don't have a timestamp handy (or tests exercising the banner in isolation) still render correctly. */
+  /**
+   * Rendered as "Updated 5 minutes ago" — see `docs/decisions.md` on keeping source freshness visible in the interface.
+   * Optional so callers without a timestamp handy still render correctly.
+   */
   retrievedAt?: string;
 }): JSX.Element {
   const isLive: boolean = source === "live";

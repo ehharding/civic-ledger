@@ -27,7 +27,15 @@ export const viewport: Viewport = {
   ],
 };
 
-/** Root HTML shell shared by every route. Page-level chrome (header/footer) lives in SiteShell, not here. */
+/**
+ * Root HTML shell shared by every route.
+ *
+ * Deliberately bare: page chrome lives in `SiteShell`, so routes that shouldn't have it (or that render before it can
+ * be resolved) aren't forced to.
+ *
+ * @param children - The active route's rendered output.
+ * @returns The document shell.
+ */
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>): JSX.Element {
   return (
     <html lang="en">

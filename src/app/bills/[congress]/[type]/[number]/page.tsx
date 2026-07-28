@@ -13,9 +13,12 @@ type BillPageProps = {
 };
 
 /**
- * Pre-renders the preview bills at build time. In the default server build this is just a perf win (other bills
- * still resolve live, on demand). In a static export (STATIC_EXPORT=true, no API key), these are the *only* bill pages
- * that can exist, since a static export has no server to look anything else up on request.
+ * Pre-renders the preview bills at build time.
+ *
+ * In the default server build this is only a performance win — every other bill still resolves live, on demand. In a
+ * static export these are the *only* bill pages that can exist, since there's no server left at request time.
+ *
+ * @returns One params object per preview fixture.
  */
 export function generateStaticParams(): BillRouteParams[] {
   return previewBills.map(
@@ -28,9 +31,14 @@ export function generateStaticParams(): BillRouteParams[] {
 }
 
 /**
- * Per-bill `<title>`/description, so a bill page reads as itself (in a browser tab, a share card, a search result)
- * instead of falling back to the site-wide default. Reuses `getBillById` — Next's request-level fetch memoization means
- * this doesn't cost a second live request alongside the page component's own call for the same route.
+ * Builds the per-bill title and description, so a bill page reads as itself in a browser tab, a share card, or a search
+ * result rather than falling back to the site-wide default.
+ *
+ * Calls `getBillById` a second time without a second upstream request: Next memoizes `fetch` per request, so this and
+ * the page component below share one response for the same route.
+ *
+ * @param params - The bill's route params.
+ * @returns The bill's metadata, or a "Bill Not Found" title when it doesn't resolve.
  */
 export async function generateMetadata({ params }: BillPageProps): Promise<Metadata> {
   const route: BillRouteParams = await params;
@@ -45,10 +53,14 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 }
 
 /**
- * Individual bill record route. Resolves the bill via a direct lookup (`getBillById`) rather than filtering the
- * homepage snapshot, so any real bill number works — not just the dozen most recently returned by the list endpoint.
- * Renders the 404 page (via `notFound()`) when the lookup comes back empty. Fetches the bill alongside its CRS
- * summaries and official text versions in parallel, then hands everything to BillDetail for rendering.
+ * Individual bill record route.
+ *
+ * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number works —
+ * not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, and its official text
+ * versions are independent reads, so all three go out together.
+ *
+ * @param params - The bill's route params, straight from the URL.
+ * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;

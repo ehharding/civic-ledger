@@ -35,20 +35,30 @@ export const partySeatingOrder: readonly PartyGroup[] = [
   "republican",
 ];
 
-/** Where `party` falls in `partySeatingOrder`; anything unlisted sorts last rather than throwing. */
+/**
+ * Where `party` falls in {@link partySeatingOrder}.
+ *
+ * @param party - The party group to rank.
+ * @returns Its index in the seating order, or one past the end for anything unlisted — so an unrecognized group sorts
+ *   last rather than throwing or silently sorting first.
+ */
 export function partySeatingRank(party: PartyGroup): number {
   const rank: number = partySeatingOrder.indexOf(party);
   return rank === -1 ? partySeatingOrder.length : rank;
 }
 
 /**
- * Narrows Congress.gov's free-text party label to a `PartyGroup`.
+ * Narrows Congress.gov's free-text party label to a {@link PartyGroup}.
  *
  * Prefix matching (rather than exact equality) is deliberate: the API's own documentation lists both "Democratic" and
  * "Democrat" across its member endpoints, describes "Independent Democrat" as a distinct value, and contains a
  * long-standing "Republication" typo in its element table. Matching on the stem absorbs all of those without needing
  * an exhaustive list of spellings. "Independent Democrat" is checked first so it groups as independent rather than
  * being swallowed by the democratic branch.
+ *
+ * @param partyName - The upstream `partyName`, if any.
+ * @returns The matching group, or `"other"` for anything unrecognized — never a thrown error, since a new party label
+ *   appearing upstream should degrade a color swatch, not take down the page.
  */
 export function normalizePartyName(partyName?: string): PartyGroup {
   const value: string = (partyName ?? "").trim().toLowerCase();
@@ -79,9 +89,11 @@ export const chamberShortLabels: Record<CongressChamber, string> = {
 };
 
 /**
- * Narrows Congress.gov's chamber string ("House of Representatives" or "Senate") to a `CongressChamber`, returning
- * `null` for anything unrecognized so callers can drop the record rather than seat a member in a chamber that doesn't
- * exist.
+ * Narrows Congress.gov's chamber string to a {@link CongressChamber}.
+ *
+ * @param chamber - The upstream chamber string ("House of Representatives" or "Senate"), if any.
+ * @returns The matching chamber, or `null` for anything unrecognized — so callers drop the record rather than seat a
+ *   member in a chamber that doesn't exist.
  */
 export function normalizeChamberName(chamber?: string): CongressChamber | null {
   const value: string = (chamber ?? "").trim().toLowerCase();
@@ -115,8 +127,11 @@ const NON_VOTING_HOUSE_JURISDICTIONS: ReadonlySet<string> = new Set<string>([
 ]);
 
 /**
- * Whether a House seat representing `state` is one of the six non-voting seats. Always false for the Senate, whose
- * every seat votes — callers should only consult this for House members.
+ * Whether a House seat representing `state` is one of the six non-voting seats.
+ *
+ * @param state - The represented state, territory, or district, by full name.
+ * @returns `true` for the five territorial Delegates' jurisdictions and Puerto Rico. Only meaningful for House members
+ *   — every Senate seat votes, so callers should not consult this for senators.
  */
 export function isNonVotingJurisdiction(state?: string): boolean {
   return NON_VOTING_HOUSE_JURISDICTIONS.has((state ?? "").trim().toLowerCase());
@@ -177,8 +192,12 @@ export type CongressComposition = {
 };
 
 /**
- * Tallies `members` by party, ordered by `partySeatingOrder` so the legend and the chart agree, and omitting parties
- * with no seats rather than rendering a row of zeroes.
+ * Tallies members by party.
+ *
+ * @param members - The chamber's members.
+ * @returns One tally per party that actually holds a seat, ordered by {@link partySeatingOrder} so the legend reads
+ *   left-to-right in the same order the chart is drawn. Parties with no seats are omitted rather than rendered as a row
+ *   of zeroes.
  */
 export function tallyPartyCounts(members: CongressMember[]): PartyTally[] {
   const counts: Map<PartyGroup, number> = new Map<PartyGroup, number>();
@@ -190,7 +209,14 @@ export function tallyPartyCounts(members: CongressMember[]): PartyTally[] {
     .filter((tally: PartyTally): boolean => tally.count > 0);
 }
 
-/** Assembles one chamber's `ChamberComposition` — its members, party tallies, and voting/non-voting seat split. */
+/**
+ * Assembles one chamber's {@link ChamberComposition}.
+ *
+ * @param chamber - Which chamber these members sit in.
+ * @param members - Its members, already normalized.
+ * @returns The composition: the members themselves, their party tallies, and the voting/non-voting seat split the House
+ *   needs and the Senate doesn't.
+ */
 export function buildChamberComposition(chamber: CongressChamber, members: CongressMember[]): ChamberComposition {
   const nonVotingSeats: number =
     chamber === "house"
@@ -206,17 +232,26 @@ export function buildChamberComposition(chamber: CongressChamber, members: Congr
   };
 }
 
-/** The member's party as it should read on screen: the upstream label when there is one, else the group's label. */
+/**
+ * The member's party as it should read on screen.
+ *
+ * @param member - The member to describe.
+ * @returns The verbatim upstream label when there is one — so a nuance like "Independent Democrat" survives to the
+ *   page — otherwise the normalized group's label.
+ */
 export function formatMemberParty(member: CongressMember): string {
   const upstream: string = (member.partyName ?? "").trim();
   return upstream.length > 0 ? upstream : partyGroupLabels[member.party];
 }
 
 /**
- * Describes the seat a member holds in plain English — "Vermont" for a senator, "Ohio's 9th district" for a
- * representative, "Alaska at-large" for a single-seat state, and "(non-voting seat)" for the six House seats that carry
- * no floor vote. Returns an empty string when the upstream record has no jurisdiction at all, so callers can simply
- * omit the line rather than print a placeholder.
+ * Describes the seat a member holds, in plain English.
+ *
+ * @param member - The member whose seat to describe.
+ * @param chamber - The chamber they sit in, which decides whether a district is meaningful at all.
+ * @returns "Vermont" for a senator, "Ohio's 9th district" for a representative, "Alaska at-large" for a single-seat
+ *   state, and "… (non-voting seat)" for the six House seats that carry no floor vote. An empty string when the
+ *   upstream record has no jurisdiction, so callers can omit the line rather than print a placeholder.
  */
 export function formatMemberSeat(member: CongressMember, chamber: CongressChamber): string {
   const state: string = (member.state ?? "").trim();
@@ -230,9 +265,16 @@ export function formatMemberSeat(member: CongressMember, chamber: CongressChambe
 }
 
 /**
- * The full one-line description of a seat, used as each seat's accessible name in the chart and as the heading of the
- * detail panel's read-out. Kept here rather than in the component so the exact wording a screen reader announces is
- * unit-tested alongside the rest of the model.
+ * The full one-line description of a seat.
+ *
+ * Used as each seat's accessible name in the chamber chart and as the heading of the detail panel's read-out. Kept in
+ * the model rather than the component so the exact wording a screen reader announces is unit-tested alongside
+ * everything else, instead of only reachable through a rendered chart.
+ *
+ * @param member - The member holding the seat.
+ * @param chamber - The chamber they sit in.
+ * @returns e.g. `"Bennett, Marcus T., Democratic, Ohio's 9th district"`, or name and party alone when the record
+ *   carries no jurisdiction.
  */
 export function formatMemberSummary(member: CongressMember, chamber: CongressChamber): string {
   const seat: string = formatMemberSeat(member, chamber);
@@ -242,10 +284,45 @@ export function formatMemberSummary(member: CongressMember, chamber: CongressCha
 }
 
 /**
- * The member's page in the Biographical Directory of the United States Congress — the official, permanent record for a
- * Bioguide ID, and the same directory Congress.gov's own member pages cite. Preferred over a congress.gov member URL
- * because that form embeds a name slug that can change; a Bioguide ID never does.
+ * The member's page in the Biographical Directory of the United States Congress.
+ *
+ * Preferred over a congress.gov member URL because that form embeds a name slug that can change; a Bioguide ID never
+ * does. This is the same directory Congress.gov's own member pages cite.
+ *
+ * @param bioguideId - The member's Biographical Directory ID, e.g. `"L000174"`.
+ * @returns The absolute URL of their official biography.
  */
 export function bioguideUrl(bioguideId: string): string {
   return `https://bioguide.congress.gov/search/bio/${bioguideId}`;
+}
+
+/**
+ * The share of a chamber's seats a party holds, to one decimal place.
+ *
+ * @param count - Seats held by the party.
+ * @param total - Seats in the chamber.
+ * @returns A percentage string, e.g., `"49.9%"`. Returns `"0%"` for an empty chamber rather than dividing by zero.
+ */
+export function formatSeatShare(count: number, total: number): string {
+  if (total <= 0) return "0%";
+
+  return `${(Math.round((count / total) * 1000) / 10).toFixed(1)}%`;
+}
+
+/**
+ * Plain-English description of how a chamber's seats break down.
+ *
+ * In the House this spells out the split between voting members and the six Delegates and Resident Commissioner who
+ * hold a seat but no floor vote — a distinction a chamber diagram otherwise quietly erases by drawing all 441 seats
+ * identically.
+ *
+ * @param chamber - The chamber composition to describe.
+ * @returns e.g., `"441 seats — 435 voting, 6 non-voting"`, or simply `"100 seats"` where every seat votes.
+ */
+export function describeChamberSeats(chamber: ChamberComposition): string {
+  const seats: string = `${chamber.members.length} ${chamber.members.length === 1 ? "seat" : "seats"}`;
+
+  if (chamber.nonVotingSeats === 0) return seats;
+
+  return `${seats} — ${chamber.votingSeats} voting, ${chamber.nonVotingSeats} non-voting`;
 }

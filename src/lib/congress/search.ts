@@ -1,13 +1,18 @@
 import type { LegislativeBill } from "@/lib/congress/types";
 
 /**
- * Whether `bill` matches free-text `query` — checked against title, type, number, policy area, and latest-action text,
- * case-insensitively. An empty (or all-whitespace) query matches everything.
+ * Whether `bill` matches free-text `query`.
  *
  * This is the closest approximation of "search" this app can offer: Congress.gov's API has no full-text search endpoint
- * (see docs/decisions.md), so this filters bill metadata already fetched for other purposes rather than querying
- * upstream by keyword. Shared by the server-side search sweep (client.ts's getSearchResults) and BillDirectory's
- * client-side fallback for when that route isn't reachable, so both agree on what counts as a match.
+ * (see `docs/decisions.md`), so this filters bill metadata already fetched for other purposes rather than querying
+ * upstream by keyword. Shared by the server-side sweep (`getSearchResults`) and `BillDirectory`'s client-side fallback
+ * for when that route isn't reachable, so both agree on what counts as a match rather than quietly disagreeing.
+ *
+ * @param bill - The bill to test.
+ * @param query - The raw search text. Matched case-insensitively against title, type, number, policy area, and
+ *   latest-action text — the same fields the UI already shows, so a match is always visibly explicable.
+ * @returns `true` when the bill matches. An empty or all-whitespace query matches everything, which is what makes
+ *   "clear the search box" mean "show me everything again".
  */
 export function matchesQuery(bill: LegislativeBill, query: string): boolean {
   const normalizedQuery: string = query.trim().toLowerCase();
@@ -18,7 +23,12 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
     .some((value: string | undefined): boolean => Boolean(value?.toLowerCase().includes(normalizedQuery)));
 }
 
-/** The eight bill/resolution type codes Congress.gov uses — see BillEndpoint.md. */
+/**
+ * The eight bill/resolution type codes Congress.gov uses — see `BillEndpoint.md`.
+ *
+ * Upper-cased here because {@link parseBillCitation} normalizes before matching; the lower-cased path-segment forms
+ * live in `http.ts`, which is the module that actually builds URLs from them.
+ */
 const CITATION_BILL_TYPES: ReadonlySet<string> = new Set([
   "HR",
   "S",
@@ -39,10 +49,13 @@ export type ParsedBillCitation = {
 };
 
 /**
- * Recognizes a query that names a specific bill by citation — "HR 284", "H.R. 284", "hr284", "119 hjres 66" all parse —
- * so the search route can attempt a fast, exact direct lookup instead of relying on the broad keyword sweep to happen
- * to contain a literal match. Returns `null` for anything that doesn't cleanly resolve to one of the eight
- * bill/resolution types Congress.gov uses, followed by a number.
+ * Recognizes a query that names one specific bill by citation, so search can attempt a fast, exact lookup instead of
+ * relying on the broad keyword sweep happening to contain a literal match.
+ *
+ * @param query - The raw search text. "HR 284", "H.R. 284", "hr284", and "119 hjres 66" all parse, since people write
+ *   citations every one of those ways.
+ * @returns The parsed citation, or `null` for anything that doesn't cleanly resolve to one of the eight
+ *   bill/resolution types followed by a number — including ordinary keyword searches, which is the common case.
  */
 export function parseBillCitation(query: string): ParsedBillCitation | null {
   const trimmed: string = query.trim();

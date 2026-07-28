@@ -64,3 +64,15 @@ describe("sanitizeSummaryHtml", (): void => {
     expect(sanitizeSummaryHtml("No markup here.")).toBe("No markup here.");
   });
 });
+
+describe("HTML comments", (): void => {
+  it("strips comments entirely, including whatever they wrap", (): void => {
+    expect(sanitizeSummaryHtml("<p>Before</p><!-- <script>alert(1)</script> --><p>After</p>")).toBe(
+      "<p>Before</p><p>After</p>",
+    );
+  });
+
+  it("strips an unterminated comment rather than leaving it in the output", (): void => {
+    expect(sanitizeSummaryHtml("<p>Kept</p><!-- never closed")).toBe("<p>Kept</p>");
+  });
+});

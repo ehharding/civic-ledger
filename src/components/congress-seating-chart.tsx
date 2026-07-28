@@ -20,9 +20,11 @@ import {
   type CongressMember,
   chamberLabels,
   chamberShortLabels,
+  describeChamberSeats,
   formatMemberParty,
   formatMemberSeat,
   formatMemberSummary,
+  formatSeatShare,
   isNonVotingJurisdiction,
   type PartyTally,
   partyGroupLabels,
@@ -33,18 +35,45 @@ import { formatOrdinal } from "@/lib/format";
 /** How far PageUp/PageDown jump along the arc, in seats. */
 const PAGE_STEP: number = 10;
 
+/**
+ * How many seats each movement key advances by. Hoisted to module scope so the table is allocated once rather than
+ * rebuilt on every keystroke, and so the full set of supported keys is visible in one place.
+ *
+ * Up/Down mirror Left/Right deliberately: the seats form a single left-to-right sequence, so there is no meaningful
+ * "row above" to move to, and a person pressing Down expects *something* rather than nothing.
+ */
+const SEAT_KEY_STEPS: Readonly<Record<string, number>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+  PageDown: PAGE_STEP,
+  PageUp: -PAGE_STEP,
+};
+
 const PANEL_ID: string = "seating-panel";
 const CHART_HELP_ID: string = "seating-chart-help";
 
-/** The id of one chamber's tab, referenced by the panel so it stays labeled by whichever chamber is showing. */
+/**
+ * The DOM id of one chamber's tab.
+ *
+ * @param chamber - The chamber whose tab to identify.
+ * @returns The id, referenced by the panel's `aria-labelledby` so the panel stays labeled by whichever chamber is
+ *   currently showing.
+ */
 function tabId(chamber: CongressChamber): string {
   return `seating-tab-${chamber}`;
 }
 
 /**
- * Reads the seat index off whatever element an event landed on. Every seat carries `data-seat-index`, so one handler on
- * the chart covers all ~540 of them — meaningfully cheaper than attaching separate listeners per seat, and it keeps
- * hover, focus, and keyboard movement on a single code path.
+ * Reads the seat index off whatever element an event landed on.
+ *
+ * Every seat carries `data-seat-index`, so one delegated handler on the chart covers all ~540 of them — meaningfully
+ * cheaper than attaching separate listeners per seat, and it keeps hover, focus, and keyboard movement on a single code
+ * path.
+ *
+ * @param target - The event target, typically `event.target`.
+ * @returns The seat index, or `null` when the event landed somewhere that isn't a seat.
  */
 function seatIndexFromEvent(target: EventTarget | null): number | null {
   if (!(target instanceof Element)) return null;
@@ -56,27 +85,14 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
   return Number.isInteger(index) ? index : null;
 }
 
-/** The share of a chamber's seats a party holds, to one decimal place. */
-export function formatSeatShare(count: number, total: number): string {
-  if (total <= 0) return "0%";
-
-  return `${(Math.round((count / total) * 1000) / 10).toFixed(1)}%`;
-}
-
 /**
- * Plain-English description of how a chamber's seats break down between voting members and, in the House, the six
- * Delegates and the Resident Commissioner who hold a seat but no floor vote — a distinction a chamber diagram otherwise
- * quietly erases by drawing all 441 seats identically.
+ * The read-out shown when a seat is hovered, focused, or locked by a click.
+ *
+ * @param chamber - The chamber the seat belongs to, which decides how the seat is described.
+ * @param member - The member holding it.
+ * @returns The detail panel's contents: name, party, seat, the non-voting caveat where it applies, and a link to the
+ *   official biography when the record carries a Bioguide ID.
  */
-export function describeChamberSeats(chamber: ChamberComposition): string {
-  const seats: string = `${chamber.members.length} ${chamber.members.length === 1 ? "seat" : "seats"}`;
-
-  if (chamber.nonVotingSeats === 0) return seats;
-
-  return `${seats} — ${chamber.votingSeats} voting, ${chamber.nonVotingSeats} non-voting`;
-}
-
-/** The read-out shown when a seat is hovered or focused. */
 function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: CongressMember }): JSX.Element {
   const seat: string = formatMemberSeat(member, chamber);
   const nonVoting: boolean = chamber === "house" && isNonVotingJurisdiction(member.state);
@@ -115,6 +131,9 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
  * Seats are `<circle role="button">` rather than real buttons because an HTML `<button>` cannot be a child of `<svg>`.
  * A seat is genuinely an activatable control, so the role is declared explicitly and the roving tabindex supplies the
  * keyboard behavior a real button would otherwise have brought with it.
+ *
+ * @param composition - Both chambers' membership plus its live/preview provenance, resolved server-side.
+ * @returns The chamber tabs, the SVG diagram, the seat read-out panel, the party legend, and the provenance line.
  */
 export function CongressSeatingChart({ composition }: { composition: CongressComposition }): JSX.Element {
   const [chamber, setChamber] = useState<CongressChamber>("house");
@@ -137,6 +156,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
   const shownIndex: number | null = hoveredIndex ?? focusedIndex ?? selectedIndex;
   const shownSeat: ChamberSeat | undefined = shownIndex === null ? undefined : seating.seats[shownIndex];
 
+  /** Switches chambers, clearing every seat-scoped piece of state so no read-out survives into a different chamber. */
   function selectChamber(next: CongressChamber): void {
     setChamber(next);
     setHoveredIndex(null);
@@ -164,15 +184,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
       return;
     }
 
-    const steps: Record<string, number> = {
-      ArrowRight: 1,
-      ArrowDown: 1,
-      ArrowLeft: -1,
-      ArrowUp: -1,
-      PageDown: PAGE_STEP,
-      PageUp: -PAGE_STEP,
-    };
-    const step: number | undefined = steps[event.key];
+    const step: number | undefined = SEAT_KEY_STEPS[event.key];
 
     if (step !== undefined) {
       event.preventDefault();
@@ -207,6 +219,20 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
 
     selectChamber(next.chamber);
     tabsRef.current?.querySelector<HTMLButtonElement>(`[data-chamber="${next.chamber}"]`)?.focus();
+  }
+
+  /**
+   * Clears the focus read-out only when focus actually leaves the chart.
+   *
+   * React's `onBlur` is delegated, so moving between seats fires blur-then-focus; clearing unconditionally made the
+   * detail panel flicker back to its placeholder on every arrow keypress. `relatedTarget` is where focus is *going*, so
+   * a move to another seat inside the chart is recognized and left alone.
+   */
+  function handleChartBlur(event: FocusEvent<SVGSVGElement>): void {
+    const nextTarget: EventTarget | null = event.relatedTarget;
+    if (nextTarget instanceof Node && chartRef.current?.contains(nextTarget)) return;
+
+    setFocusedIndex(null);
   }
 
   function handleSeatFocus(event: FocusEvent<SVGSVGElement>): void {
@@ -282,7 +308,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
               aria-label={`${chamberLabels[chamber]} seating chart`}
               className="seating__chart"
               onClick={handleSeatClick}
-              onBlur={(): void => setFocusedIndex(null)}
+              onBlur={handleChartBlur}
               onFocus={handleSeatFocus}
               onKeyDown={handleChartKeyDown}
               onMouseLeave={(): void => setHoveredIndex(null)}
@@ -299,16 +325,13 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
                     className={`seating__seat seating__seat--${seat.member.party}${
                       seat.index === shownIndex ? " is-active" : ""
                     }`}
-                    // Fix: Normalize floating point numbers to avoid SSR hydration mismatches
+                    // Rounded to a fixed precision so the server's and the client's rendering of the same float agree
+                    // exactly — an unrounded trailing digit reads to React as a hydration mismatch.
                     cx={seat.position.x.toFixed(4)}
                     cy={seat.position.y.toFixed(4)}
                     data-seat-index={seat.index}
                     key={seat.key}
-                    r={
-                      Number.isFinite(seating.geometry.seatRadius)
-                        ? seating.geometry.seatRadius.toFixed(4)
-                        : seating.geometry.seatRadius
-                    }
+                    r={seating.geometry.seatRadius.toFixed(4)}
                     role="button"
                     tabIndex={seat.index === activeIndex ? 0 : -1}
                   />

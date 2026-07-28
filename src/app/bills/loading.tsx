@@ -2,7 +2,14 @@ import type { JSX } from "react";
 
 import { BillDirectorySkeleton } from "@/components/bill-directory-skeleton";
 
-/** Streamed by Next while the /bills route's async data fetch resolves. Purely decorative — no real data. */
+/**
+ * Streamed by Next while the `/bills` route's snapshot fetch resolves.
+ *
+ * Copy is duplicated from the route rather than shared, deliberately: matching it exactly is what makes the skeleton
+ * resolve into the real page without anything shifting.
+ *
+ * @returns The directory skeleton with this route's header copy.
+ */
 export default function BillsLoading(): JSX.Element {
   return (
     <BillDirectorySkeleton

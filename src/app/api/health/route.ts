@@ -5,11 +5,24 @@ import { NextResponse } from "next/server";
 // removes this route before building, the same way it already removes /api/bills.
 export const dynamic = "force-dynamic";
 
+/** The health check's response body. */
+type HealthResponse = {
+  status: "ok";
+  service: string;
+  /** When this response was generated, so a cached or stale reply is recognizable as one. */
+  timestamp: string;
+};
+
 /**
- * Minimal liveness check. Returns a fixed shape with no upstream calls, so it stays fast and dependency-free — this
- * is "is the server up", not "is Congress.gov reachable".
+ * Minimal liveness check.
+ *
+ * Deliberately makes no upstream call: this answers "is the server up", not "is Congress.gov reachable". Folding the
+ * latter in would make the app's own health depend on a third party's, and would turn every health probe into traffic
+ * against the API's rate limit.
+ *
+ * @returns A fixed-shape JSON body with the current server time.
  */
-export function GET(): NextResponse<{ status: string; service: string; timestamp: string }> {
+export function GET(): NextResponse<HealthResponse> {
   return NextResponse.json({
     status: "ok",
     service: "civic-ledger",

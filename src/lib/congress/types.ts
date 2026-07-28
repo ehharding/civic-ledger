@@ -1,20 +1,24 @@
 /**
- * The five stages of BillJourney's educational progress cue, in order.
- * Derived from action text by inferBillStage — not an authoritative legal status.
+ * The five stages of `BillJourney`'s educational progress cue, in order.
+ *
+ * Derived from a bill's action text by {@link inferBillStage} — an orientation aid, never an authoritative legal
+ * status. Ordering matters: `BillJourney` reads a stage's index to decide which steps render as already complete.
  */
 export const billStages = ["introduced", "committee", "chamber", "president", "law"] as const;
 
 export type BillStage = (typeof billStages)[number];
 
 /**
- * Default/expected page size for the bill list endpoint. Lives here (rather than in client.ts, a server-only module) so
- * client components like BillDirectory can reference it too (e.g., to detect a final ("no more bills") page).
- * Congress.gov allows up to 250 per request.
+ * Page size for the bill list endpoint.
+ *
+ * Lives here rather than in the server-only adapter so client components can reference it too — `BillDirectory` uses it
+ * to recognize a short final page and stop offering "Load More". Congress.gov permits up to 250 per request; this is
+ * deliberately much smaller, since it's also the number of cards a person is asked to take in at once.
  */
 export const DEFAULT_PAGE_SIZE = 12;
 
 /**
- * A bill's natural identifier as it appears in a route (e.g. `/bills/119/hr/284`) — congress, type, and number, all as
+ * A bill's natural identifier as it appears in a route (e.g., `/bills/119/hr/284`) — congress, type, and number, all as
  * strings. Shared by every per-bill lookup in client.ts (getBillById, getBillSummaries, getBillTextVersions) and by the
  * bill detail route's own params, so the same three-field shape isn't independently repeated at each site.
  */
@@ -25,10 +29,16 @@ export type BillRouteParams = {
 };
 
 /**
- * Builds the "{congress}-{TYPE}-{number}" string that uniquely identifies a bill — used as a React list key, and to
- * look up preview-only fixture content (like `previewSummaries` in fixtures.ts) by a bill's natural identifier. Accepts
- * a numeric `congress` (as `LegislativeBill` itself has) or a string one (as route params have) so both live-data and
- * route-lookup callers can use the same function.
+ * Builds the `"{congress}-{TYPE}-{number}"` string that uniquely identifies a bill.
+ *
+ * Used as a React list key, to look up preview-only fixture content (like `previewSummaries`) by natural identifier,
+ * and as the single definition of bill identity across the adapter — so "is this the same bill?" is answered the same
+ * way everywhere instead of by three hand-written field comparisons that can drift on case or numeric type.
+ *
+ * @param input - Anything carrying a bill's natural identifier. Accepts a numeric `congress` (as `LegislativeBill` has)
+ *   or a string one (as route params have), and normalizes `type` to upper case, so a live record and a route param
+ *   naming the same bill always produce the same key.
+ * @returns The identity key, e.g., `"119-HR-284"`.
  */
 export function billIdentityKey(input: { congress: number | string; type: string; number: string }): string {
   return `${input.congress}-${String(input.type).toUpperCase()}-${input.number}`;

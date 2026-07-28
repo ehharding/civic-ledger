@@ -53,7 +53,34 @@ describe("BillDirectory", (): void => {
     await user.type(screen.getByLabelText("Search bill records"), firstPreviewBill.title);
 
     expect(await screen.findByText("1 Match")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(`/api/bills/search?q=${encodeURIComponent(firstPreviewBill.title)}`);
+    // The second argument carries the AbortSignal that lets a superseded search cancel itself — see useBillSearch.
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/bills/search?q=${encodeURIComponent(firstPreviewBill.title)}`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("aborts an in-flight search when the query changes again", async (): Promise<void> => {
+    const signals: AbortSignal[] = [];
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.signal) signals.push(init.signal);
+      return Promise.resolve(searchResponse([firstPreviewBill]));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    const input: HTMLElement = screen.getByLabelText("Search bill records");
+    await user.type(input, "water");
+    expect(await screen.findByText("1 Match")).toBeInTheDocument();
+
+    await user.type(input, " reliability");
+    expect(await screen.findByText("1 Match")).toBeInTheDocument();
+
+    // The first request's signal is aborted rather than left to resolve and overwrite the newer answer.
+    expect(signals.length).toBeGreaterThan(1);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals.at(-1)?.aborted).toBe(false);
   });
 
   it("shows the search results and a scope note once the request resolves", async (): Promise<void> => {

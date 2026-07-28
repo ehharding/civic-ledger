@@ -27,10 +27,37 @@ flowchart LR
 |-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
 | `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
 | `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/hooks`                   | Client-side async behavior extracted from views | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/lib/api-query.ts`        | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
 | `src/lib/congress`            | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
 | `src/lib/congress/seating.ts` | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
 | `src/lib/glossary.ts`         | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
+
+### Inside the Congress Adapter
+
+`src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
+components, and tests import one stable path while the internals stay free to move.
+
+| Module           | Responsibility                                                              |
+|------------------|-----------------------------------------------------------------------------|
+| `api-schema.ts`  | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.     |
+| `http.ts`        | Key access, URL building, caching policy, one request helper, route guards. |
+| `mappers.ts`     | Upstream shapes into this app's stable model. Pure; performs no I/O.        |
+| `bills.ts`       | Bill snapshots, pagination, lookup, summaries, text versions, search.       |
+| `composition.ts` | Chamber membership, including the member list's pagination.                 |
+| `client.ts`      | Public surface. Re-exports only.                                            |
+
+Two invariants hold across every exported read:
+
+1. **Nothing throws.** Upstream failure is an expected condition, not an exception — a page degrades to clearly labeled
+   preview data, never to an error boundary.
+2. **Provenance travels with the data.** Anything that can come from either live or preview data reports which it was,
+   on the same returned value, so no caller can render one while claiming the other.
+
+Payloads are validated at runtime rather than cast. Schemas are loose objects whose fields each `.catch(undefined)`, so
+an unexpected field type degrades that one field — which the mappers already handle — instead of discarding a whole
+page. Only a payload that isn't an object at all is rejected outright.
 
 ## Runtime Data Flow
 
@@ -48,9 +75,10 @@ flowchart LR
    member's entry in the Biographical Directory.
 
 Membership follows the same path with one wrinkle: `/v3/member/congress/{congress}` is paginated at the API's 250-record
-ceiling, so `getCongressComposition` reads `pagination.count` from the first page and then requests the remainder in
-parallel. Chart geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing
-about Congress.gov — see "The Chamber Diagram Is a Schematic" in `docs/decisions.md`.
+ceiling, so `getCongressComposition` (in `composition.ts`) reads `pagination.count` from the first page and then
+requests the remainder in parallel. Chart geometry is computed separately, in a pure module
+(`src/lib/congress/seating.ts`) that knows nothing about Congress.gov — see "The Chamber Diagram Is a Schematic" in
+`docs/decisions.md`.
 
 ## Persistence Plan
 
@@ -75,7 +103,11 @@ history, notification delivery, or more than a few API-facing features.
 
 ## Security and Accessibility Baseline
 
-- API key stays server-side and is excluded from Git.
+- API key stays server-side and is excluded from Git. It is read only through `getCongressApiKey()`, which treats an
+  empty or whitespace-only value as absent rather than sending a blank key upstream.
+- Every dynamic path segment is validated against a closed format before it reaches an outbound Congress.gov URL
+  (`normalizeBillRouteParams`), and this app's own query params are parsed rather than coerced (`src/lib/api-query.ts`).
+- Upstream payloads are validated at runtime, not cast.
 - No political-affiliation targeting or persuasion logic belongs in the product.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
   real links.

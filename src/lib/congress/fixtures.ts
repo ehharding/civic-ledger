@@ -10,8 +10,15 @@ import {
 import type { LegislativeBill } from "@/lib/congress/types";
 
 /**
- * Clearly labeled fixture records let the application render without a key.
- * They are not real legislative records and must not be represented as live data.
+ * Clearly labeled fixture records, so the application renders without an API key.
+ *
+ * **These are not real legislative records and must never be represented as live data.** Every surface that displays
+ * them pairs them with a `DataSourceNotice` saying so, and each fixture links only to the Congress.gov *home page*
+ * rather than to a plausible-looking bill URL — a fabricated deep link is the single easiest way for preview content to
+ * be mistaken for the official record.
+ *
+ * The set deliberately spans several Congresses and every `BillStage`, so filtering, the Congress switcher, and the
+ * journey stepper are all exercisable without a key.
  */
 export const previewBills: LegislativeBill[] = [
   {
@@ -140,8 +147,10 @@ export const previewBills: LegislativeBill[] = [
 ];
 
 /**
- * The first preview fixture, as a plain (never-undefined) reference — a convenience for tests exercising a single
- * representative bill.
+ * The first preview fixture, as a plain never-undefined reference.
+ *
+ * A convenience for tests exercising a single representative bill, so each one doesn't need its own non-null assertion
+ * against `previewBills[0]` under `noUncheckedIndexedAccess`.
  */
 export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;
 
@@ -203,10 +212,14 @@ export const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = 
 };
 
 /**
- * Builds one chamber's worth of unattributed placeholder seats from `previewChamberPartySplits`. Each seat is named
- * "Preview seat N" rather than given a fictional member's name and jurisdiction: a chamber diagram invites a reader
- * to look up their own representative, and a fabricated roster of 535 plausible-looking names and districts is a far
- * easier thing to mistake for real data than a labeled placeholder is.
+ * Builds one chamber's worth of unattributed placeholder seats.
+ *
+ * Each seat is named "Preview seat N" rather than given a fictional member's name and jurisdiction. A chamber diagram
+ * invites a reader to look up *their own* representative, and a fabricated roster of 535 plausible-looking names and
+ * districts is a far easier thing to mistake for real data than a labeled placeholder is.
+ *
+ * @param chamber - Which chamber to populate.
+ * @returns Placeholder members in the party proportions from {@link previewChamberPartySplits}.
  */
 export function previewChamberMembers(chamber: CongressChamber): CongressMember[] {
   const members: CongressMember[] = [];
@@ -221,8 +234,15 @@ export function previewChamberMembers(chamber: CongressChamber): CongressMember[
 }
 
 /**
- * Assembles a complete, clearly labeled placeholder `CongressComposition` from `previewChamberMembers`. Used by the
- * adapter's no-key and upstream-failure paths, and by tests that need a composition without stubbing a fetch.
+ * Assembles a complete, clearly labeled placeholder {@link CongressComposition}.
+ *
+ * Used by the adapter's no-key and upstream-failure paths, and by tests that need a composition without stubbing a
+ * fetch.
+ *
+ * @param congress - The Congress the placeholder stands in for.
+ * @param retrievedAt - The timestamp to report, so preview data carries the same freshness signal live data does.
+ * @param notice - The user-facing explanation of why placeholders are being shown. Defaults to the missing-key case.
+ * @returns A composition marked `source: "preview"`.
  */
 export function buildPreviewComposition(
   congress: number,

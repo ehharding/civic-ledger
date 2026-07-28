@@ -17,8 +17,11 @@ type LessonStep = {
 };
 
 /**
- * Content for the lesson. Ordered the same as `billStages`, and deliberately narrow in scope — this walks the same
- * five stages BillJourney already visualizes on a real bill record, rather than re-deriving a separate curriculum.
+ * Content for the lesson.
+ *
+ * Ordered the same as `billStages` and deliberately narrow in scope: it walks the same five stages `BillJourney`
+ * already visualizes on a real bill record, so a reader who learns the sequence here recognizes it immediately on any
+ * bill page — rather than learning a second, differently-shaped model of the same process.
  */
 const steps: LessonStep[] = [
   {

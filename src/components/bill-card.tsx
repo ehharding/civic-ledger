@@ -7,7 +7,16 @@ import { BillJourney } from "@/components/bill-journey";
 import { billHref } from "@/lib/bill-route";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/types";
 
-/** Compact bill summary card used in the directory grid and the homepage's "Latest Activity" section. */
+/**
+ * Compact bill summary card, used in the directory grid and the homepage's "Latest Activity" section.
+ *
+ * Both the title and the corner arrow link to the same record: the title because it's what a person reads and reaches
+ * for, the arrow because a card whose only target is a long wrapped headline is awkward to hit. The arrow carries an
+ * explicit `aria-label` so the two links aren't announced as an ambiguous pair.
+ *
+ * @param bill - The bill to summarize.
+ * @returns The card: identifier and stage, linked title, latest action, compact journey stepper, and policy area.
+ */
 export function BillCard({ bill }: { bill: LegislativeBill }): JSX.Element {
   const href: Route = billHref(bill);
 

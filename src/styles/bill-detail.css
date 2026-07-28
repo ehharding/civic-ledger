@@ -167,3 +167,32 @@
 .detail-panel > .text-link {
   margin-top: 26px;
 }
+
+.summary-history {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.summary-history__toggle {
+  color: var(--burgundy);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.summary-history__toggle:hover {
+  text-decoration: underline;
+}
+
+.summary-history__list {
+  margin-top: 14px;
+  list-style: none;
+}
+
+.summary-history__list > li + li {
+  margin-top: 20px;
+  border-top: 1px dashed var(--line);
+  padding-top: 16px;
+}

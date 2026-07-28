@@ -14,8 +14,16 @@ import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/
 import { formatOrdinal } from "@/lib/format";
 
 /**
- * Home route content: hero, a featured bill's journey, the current chamber's seating chart, the three most recent
- * bills, and static trust/learn sections.
+ * Home route content.
+ *
+ * The Congress named in the hero comes from {@link getCurrentCongress} rather than from the snapshot's bills: the bill
+ * list endpoint can surface a record from an older Congress whose data happened to update recently, and reading the
+ * headline number off whatever arrived would make the page occasionally, confidently wrong about what year it is.
+ *
+ * @param composition - Both chambers' membership, for the seating chart.
+ * @param snapshot - The current Congress's bills, whose first entry becomes the featured record.
+ * @returns The hero and featured bill journey, the chamber diagram, the three most recent bills, and the static
+ *   learn/trust sections.
  */
 export function HomePage({
   composition,

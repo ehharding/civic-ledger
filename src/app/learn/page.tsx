@@ -9,7 +9,14 @@ import { type GlossaryTerm, glossary } from "@/lib/glossary";
 
 export const metadata: Metadata = { title: "Learn" };
 
-/** Static glossary + "what's next" route. All content comes from the local glossary module — no data fetching. */
+/**
+ * The glossary route.
+ *
+ * Entirely static: all content comes from the local glossary module, with no data fetching, because the vocabulary of
+ * the legislative process doesn't change with the news cycle.
+ *
+ * @returns The glossary page.
+ */
 export default function LearnPage(): JSX.Element {
   return (
     <SiteShell>

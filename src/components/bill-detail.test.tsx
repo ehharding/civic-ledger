@@ -84,6 +84,46 @@ describe("BillDetail", (): void => {
     expect(screen.getByText(/most recent of 2 summaries/)).toBeInTheDocument();
   });
 
+  it("offers earlier summaries in a collapsed disclosure, without hiding the newest one", (): void => {
+    render(<BillDetail bill={bill} source="live" summaries={[summaryB, summaryA]} textVersions={[]} />);
+
+    // The most recent summary stays expanded; only the earlier ones are tucked behind the toggle.
+    expect(screen.getByText("the current thing")).toBeInTheDocument();
+    expect(screen.getByText("Read the 1 earlier summary")).toBeInTheDocument();
+    expect(screen.getByText(/As introduced, this bill would do the earlier thing/)).toBeInTheDocument();
+  });
+
+  it("shows no disclosure when a bill has only one summary", (): void => {
+    render(<BillDetail bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
+
+    expect(screen.queryByText(/earlier summar/)).not.toBeInTheDocument();
+  });
+
+  it("links the sponsor to their official biography when a Bioguide ID is on file", (): void => {
+    const withBioguide: LegislativeBill = {
+      ...bill,
+      sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]", bioguideId: "T000001" },
+    };
+    render(<BillDetail bill={withBioguide} source="live" summaries={[]} textVersions={[]} />);
+
+    const link = screen.getByRole("link", { name: /Rep. Test, Sample A./ });
+    expect(link).toHaveAttribute("href", "https://bioguide.congress.gov/search/bio/T000001");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("shows the sponsor as plain text when no Bioguide ID is on file", (): void => {
+    const withoutBioguide: LegislativeBill = { ...bill, sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" } };
+    render(<BillDetail bill={withoutBioguide} source="live" summaries={[]} textVersions={[]} />);
+
+    expect(screen.queryByRole("link", { name: /Rep. Test, Sample A./ })).not.toBeInTheDocument();
+  });
+
+  it("shows the date the bill was introduced", (): void => {
+    render(<BillDetail bill={bill} source="live" summaries={[]} textVersions={[]} />);
+
+    expect(screen.getByText("Introduced July 8, 2026")).toBeInTheDocument();
+  });
+
   it("doesn't show the multi-summary note when there's only one summary", (): void => {
     render(<BillDetail bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
 

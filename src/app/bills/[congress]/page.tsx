@@ -22,11 +22,13 @@ type CongressBillsPageProps = {
 };
 
 /**
- * Pre-renders one bill-directory page per Congress the preview fixtures actually cover, mirroring the sibling
- * [type]/[number] route's generateStaticParams. In the default server build this is just a perf win (any other
- * supported Congress still resolves live, on demand); in a static export (STATIC_EXPORT=true, no API key), these are
- * the *only* Congress-scoped directory pages that can exist, since a static export has no server to look anything
- * else up on request.
+ * Pre-renders one bill-directory page per Congress the preview fixtures actually cover.
+ *
+ * In the default server build this is only a performance win — any other supported Congress still resolves live, on
+ * demand. In a static export (`STATIC_EXPORT=true`, no API key) these are the *only* Congress-scoped directory pages
+ * that can exist, since there's no server left to look anything else up at request time.
+ *
+ * @returns One params object per Congress covered by the fixtures, de-duplicated.
  */
 export function generateStaticParams(): { congress: string }[] {
   const congresses: number[] = Array.from(new Set(previewBills.map((bill: LegislativeBill): number => bill.congress)));
@@ -34,8 +36,11 @@ export function generateStaticParams(): { congress: string }[] {
 }
 
 /**
- * Per-Congress `<title>` (e.g., "118th Congress Bills"), or the generic "Bills" title for an out-of-range Congress —
- * the page itself renders its 404 in that case (see parseCongressParam), so metadata just avoids implying otherwise.
+ * Builds the per-Congress page title.
+ *
+ * @param params - The route's `congress` param.
+ * @returns e.g., `"118th Congress Bills"`, or the generic `"Bills"` for an out-of-range Congress — the page itself
+ *   renders a 404 in that case, so the metadata simply avoids implying a page that isn't there.
  */
 export async function generateMetadata({ params }: CongressBillsPageProps): Promise<Metadata> {
   const { congress: rawCongress } = await params;
@@ -45,10 +50,16 @@ export async function generateMetadata({ params }: CongressBillsPageProps): Prom
 }
 
 /**
- * Bill directory for one specific Congress, reached from the Congress switcher on /bills or by a direct link (e.g.,
- * /bills/118). Renders the 404 page for anything outside the range this app supports — see parseCongressParam.
- * The current Congress works here too (it's not redirected to /bills), so every Congress the switcher lists resolves to
- * a real page under this one route.
+ * Bill directory for one specific Congress, reached from the switcher on `/bills` or by direct link
+ * (e.g., `/bills/118`).
+ *
+ * The current Congress resolves here too rather than redirecting to `/bills`, so every Congress the switcher lists
+ * behaves identically and no entry is a special case.
+ *
+ * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
+ *   @see parseCongressParam
+ * @param searchParams - Carries the shareable `?q=` deep link.
+ * @returns The directory page for that Congress.
  */
 export default async function CongressBillsPage({
   params,

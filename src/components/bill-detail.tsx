@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
+import { bioguideUrl } from "@/lib/congress/members";
 import {
   type BillSummary,
   type BillTextVersion,
@@ -14,14 +15,14 @@ import {
 } from "@/lib/congress/types";
 import { formatDate, formatOrdinal } from "@/lib/format";
 
-/**
- * Props for BillDetail — everything the bill detail route (`/bills/[congress]/[type]/[number]`) resolves server-side.
- */
+/** Props for {@link BillDetail} — everything the bill detail route resolves server-side. */
 type BillDetailProps = {
   bill: LegislativeBill;
+  /** Whether this record is live Congress.gov data or a labeled preview fixture. Changes wording throughout. */
   source: CongressSnapshot["source"];
+  /** User-facing explanation of *why* preview data is being shown, when it is. */
   notice?: string;
-  /** When this bill's data was actually fetched — passed straight through to DataSourceNotice. */
+  /** When this bill's data was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
   /** Every CRS summary on file for this bill, most recent first. */
   summaries: BillSummary[];
@@ -30,9 +31,58 @@ type BillDetailProps = {
 };
 
 /**
- * Full bill record page: hero (identity, stage, sponsor/cosponsor meta), the BillJourney stepper, the latest action
- * with a link to the official record, the most recent CRS summary (labeled as preview or real per `source`), and every
- * official text version. Purely presentational — all data is resolved by the route (`page.tsx`) and passed in as props.
+ * The caption above a summary, stating who wrote it and which version of the bill it describes.
+ *
+ * Preview summaries are captioned as illustrative rather than credited to the Congressional Research Service —
+ * attributing invented text to a real institution is exactly the kind of accidental misinformation the preview-data
+ * policy exists to prevent.
+ *
+ * @param summary - The summary being captioned.
+ * @param source - Whether this record is live or preview data.
+ * @returns The caption line.
+ */
+function SummaryCaption({
+  summary,
+  source,
+}: {
+  summary: BillSummary;
+  source: CongressSnapshot["source"];
+}): JSX.Element {
+  if (source === "preview") return <p className="date-label">Illustrative preview summary — not a real CRS summary.</p>;
+
+  return (
+    <p className="date-label">
+      Congressional Research Service summary — {summary.actionDesc}
+      {summary.actionDate ? `, ${formatDate(summary.actionDate)}` : ""}
+    </p>
+  );
+}
+
+/**
+ * Renders one summary's sanitized HTML.
+ *
+ * @param summary - The summary to render. Its `html` was already run through `sanitizeSummaryHtml` in the adapter
+ *   (allow-listed tags, validated hrefs only) before it reached the app's model, so no unsanitized markup can arrive
+ *   here.
+ * @returns The summary body.
+ */
+function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
+  return (
+    // biome-ignore lint/security/noDangerouslySetInnerHtml: html is sanitized by sanitizeSummaryHtml in the adapter.
+    <div className="summary-body" dangerouslySetInnerHTML={{ __html: summary.html }} />
+  );
+}
+
+/**
+ * Full bill record page.
+ *
+ * Purely presentational: every value is resolved by the route (`page.tsx`) and passed in, so this component has no
+ * fetching, no environment access, and nothing that behaves differently between a live and a preview render except the
+ * wording it chooses.
+ *
+ * @param props - @see BillDetailProps
+ * @returns The hero (identity, stage, sponsor and cosponsor meta), the `BillJourney` stepper, the latest action with a
+ *   link to the official record, the CRS summaries, every official text version, and the closing context card.
  */
 export function BillDetail({
   bill,
@@ -42,7 +92,7 @@ export function BillDetail({
   summaries,
   textVersions,
 }: BillDetailProps): JSX.Element {
-  const summary: BillSummary | undefined = summaries[0];
+  const [summary, ...earlierSummaries]: BillSummary[] = summaries;
 
   return (
     <SiteShell>
@@ -61,7 +111,22 @@ export function BillDetail({
           <span className="stage-label">{billStageLabels[bill.stage]}</span>
           {bill.policyArea ? <span>{bill.policyArea}</span> : null}
           <span>Origin: {bill.originChamber}</span>
-          {bill.sponsor ? <span>Sponsor: {bill.sponsor.fullName}</span> : null}
+          {bill.introducedDate ? <span>Introduced {formatDate(bill.introducedDate)}</span> : null}
+          {bill.sponsor ? (
+            <span>
+              Sponsor:{" "}
+              {bill.sponsor.bioguideId ? (
+                // The sponsor's name is the most natural place in the whole page to leave for the official record about
+                // *them* rather than about the bill, and the adapter already carries the Bioguide ID that makes it a
+                // permanent link rather than a name slug that can change.
+                <a className="text-link" href={bioguideUrl(bill.sponsor.bioguideId)} target="_blank" rel="noreferrer">
+                  {bill.sponsor.fullName} <ExternalLink aria-hidden="true" size={13} />
+                </a>
+              ) : (
+                bill.sponsor.fullName
+              )}
+            </span>
+          ) : null}
           {typeof bill.cosponsorCount === "number" ? (
             <span>
               {bill.cosponsorCount} cosponsor{bill.cosponsorCount === 1 ? "" : "s"}
@@ -100,20 +165,34 @@ export function BillDetail({
           <h2 id="summary-heading">What This Bill Would Do</h2>
           {summary ? (
             <>
-              <p className="date-label">
-                {source === "preview"
-                  ? "Illustrative preview summary — not a real CRS summary."
-                  : `Congressional Research Service summary — ${summary.actionDesc}${
-                      summary.actionDate ? `, ${formatDate(summary.actionDate)}` : ""
-                    }`}
-              </p>
-              {/** biome-ignore lint/security/noDangerouslySetInnerHtml: html is run through sanitizeSummaryHtml (allow-listed tags, validated hrefs only) in client.ts before this is ever set. */}
-              <div className="summary-body" dangerouslySetInnerHTML={{ __html: summary.html }} />
-              {summaries.length > 1 ? (
-                <p className="muted-copy">
-                  This is the most recent of {summaries.length} summaries the Congressional Research Service has
-                  published for this bill; earlier ones may describe an earlier version of the text.
-                </p>
+              <SummaryCaption summary={summary} source={source} />
+              <SummaryBody summary={summary} />
+              {earlierSummaries.length > 0 ? (
+                <>
+                  <p className="muted-copy">
+                    This is the most recent of {summaries.length} summaries the Congressional Research Service has
+                    published for this bill; earlier ones may describe an earlier version of the text.
+                  </p>
+                  {/* Kept collapsed rather than dropped: an earlier summary isn't stale, it's an accurate description
+                      of a real earlier version of the bill, and comparing the two is one of the clearest ways to see
+                      what a chamber actually changed. */}
+                  <details className="summary-history">
+                    <summary className="summary-history__toggle">
+                      Read the {earlierSummaries.length} earlier{" "}
+                      {earlierSummaries.length === 1 ? "summary" : "summaries"}
+                    </summary>
+                    <ol className="summary-history__list">
+                      {earlierSummaries.map(
+                        (earlier: BillSummary): JSX.Element => (
+                          <li key={`${earlier.versionCode}-${earlier.actionDate ?? earlier.actionDesc}`}>
+                            <SummaryCaption summary={earlier} source={source} />
+                            <SummaryBody summary={earlier} />
+                          </li>
+                        ),
+                      )}
+                    </ol>
+                  </details>
+                </>
               ) : null}
             </>
           ) : (
@@ -130,21 +209,23 @@ export function BillDetail({
           <h2 id="fulltext-heading">Read the Full Text</h2>
           {textVersions.length > 0 ? (
             <ul className="text-version-list">
-              {textVersions.map((version: BillTextVersion, index: number) => (
-                <li key={`${version.type}-${version.date ?? index}`}>
-                  <p className="text-version-list__type">
-                    {version.type}
-                    {version.date ? ` · ${formatDate(version.date)}` : ""}
-                  </p>
-                  <div className="text-version-list__formats">
-                    {version.formats.map((format) => (
-                      <a key={format.url} className="text-link" href={format.url} target="_blank" rel="noreferrer">
-                        {format.type} <ExternalLink aria-hidden="true" size={13} />
-                      </a>
-                    ))}
-                  </div>
-                </li>
-              ))}
+              {textVersions.map(
+                (version: BillTextVersion, index: number): JSX.Element => (
+                  <li key={`${version.type}-${version.date ?? index}`}>
+                    <p className="text-version-list__type">
+                      {version.type}
+                      {version.date ? ` · ${formatDate(version.date)}` : ""}
+                    </p>
+                    <div className="text-version-list__formats">
+                      {version.formats.map((format) => (
+                        <a key={format.url} className="text-link" href={format.url} target="_blank" rel="noreferrer">
+                          {format.type} <ExternalLink aria-hidden="true" size={13} />
+                        </a>
+                      ))}
+                    </div>
+                  </li>
+                ),
+              )}
             </ul>
           ) : (
             <p className="muted-copy">

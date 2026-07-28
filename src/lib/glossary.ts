@@ -1,11 +1,23 @@
-/** A single civic-vocabulary entry rendered on the /learn page. */
+/**
+ * A single civic-vocabulary entry rendered on the `/learn` page.
+ *
+ * The two-field split is the point of the whole glossary: `plainEnglish` is what the word means, `detail` is what
+ * people usually get wrong about it. "Passed" has a one-line definition anyone would accept and a second line that
+ * corrects the assumption most readers arrive with.
+ */
 export type GlossaryTerm = {
   term: string;
   plainEnglish: string;
   detail: string;
 };
 
-/** Static glossary content for the /learn page. Hand-curated — not sourced from the Congress.gov API. */
+/**
+ * Static glossary content for the `/learn` page.
+ *
+ * Hand-curated editorial content, not sourced from the Congress.gov API — which is why it lives in `src/lib` rather
+ * than `src/lib/congress`. Ordered roughly by the sequence a bill moves through, so reading top to bottom traces the
+ * legislative process rather than the alphabet.
+ */
 export const glossary: GlossaryTerm[] = [
   {
     term: "Bill",

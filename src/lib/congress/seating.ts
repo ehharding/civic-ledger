@@ -57,9 +57,14 @@ export type SeatingGeometry = {
 };
 
 /**
- * How many arcs to draw for `seatCount` seats. Grows with the square root of the count so the arcs stay roughly as
- * far apart as the seats along them are — 435 House seats land on 12 arcs, 100 Senate seats on 6 — and is clamped so
- * a very small chamber still reads as a half-disc rather than a single thin line.
+ * How many arcs to draw for a given number of seats.
+ *
+ * Grows with the square root of the count so the arcs stay roughly as far apart as the seats along them are — 435 House
+ * seats land on 12 arcs, 100 Senate seats on 6.
+ *
+ * @param seatCount - Seats to lay out.
+ * @returns The arc count, clamped between {@link MIN_ROWS} and {@link MAX_ROWS} (and never more than the seat count) so
+ *   a very small chamber still reads as a half-disc rather than a single thin line. `0` for an empty chamber.
  */
 export function defaultRowCount(seatCount: number): number {
   if (seatCount <= 0) return 0;
@@ -69,12 +74,18 @@ export function defaultRowCount(seatCount: number): number {
 }
 
 /**
- * Splits `seatCount` seats across arcs in proportion to each arc's radius, so seat density is even across the half-disc
- * instead of crowding the short inner arcs.
+ * Splits seats across arcs in proportion to each arc's radius, so seat density is even across the half-disc instead of
+ * crowding the short inner arcs.
  *
  * Uses the largest-remainder method: floor every proportional share, then hand the leftover seats to the arcs with the
- * largest fractional parts. That guarantees the returned counts sum to exactly `seatCount` — a plain round-and-hope
- * would drift by a seat or two, which for a chamber diagram means either an unseated member or an empty chair.
+ * largest fractional parts. That guarantees the counts sum to *exactly* `seatCount` — a plain round-and-hope would
+ * drift by a seat or two, which for a chamber diagram means either an unseated member or an empty chair, both of which
+ * are visible and wrong.
+ *
+ * @param seatCount - Total seats to distribute.
+ * @param radii - Each arc's radius, innermost first.
+ * @returns Seats per arc, in the same order, summing to `seatCount`. No arc is left at zero while another has two or
+ *   more to spare, since an empty arc renders as a visible gap in the half-disc.
  */
 export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): number[] {
   if (radii.length === 0 || seatCount <= 0) return radii.map((): number => 0);
@@ -122,12 +133,18 @@ export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): n
 }
 
 /**
- * Lays out `seatCount` seats across a half-disc and returns them ordered left to right.
+ * Lays out seats across a half-disc.
  *
- * Seats are placed at the midpoint of an equal angular slice of their arc (rather than at slice boundaries), which
- * keeps a consistent margin at both ends of every arc and handles a single-seat arc without dividing by zero. The final
- * sort is by angle descending — left to right from the viewer's perspective — so that assigning members in party order
- * produces contiguous party blocks across the whole chart, not per-arc ones.
+ * Seats sit at the midpoint of an equal angular slice of their arc rather than at slice boundaries, which keeps a
+ * consistent margin at both ends of every arc and handles a single-seat arc without dividing by zero. The final sort is
+ * by angle descending — left to right from the viewer's perspective — so that assigning members in party order produces
+ * contiguous party blocks across the *whole chart*, not per-arc ones.
+ *
+ * @param seatCount - How many seats to place.
+ * @param rowOverride - Force a specific arc count instead of {@link defaultRowCount}'s. Mainly for tests and for
+ *   exploring the layout.
+ * @returns The complete geometry: viewBox dimensions, center, seat radius, arc count, and every seat position ordered
+ *   left to right. An empty but validly-sized geometry when there are no seats to draw.
  */
 export function computeSeatingGeometry(seatCount: number, rowOverride?: number): SeatingGeometry {
   const rows: number = Math.max(0, rowOverride ?? defaultRowCount(seatCount));
@@ -213,9 +230,14 @@ export type ChamberSeating = {
 
 /**
  * Orders members for seating: by party (see `partySeatingOrder`), then by represented jurisdiction, then by name.
+ *
  * Sorting within a party by state keeps a delegation adjacent on the chart and — more importantly — makes the order
- * fully deterministic, so the same membership always produces the same picture rather than one that reshuffles
- * whenever the upstream list comes back in a different order.
+ * fully deterministic, so the same membership always produces the same picture rather than one that reshuffles whenever
+ * the upstream list comes back in a different order.
+ *
+ * @param a - One member to compare.
+ * @param b - The other member to compare.
+ * @returns A standard comparator result.
  */
 export function compareMembersForSeating(a: CongressMember, b: CongressMember): number {
   const partyDelta: number = partySeatingRank(a.party) - partySeatingRank(b.party);
@@ -235,6 +257,11 @@ export function compareMembersForSeating(a: CongressMember, b: CongressMember): 
  * members in a tidy party-ordered arc in reality. The arrangement here is the conventional way chamber composition is
  * *diagrammed* — it communicates how many seats each party holds and lets a person reach any individual member, and the
  * chart says as much in its own caption rather than leaving a reader to assume otherwise.
+ *
+ * @param members - The chamber's members, in any order.
+ * @param rowOverride - Force a specific arc count. @see computeSeatingGeometry
+ * @returns The geometry plus one seat per member. A member with no position available (only possible if a caller forces
+ *   an arc count too small to hold everyone) is omitted rather than drawn on top of someone else.
  */
 export function buildChamberSeating(members: CongressMember[], rowOverride?: number): ChamberSeating {
   const ordered: CongressMember[] = [...members].sort(compareMembersForSeating);

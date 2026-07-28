@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { parseCongressQueryParam, parseOffsetParam } from "@/lib/api-query";
 import { getMoreBills } from "@/lib/congress/client";
-import { isValidCongress } from "@/lib/congress/congress-history";
-import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { LegislativeBill } from "@/lib/congress/types";
 
 // NOTE: this route reads the request URL (the `offset` and `congress` query params), which a static export can't do —
@@ -12,22 +11,25 @@ import type { LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Serves one additional page of live Congress.gov bills for the bill directory's "Load More" button, for the current
- * Congress or (from the /bills/[congress] route) any other one this app supports browsing.
+ * Congress or — from the `/bills/[congress]` route — any other one this app supports browsing.
  *
- * This exists as a server-side proxy specifically so the browser never needs (and never receives)
- * `CONGRESS_API_KEY` — the client only ever talks to this same-origin route, never to api.congress.gov directly.
+ * This exists as a server-side proxy specifically so the browser never needs, and never receives, `CONGRESS_API_KEY`.
+ * The client only ever talks to this same-origin route, never to api.congress.gov directly.
  *
- * @param request - Expects an `offset` query param (e.g. `/api/bills?offset=12`), and an optional `congress` param
- *   (e.g., `&congress=118`). Missing or non-numeric `offset` falls back to `0`; a missing or out-of-range `congress`
- *   falls back to the current Congress.
- * @returns `{ bills: [] }` when no API key is configured, or the fetch fails — never an error status, so the client can
- *   treat "no more bills" and "couldn't load more" consistently as an empty page.
+ * @param request - Expects an `offset` query param (e.g., `/api/bills?offset=12`) and an optional `congress` param
+ *   (e.g., `&congress=118`). Both are parsed permissively rather than strictly: anything missing, malformed, or out of
+ *   range resolves to a sensible default instead of a 400.
+ *   @see parseOffsetParam
+ *   @see parseCongressQueryParam
+ * @returns `{ bills }` — the next page, or an empty array when no API key is configured or the upstream fetch fails.
+ *   Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same empty page,
+ *   which is exactly how the button behaves in both cases.
  */
 export async function GET(request: Request): Promise<NextResponse<{ bills: LegislativeBill[] }>> {
   const { searchParams } = new URL(request.url);
-  const offset: number = Math.max(0, Number(searchParams.get("offset")) || 0);
-  const requestedCongress: number = Number(searchParams.get("congress"));
-  const congress: number = isValidCongress(requestedCongress) ? requestedCongress : getCurrentCongress();
+
+  const offset: number = parseOffsetParam(searchParams.get("offset"));
+  const congress: number = parseCongressQueryParam(searchParams.get("congress"));
 
   const bills: LegislativeBill[] = await getMoreBills(offset, congress);
 

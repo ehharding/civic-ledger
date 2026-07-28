@@ -14,7 +14,13 @@ type Principle = {
   copy: string;
 };
 
-/** The three product principles shown on the /about (Methodology) page. Purely presentational — no data fetching. */
+/**
+ * The three product principles shown on the Methodology page.
+ *
+ * These are the commitments the rest of the codebase is written to keep — the preview-data labeling, the outbound links
+ * to Congress.gov, and the refusal to editorialize all trace back here. Stated publicly so they can be held against the
+ * product rather than living only in `docs/decisions.md`.
+ */
 const principles: Principle[] = [
   {
     icon: Database,

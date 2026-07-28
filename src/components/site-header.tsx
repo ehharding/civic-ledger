@@ -1,15 +1,34 @@
 import { Compass, Search } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import type { JSX } from "react";
 
-/** Primary navigation links shown in the site header. */
-const nav = [
-  ["Bills", "/bills"],
-  ["Learn", "/learn"],
-  ["Methodology", "/about"],
-] as const;
+/** One primary navigation destination. */
+type NavLink = {
+  label: string;
+  href: Route;
+};
 
-/** Global site header: wordmark, primary nav, and a search form that submits `q` to /bills (see resolveInitialQuery). */
+/**
+ * Primary navigation, in the order the site is meant to be understood: the records first, then how to read them, then
+ * how they were gathered.
+ */
+const NAV_LINKS: readonly NavLink[] = [
+  { label: "Bills", href: "/bills" as Route },
+  { label: "Learn", href: "/learn" as Route },
+  { label: "Methodology", href: "/about" as Route },
+];
+
+/**
+ * Global site header: wordmark, primary navigation, and search.
+ *
+ * The search control is a real `<form>` with `action="/bills"` rather than a JavaScript handler, so it works on a plain
+ * page load, from any route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads
+ * as its initial query.
+ * @see resolveInitialQuery
+ *
+ * @returns The site header.
+ */
 export function SiteHeader(): JSX.Element {
   return (
     <header className="site-header">
@@ -21,11 +40,13 @@ export function SiteHeader(): JSX.Element {
           <span>Civic Ledger</span>
         </Link>
         <nav className="primary-nav" aria-label="Primary navigation">
-          {nav.map(([label, href]) => (
-            <Link href={href} key={href}>
-              {label}
-            </Link>
-          ))}
+          {NAV_LINKS.map(
+            (link: NavLink): JSX.Element => (
+              <Link href={link.href} key={link.href}>
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
         <form className="header-search" action="/bills">
           <label className="sr-only" htmlFor="global-search">

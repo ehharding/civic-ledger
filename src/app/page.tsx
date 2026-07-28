@@ -8,12 +8,14 @@ import type { CongressSnapshot } from "@/lib/congress/types";
 export const revalidate: number = 300;
 
 /**
- * Home route. Fetches the current bill snapshot and the current chamber membership server-side and hands both to
- * HomePage for rendering.
+ * Home route.
  *
  * The two fetches are independent, so they go out together rather than one after the other — the membership request
- * pages through several hundred members and there's no reason for the bill list to wait on it. Each carries its own
- * live/preview provenance, and each falls back independently, so a failure in one still renders the other honestly.
+ * pages through several hundred members, and there's no reason for the bill list to wait on it. Each carries its own
+ * live/preview provenance and falls back independently, so a failure in one still lets the other render honestly rather
+ * than taking the whole page to preview data.
+ *
+ * @returns The home page, with both datasets resolved server-side.
  */
 export default async function Page(): Promise<JSX.Element> {
   const [snapshot, composition]: [CongressSnapshot, CongressComposition] = await Promise.all([
