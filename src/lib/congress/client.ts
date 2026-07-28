@@ -148,9 +148,7 @@ const BILL_NUMBER_SEGMENT_PATTERN: RegExp = /^\d{1,6}$/;
  * Narrows potentially user-influenced bill route params to the exact path-segment formats we allow before constructing
  * an outbound Congress.gov URL.
  */
-function normalizeBillRouteParams(
-  input: BillRouteParams,
-): { congress: string; type: string; number: string } | null {
+function normalizeBillRouteParams(input: BillRouteParams): { congress: string; type: string; number: string } | null {
   const congress: string = input.congress.trim();
   const type: string = input.type.trim().toLowerCase();
   const number: string = input.number.trim();
