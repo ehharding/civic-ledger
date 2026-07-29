@@ -200,7 +200,7 @@ describe("formatMemberSummary", (): void => {
   });
 
   it("omits the jurisdiction clause entirely when there isn't one", (): void => {
-    expect(formatMemberSummary(member({ name: "Preview seat 1" }), "house")).toBe("Preview seat 1, Democratic");
+    expect(formatMemberSummary(member({ name: "Preview Seat 1" }), "house")).toBe("Preview Seat 1, Democratic");
   });
 });
 

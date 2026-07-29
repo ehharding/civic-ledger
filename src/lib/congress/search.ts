@@ -1,4 +1,4 @@
-import { type BillStage, billStages, type LegislativeBill } from "@/lib/congress/types";
+import { BILL_TYPE_CODES, type BillStage, billStages, type LegislativeBill } from "@/lib/congress/types";
 
 /** The stage control's selection: one of the five legislative stages, or no narrowing at all. */
 export type BillStageFilter = BillStage | "all";
@@ -72,23 +72,6 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
     .some((value: string | undefined): boolean => Boolean(value?.toLowerCase().includes(normalizedQuery)));
 }
 
-/**
- * The eight bill/resolution type codes Congress.gov uses — see `BillEndpoint.md`.
- *
- * Upper-cased here because {@link parseBillCitation} normalizes before matching; the lower-cased path-segment forms
- * live in `http.ts`, which is the module that actually builds URLs from them.
- */
-const CITATION_BILL_TYPES: ReadonlySet<string> = new Set([
-  "HR",
-  "S",
-  "HJRES",
-  "SJRES",
-  "HCONRES",
-  "SCONRES",
-  "HRES",
-  "SRES",
-]);
-
 /** A search query recognized as naming one specific bill, rather than a free-text keyword search. */
 export type ParsedBillCitation = {
   /** The Congress the citation specified, if any (e.g., the "119" in "119 HR 284"). Absent for a bare "HR 284". */
@@ -123,7 +106,7 @@ export function parseBillCitation(query: string): ParsedBillCitation | null {
 
   const type: string | undefined = citationMatch[1];
   const number: string | undefined = citationMatch[2];
-  if (!type || !number || !CITATION_BILL_TYPES.has(type)) return null;
+  if (!type || !number || !BILL_TYPE_CODES.has(type)) return null;
 
   return congress === undefined ? { type, number } : { congress, type, number };
 }

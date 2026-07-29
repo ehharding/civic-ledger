@@ -1,10 +1,10 @@
-import { ArrowUpRight, ChevronLeft, ExternalLink, Landmark } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bill-journey";
 import { DataSourceNotice } from "@/components/data-source-notice";
-import { ExternalLinkHint } from "@/components/external-link-hint";
+import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import {
   type BillSummary,
@@ -13,7 +13,7 @@ import {
   type CongressSnapshot,
   type LegislativeBill,
 } from "@/lib/congress/types";
-import { formatDate, formatOrdinal } from "@/lib/format";
+import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
 import { memberHref } from "@/lib/member-route";
 
 /** Props for {@link BillDetail} — everything the bill detail route resolves server-side. */
@@ -130,7 +130,7 @@ export function BillDetail({
           ) : null}
           {typeof bill.cosponsorCount === "number" ? (
             <span>
-              {bill.cosponsorCount} cosponsor{bill.cosponsorCount === 1 ? "" : "s"}
+              {bill.cosponsorCount} {pluralize(bill.cosponsorCount, "cosponsor")}
             </span>
           ) : null}
         </div>
@@ -154,10 +154,7 @@ export function BillDetail({
           <h2 id="next-heading">What Happened Most Recently</h2>
           <p className="latest-action-copy">{bill.latestAction.text}</p>
           {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
-          <a className="text-link" href={bill.officialUrl} target="_blank" rel="noreferrer">
-            Open the Official Record <ExternalLink aria-hidden="true" size={15} />
-            <ExternalLinkHint />
-          </a>
+          <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
         </aside>
       </div>
 
@@ -181,7 +178,7 @@ export function BillDetail({
                   <details className="summary-history">
                     <summary className="summary-history__toggle">
                       Read the {earlierSummaries.length} earlier{" "}
-                      {earlierSummaries.length === 1 ? "summary" : "summaries"}
+                      {pluralize(earlierSummaries.length, "summary", "summaries")}
                     </summary>
                     <ol className="summary-history__list">
                       {earlierSummaries.map(
@@ -220,10 +217,9 @@ export function BillDetail({
                     </p>
                     <div className="text-version-list__formats">
                       {version.formats.map((format) => (
-                        <a key={format.url} className="text-link" href={format.url} target="_blank" rel="noreferrer">
-                          {format.type} <ExternalLink aria-hidden="true" size={13} />
-                          <ExternalLinkHint />
-                        </a>
+                        <OutboundLink key={format.url} href={format.url} iconSize={13}>
+                          {format.type}
+                        </OutboundLink>
                       ))}
                     </div>
                   </li>

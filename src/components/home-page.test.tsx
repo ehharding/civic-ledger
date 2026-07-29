@@ -53,7 +53,7 @@ describe("HomePage", (): void => {
     render(<HomePage composition={composition} snapshot={snapshot} />);
 
     expect(screen.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeInTheDocument();
-    expect(screen.queryByText(/A bill in motion/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/A Bill in Motion/i)).not.toBeInTheDocument();
   });
 
   it("renders the chamber seating chart for the current Congress", (): void => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, ExternalLink } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import {
   type FocusEvent,
@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 
-import { ExternalLinkHint } from "@/components/external-link-hint";
+import { OutboundLink } from "@/components/outbound-link";
 import {
   bioguideUrl,
   type ChamberComposition,
@@ -195,10 +195,9 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
         </Link>
       ) : null}
       {biographyUrl ? (
-        <a className="text-link seating-detail__link" href={biographyUrl} target="_blank" rel="noreferrer">
-          Official Biography <ExternalLink aria-hidden="true" size={14} />
-          <ExternalLinkHint />
-        </a>
+        <OutboundLink className="text-link seating-detail__link" href={biographyUrl} iconSize={14}>
+          Official Biography
+        </OutboundLink>
       ) : null}
     </>
   );

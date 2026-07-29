@@ -157,7 +157,7 @@ Every other preview fixture in this app is a small set of clearly labeled fictio
 work that way: it needs a full chamber to lay out at all, and a fabricated roster of 535 plausible-looking names,
 parties, and districts is a far easier thing to mistake for real data than a labeled placeholder is — especially since a
 seating chart specifically invites a person to go find their own representative. So the no-key path fills both chambers
-with unattributed "Preview seat N" placeholders, and the party split behind them (`previewChamberPartySplits`) is
+with unattributed "Preview Seat N" placeholders, and the party split behind them (`previewChamberPartySplits`) is
 deliberately round rather than realistic. Reporting a real-looking party balance would be a factual claim about the
 current Congress that a checked-in fixture has no way to keep true. The chart labels the seats as placeholders in the
 read-out panel and in its source line, on top of the page-level `DataSourceNotice`.
@@ -202,7 +202,7 @@ the product. It says so in its own closing card rather than leaving the omission
 ## Placeholder Members Exist Where a Placeholder Roster Still Doesn't
 
 "Preview Seats Are Placeholders, Not a Fictional Roster" above stands: the no-key chamber diagram is still filled with
-unattributed "Preview seat N" placeholders, and those seats are deliberately *not* links, because they name nobody.
+unattributed "Preview Seat N" placeholders, and those seats are deliberately *not* links, because they name nobody.
 
 Member pages for the seven fictional sponsors already printed on `previewBills` are a different and much smaller claim.
 A reader who clicks a sponsor's name has already been shown a labeled preview bill; a chamber diagram of 535 plausible

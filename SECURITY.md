@@ -25,7 +25,8 @@ handle any user accounts, authentication, or personal data (see `docs/architectu
 In scope for reports:
 
 - Anything that could expose the server-only `CONGRESS_API_KEY` to a client
-- Injection, XSS, SSRF, or other issues in request handling (`/api/health`, `/api/bills`, bill detail routes)
+- Injection, XSS, SSRF, or other issues in request handling (`/api/health`, `/api/bills`, `/api/bills/search`, bill
+  detail routes, member routes)
 - Dependency vulnerabilities with a realistic exploit path in this app
 - CI/CD or deployment misconfigurations that could leak secrets
 

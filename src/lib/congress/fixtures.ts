@@ -418,7 +418,7 @@ export const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = 
 /**
  * Builds one chamber's worth of unattributed placeholder seats.
  *
- * Each seat is named "Preview seat N" rather than given a fictional member's name and jurisdiction. A chamber diagram
+ * Each seat is named "Preview Seat N" rather than given a fictional member's name and jurisdiction. A chamber diagram
  * invites a reader to look up *their own* representative, and a fabricated roster of 535 plausible-looking names and
  * districts is a far easier thing to mistake for real data than a labeled placeholder is.
  *
@@ -430,7 +430,7 @@ export function previewChamberMembers(chamber: CongressChamber): CongressMember[
 
   for (const tally of previewChamberPartySplits[chamber]) {
     for (let seat: number = 0; seat < tally.count; seat++) {
-      members.push({ name: `Preview seat ${members.length + 1}`, party: tally.party });
+      members.push({ name: `Preview Seat ${members.length + 1}`, party: tally.party });
     }
   }
 

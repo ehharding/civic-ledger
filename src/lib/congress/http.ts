@@ -1,7 +1,7 @@
 import type { ZodType } from "zod";
 
 import { isBioguideId } from "@/lib/congress/members";
-import type { BillRouteParams } from "@/lib/congress/types";
+import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/types";
 
 /**
  * The transport layer shared by every Congress.gov read in this app: key access, URL construction, caching policy,
@@ -168,17 +168,14 @@ export function normalizeBioguideId(raw: string): string | null {
   return isBioguideId(value) ? value : null;
 }
 
-/** The only bill/resolution type path segments Congress.gov's bill endpoint accepts. */
-export const BILL_PATH_TYPES: ReadonlySet<string> = new Set([
-  "hr",
-  "s",
-  "hjres",
-  "sjres",
-  "hconres",
-  "sconres",
-  "hres",
-  "sres",
-]);
+/**
+ * The only bill/resolution type path segments Congress.gov's bill endpoint accepts.
+ *
+ * Re-exported from `types.ts` rather than restated here: this list and the citation parser's upper-cased one are the
+ * same eight types viewed in two cases, and a copy of it in each module is a copy that can be updated in one place and
+ * not the other. @see BILL_TYPE_PATH_SEGMENTS
+ */
+export const BILL_PATH_TYPES: ReadonlySet<string> = BILL_TYPE_PATH_SEGMENTS;
 
 const CONGRESS_SEGMENT_PATTERN: RegExp = /^\d{1,3}$/;
 const BILL_NUMBER_SEGMENT_PATTERN: RegExp = /^\d{1,6}$/;

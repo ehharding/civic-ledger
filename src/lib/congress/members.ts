@@ -1,4 +1,4 @@
-import { formatOrdinal, toTitleCase } from "@/lib/format";
+import { formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
 
 /**
  * The party groupings this app renders. Congress.gov publishes a free-text `partyName` whose documented values are
@@ -565,7 +565,7 @@ export function formatSeatShare(count: number, total: number): string {
  * @returns e.g., `"441 seats — 435 voting, 6 non-voting"`, or simply `"100 seats"` where every seat votes.
  */
 export function describeChamberSeats(chamber: ChamberComposition): string {
-  const seats: string = `${chamber.members.length} ${chamber.members.length === 1 ? "seat" : "seats"}`;
+  const seats: string = `${chamber.members.length} ${pluralize(chamber.members.length, "seat")}`;
 
   if (chamber.nonVotingSeats === 0) return seats;
 

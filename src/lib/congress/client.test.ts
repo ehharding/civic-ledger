@@ -587,7 +587,7 @@ describe("getCongressComposition", (): void => {
     expect(chamberOf(composition, "house").members.length).toBeGreaterThan(0);
     expect(chamberOf(composition, "senate").members.length).toBeGreaterThan(0);
     // And they are never named as if they were real members.
-    expect(chamberOf(composition, "house").members[0]?.name).toMatch(/^Preview seat/);
+    expect(chamberOf(composition, "house").members[0]?.name).toMatch(/^Preview Seat/);
   });
 
   it("maps live members into their chambers", async (): Promise<void> => {

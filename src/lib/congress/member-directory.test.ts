@@ -105,7 +105,7 @@ describe("buildMemberDirectory", (): void => {
     const result: MemberDirectoryEntry[] = buildMemberDirectory(
       composition([
         { bioguideId: "B000001", name: "Bennett, Marcus T.", party: "democratic" },
-        { name: "Preview seat 2", party: "republican" },
+        { name: "Preview Seat 2", party: "republican" },
       ]),
     );
 

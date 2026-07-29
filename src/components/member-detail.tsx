@@ -1,10 +1,10 @@
-import { ArrowUpRight, ChevronLeft, ExternalLink, Landmark } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillCard } from "@/components/bill-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
-import { ExternalLinkHint } from "@/components/external-link-hint";
+import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import {
   bioguideUrl,
@@ -266,10 +266,7 @@ export function MemberDetail({
                 The Biographical Directory of the United States Congress is the authoritative record of who has served,
                 and is what Congress.gov's own member pages cite.
               </p>
-              <a className="text-link" href={biographyUrl} target="_blank" rel="noreferrer">
-                Official Biography <ExternalLink aria-hidden="true" size={15} />
-                <ExternalLinkHint />
-              </a>
+              <OutboundLink href={biographyUrl}>Official Biography</OutboundLink>
             </>
           ) : (
             <p className="muted-copy">
@@ -278,10 +275,7 @@ export function MemberDetail({
             </p>
           )}
           {profile.officialWebsiteUrl ? (
-            <a className="text-link" href={profile.officialWebsiteUrl} target="_blank" rel="noreferrer">
-              Official Website <ExternalLink aria-hidden="true" size={15} />
-              <ExternalLinkHint />
-            </a>
+            <OutboundLink href={profile.officialWebsiteUrl}>Official Website</OutboundLink>
           ) : null}
         </aside>
       </div>

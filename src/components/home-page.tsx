@@ -59,7 +59,7 @@ export function HomePage({
           <aside className="journey-card" aria-labelledby="featured-journey-title">
             <div className="journey-card__header">
               <div>
-                <p className="section-kicker">A bill in motion</p>
+                <p className="section-kicker">A Bill in Motion</p>
                 <h2 id="featured-journey-title">
                   {featuredBill.type} {featuredBill.number}
                 </h2>
@@ -107,7 +107,7 @@ export function HomePage({
           <BookOpenCheck aria-hidden="true" size={23} />
         </div>
         <div>
-          <p className="section-kicker">Civic basics</p>
+          <p className="section-kicker">Civic Basics</p>
           <h2 id="learn-heading">Understand the Verbs Behind the Headlines.</h2>
           <p>
             “Referred,” “Reported,” and “Passed” mean different things. The learning hub makes the pathway legible
