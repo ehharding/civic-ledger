@@ -16,6 +16,7 @@ import {
   type MemberProfile,
   type MemberTerm,
   normalizeChamberName,
+  normalizeJurisdiction,
   normalizePartyName,
 } from "@/lib/congress/members";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
@@ -170,7 +171,7 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
       name,
       party: normalizePartyName(member.partyName),
       partyName: member.partyName,
-      state: member.state,
+      state: normalizeJurisdiction(member.state),
       district: member.district,
     },
   };
@@ -193,7 +194,7 @@ export function mapMemberTerm(term: CongressApiMemberDetailTerm): MemberTerm | n
     startYear: term.startYear,
     endYear: term.endYear,
     memberType: term.memberType,
-    state: term.stateName,
+    state: normalizeJurisdiction(term.stateName),
     district: term.district,
   };
 }
@@ -234,7 +235,7 @@ export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: st
     directOrderName: member.directOrderName,
     party: normalizePartyName(partyName),
     partyName,
-    state: member.state ?? latestTerm.state,
+    state: normalizeJurisdiction(member.state) ?? latestTerm.state,
     district: member.district ?? latestTerm.district,
     chamber: latestTerm.chamber,
     // Absent means "the API didn't say", which for a member record it only does for former members.

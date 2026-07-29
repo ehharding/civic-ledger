@@ -118,6 +118,29 @@ export type LegislativeBill = {
 };
 
 /**
+ * Orders bills most-recently-introduced first.
+ *
+ * Compares `introducedDate`, falling back to the latest action's date for a record that carries no introduction date —
+ * which is rare, but a bill sorted to an arbitrary position is worse than one sorted by the only date it has. Bare
+ * `YYYY-MM-DD` strings sort correctly as strings, so this needs no `Date` per comparison.
+ *
+ * @param a - One bill to compare.
+ * @param b - The other bill to compare.
+ * @returns A standard comparator result. Bills with no usable date at all sort last, together, rather than ahead of
+ *   everything dated.
+ */
+export function compareBillsByRecency(a: LegislativeBill, b: LegislativeBill): number {
+  const dateA: string = a.introducedDate ?? a.latestAction.date ?? "";
+  const dateB: string = b.introducedDate ?? b.latestAction.date ?? "";
+
+  if (dateA === dateB) return 0;
+  if (dateA.length === 0) return 1;
+  if (dateB.length === 0) return -1;
+
+  return dateB.localeCompare(dateA);
+}
+
+/**
  * One CRS-written summary of a bill, tied to the legislative stage it describes (`actionDesc`, e.g., "Introduced in
  * House"). Bills can accumulate several of these as they're amended — the most recent describes the bill as it stands
  * now, but earlier ones aren't deleted, since they describe real earlier versions of the text.

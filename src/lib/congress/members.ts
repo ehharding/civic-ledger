@@ -1,4 +1,4 @@
-import { formatOrdinal } from "@/lib/format";
+import { formatOrdinal, toTitleCase } from "@/lib/format";
 
 /**
  * The party groupings this app renders. Congress.gov publishes a free-text `partyName` whose documented values are
@@ -135,6 +135,27 @@ const NON_VOTING_HOUSE_JURISDICTIONS: ReadonlySet<string> = new Set<string>([
  */
 export function isNonVotingJurisdiction(state?: string): boolean {
   return NON_VOTING_HOUSE_JURISDICTIONS.has((state ?? "").trim().toLowerCase());
+}
+
+/**
+ * Normalizes the free-text jurisdiction Congress.gov publishes into one canonical spelling.
+ *
+ * This is the same kind of boundary normalization {@link normalizePartyName} performs, and it exists for a concrete
+ * reason rather than a cosmetic one: the represented jurisdiction is the value the member directory's filter is keyed
+ * on, so `"NEW YORK"` and `"New York"` arriving on different records would split one state into two options that each
+ * return half the delegation. Casing it once, here, means the model holds one spelling and every downstream
+ * consumer — the facet list, the filter comparison, the card, the seat description — agrees by construction.
+ *
+ * Applied only to full jurisdiction *names*. Two-letter postal codes (which is what a bill's sponsor record carries)
+ * are deliberately left alone elsewhere; title-casing `"OH"` would produce `"Oh"`.
+ *
+ * @param state - The upstream state, territory, or district name, if any.
+ * @returns The title-cased name, or `undefined` when the record carries nothing usable — so an absent jurisdiction
+ *   stays absent rather than becoming an empty string that reads as a real, blank option.
+ */
+export function normalizeJurisdiction(state?: string): string | undefined {
+  const normalized: string = toTitleCase(state ?? "");
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 /**

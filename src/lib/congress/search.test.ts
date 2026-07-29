@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { firstPreviewBill } from "@/lib/congress/fixtures";
-import { matchesQuery, parseBillCitation } from "@/lib/congress/search";
+import { billDirectoryQueryString, matchesQuery, parseBillCitation, parseBillStageFilter } from "@/lib/congress/search";
 import type { LegislativeBill } from "@/lib/congress/types";
 
 function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
@@ -98,5 +98,49 @@ describe("parseBillCitation", (): void => {
   it("returns null for an empty or whitespace-only query", (): void => {
     expect(parseBillCitation("")).toBeNull();
     expect(parseBillCitation("   ")).toBeNull();
+  });
+});
+
+describe("parseBillStageFilter", (): void => {
+  it("accepts each stage the control can produce", (): void => {
+    expect(parseBillStageFilter("committee")).toBe("committee");
+    expect(parseBillStageFilter("law")).toBe("law");
+  });
+
+  it("is case- and whitespace-insensitive, since these get hand-typed", (): void => {
+    expect(parseBillStageFilter(" COMMITTEE ")).toBe("committee");
+  });
+
+  it("degrades anything unusable to the unfiltered listing rather than to an error", (): void => {
+    expect(parseBillStageFilter(undefined)).toBe("all");
+    expect(parseBillStageFilter(null)).toBe("all");
+    expect(parseBillStageFilter("vetoed")).toBe("all");
+  });
+});
+
+describe("billDirectoryQueryString", (): void => {
+  it("is empty for an untouched directory, so a plain visit keeps a clean URL", (): void => {
+    expect(billDirectoryQueryString("", "all")).toBe("");
+  });
+
+  it("writes only what is actually set", (): void => {
+    expect(billDirectoryQueryString("broadband", "all")).toBe("?q=broadband");
+    expect(billDirectoryQueryString("", "law")).toBe("?stage=law");
+  });
+
+  it("writes both in a fixed order, so the same view always produces the same link", (): void => {
+    expect(billDirectoryQueryString("broadband", "law")).toBe("?q=broadband&stage=law");
+  });
+
+  it("trims the query and omits a whitespace-only one", (): void => {
+    expect(billDirectoryQueryString("  broadband  ", "all")).toBe("?q=broadband");
+    expect(billDirectoryQueryString("   ", "all")).toBe("");
+  });
+
+  it("round-trips through the parser it is the counterpart to", (): void => {
+    const params: URLSearchParams = new URLSearchParams(billDirectoryQueryString("water", "committee"));
+
+    expect(params.get("q")).toBe("water");
+    expect(parseBillStageFilter(params.get("stage"))).toBe("committee");
   });
 });

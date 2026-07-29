@@ -17,6 +17,7 @@ import {
   formatSeatShare,
   isNonVotingJurisdiction,
   normalizeChamberName,
+  normalizeJurisdiction,
   normalizePartyName,
   type PartyGroup,
   type PartyTally,
@@ -237,5 +238,31 @@ describe("describeChamberSeats", (): void => {
 
   it("uses the singular for a lone seat", (): void => {
     expect(describeChamberSeats(buildChamberComposition("senate", [voting]))).toBe("1 seat");
+  });
+});
+
+describe("normalizeJurisdiction", (): void => {
+  it("gives one canonical spelling to a name however it arrives", (): void => {
+    // The point is not tidiness: this value is the member directory's filter key, so two spellings of one state would
+    // split a delegation into two options that each return half of it.
+    expect(normalizeJurisdiction("OHIO")).toBe("Ohio");
+    expect(normalizeJurisdiction("ohio")).toBe("Ohio");
+    expect(normalizeJurisdiction(" Ohio ")).toBe("Ohio");
+  });
+
+  it("reads the multi-word jurisdictions the way Congress.gov prints them", (): void => {
+    expect(normalizeJurisdiction("DISTRICT OF COLUMBIA")).toBe("District of Columbia");
+    expect(normalizeJurisdiction("northern mariana islands")).toBe("Northern Mariana Islands");
+  });
+
+  it("treats an absent or blank jurisdiction as absent, not as a blank option", (): void => {
+    expect(normalizeJurisdiction(undefined)).toBeUndefined();
+    expect(normalizeJurisdiction("   ")).toBeUndefined();
+  });
+
+  it("still reads as a non-voting jurisdiction once normalized", (): void => {
+    // isNonVotingJurisdiction lowercases anyway, but these two have to agree for the House's seat split to stay right.
+    expect(isNonVotingJurisdiction(normalizeJurisdiction("PUERTO RICO"))).toBe(true);
+    expect(isNonVotingJurisdiction(normalizeJurisdiction("OHIO"))).toBe(false);
   });
 });

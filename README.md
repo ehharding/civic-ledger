@@ -21,10 +21,16 @@ make the legislative process more legible without replacing the official record.
 - Individual member route at `/members/[bioguideId]` — portrait, party, seat, term-by-term service record, leadership
   roles, and the legislation they sponsored and cosponsored. Reachable from anywhere a person is named: every seat in
   the chamber diagram is a link, and so is every bill's sponsor line
-- A browsable member directory at `/members`, searchable by name or the place a member represents and filterable by
-  chamber, party, and state or territory. It reads the same cached roster the chamber diagram does — so it costs
-  nothing extra upstream — and every filter runs in the browser against a roster that arrives whole, with no request per
-  keystroke (see [Data Policy](#data-policy) for what the list does and does not claim to cover)
+- A browsable member directory at `/members`, searchable by name or the place a member represents, filterable by
+  chamber, party, and state or territory, and sortable by name, jurisdiction, party, or chamber. It reads the same
+  cached roster the chamber diagram does — so it costs nothing extra upstream — and every filter runs in the browser
+  against a roster that arrives whole, with no request per keystroke. (See [Data Policy](#data-policy) for what the list
+  does and does not claim to cover.) Each facet names how many members are behind it before you choose it, and the
+  jurisdiction list separates states from the territories and federal district whose seats carry no floor vote
+- Shareable views on both directories: `/members?chamber=senate&party=republican&sort=state` and
+  `/bills?q=broadband&stage=law` render already narrowed, and each page writes its own current view back to the address
+  bar as you narrow it, so any state of either directory can be linked or bookmarked (see "A Narrowed Directory Is a
+  Place, So It Has a URL" in `docs/decisions.md`)
 - Loading skeletons for both bill directory routes, the bill detail route, the member directory, and the member route
 - Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
   at `/learn/how-a-bill-becomes-law`
@@ -92,7 +98,8 @@ pnpm exec playwright install chromium
   than taken from the API's `url` field, which is a self-referential API endpoint that serves JSON — see "The
   Official-Record Link Is Derived, Not Passed Through" in `docs/decisions.md`.
 - Member pages report what Congress.gov publishes — service record, party, jurisdiction, and the legislation a member
-  put their name to. There are no vote ratings, effectiveness scores, or ideological placements: those are editorial
+  put their name to, with each legislation list explicitly ordered most-recent-first rather than trusting the order it
+  arrived in. There are no vote ratings, effectiveness scores, or ideological placements: those are editorial
   judgments, and this project's stance is that clarity and provenance, not persuasion, are the product.
 - Without an API key, member pages exist only for the fictional sponsors the preview bills already name. Their IDs
   (`PREVIEW-1`…) deliberately cannot be valid Bioguide IDs, so a placeholder is never requested from Congress.gov and
@@ -152,15 +159,18 @@ serve live data. Concretely, this build:
 - Pre-renders every preview bill's detail page, one bill-directory page per Congress the preview fixtures cover, and a
   member page per placeholder member, via `generateStaticParams` (a static export can't look up arbitrary bills,
   Congresses, or members on demand).
-- Serves the member directory unchanged. Its filtering is entirely client-side, so it is the one directory in this app
-  that behaves identically in the static demo and the live deployment — only the roster behind it differs.
+- Serves the member directory unchanged. Its filtering, sorting, and URL writing are entirely client-side, so once the
+  page loads it behaves identically in the static demo and the live deployment — only the roster behind it differs, and
+  only the pre-fill from an incoming deep link is lost (see the bullet below).
 - Drops the `/api/bills` pagination route and the `/api/bills/search` search route before building — both need to read
   the request URL (for `offset`/`congress`, or `q`, respectively), which a static export can't do. Pagination is only
   offered when live data is active anyway, and search falls back to filtering whatever preview bills are already loaded
   on the page, client-side (`matchesQuery` in `src/lib/congress/search.ts`) — the same fallback the live app itself
   uses if `/api/bills/search` is ever unreachable, so this isn't a separate code path invented just for the static demo.
-- Degrades both bill-directory routes' shareable `?q=` deep link to an empty starting search (that fallback search still
-  works once the page loads; a static export just can't read the request URL at build time to pre-fill it).
+- Degrades every directory deep link — both bill-directory routes' `?q=`/`?stage=`, and the member directory's
+  `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=` — to that page's default view, since a static export has no request URL
+  to read at build time. The controls all still work once the page loads, and both directories still write their view
+  back to the address bar; only pre-filling from the incoming link is lost.
 
 Use this only for a UI/UX preview or portfolio link — never represent it as the live product. Enable it by running the
 workflow (`workflow_dispatch`) or letting it run on pushes to `main`.

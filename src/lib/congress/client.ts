@@ -16,7 +16,7 @@
  * | `bills.ts`            | Bill snapshots, pagination, lookup, summaries, text versions, search.       |
  * | `composition.ts`      | Chamber membership, including the member list's pagination.                 |
  * | `member-directory.ts` | The same membership, reshaped into one browsable alphabetical roster.       |
- * | `member-filter.ts`    | The directory's narrowing rules. Pure and isomorphic; no I/O.               |
+ * | `member-filter.ts`    | The directory's narrowing, ordering, and URL rules. Pure; no I/O.           |
  * | `member-profile.ts`   | One member's record, plus the legislation they sponsored and cosponsored.   |
  *
  * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an

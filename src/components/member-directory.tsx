@@ -1,19 +1,31 @@
 "use client";
 
-import { Search, SlidersHorizontal } from "lucide-react";
-import { type ChangeEvent, type JSX, useMemo, useState } from "react";
+import { ArrowDownUp, Search, SlidersHorizontal } from "lucide-react";
+import { type ChangeEvent, type JSX, useEffect, useMemo, useState } from "react";
 
 import { MemberCard } from "@/components/member-card";
 import {
   ANY_FACET,
   type ChamberFilter,
+  DEFAULT_MEMBER_DIRECTORY_QUERY,
+  DEFAULT_MEMBER_SORT,
   filterMembers,
   hasActiveMemberFilters,
-  listMemberParties,
-  listMemberStates,
+  type JurisdictionGroup,
+  type JurisdictionOption,
+  jurisdictionGroupLabels,
+  listMemberJurisdictions,
+  listMemberPartyOptions,
+  type MemberDirectoryQuery,
+  type MemberFacetOption,
   type MemberFilters,
+  type MemberSort,
+  memberDirectoryQueryString,
+  memberSortLabels,
+  memberSorts,
   NO_MEMBER_FILTERS,
   type PartyFilter,
+  sortMembers,
 } from "@/lib/congress/member-filter";
 import {
   type CongressChamber,
@@ -21,13 +33,15 @@ import {
   congressChambers,
   type MemberDirectoryEntry,
   type PartyGroup,
-  partyGroupLabels,
 } from "@/lib/congress/members";
 import type { CongressSnapshot } from "@/lib/congress/types";
-import { formatOrdinal } from "@/lib/format";
+import { formatOrdinal, pluralize } from "@/lib/format";
 
 /** The chamber control's options: both chambers, preceded by the "no filter" choice. */
 const CHAMBER_OPTIONS: readonly ChamberFilter[] = [ANY_FACET, ...congressChambers];
+
+/** The order jurisdiction groups appear in the state control. */
+const JURISDICTION_GROUPS: readonly JurisdictionGroup[] = ["state", "territory"];
 
 /** Props for {@link MemberDirectory}. */
 type MemberDirectoryProps = {
@@ -37,7 +51,45 @@ type MemberDirectoryProps = {
   congress: number;
   /** Whether these are live Congress.gov records or labeled placeholders. Changes the scope note's claim. */
   source: CongressSnapshot["source"];
+  /**
+   * The view the URL asked for, resolved server-side so a shared link renders narrowed on its very first paint rather
+   * than flashing the whole roster and then filtering it. Defaults to the unfiltered directory.
+   * @see resolveMemberDirectoryQuery
+   */
+  initialQuery?: MemberDirectoryQuery;
 };
+
+/**
+ * Renders the jurisdiction control's options, grouped into states and territories.
+ *
+ * @param options - Every jurisdiction in the roster, already ordered. @see listMemberJurisdictions
+ * @returns One `<optgroup>` per group that has any members in it — an empty group is omitted rather than rendered as a
+ *   heading with nothing under it, which is the ordinary case for a Senate-only filtered roster.
+ */
+function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JSX.Element {
+  return (
+    <>
+      {JURISDICTION_GROUPS.map((group: JurisdictionGroup): JSX.Element | null => {
+        const inGroup: JurisdictionOption[] = options.filter(
+          (option: JurisdictionOption): boolean => option.group === group,
+        );
+        if (inGroup.length === 0) return null;
+
+        return (
+          <optgroup key={group} label={jurisdictionGroupLabels[group]}>
+            {inGroup.map(
+              (option: JurisdictionOption): JSX.Element => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.count})
+                </option>
+              ),
+            )}
+          </optgroup>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * Browsable directory of everyone serving in a Congress.
@@ -46,28 +98,67 @@ type MemberDirectoryProps = {
  * debounce, no loading state, and nothing to go wrong offline or in the static export. That is possible because a
  * Congress is a bounded list of a few hundred people; the bill directory cannot work this way, and its very different
  * shape (debounced fetches to a server-side sweep) is a consequence of that, not a difference in taste.
- * @see filterMembers for the rules themselves.
+ * @see filterMembers for the rules themselves, and sortMembers for the orders they can be read in.
+ *
+ * The current view is mirrored into the address bar as the reader narrows, so any state of this page can be linked,
+ * bookmarked, or reopened. @see the note on the effect below for why that is `history.replaceState` rather than a
+ * router navigation.
  *
  * @param props - @see MemberDirectoryProps
- * @returns The search and facet controls, the result count and scope note, and the member grid or an empty state.
+ * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
+ *   state.
  */
-export function MemberDirectory({ members, congress, source }: MemberDirectoryProps): JSX.Element {
-  const [filters, setFilters] = useState<MemberFilters>(NO_MEMBER_FILTERS);
+export function MemberDirectory({
+  members,
+  congress,
+  source,
+  initialQuery = DEFAULT_MEMBER_DIRECTORY_QUERY,
+}: MemberDirectoryProps): JSX.Element {
+  const [filters, setFilters] = useState<MemberFilters>(initialQuery.filters);
+  const [sort, setSort] = useState<MemberSort>(initialQuery.sort);
 
   // Both option lists are derived from the whole roster rather than from the filtered result, so choosing a party
   // doesn't empty the state list out from under the reader mid-narrowing.
-  const states: string[] = useMemo((): string[] => listMemberStates(members), [members]);
-  const parties: PartyGroup[] = useMemo((): PartyGroup[] => listMemberParties(members), [members]);
+  const jurisdictions: JurisdictionOption[] = useMemo(
+    (): JurisdictionOption[] => listMemberJurisdictions(members),
+    [members],
+  );
+  const parties: MemberFacetOption<PartyGroup>[] = useMemo(
+    (): MemberFacetOption<PartyGroup>[] => listMemberPartyOptions(members),
+    [members],
+  );
 
   const shown: MemberDirectoryEntry[] = useMemo(
-    (): MemberDirectoryEntry[] => filterMembers(members, filters),
-    [members, filters],
+    (): MemberDirectoryEntry[] => sortMembers(filterMembers(members, filters), sort),
+    [members, filters, sort],
   );
+
+  const queryString: string = memberDirectoryQueryString({ filters, sort });
+
+  /**
+   * Mirrors the current view into the address bar.
+   *
+   * `history.replaceState` rather than `router.replace`, deliberately: a router navigation re-runs this route on the
+   * server, and doing that on every keystroke would undo the entire point of a directory that filters in the browser.
+   * This changes the URL and nothing else — no request, no re-render, no loading state. Next.js supports exactly this
+   * for the case where the URL is a *record* of client state rather than an instruction to fetch something.
+   *
+   * `replace` rather than `push` for a related reason: typing seven letters into the search box should not leave seven
+   * entries for the back button to walk out of.
+   *
+   * The hash is carried through so following the skip link and then typing doesn't silently drop the fragment.
+   *
+   * The path is read from `window.location` rather than reconstructed from a route constant, which is also what keeps
+   * this correct under the static demo's `basePath` — `/civic-ledger/members` stays `/civic-ledger/members`.
+   */
+  useEffect((): void => {
+    window.history.replaceState(null, "", `${window.location.pathname}${queryString}${window.location.hash}`);
+  }, [queryString]);
 
   const isFiltered: boolean = hasActiveMemberFilters(filters);
   const countLabel: string = isFiltered
-    ? `${shown.length} of ${members.length} ${members.length === 1 ? "Member" : "Members"}`
-    : `${members.length} ${members.length === 1 ? "Member" : "Members"}`;
+    ? `${shown.length} of ${members.length} ${pluralize(members.length, "Member")}`
+    : `${members.length} ${pluralize(members.length, "Member")}`;
 
   const scopeNote: string =
     source === "live"
@@ -127,11 +218,11 @@ export function MemberDirectory({ members, congress, source }: MemberDirectoryPr
             }
             value={filters.party}
           >
-            <option value={ANY_FACET}>All parties</option>
+            <option value={ANY_FACET}>All Parties ({members.length})</option>
             {parties.map(
-              (party: PartyGroup): JSX.Element => (
-                <option key={party} value={party}>
-                  {partyGroupLabels[party]}
+              (party: MemberFacetOption<PartyGroup>): JSX.Element => (
+                <option key={party.value} value={party.value}>
+                  {party.label} ({party.count})
                 </option>
               ),
             )}
@@ -139,17 +230,33 @@ export function MemberDirectory({ members, congress, source }: MemberDirectoryPr
         </div>
 
         <div className="member-facet">
-          <label htmlFor="member-state-filter">State or territory</label>
+          <label htmlFor="member-state-filter">State or Territory</label>
           <select
             id="member-state-filter"
             onChange={(event: ChangeEvent<HTMLSelectElement>): void => update({ state: event.target.value })}
             value={filters.state}
           >
-            <option value={ANY_FACET}>All states and territories</option>
-            {states.map(
-              (state: string): JSX.Element => (
-                <option key={state} value={state}>
-                  {state}
+            <option value={ANY_FACET}>All States and Territories</option>
+            <JurisdictionOptions options={jurisdictions} />
+          </select>
+        </div>
+
+        <div className="member-facet member-facet--sort">
+          {/* Reordering the grid in place is not the WCAG 3.2.2 "on input" pattern the Congress picker has to warn
+              about — nothing navigates, and the reader stays exactly where they were. The order is named in the
+              result-count line below, which is a live region, so the change is announced rather than only visible. */}
+          <label htmlFor="member-sort">
+            <ArrowDownUp aria-hidden="true" size={13} /> Sort By
+          </label>
+          <select
+            id="member-sort"
+            onChange={(event: ChangeEvent<HTMLSelectElement>): void => setSort(event.target.value as MemberSort)}
+            value={sort}
+          >
+            {memberSorts.map(
+              (option: MemberSort): JSX.Element => (
+                <option key={option} value={option}>
+                  {memberSortLabels[option]}
                 </option>
               ),
             )}
@@ -168,7 +275,12 @@ export function MemberDirectory({ members, congress, source }: MemberDirectoryPr
       </div>
 
       <p className="directory-result-count" aria-live="polite">
-        {countLabel}
+        <span>{countLabel}</span>
+        {/* Named only when it isn't the default, so the common case stays a plain count rather than restating
+            "alphabetical" on every page load. */}
+        {sort !== DEFAULT_MEMBER_SORT ? (
+          <span className="directory-result-count__order"> · Sorted by {memberSortLabels[sort]}</span>
+        ) : null}
       </p>
       <p className="directory-search-note">{scopeNote}</p>
 

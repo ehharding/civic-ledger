@@ -1,7 +1,8 @@
 /**
  * Covers BillDirectory's server-backed search (`/api/bills/search`, debounced, with a client-side fallback when that
- * route can't be reached), the stage filter, the singular/plural result count, the empty states, and "Load More"
- * pagination — including its three stopping conditions (short page, empty page, request failure).
+ * route can't be reached), the stage filter and its shareable deep link, the singular/plural result count, the empty
+ * states, and "Load More" pagination — including its three stopping conditions (short page, empty page, request
+ * failure).
  */
 import { render, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
@@ -287,5 +288,56 @@ describe("BillDirectory", (): void => {
     await waitFor((): void => {
       expect(screen.queryByRole("button", { name: /Loading More/ })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("BillDirectory deep links", (): void => {
+  beforeEach((): void => {
+    window.history.replaceState(null, "", "/bills");
+  });
+
+  afterEach((): void => {
+    vi.unstubAllGlobals();
+  });
+
+  it("starts on the stage the URL asked for", (): void => {
+    render(<BillDirectory bills={previewBills} initialQuery="" initialStage="law" canLoadMore={false} />);
+
+    expect(screen.getByRole("button", { name: "Became Law" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(
+      previewBills.filter((bill: LegislativeBill): boolean => bill.stage === "law").length,
+    );
+  });
+
+  it("shows every stage when the URL asked for none", (): void => {
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    expect(screen.getByRole("button", { name: "All Stages" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("records the reader's stage choice in the URL, so a filtered view can be shared", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    await user.click(screen.getByRole("button", { name: "Became Law" }));
+
+    expect(window.location.search).toBe("?stage=law");
+  });
+
+  it("empties the URL again when the reader returns to all stages", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    await user.click(screen.getByRole("button", { name: "Became Law" }));
+    await user.click(screen.getByRole("button", { name: "All Stages" }));
+
+    expect(window.location.search).toBe("");
+  });
+
+  it("records a search the page received as a link, so it can be handed on again", (): void => {
+    // The header's search form could always send a ?q= link here; nothing ever produced one from the page itself.
+    render(<BillDirectory bills={previewBills} initialQuery="broadband" canLoadMore={false} />);
+
+    expect(window.location.search).toBe("?q=broadband");
   });
 });

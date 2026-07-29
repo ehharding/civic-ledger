@@ -1,9 +1,15 @@
 import {
   type CongressChamber,
+  compareMembersByName,
+  congressChambers,
   formatMemberSeat,
+  isNonVotingJurisdiction,
   type MemberDirectoryEntry,
   type PartyGroup,
+  partyGroupLabels,
+  partyGroups,
   partySeatingOrder,
+  partySeatingRank,
 } from "@/lib/congress/members";
 
 /**
@@ -18,6 +24,16 @@ import {
  * people), the server already sent every row to draw the grid, and Congress.gov offers no member-search parameter to
  * defer to anyway — so filtering happens entirely in the browser, instantly, with no `/api` route between a keystroke
  * and its result. @see docs/decisions.md, "The Member Directory Filters in the Browser".
+ *
+ * Three things live here beyond the filters themselves, all for the same reason — they are rules, not rendering:
+ *
+ * - **Ordering** ({@link sortMembers}), so "sorted by party" means one testable thing rather than whatever a component
+ *   happened to implement.
+ * - **Facet options** ({@link listMemberJurisdictions}, {@link listMemberPartyOptions}), derived from the roster in
+ *   hand so a control can never offer a choice that returns nothing.
+ * - **The URL spelling of a view** ({@link memberDirectoryQueryString} and the parsers beside it), which is shared
+ *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to
+ *   neither side. @see docs/decisions.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 
 /** The wildcard value each facet filter uses for "don't narrow on this at all". */
@@ -102,40 +118,294 @@ export function filterMembers(entries: MemberDirectoryEntry[], filters: MemberFi
 }
 
 /**
+ * The orders the directory can be read in.
+ *
+ * Every one of these is an order a person can *state a reason for wanting* — alphabetically, by the place represented,
+ * by party, by chamber. The list stays short on purpose: a sort control is only useful if a reader can predict what
+ * each option does without trying it.
+ */
+export const memberSorts = ["name", "name-desc", "state", "party", "chamber"] as const;
+
+export type MemberSort = (typeof memberSorts)[number];
+
+/** The order the roster arrives in from the server, and what the sort control resets to. */
+export const DEFAULT_MEMBER_SORT: MemberSort = "name";
+
+/** How each sort option reads on screen. */
+export const memberSortLabels: Record<MemberSort, string> = {
+  name: "Name (A–Z)",
+  "name-desc": "Name (Z–A)",
+  state: "State or Territory",
+  party: "Party",
+  chamber: "Chamber",
+};
+
+/**
+ * Orders two members by the place they represent, then by seat within it.
+ *
+ * District order is the useful tiebreak rather than a nicety: a delegation listed 1st, 2nd, 3rd reads as the state's
+ * map, while the same names alphabetized reads as nothing in particular. An at-large seat (`district` 0 or absent)
+ * sorts first, since it *is* the whole state.
+ *
+ * @param a - One member to compare.
+ * @param b - The other member to compare.
+ * @returns A standard comparator result. Members with no jurisdiction on file sort last, together.
+ */
+function compareByJurisdiction(a: MemberDirectoryEntry, b: MemberDirectoryEntry): number {
+  const stateA: string = a.state ?? "";
+  const stateB: string = b.state ?? "";
+
+  // An empty jurisdiction would otherwise sort ahead of "Alabama", putting the least informative rows first.
+  if (stateA !== stateB) {
+    if (stateA.length === 0) return 1;
+    if (stateB.length === 0) return -1;
+    return stateA.localeCompare(stateB);
+  }
+
+  return (a.district ?? 0) - (b.district ?? 0);
+}
+
+/** The comparators behind each {@link MemberSort}, before the alphabetical tiebreak every one of them falls back to. */
+const MEMBER_SORT_COMPARATORS: Record<MemberSort, (a: MemberDirectoryEntry, b: MemberDirectoryEntry) => number> = {
+  name: (): number => 0,
+  "name-desc": (a: MemberDirectoryEntry, b: MemberDirectoryEntry): number => compareMembersByName(b, a),
+  state: compareByJurisdiction,
+  party: (a: MemberDirectoryEntry, b: MemberDirectoryEntry): number =>
+    partySeatingRank(a.party) - partySeatingRank(b.party),
+  chamber: (a: MemberDirectoryEntry, b: MemberDirectoryEntry): number =>
+    congressChambers.indexOf(a.chamber) - congressChambers.indexOf(b.chamber),
+};
+
+/**
+ * Orders the roster.
+ *
+ * Every comparator falls through to {@link compareMembersByName}, so a sort never leaves a group of ties in whatever
+ * arbitrary order they happened to arrive in — grouping by party still lists each party alphabetically, and "Name
+ * (Z–A)" is the only order that isn't ultimately anchored on the name.
+ *
+ * @param entries - The rows to order. Left untouched; a new array is returned.
+ * @param sort - The order to apply.
+ * @returns A newly ordered array.
+ */
+export function sortMembers(entries: MemberDirectoryEntry[], sort: MemberSort): MemberDirectoryEntry[] {
+  const compare: (a: MemberDirectoryEntry, b: MemberDirectoryEntry) => number = MEMBER_SORT_COMPARATORS[sort];
+
+  return [...entries].sort((a: MemberDirectoryEntry, b: MemberDirectoryEntry): number => {
+    const primary: number = compare(a, b);
+    return primary !== 0 || sort === "name-desc" ? primary : compareMembersByName(a, b);
+  });
+}
+
+/**
+ * One selectable value in a facet control, with the number of members behind it.
+ *
+ * The count is the reason this isn't just a list of strings. A facet that says "Ohio (15)" tells a reader what a choice
+ * will yield *before* they make it, which is the difference between a list you can plan a narrowing with and one you
+ * have to probe by trial and error. It also makes the ordering of these lists self-explanatory, which matters most for
+ * the party control — see {@link listMemberPartyOptions}.
+ *
+ * @typeParam Value - The filter value this option sets.
+ */
+export type MemberFacetOption<Value> = {
+  /** The value written to {@link MemberFilters}, and to the URL. */
+  value: Value;
+  /** How the option reads on screen. */
+  label: string;
+  /** How many members in the whole roster carry this value. */
+  count: number;
+};
+
+/**
+ * Which group a jurisdiction belongs to in the state control.
+ *
+ * The split is exactly the six House seats that carry no floor vote (@see isNonVotingJurisdiction), which is what makes
+ * it a fact about the chamber rather than an editorial grouping: the five territorial Delegates and Puerto Rico's
+ * Resident Commissioner represent the jurisdictions in `"territory"`, and everything else is a state.
+ */
+export type JurisdictionGroup = "state" | "territory";
+
+/** A jurisdiction option, carrying the group its `<optgroup>` belongs under. */
+export type JurisdictionOption = MemberFacetOption<string> & { group: JurisdictionGroup };
+
+/** Headings for each jurisdiction group, so the control names its own grouping rather than implying it. */
+export const jurisdictionGroupLabels: Record<JurisdictionGroup, string> = {
+  state: "States",
+  territory: "Territories and Federal District",
+};
+
+/**
  * The jurisdictions present in a roster, for the state filter's options.
  *
  * Derived from the roster rather than hard-coded from a list of the fifty states, so the control offers exactly what
  * can actually be selected: territories and the District of Columbia appear because their Delegates do, and nothing is
  * offered that would return an empty grid.
  *
+ * Grouped rather than presented as one alphabetical run of fifty-six entries. A flat list interleaves American Samoa,
+ * the District of Columbia, Guam, and the rest among the states, so a reader scanning for a state passes items that
+ * aren't one, and a reader looking for a territory has no way to find out which are even represented without reading
+ * the whole list. The grouping is the same non-voting-seat distinction the chamber diagram already draws.
+ *
  * @param entries - The full directory.
- * @returns Every distinct jurisdiction, alphabetically. Rows with no jurisdiction on file contribute nothing.
+ * @returns Every distinct jurisdiction with its member count, alphabetically within its group. Rows with no
+ *   jurisdiction on file contribute nothing, since an unnamed place is not a place a reader can choose.
  */
-export function listMemberStates(entries: MemberDirectoryEntry[]): string[] {
-  const states: Set<string> = new Set<string>();
+export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): JurisdictionOption[] {
+  const counts: Map<string, number> = new Map<string, number>();
 
   for (const entry of entries) {
     const state: string = (entry.state ?? "").trim();
-    if (state.length > 0) states.add(state);
+    if (state.length > 0) counts.set(state, (counts.get(state) ?? 0) + 1);
   }
 
-  return [...states].sort((a: string, b: string): number => a.localeCompare(b));
+  return [...counts.entries()]
+    .map(
+      ([state, count]: [string, number]): JurisdictionOption => ({
+        value: state,
+        label: state,
+        count,
+        group: isNonVotingJurisdiction(state) ? "territory" : "state",
+      }),
+    )
+    .sort((a: JurisdictionOption, b: JurisdictionOption): number => a.label.localeCompare(b.label));
 }
 
 /**
  * The parties present in a roster, for the party filter's options.
  *
- * Ordered by {@link partySeatingOrder} rather than alphabetically, so the control reads in the same left-to-right order
- * as the home page's chamber diagram and its legend — the place most readers will have just seen these same parties.
+ * Ordered by {@link partySeatingOrder} rather than alphabetically or by size, so the control reads in the same
+ * left-to-right order as the home page's chamber diagram and its legend — the place most readers will have just seen
+ * these same parties. That order is only legible once each option carries its count, which is the other half of why
+ * these are {@link MemberFacetOption}s rather than bare values: "Democratic (213), Independent (2), Republican (220)"
+ * is plainly the chart's order, while the same three words alone are plainly nothing in particular.
  *
  * @param entries - The full directory.
- * @returns Every party actually holding a seat, in seating order. A party nobody holds is omitted rather than offered
- *   as an option that can only ever return nothing.
+ * @returns Every party actually holding a seat, in seating order, with its count. A party nobody holds is omitted
+ *   rather than offered as an option that can only ever return nothing.
  */
-export function listMemberParties(entries: MemberDirectoryEntry[]): PartyGroup[] {
-  const present: Set<PartyGroup> = new Set<PartyGroup>(
-    entries.map((entry: MemberDirectoryEntry): PartyGroup => entry.party),
-  );
+export function listMemberPartyOptions(entries: MemberDirectoryEntry[]): MemberFacetOption<PartyGroup>[] {
+  const counts: Map<PartyGroup, number> = new Map<PartyGroup, number>();
 
-  return partySeatingOrder.filter((party: PartyGroup): boolean => present.has(party));
+  for (const entry of entries) counts.set(entry.party, (counts.get(entry.party) ?? 0) + 1);
+
+  return partySeatingOrder
+    .filter((party: PartyGroup): boolean => counts.has(party))
+    .map(
+      (party: PartyGroup): MemberFacetOption<PartyGroup> => ({
+        value: party,
+        label: partyGroupLabels[party],
+        count: counts.get(party) ?? 0,
+      }),
+    );
+}
+
+/**
+ * The query-param names the directory reads and writes.
+ *
+ * Named once, here, because they are shared across a boundary that is easy to break silently: the server route parses
+ * them out of the request, and the client component writes them back as the reader narrows. A typo on either side
+ * produces a link that looks right and restores nothing.
+ */
+export const MEMBER_DIRECTORY_PARAMS = {
+  query: "q",
+  chamber: "chamber",
+  party: "party",
+  state: "state",
+  sort: "sort",
+} as const;
+
+/** Everything the `/members` URL can express: what to show, and in what order. */
+export type MemberDirectoryQuery = {
+  filters: MemberFilters;
+  sort: MemberSort;
+};
+
+/** An unfiltered directory in its default order — what a bare `/members` means. */
+export const DEFAULT_MEMBER_DIRECTORY_QUERY: MemberDirectoryQuery = {
+  filters: NO_MEMBER_FILTERS,
+  sort: DEFAULT_MEMBER_SORT,
+};
+
+/**
+ * Parses the `chamber` param.
+ *
+ * @param raw - The raw param value, or `null`/`undefined` when absent.
+ * @returns The chamber, or {@link ANY_FACET} for anything unrecognized — a hand-edited or stale URL degrades to "both
+ *   chambers" rather than to an error or an empty grid, the same contract `src/lib/api-query.ts` holds its params to.
+ */
+export function parseChamberFilter(raw: string | null | undefined): ChamberFilter {
+  const value: string = (raw ?? "").trim().toLowerCase();
+
+  return congressChambers.find((chamber: CongressChamber): boolean => chamber === value) ?? ANY_FACET;
+}
+
+/**
+ * Parses the `party` param.
+ *
+ * @param raw - The raw param value, or `null`/`undefined` when absent.
+ * @returns The party group, or {@link ANY_FACET} for anything unrecognized.
+ */
+export function parsePartyFilter(raw: string | null | undefined): PartyFilter {
+  const value: string = (raw ?? "").trim().toLowerCase();
+
+  return partyGroups.find((party: PartyGroup): boolean => party === value) ?? ANY_FACET;
+}
+
+/**
+ * Parses the `sort` param.
+ *
+ * @param raw - The raw param value, or `null`/`undefined` when absent.
+ * @returns The requested order, or {@link DEFAULT_MEMBER_SORT} for anything unrecognized.
+ */
+export function parseMemberSort(raw: string | null | undefined): MemberSort {
+  const value: string = (raw ?? "").trim().toLowerCase();
+
+  return memberSorts.find((sort: MemberSort): boolean => sort === value) ?? DEFAULT_MEMBER_SORT;
+}
+
+/**
+ * Parses the `state` param against the jurisdictions actually in the roster.
+ *
+ * Validated against the roster rather than accepted as free text, and matched case-insensitively so a hand-typed
+ * `?state=ohio` resolves to the roster's own `"Ohio"`. Both halves matter for the same reason: a value the control has
+ * no option for would leave the select showing one thing while the grid showed another, which is a worse failure than
+ * simply ignoring an unusable param.
+ *
+ * @param raw - The raw param value, or `null`/`undefined` when absent.
+ * @param known - The jurisdictions present in the roster. @see listMemberJurisdictions
+ * @returns The roster's spelling of the requested jurisdiction, or {@link ANY_FACET} when it isn't one the roster
+ *   contains — so a link to a state whose delegation has since changed still opens a usable page.
+ */
+export function parseJurisdictionFilter(raw: string | null | undefined, known: Iterable<string>): StateFilter {
+  const wanted: string = (raw ?? "").trim().toLowerCase();
+  if (wanted.length === 0) return ANY_FACET;
+
+  for (const candidate of known) {
+    if (candidate.toLowerCase() === wanted) return candidate;
+  }
+
+  return ANY_FACET;
+}
+
+/**
+ * Serializes a directory view back into a query string.
+ *
+ * Only non-default values are written, so an unnarrowed directory has a clean `/members` URL rather than one carrying
+ * four params that all say "no". The parameter order is fixed rather than incidental, so the same view always produces
+ * the same string — which is what makes these links comparable, cacheable, and stable in a browser's history.
+ *
+ * @param query - The view to serialize.
+ * @returns The query string including its leading `?`, or an empty string when nothing is narrowed or reordered.
+ */
+export function memberDirectoryQueryString(query: MemberDirectoryQuery): string {
+  const params: URLSearchParams = new URLSearchParams();
+  const trimmedQuery: string = query.filters.query.trim();
+
+  if (trimmedQuery.length > 0) params.set(MEMBER_DIRECTORY_PARAMS.query, trimmedQuery);
+  if (query.filters.chamber !== ANY_FACET) params.set(MEMBER_DIRECTORY_PARAMS.chamber, query.filters.chamber);
+  if (query.filters.party !== ANY_FACET) params.set(MEMBER_DIRECTORY_PARAMS.party, query.filters.party);
+  if (query.filters.state !== ANY_FACET) params.set(MEMBER_DIRECTORY_PARAMS.state, query.filters.state);
+  if (query.sort !== DEFAULT_MEMBER_SORT) params.set(MEMBER_DIRECTORY_PARAMS.sort, query.sort);
+
+  const serialized: string = params.toString();
+  return serialized.length > 0 ? `?${serialized}` : "";
 }

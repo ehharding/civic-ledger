@@ -119,6 +119,12 @@
   font-size: 0.83rem;
 }
 
+/* The order the member directory is currently in, named beside the count so a reorder is announced by the same live
+   region that reports the count — see MemberDirectory. Quieter than the count, which is the primary fact. */
+.directory-result-count__order {
+  color: var(--ink-faint);
+}
+
 .directory-search-note {
   margin-top: -10px;
   margin-bottom: 16px;

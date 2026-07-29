@@ -1,13 +1,14 @@
 /**
- * Covers MemberDirectory's interactive contract: that every control actually narrows the grid, that the count and scope
- * note describe what is showing honestly, that filters compose and clear, and that a preview roster doesn't claim to be
- * a list of people currently holding seats.
+ * Covers MemberDirectory's interactive contract: that every control actually narrows or reorders the grid, that the
+ * count and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked
+ * for is the view that renders, and that a preview roster doesn't claim to be a list of people currently holding seats.
  */
 import { render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { MemberDirectory } from "@/components/member-directory";
+import type { MemberDirectoryQuery } from "@/lib/congress/member-filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members";
 
 function entry(overrides: Partial<MemberDirectoryEntry> = {}): MemberDirectoryEntry {
@@ -127,7 +128,7 @@ describe("MemberDirectory", (): void => {
     const user: UserEvent = userEvent.setup();
     renderDirectory();
 
-    await user.selectOptions(screen.getByLabelText("State or territory"), "Ohio");
+    await user.selectOptions(screen.getByLabelText("State or Territory"), "Ohio");
 
     expect(shownNames()).toEqual(["Bennett, Marcus T."]);
   });
@@ -135,9 +136,36 @@ describe("MemberDirectory", (): void => {
   it("offers only jurisdictions that are actually in the roster", (): void => {
     renderDirectory();
 
-    const stateFilter: HTMLElement = screen.getByLabelText("State or territory");
-    expect(within(stateFilter).getByRole("option", { name: "Ohio" })).toBeInTheDocument();
-    expect(within(stateFilter).queryByRole("option", { name: "Wyoming" })).not.toBeInTheDocument();
+    const stateFilter: HTMLElement = screen.getByLabelText("State or Territory");
+    expect(within(stateFilter).getByRole("option", { name: "Ohio (1)" })).toBeInTheDocument();
+    expect(within(stateFilter).queryByRole("option", { name: /Wyoming/ })).not.toBeInTheDocument();
+  });
+
+  it("says how many members are behind each facet option, so a choice is predictable before it is made", (): void => {
+    renderDirectory();
+
+    const partyFilter: HTMLElement = screen.getByLabelText("Party");
+    expect(within(partyFilter).getByRole("option", { name: "Democratic (2)" })).toBeInTheDocument();
+    expect(within(partyFilter).getByRole("option", { name: "Republican (1)" })).toBeInTheDocument();
+  });
+
+  it("separates territories from states rather than interleaving them", (): void => {
+    render(
+      <MemberDirectory
+        congress={119}
+        members={[...roster, entry({ bioguideId: "S000004", name: "Sablan, Gregorio", state: "Guam", district: 0 })]}
+        source="live"
+      />,
+    );
+
+    const stateFilter: HTMLElement = screen.getByLabelText("State or Territory");
+    const groups: HTMLElement[] = within(stateFilter).getAllByRole("group");
+
+    expect(groups.map((group: HTMLElement): string | null => group.getAttribute("label"))).toEqual([
+      "States",
+      "Territories and Federal District",
+    ]);
+    expect(within(groups[1] as HTMLElement).getByRole("option", { name: "Guam (1)" })).toBeInTheDocument();
   });
 
   it("combines filters rather than replacing one with the next", async (): Promise<void> => {
@@ -202,5 +230,137 @@ describe("MemberDirectory", (): void => {
 
     expect(screen.getByText("House · Ohio's 9th district")).toBeInTheDocument();
     expect(screen.getByText("Senate · Arizona")).toBeInTheDocument();
+  });
+
+  it("reorders the grid without renarrowing it", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
+
+    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
+  });
+
+  it("names a non-default order in the live region, so a reorder is announced and not merely visible", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    expect(screen.queryByText(/Sorted by/)).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText(/Sort By/), "party");
+
+    expect(screen.getByText(/Sorted by Party/)).toBeInTheDocument();
+  });
+
+  it("keeps the chosen order while the reader narrows", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
+    await user.click(screen.getByRole("button", { name: "House" }));
+
+    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T."]);
+  });
+
+  it("leaves the order alone when the filters are cleared, since order is not a filter", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
+    await user.click(screen.getByRole("button", { name: "Senate" }));
+    await user.click(screen.getByRole("button", { name: "Clear Filters" }));
+
+    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
+    expect(screen.getByLabelText(/Sort By/)).toHaveValue("name-desc");
+  });
+});
+
+describe("MemberDirectory, opened from a link", (): void => {
+  function view(overrides: Partial<MemberDirectoryQuery["filters"]> = {}, sort: MemberDirectoryQuery["sort"] = "name") {
+    return { filters: { query: "", chamber: "all", party: "all", state: "all", ...overrides }, sort } as const;
+  }
+
+  it("renders already narrowed rather than showing everyone first", (): void => {
+    renderDirectory({ initialQuery: view({ chamber: "senate" }) });
+
+    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+  });
+
+  it("shows the controls in the state the link asked for, not just the grid", (): void => {
+    renderDirectory({ initialQuery: view({ query: "okafor", state: "Georgia" }, "party") });
+
+    expect(screen.getByRole("searchbox", { name: /Search members/ })).toHaveValue("okafor");
+    expect(screen.getByLabelText("State or Territory")).toHaveValue("Georgia");
+    expect(screen.getByLabelText(/Sort By/)).toHaveValue("party");
+  });
+
+  it("offers a Clear control immediately, since a linked view is already narrowed", (): void => {
+    renderDirectory({ initialQuery: view({ party: "democratic" }) });
+
+    expect(screen.getByRole("button", { name: "Clear Filters" })).toBeInTheDocument();
+  });
+});
+
+describe("MemberDirectory URL syncing", (): void => {
+  beforeEach((): void => {
+    window.history.replaceState(null, "", "/members");
+  });
+
+  it("leaves a plain visit with a clean URL", (): void => {
+    renderDirectory();
+
+    expect(window.location.search).toBe("");
+  });
+
+  it("records what the reader narrowed to, so the view can be linked or bookmarked", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.click(screen.getByRole("button", { name: "Senate" }));
+    await user.selectOptions(screen.getByLabelText("Party"), "republican");
+
+    expect(window.location.search).toBe("?chamber=senate&party=republican");
+  });
+
+  it("records the order too", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.selectOptions(screen.getByLabelText(/Sort By/), "state");
+
+    expect(window.location.search).toBe("?sort=state");
+  });
+
+  it("empties the URL again when the filters are cleared", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "alvarez");
+    expect(window.location.search).toBe("?q=alvarez");
+
+    await user.click(screen.getByRole("button", { name: "Clear Filters" }));
+
+    expect(window.location.search).toBe("");
+  });
+
+  it("replaces history rather than pushing, so typing does not fill the back button", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    const before: number = window.history.length;
+    renderDirectory();
+
+    await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "alvarez");
+
+    expect(window.history.length).toBe(before);
+  });
+
+  it("keeps the path and any fragment, so following the skip link and then filtering does not lose either", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    window.history.replaceState(null, "", "/members#main-content");
+    renderDirectory();
+
+    await user.click(screen.getByRole("button", { name: "House" }));
+
+    expect(window.location.pathname).toBe("/members");
+    expect(window.location.hash).toBe("#main-content");
   });
 });

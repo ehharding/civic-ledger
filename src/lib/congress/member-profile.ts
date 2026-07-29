@@ -20,7 +20,7 @@ import {
 } from "@/lib/congress/http";
 import { mapCongressBill, mapMemberProfile, mapUsable } from "@/lib/congress/mappers";
 import type { MemberProfile } from "@/lib/congress/members";
-import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
+import { type CongressSnapshot, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Everything the individual member page reads: one member's own record, plus the legislation they sponsored and
@@ -72,6 +72,12 @@ export type MemberProfileResult = {
  * @param config - The list's path suffix, schema, and the collection to read off the payload.
  * @returns The mapped bills, newest first, capped at {@link MEMBER_LEGISLATION_LIMIT}. Always an empty array on a 404
  *   or a failure — a member with no sponsored bills is an ordinary state (every member has one on their first day).
+ *
+ *   The ordering is applied here rather than assumed. Congress.gov does return these lists newest first, so this
+ *   normally changes nothing — but "newest first" is a promise this app's own type makes to the page that renders it,
+ *   and a promise kept by an upstream convention is one that breaks silently the day the convention does. Note what
+ *   this is *not*: the request is already capped at {@link MEMBER_LEGISLATION_LIMIT}, so this orders the page it was
+ *   given and cannot re-rank a larger set it never asked for.
  */
 async function fetchMemberLegislation<Payload>(
   bioguideId: string,
@@ -95,7 +101,9 @@ async function fetchMemberLegislation<Payload>(
 
   if (result.outcome !== "ok") return [];
 
-  return mapUsable(config.select(result.data), mapCongressBill).slice(0, MEMBER_LEGISLATION_LIMIT);
+  return mapUsable(config.select(result.data), mapCongressBill)
+    .sort(compareBillsByRecency)
+    .slice(0, MEMBER_LEGISLATION_LIMIT);
 }
 
 /**

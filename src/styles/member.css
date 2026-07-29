@@ -176,11 +176,19 @@
   gap: 5px;
 }
 
+/* inline-flex so the sort control's icon sits on the label's baseline rather than pushing the text down a line. */
 .member-facet label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--ink-soft);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.member-facet label svg {
+  color: var(--ink-faint);
 }
 
 .member-facet select {
@@ -191,6 +199,27 @@
   color: var(--ink);
   background: var(--paper);
   font-weight: 600;
+}
+
+/* The sort control holds five short, fixed labels rather than a roster-length list, so it needs less room than the
+   facets beside it and shouldn't be padded out to match them. Deliberately a class rather than `select#member-sort`:
+   responsive.css collapses `.member-facet select` to `min-width: 0` on narrow screens and relies on source order to
+   win, which an id selector would silently outrank. See the note at the top of globals.css. */
+.member-facet--sort select {
+  min-width: 176px;
+}
+
+/* Browsers render an optgroup heading in italics by default, which reads as emphasis rather than as a grouping.
+   Stating the styling keeps "States" and "Territories and Federal District" looking like the section labels they are. */
+.member-facet optgroup {
+  color: var(--ink-soft);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.member-facet optgroup option {
+  color: var(--ink);
+  font-weight: 500;
 }
 
 .member-facets__clear {

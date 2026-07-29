@@ -7,13 +7,23 @@ import { describe, expect, it } from "vitest";
 
 import {
   ANY_FACET,
+  DEFAULT_MEMBER_DIRECTORY_QUERY,
+  DEFAULT_MEMBER_SORT,
   filterMembers,
   hasActiveMemberFilters,
-  listMemberParties,
-  listMemberStates,
+  type JurisdictionOption,
+  listMemberJurisdictions,
+  listMemberPartyOptions,
+  type MemberFacetOption,
   type MemberFilters,
   matchesMemberQuery,
+  memberDirectoryQueryString,
   NO_MEMBER_FILTERS,
+  parseChamberFilter,
+  parseJurisdictionFilter,
+  parseMemberSort,
+  parsePartyFilter,
+  sortMembers,
 } from "@/lib/congress/member-filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members";
 
@@ -137,31 +147,199 @@ describe("hasActiveMemberFilters", (): void => {
   });
 });
 
-describe("listMemberStates", (): void => {
+/** The option values of a facet list, which is what most of these assertions are actually about. */
+function values<Value>(options: MemberFacetOption<Value>[]): Value[] {
+  return options.map((option: MemberFacetOption<Value>): Value => option.value);
+}
+
+/** The names of an ordered roster, in order. */
+function names(entries: MemberDirectoryEntry[]): string[] {
+  return entries.map((entry_: MemberDirectoryEntry): string => entry_.name);
+}
+
+describe("listMemberJurisdictions", (): void => {
   it("lists each jurisdiction once, alphabetically", (): void => {
-    expect(listMemberStates(roster)).toEqual(["Alaska", "Arizona", "Northern Mariana Islands", "Ohio"]);
+    expect(values(listMemberJurisdictions(roster))).toEqual(["Alaska", "Arizona", "Northern Mariana Islands", "Ohio"]);
   });
 
-  it("offers territories, since their Delegates are in the roster", (): void => {
-    expect(listMemberStates(roster)).toContain("Northern Mariana Islands");
+  it("counts how many members each jurisdiction has, so a choice is predictable before it is made", (): void => {
+    const ohio: JurisdictionOption | undefined = listMemberJurisdictions([
+      entry(),
+      entry({ bioguideId: "C000005", name: "Chen, Wei" }),
+      entry({ bioguideId: "A000002", state: "Arizona" }),
+    ]).find((option: JurisdictionOption): boolean => option.value === "Ohio");
+
+    expect(ohio?.count).toBe(2);
+  });
+
+  it("groups the non-voting jurisdictions apart from the states", (): void => {
+    const options: JurisdictionOption[] = listMemberJurisdictions(roster);
+
+    function groupOf(name: string): string | undefined {
+      return options.find((option: JurisdictionOption): boolean => option.value === name)?.group;
+    }
+
+    expect(groupOf("Ohio")).toBe("state");
+    expect(groupOf("Alaska")).toBe("state");
+    expect(groupOf("Northern Mariana Islands")).toBe("territory");
   });
 
   it("skips a record with no jurisdiction on file rather than offering a blank option", (): void => {
-    expect(listMemberStates([entry({ state: undefined }), entry({ state: "  " })])).toEqual([]);
+    expect(listMemberJurisdictions([entry({ state: undefined }), entry({ state: "  " })])).toEqual([]);
   });
 });
 
-describe("listMemberParties", (): void => {
+describe("listMemberPartyOptions", (): void => {
   it("offers only parties that actually hold a seat", (): void => {
-    expect(listMemberParties(roster)).not.toContain("libertarian");
+    expect(values(listMemberPartyOptions(roster))).not.toContain("libertarian");
   });
 
   it("orders parties the way the chamber diagram's legend does, not alphabetically", (): void => {
-    expect(listMemberParties(roster)).toEqual(["democratic", "independent", "republican"]);
+    expect(values(listMemberPartyOptions(roster))).toEqual(["democratic", "independent", "republican"]);
+  });
+
+  it("labels and counts each party, which is what makes the seating order legible", (): void => {
+    expect(listMemberPartyOptions(roster)[0]).toEqual({ value: "democratic", label: "Democratic", count: 2 });
   });
 
   it("returns nothing for an empty roster", (): void => {
-    expect(listMemberParties([])).toEqual([]);
+    expect(listMemberPartyOptions([])).toEqual([]);
+  });
+});
+
+describe("sortMembers", (): void => {
+  it("leaves the server's alphabetical order alone by default", (): void => {
+    expect(names(sortMembers(roster, "name"))).toEqual([
+      "Alvarez, Priya R.",
+      "Bennett, Marcus T.",
+      "Muñoz, Elena",
+      "Sablan, Gregorio",
+    ]);
+  });
+
+  it("reverses it for Z-A", (): void => {
+    expect(names(sortMembers(roster, "name-desc"))).toEqual([
+      "Sablan, Gregorio",
+      "Muñoz, Elena",
+      "Bennett, Marcus T.",
+      "Alvarez, Priya R.",
+    ]);
+  });
+
+  it("groups by jurisdiction, then by seat within it", (): void => {
+    const delegation: MemberDirectoryEntry[] = [
+      entry({ bioguideId: "A000010", name: "Adams, Nia", state: "Ohio", district: 9 }),
+      entry({ bioguideId: "B000011", name: "Boyle, Sean", state: "Ohio", district: 2 }),
+      entry({ bioguideId: "C000012", name: "Cruz, Maria", state: "Alaska", district: 0 }),
+    ];
+
+    expect(names(sortMembers(delegation, "state"))).toEqual(["Cruz, Maria", "Boyle, Sean", "Adams, Nia"]);
+  });
+
+  it("sorts a member with no jurisdiction last rather than first", (): void => {
+    const mixed: MemberDirectoryEntry[] = [
+      entry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
+      entry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
+    ];
+
+    expect(names(sortMembers(mixed, "state"))).toEqual(["Adams, Nia", "Nobody, A."]);
+  });
+
+  it("groups by party in seating order, alphabetically within each", (): void => {
+    expect(names(sortMembers(roster, "party"))).toEqual([
+      "Bennett, Marcus T.",
+      "Muñoz, Elena",
+      "Sablan, Gregorio",
+      "Alvarez, Priya R.",
+    ]);
+  });
+
+  it("groups by chamber, House first", (): void => {
+    expect(names(sortMembers(roster, "chamber"))).toEqual([
+      "Bennett, Marcus T.",
+      "Muñoz, Elena",
+      "Sablan, Gregorio",
+      "Alvarez, Priya R.",
+    ]);
+  });
+
+  it("leaves the caller's array untouched", (): void => {
+    const original: string[] = names(roster);
+    sortMembers(roster, "name-desc");
+
+    expect(names(roster)).toEqual(original);
+  });
+});
+
+describe("the URL parsers", (): void => {
+  it("accepts the values the controls actually produce", (): void => {
+    expect(parseChamberFilter("senate")).toBe("senate");
+    expect(parsePartyFilter("republican")).toBe("republican");
+    expect(parseMemberSort("party")).toBe("party");
+  });
+
+  it("is case- and whitespace-insensitive, since these get hand-typed", (): void => {
+    expect(parseChamberFilter(" HOUSE ")).toBe("house");
+    expect(parsePartyFilter("Democratic")).toBe("democratic");
+    expect(parseMemberSort("NAME-DESC")).toBe("name-desc");
+  });
+
+  it("degrades an absent or unusable param to no narrowing rather than to an error", (): void => {
+    expect(parseChamberFilter(undefined)).toBe(ANY_FACET);
+    expect(parseChamberFilter("lords")).toBe(ANY_FACET);
+    expect(parsePartyFilter(null)).toBe(ANY_FACET);
+    expect(parsePartyFilter("whig")).toBe(ANY_FACET);
+    expect(parseMemberSort("seniority")).toBe(DEFAULT_MEMBER_SORT);
+  });
+
+  it("resolves a jurisdiction to the roster's own spelling of it", (): void => {
+    const known: string[] = ["Ohio", "Northern Mariana Islands"];
+
+    expect(parseJurisdictionFilter("ohio", known)).toBe("Ohio");
+    expect(parseJurisdictionFilter("  NORTHERN mariana islands ", known)).toBe("Northern Mariana Islands");
+  });
+
+  it("ignores a jurisdiction the roster does not contain, rather than filtering to nothing", (): void => {
+    expect(parseJurisdictionFilter("Wyoming", ["Ohio"])).toBe(ANY_FACET);
+    expect(parseJurisdictionFilter("", ["Ohio"])).toBe(ANY_FACET);
+  });
+});
+
+describe("memberDirectoryQueryString", (): void => {
+  it("is empty for an unnarrowed directory, so a plain visit keeps a clean URL", (): void => {
+    expect(memberDirectoryQueryString(DEFAULT_MEMBER_DIRECTORY_QUERY)).toBe("");
+  });
+
+  it("writes only what is actually set", (): void => {
+    expect(memberDirectoryQueryString({ filters: filters({ chamber: "senate" }), sort: DEFAULT_MEMBER_SORT })).toBe(
+      "?chamber=senate",
+    );
+  });
+
+  it("writes every facet in a fixed order, so the same view always produces the same link", (): void => {
+    const serialized: string = memberDirectoryQueryString({
+      filters: filters({ query: "alvarez", chamber: "senate", party: "republican", state: "Arizona" }),
+      sort: "party",
+    });
+
+    expect(serialized).toBe("?q=alvarez&chamber=senate&party=republican&state=Arizona&sort=party");
+  });
+
+  it("trims the query and omits a whitespace-only one", (): void => {
+    expect(memberDirectoryQueryString({ filters: filters({ query: "  leahy  " }), sort: DEFAULT_MEMBER_SORT })).toBe(
+      "?q=leahy",
+    );
+    expect(memberDirectoryQueryString({ filters: filters({ query: "   " }), sort: DEFAULT_MEMBER_SORT })).toBe("");
+  });
+
+  it("round-trips through the parsers it is the counterpart to", (): void => {
+    const view = { filters: filters({ chamber: "house", party: "democratic", state: "Ohio" }), sort: "state" } as const;
+    const params: URLSearchParams = new URLSearchParams(memberDirectoryQueryString(view));
+
+    expect(parseChamberFilter(params.get("chamber"))).toBe(view.filters.chamber);
+    expect(parsePartyFilter(params.get("party"))).toBe(view.filters.party);
+    expect(parseJurisdictionFilter(params.get("state"), ["Ohio"])).toBe(view.filters.state);
+    expect(parseMemberSort(params.get("sort"))).toBe(view.sort);
   });
 });
 
@@ -169,6 +347,6 @@ describe("ANY_FACET", (): void => {
   it("is a value no real jurisdiction could collide with", (): void => {
     // The state filter passes raw jurisdiction names as option values, so the wildcard has to be distinguishable from
     // one. "all" is safe; a bare empty string would collide with a record whose state is missing.
-    expect(listMemberStates(roster)).not.toContain(ANY_FACET);
+    expect(values(listMemberJurisdictions(roster))).not.toContain(ANY_FACET);
   });
 });

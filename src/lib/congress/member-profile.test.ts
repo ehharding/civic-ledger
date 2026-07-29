@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getMemberProfile, type MemberProfileResult } from "@/lib/congress/client";
 import { previewMemberProfiles } from "@/lib/congress/fixtures";
 import type { MemberProfile } from "@/lib/congress/members";
+import type { LegislativeBill } from "@/lib/congress/types";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
@@ -218,5 +219,39 @@ describe("getMemberProfile with an API key", (): void => {
     expect(result.sponsored[0]?.title).toBe("A Sponsored Bill");
     // Mapped by the same mapper as every other bill, so it carries a public record link, not an API one.
     expect(result.sponsored[0]?.officialUrl).toBe("https://www.congress.gov/bill/117th-congress/senate-bill/4417");
+  });
+
+  it("orders legislation newest first rather than trusting the order it arrived in", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: URL): Promise<Response> => {
+        if (String(url).includes("/sponsored-legislation")) {
+          return Promise.resolve(
+            jsonResponse({
+              // Deliberately out of order, and deliberately including a record with no introduction date — which is
+              // what the type's "most recent first" promise has to hold up against.
+              sponsoredLegislation: [
+                { congress: 117, type: "S", number: "2", title: "Middle", introducedDate: "2022-03-04" },
+                { congress: 117, type: "S", number: "3", title: "Undated" },
+                { congress: 117, type: "S", number: "1", title: "Newest", introducedDate: "2022-11-30" },
+                { congress: 117, type: "S", number: "4", title: "Oldest", introducedDate: "2021-01-05" },
+              ],
+            }),
+          );
+        }
+        if (String(url).includes("legislation")) return Promise.resolve(jsonResponse({}));
+        return Promise.resolve(jsonResponse(liveMemberPayload()));
+      }),
+    );
+
+    const result: MemberProfileResult = await getMemberProfile("L000174");
+
+    expect(result.sponsored.map((bill: LegislativeBill): string => bill.title)).toEqual([
+      "Newest",
+      "Middle",
+      "Oldest",
+      "Undated",
+    ]);
   });
 });

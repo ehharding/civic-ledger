@@ -13,12 +13,12 @@ import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/fixtures";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
-import { resolveInitialQuery } from "@/lib/search-params";
+import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
-/** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable `?q=` deep link. */
+/** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable deep link. */
 type CongressBillsPageProps = {
   params: Promise<{ congress: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<RouteSearchParams>;
 };
 
 /**
@@ -58,17 +58,15 @@ export async function generateMetadata({ params }: CongressBillsPageProps): Prom
  *
  * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
  *   @see parseCongressParam
- * @param searchParams - Carries the shareable `?q=` deep link.
+ * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
+ *   @see resolveBillDirectoryQuery
  * @returns The directory page for that Congress.
  */
 export default async function CongressBillsPage({
   params,
   searchParams,
 }: CongressBillsPageProps): Promise<JSX.Element> {
-  const [{ congress: rawCongress }, initialQuery]: [{ congress: string }, string] = await Promise.all([
-    params,
-    resolveInitialQuery(searchParams),
-  ]);
+  const [{ congress: rawCongress }, initialView] = await Promise.all([params, resolveBillDirectoryQuery(searchParams)]);
   const congress: number | null = parseCongressParam(rawCongress);
   if (congress === null) notFound();
 
@@ -89,7 +87,8 @@ export default async function CongressBillsPage({
         bills={snapshot.bills}
         canLoadMore={snapshot.source === "live"}
         congress={congress}
-        initialQuery={initialQuery}
+        initialQuery={initialView.query}
+        initialStage={initialView.stage}
       />
     </SiteShell>
   );

@@ -30,6 +30,7 @@ flowchart LR
 | `src/hooks`                                        | Client-side async behavior extracted from views | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/db`                                           | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
 | `src/lib/api-query.ts`                             | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/search-params.ts`                         | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`                                 | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
 | `src/lib/congress/seating.ts`                      | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
 | `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
@@ -48,7 +49,7 @@ components, and tests import one stable path while the internals stay free to mo
 | `bills.ts`            | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
 | `composition.ts`      | Chamber membership, including the member list's pagination.                   |
 | `member-directory.ts` | The same membership, reshaped into one browsable alphabetical roster.         |
-| `member-filter.ts`    | The directory's narrowing rules. Pure and isomorphic; performs no I/O.        |
+| `member-filter.ts`    | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
 | `member-profile.ts`   | One member's own record, plus the legislation they sponsored and cosponsored. |
 | `client.ts`           | Public surface. Re-exports only.                                              |
 
@@ -94,6 +95,16 @@ whose record carries no Bioguide ID, since a directory row that opens nothing is
 entirely in the browser against `member-filter.ts`, which is pure and imports no server module — see "The Member
 Directory Filters in the Browser" in `docs/decisions.md`.
 
+Both directories mirror their current view into the address bar, so a search, a set of facets, or a chosen order can be
+linked and bookmarked (`/members?chamber=senate&sort=state`, `/bills?q=broadband&stage=law`). Each one's URL spelling
+lives beside its rules rather than in its route — `MEMBER_DIRECTORY_PARAMS`/`memberDirectoryQueryString` in
+`member-filter.ts`, `BILL_DIRECTORY_PARAMS`/`billDirectoryQueryString` in `search.ts` — because those names cross a
+boundary the server and the browser both write to. `src/lib/search-params.ts` is the server half: it reads the request
+and resolves a starting view, so a shared link renders already narrowed on its first paint rather than flashing the
+full list. The browser half writes with `history.replaceState` rather than a router navigation, since the URL is
+recording client state rather than requesting a render — see "A Narrowed Directory Is a Place, So It Has a URL" in
+`docs/decisions.md`.
+
 An *individual* member (`/members/[bioguideId]`) is a separate read in `member-profile.ts`, against a different
 endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list
 endpoint omits, plus the portrait and leadership history. It issues three requests concurrently — the member, their
@@ -128,7 +139,9 @@ history, notification delivery, or more than a few API-facing features.
 - API key stays server-side and is excluded from Git. It is read only through `getCongressApiKey()`, which treats an
   empty or whitespace-only value as absent rather than sending a blank key upstream.
 - Every dynamic path segment is validated against a closed format before it reaches an outbound Congress.gov URL
-  (`normalizeBillRouteParams`), and this app's own query params are parsed rather than coerced (`src/lib/api-query.ts`).
+  (`normalizeBillRouteParams`), and this app's own query params are parsed rather than coerced (`src/lib/api-query.ts`,
+  `src/lib/search-params.ts`). None of the directory's own query params is ever interpolated into an upstream request;
+  they only ever select among values already in hand.
 - Upstream payloads are validated at runtime, not cast.
 - No political-affiliation targeting or persuasion logic belongs in the product.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
@@ -137,6 +150,9 @@ history, notification delivery, or more than a few API-facing features.
   focus rather than only scrolling. The header's search form is a `search` landmark in its own right.
 - Links that open a new tab say so in their accessible name (`ExternalLinkHint`); the external-link glyph beside them is
   decorative and `aria-hidden`, so on its own it told a screen-reader user nothing.
+- The member directory's sort control reorders the grid in place rather than navigating, so it needs no WCAG 3.2.2
+  advisory — but the chosen order is named in the result-count line, which is a live region, so a reorder is announced
+  rather than only visible.
 - The Congress picker navigates on selection, and its label says so before it is used — the advisory that WCAG 3.2.2
   (On Input) requires for that pattern. It also ignores a selection matching the Congress already shown, so arrowing
   through the list on browsers that fire `change` per option doesn't walk the reader through pages they never chose.

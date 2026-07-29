@@ -9,7 +9,7 @@ import { SiteShell } from "@/components/site-shell";
 import { getCongressSnapshot } from "@/lib/congress/client";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { resolveInitialQuery } from "@/lib/search-params";
+import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
 export const metadata: Metadata = { title: "Bills" };
 
@@ -19,16 +19,16 @@ export const metadata: Metadata = { title: "Bills" };
  * Any other Congress lives at `/bills/[congress]`, reachable from the switcher rendered here. The two fetches — the
  * deep-link query and the snapshot — are awaited together, since neither depends on the other.
  *
- * @param searchParams - Carries the shareable `?q=` deep link.
- *   @see resolveInitialQuery
+ * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
+ *   @see resolveBillDirectoryQuery
  * @returns The directory page for the current Congress.
  */
 export default async function BillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<RouteSearchParams>;
 }): Promise<JSX.Element> {
-  const [initialQuery, snapshot] = await Promise.all([resolveInitialQuery(searchParams), getCongressSnapshot()]);
+  const [initialView, snapshot] = await Promise.all([resolveBillDirectoryQuery(searchParams), getCongressSnapshot()]);
 
   return (
     <SiteShell>
@@ -39,7 +39,12 @@ export default async function BillsPage({
       />
       <CongressSwitcher congresses={listCongresses()} selected={getCurrentCongress()} />
       <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
-      <BillDirectory bills={snapshot.bills} canLoadMore={snapshot.source === "live"} initialQuery={initialQuery} />
+      <BillDirectory
+        bills={snapshot.bills}
+        canLoadMore={snapshot.source === "live"}
+        initialQuery={initialView.query}
+        initialStage={initialView.stage}
+      />
     </SiteShell>
   );
 }

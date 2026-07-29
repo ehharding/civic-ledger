@@ -1,17 +1,111 @@
+import { MAX_QUERY_LENGTH, parseQueryParam } from "@/lib/api-query";
+import {
+  DEFAULT_MEMBER_DIRECTORY_QUERY,
+  MEMBER_DIRECTORY_PARAMS,
+  type MemberDirectoryQuery,
+  parseChamberFilter,
+  parseJurisdictionFilter,
+  parseMemberSort,
+  parsePartyFilter,
+} from "@/lib/congress/member-filter";
+import { BILL_DIRECTORY_PARAMS, type BillStageFilter, parseBillStageFilter } from "@/lib/congress/search";
+
 /**
- * Resolves the bill directory's shareable `?q=` deep link from the request.
+ * Resolves each directory's shareable deep link from the request.
+ *
+ * Both directories in this app can be linked to in a particular state — a bill search, or a narrowed and reordered
+ * roster — and both resolve that state here rather than in their own route, so the two can't drift apart on the one
+ * thing they genuinely share: how a query param is turned into a starting view.
+ *
+ * Every parser these delegate to is total, in the same sense `src/lib/api-query.ts` describes: an absent, malformed, or
+ * stale param resolves to a usable default rather than to an error. A shared link is exactly the kind of URL that gets
+ * hand-edited, truncated by a chat client, or opened a year later against a roster that has since changed, and none of
+ * those should produce anything worse than the unfiltered page.
+ *
+ * @see docs/decisions.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ */
+
+/**
+ * A route's `searchParams`, in the shape Next.js hands it over.
+ *
+ * A repeated param (`?state=Ohio&state=Iowa`) arrives as an array, which is why nothing here reads a value directly.
+ * @see readParam
+ */
+export type RouteSearchParams = Record<string, string | string[] | undefined>;
+
+/**
+ * Reads one param, collapsing the repeated-param case.
+ *
+ * @param params - The route's resolved search params.
+ * @param name - The param to read.
+ * @returns The value, the first of a repeated set, or `undefined` when absent. Taking the first is arbitrary but has
+ *   to be *something*: a control that can hold one value has no way to honor two, and the alternative — rejecting the
+ *   whole URL — turns a duplicated param into a broken page.
+ */
+function readParam(params: RouteSearchParams, name: string): string | undefined {
+  const value: string | string[] | undefined = params[name];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Whether the running build can read a request URL at all.
+ *
+ * A static export has no server left at request time, so every deep link below degrades to the page's default view.
+ * The page still works; it just can't be pre-filled from the URL. @see the GitHub Pages section of the README.
+ */
+function canReadRequest(): boolean {
+  return process.env.STATIC_EXPORT !== "true";
+}
+
+/**
+ * Resolves the bill directory's `?q=` and `?stage=` deep link.
  *
  * Shared by both bill-directory routes (`/bills` and `/bills/[congress]`) so they stay in sync rather than each
  * re-implementing this guard.
  *
  * @param searchParams - The route's `searchParams` promise, passed straight through from the page component.
- * @returns The requested query, or an empty string. A static export has no server to read a request URL from at request
- *   time, so the deep link can't be honored there — the directory still works, it just starts with an empty search (see
- *   the GitHub Pages section of the README). In the normal server build, this reads the real query param.
+ * @returns The starting search and stage filter. In a static export, or for a URL carrying neither param, this is an
+ *   empty search across all stages.
  */
-export async function resolveInitialQuery(searchParams: Promise<{ q?: string }>): Promise<string> {
-  if (process.env.STATIC_EXPORT === "true") return "";
+export async function resolveBillDirectoryQuery(
+  searchParams: Promise<RouteSearchParams>,
+): Promise<{ query: string; stage: BillStageFilter }> {
+  if (!canReadRequest()) return { query: "", stage: "all" };
 
-  const { q } = await searchParams;
-  return q ?? "";
+  const params: RouteSearchParams = await searchParams;
+
+  return {
+    query: parseQueryParam(readParam(params, BILL_DIRECTORY_PARAMS.query) ?? null),
+    stage: parseBillStageFilter(readParam(params, BILL_DIRECTORY_PARAMS.stage)),
+  };
+}
+
+/**
+ * Resolves the member directory's shareable view from the request.
+ *
+ * @param searchParams - The route's `searchParams` promise, passed straight through from the page component.
+ * @param knownJurisdictions - The jurisdictions present in the roster being rendered, so `?state=` can only resolve to
+ *   one the control will actually offer. @see parseJurisdictionFilter
+ * @returns The starting filters and order. In a static export this is always the unfiltered default view.
+ */
+export async function resolveMemberDirectoryQuery(
+  searchParams: Promise<RouteSearchParams>,
+  knownJurisdictions: Iterable<string>,
+): Promise<MemberDirectoryQuery> {
+  if (!canReadRequest()) return DEFAULT_MEMBER_DIRECTORY_QUERY;
+
+  const params: RouteSearchParams = await searchParams;
+
+  return {
+    filters: {
+      // Capped by the same MAX_QUERY_LENGTH the bill search uses: this text is only ever matched against an
+      // already-loaded roster, but there is still no reason to carry an unbounded string through the URL and into the
+      // page payload.
+      query: (readParam(params, MEMBER_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_QUERY_LENGTH),
+      chamber: parseChamberFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.chamber)),
+      party: parsePartyFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.party)),
+      state: parseJurisdictionFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.state), knownJurisdictions),
+    },
+    sort: parseMemberSort(readParam(params, MEMBER_DIRECTORY_PARAMS.sort)),
+  };
 }

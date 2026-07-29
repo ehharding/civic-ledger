@@ -33,6 +33,21 @@
   flex: 3;
 }
 
+/* The member directory's second control row (party, jurisdiction, sort). Present in the skeleton because the real page
+   has it: leaving it out made the grid start one row higher than it finished. */
+.skeleton-facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.skeleton--facet {
+  height: 58px;
+  flex: 1 1 180px;
+  max-width: 240px;
+}
+
 .skeleton--card {
   min-height: 320px;
   border-radius: 10px;

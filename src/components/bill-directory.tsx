@@ -1,24 +1,21 @@
 "use client";
 
 import { Loader2, Search, SlidersHorizontal } from "lucide-react";
-import { type ChangeEvent, type JSX, useState } from "react";
+import { type ChangeEvent, type JSX, useEffect, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { type BillStageFilter, billDirectoryQueryString } from "@/lib/congress/search";
 import {
-  type BillStage,
   billIdentityKey,
   billStageLabels,
   billStages,
   DEFAULT_PAGE_SIZE,
   type LegislativeBill,
 } from "@/lib/congress/types";
-import { formatOrdinal } from "@/lib/format";
-
-/** The stage filter's selection: one of the five legislative stages, or no filter at all. */
-type StageFilter = "all" | BillStage;
+import { formatOrdinal, pluralize } from "@/lib/format";
 
 /** Props for {@link BillDirectory}. */
 type BillDirectoryProps = {
@@ -26,6 +23,8 @@ type BillDirectoryProps = {
   bills: LegislativeBill[];
   /** Seeds the search box from the shareable `?q=` deep link. */
   initialQuery: string;
+  /** Seeds the stage filter from the shareable `?stage=` deep link. Defaults to no stage narrowing. */
+  initialStage?: BillStageFilter;
   /** Only live Congress.gov data supports paging further; preview data is a fixed sample. */
   canLoadMore: boolean;
   /**
@@ -53,9 +52,15 @@ type BillDirectoryProps = {
  * @returns The search and filter controls, the result grid or an empty state, and the "Load More" control when more
  *   pages remain.
  */
-export function BillDirectory({ bills, initialQuery, canLoadMore, congress }: BillDirectoryProps): JSX.Element {
+export function BillDirectory({
+  bills,
+  initialQuery,
+  initialStage = "all",
+  canLoadMore,
+  congress,
+}: BillDirectoryProps): JSX.Element {
   const [query, setQuery] = useState<string>(initialQuery);
-  const [stage, setStage] = useState<StageFilter>("all");
+  const [stage, setStage] = useState<BillStageFilter>(initialStage);
   const [allBills, setAllBills] = useState<LegislativeBill[]>(bills);
   const [hasMore, setHasMore] = useState<boolean>(canLoadMore);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
@@ -63,6 +68,27 @@ export function BillDirectory({ bills, initialQuery, canLoadMore, congress }: Bi
 
   const search: BillSearchState = useBillSearch(query, allBills);
   const isSearchActive: boolean = query.trim().length > 0;
+
+  const queryString: string = billDirectoryQueryString(query, stage);
+
+  /**
+   * Mirrors the current search and stage into the address bar, so a directory view can be linked and bookmarked.
+   *
+   * This route could already *receive* a `?q=` link — the site header's search form sends one — but nothing ever
+   * produced one from the page itself, so a reader who found something here had no way to hand it to anyone else. The
+   * two halves now use the same spelling of that URL. @see billDirectoryQueryString
+   *
+   * `history.replaceState` rather than a router navigation, for the same reason `MemberDirectory` uses it: the URL is
+   * recording client state, not requesting a new render, and re-running the route on every keystroke would fight the
+   * debounced search this component already does carefully. `replace` rather than `push` keeps typing out of the back
+   * button's history.
+   *
+   * Reading the path off `window.location` rather than rebuilding it also means this stays correct on `/bills` and
+   * `/bills/[congress]` alike, and under the static demo's `basePath`, without either being special-cased.
+   */
+  useEffect((): void => {
+    window.history.replaceState(null, "", `${window.location.pathname}${queryString}${window.location.hash}`);
+  }, [queryString]);
 
   /**
    * Fetches the next page from `/api/bills` and appends it.
@@ -103,8 +129,8 @@ export function BillDirectory({ bills, initialQuery, canLoadMore, congress }: Bi
   const resultCountLabel: string = isInitialSearchLoad
     ? "Searching Every Congress…"
     : isSearchActive
-      ? `${displayedBills.length} ${displayedBills.length === 1 ? "Match" : "Matches"}${search.isSearching ? " · Updating…" : ""}`
-      : `Showing ${displayedBills.length} ${displayedBills.length === 1 ? "Record" : "Records"}`;
+      ? `${displayedBills.length} ${pluralize(displayedBills.length, "Match", "Matches")}${search.isSearching ? " · Updating…" : ""}`
+      : `Showing ${displayedBills.length} ${pluralize(displayedBills.length, "Record")}`;
 
   const congressRangeLabel: string = `${formatOrdinal(EARLIEST_COVERED_CONGRESS)}–${formatOrdinal(getCurrentCongress())} Congresses`;
   const searchScopeNote: string | null = search.degraded
@@ -137,8 +163,8 @@ export function BillDirectory({ bills, initialQuery, canLoadMore, congress }: Bi
         <fieldset className="stage-filters">
           <legend className="sr-only">Filter by legislative stage</legend>
           <SlidersHorizontal aria-hidden="true" size={15} />
-          {(["all", ...billStages] as StageFilter[]).map(
-            (item: StageFilter): JSX.Element => (
+          {(["all", ...billStages] as BillStageFilter[]).map(
+            (item: BillStageFilter): JSX.Element => (
               <button
                 aria-pressed={stage === item}
                 className={stage === item ? "is-active" : ""}

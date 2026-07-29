@@ -1,4 +1,53 @@
-import type { LegislativeBill } from "@/lib/congress/types";
+import { type BillStage, billStages, type LegislativeBill } from "@/lib/congress/types";
+
+/** The stage control's selection: one of the five legislative stages, or no narrowing at all. */
+export type BillStageFilter = BillStage | "all";
+
+/**
+ * The query-param names the bill directory reads and writes.
+ *
+ * The counterpart to `MEMBER_DIRECTORY_PARAMS` in `member-filter.ts`, and here for the same reason: these names cross
+ * a boundary — the server route parses them out of the request, the client component writes them back — and a typo on
+ * either side produces a link that looks right and restores nothing.
+ */
+export const BILL_DIRECTORY_PARAMS = {
+  query: "q",
+  stage: "stage",
+} as const;
+
+/**
+ * Parses the `stage` query param.
+ *
+ * @param raw - The raw param value, or `null`/`undefined` when absent.
+ * @returns The stage, or `"all"` for anything unrecognized — a stale or hand-edited URL degrades to the unfiltered
+ *   listing rather than to an error or an empty grid.
+ */
+export function parseBillStageFilter(raw: string | null | undefined): BillStageFilter {
+  const value: string = (raw ?? "").trim().toLowerCase();
+
+  return billStages.find((stage: BillStage): boolean => stage === value) ?? "all";
+}
+
+/**
+ * Serializes the bill directory's current view back into a query string.
+ *
+ * Only non-default values are written, so an untouched directory keeps a clean `/bills` URL instead of one carrying
+ * params that say "no search, all stages".
+ *
+ * @param query - The current search text. Trimmed; a blank search contributes nothing.
+ * @param stage - The current stage filter.
+ * @returns The query string including its leading `?`, or an empty string when nothing is narrowed.
+ */
+export function billDirectoryQueryString(query: string, stage: BillStageFilter): string {
+  const params: URLSearchParams = new URLSearchParams();
+  const trimmed: string = query.trim();
+
+  if (trimmed.length > 0) params.set(BILL_DIRECTORY_PARAMS.query, trimmed);
+  if (stage !== "all") params.set(BILL_DIRECTORY_PARAMS.stage, stage);
+
+  const serialized: string = params.toString();
+  return serialized.length > 0 ? `?${serialized}` : "";
+}
 
 /**
  * Whether `bill` matches free-text `query`.

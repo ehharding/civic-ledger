@@ -269,6 +269,111 @@ so "Ohio", "9th district", "at-large", and "non-voting" all find what a reader w
 excluded from it, because party has a dedicated filter beside the box and matching it in free text would make typing
 "d" return every Democrat alongside everyone whose name happens to contain the letter.
 
+## A Narrowed Directory Is a Place, So It Has a URL
+
+Both directories in this app can now be linked to in a particular state: `/bills?q=broadband&stage=law`,
+`/members?chamber=senate&party=republican&sort=state`. Neither could before, and the bill directory's half of that gap
+is the clearer illustration of why it mattered. `/bills` could already *receive* a `?q=` link — the site header's
+search form has always sent one — but nothing in the app ever *produced* one, so a reader who found something worth
+sharing had no way to hand it to anyone. A page that can be arrived at in a state it can't be left in is a page whose
+address bar is lying about where you are.
+
+Two mechanical decisions follow from the member directory's existing "filters in the browser" stance, and they are the
+whole reason this is cheap:
+
+- **`history.replaceState`, not a router navigation.** `router.replace` re-runs the route on the server. Doing that on
+  every keystroke would undo the entire point of a directory that narrows without a request, and on `/bills` it would
+  fight the debounced search that component already does carefully. `replaceState` changes the URL and nothing else:
+  no request, no re-render, no loading state. The URL here is a *record* of client state, not an instruction to fetch
+  something, and it is written with the API meant for exactly that.
+- **`replace`, not `push`.** Typing seven letters into a search box should not leave seven entries for the back button
+  to walk out of.
+
+The parsers are total, in the same sense `src/lib/api-query.ts` already describes its own: an absent, malformed, or
+stale param resolves to a usable default rather than an error. A shared link is exactly the kind of URL that gets
+hand-edited, truncated by a chat client, or opened a year later, and none of those should produce anything worse than
+the unfiltered page. `?state=` goes one step further and is validated against the jurisdictions the roster actually
+contains — matched case-insensitively, so `?state=ohio` resolves to the roster's own `"Ohio"` — because a value the
+control has no option for would leave the `<select>` showing one thing while the grid showed another. That is a worse
+failure than ignoring an unusable param, and it is the specific reason `/members` resolves its URL *after* the roster
+rather than concurrently with it.
+
+Resolving the link server-side is what costs something, and it is worth naming: `/members` used to be prerendered and
+is now rendered on demand, because a route that reads `searchParams` has to be. The alternative was to read the params
+in the browser instead and keep the page static, at the price of every shared link rendering the full roster and then
+visibly narrowing after hydration — and of the link doing nothing at all without JavaScript. That trade goes the other
+way here for the same reason the site header's search is a real `<form>` rather than a click handler: a link should
+arrive at what it says it points to, on the first paint, whatever is or isn't running. The upstream cost is unchanged
+either way, since the roster still comes through the adapter's shared five-minute cache; what changed is a server
+render per visit, not a Congress.gov request per visit.
+
+Each directory's URL spelling lives next to its rules rather than in the route: `MEMBER_DIRECTORY_PARAMS` and
+`memberDirectoryQueryString` in `member-filter.ts`, `BILL_DIRECTORY_PARAMS` and `billDirectoryQueryString` in
+`search.ts`. Both cross a boundary — the server parses them out of the request, the browser writes them back — so they
+belong to neither side, and a param name typed twice is a link that looks right and restores nothing.
+
+## The Facet Lists Say What They Will Do Before You Pick Them
+
+Three changes to the member directory's controls, all aimed at the same thing: a reader should be able to predict what
+a choice does without trying it.
+
+**Every option carries its count.** "Ohio (15)" is the difference between a list you can plan a narrowing with and one
+you have to probe. It also does quiet work for the party control, whose order is `partySeatingOrder` — the same
+left-to-right order as the home page's chamber diagram and its legend. That order is only legible *with* the counts:
+"Democratic (213), Independent (2), Republican (220)" is plainly the chart's order, while the same three words alone
+are plainly nothing in particular. The alternative — reordering the parties by size — would have made the control
+disagree with the chart a reader had just looked at, to fix a problem the counts fix without the disagreement.
+
+**States and territories are grouped rather than interleaved.** A flat alphabetical run of fifty-six entries puts
+American Samoa, the District of Columbia, and Guam in among the states, so a reader scanning for a state passes items
+that aren't one, and a reader looking for a territory can't tell which are even represented without reading the whole
+list. The split is exactly `isNonVotingJurisdiction` — the same distinction the chamber diagram already draws — which
+makes it a fact about the chamber rather than an editorial grouping.
+
+**The roster can be reordered.** Alphabetical is the right default and stays the default, but "by state" answers a
+question alphabetical can't ("who represents this part of the country"), and it tiebreaks on district so a delegation
+reads 1st, 2nd, 3rd — the state's own map — rather than as an alphabetized list that happens to share a state. Every
+comparator falls through to the name comparison, so no sort leaves a group of ties in whatever arbitrary order they
+arrived in.
+
+Reordering in place is *not* the WCAG 3.2.2 (On Input) pattern the Congress picker has to advise about: nothing
+navigates and the reader stays where they were. It does still need announcing, which is why the chosen order is named
+in the result-count line — already a live region — rather than only being visible in the grid. It is named only when
+it isn't the default, so the common case stays a plain count instead of restating "alphabetical" on every page load.
+
+## Jurisdiction Casing Is Normalized at the Boundary, Not at the View
+
+`normalizeJurisdiction` title-cases the represented state, territory, or district in `mappers.ts`, alongside the
+`normalizePartyName` and `type.toUpperCase()` normalizations already there. Doing it at the mapping boundary rather
+than at each render is not a formatting preference; it is the only place that fixes the actual bug.
+
+The jurisdiction is the value the member directory's state filter is *keyed on*. If `"NEW YORK"` and `"New York"` were
+ever to arrive on different records, the facet list would offer two New Yorks, each returning half the delegation, and
+neither would be wrong from the control's point of view. Casing the string once, in the model, means the facet list,
+the filter comparison, the card, and the seat description agree by construction — which is the same argument
+`docs/architecture.md` makes for maintaining one stable model in general, applied to a field that turned out to be an
+identifier as well as a label.
+
+`toTitleCase` is deliberately narrow about what it will touch. A word that is already mixed case is left exactly as it
+arrived, because that casing was a decision someone made (`"McCarthy"`, `"DeSoto"`); a dotted initialism is
+upper-cased whole (`"u.s."` → `"U.S."`); small words stay lower in the middle of a label but not at either end
+(`"District of Columbia"`). It is applied only to full jurisdiction *names* — the two-letter postal code a bill's
+sponsor record carries is left alone, since title-casing `"OH"` produces `"Oh"`.
+
+## A List Documented as "Most Recent First" Is Sorted, Not Hoped For
+
+`MemberProfileResult`'s `sponsored` and `cosponsored` fields were documented as "most recent first" and nothing sorted
+them; the page rendered whatever order the API returned. Congress.gov does return these lists newest first, so this
+was not visibly broken — which is exactly the problem. A promise kept by an upstream convention is one that breaks
+silently the day the convention does, on a page where the ordering is the only thing telling a reader which of a
+member's bills is recent.
+
+`compareBillsByRecency` now orders both lists, falling back to the latest action's date for a record carrying no
+introduction date and sorting a record with neither last rather than into an arbitrary position. The preview path
+sorts on the same rule, since a fixture's ordering is no more authoritative than an upstream one. Note what this is
+not: the request is already capped at `MEMBER_LEGISLATION_LIMIT`, so this orders the page it was handed and makes no
+claim to have re-ranked a larger set it never asked for.
+
 ## The Directory Reuses the Chamber Diagram's Roster Rather Than Adding an Endpoint
 
 `getMemberDirectory` calls `getCongressComposition` — the same `/v3/member/congress/{congress}` read, with the same

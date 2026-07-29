@@ -26,7 +26,7 @@ const NAV_LINKS: readonly NavLink[] = [
  * The search control is a real `<form>` with `action="/bills"` rather than a JavaScript handler, so it works on a plain
  * page load, from any route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads
  * as its initial query. It carries `role="search"` so it is a landmark in its own right.
- * @see resolveInitialQuery
+ * @see resolveBillDirectoryQuery
  *
  * @returns The site header.
  */

@@ -10,7 +10,7 @@ import {
   type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members";
-import type { LegislativeBill } from "@/lib/congress/types";
+import { compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Clearly labeled fixture records, so the application renders without an API key.
@@ -385,7 +385,11 @@ export function previewMemberLegislation(bioguideId: string | undefined): {
   if (!bioguideId) return { sponsored: [], cosponsored: [] };
 
   return {
-    sponsored: previewBills.filter((bill: LegislativeBill): boolean => bill.sponsor?.bioguideId === bioguideId),
+    // Sorted on the same rule the live path uses, so `MemberProfileResult`'s "most recent first" holds regardless of
+    // which branch produced the list — a fixture ordering is no more authoritative than an upstream one.
+    sponsored: previewBills
+      .filter((bill: LegislativeBill): boolean => bill.sponsor?.bioguideId === bioguideId)
+      .sort(compareBillsByRecency),
     cosponsored: [],
   };
 }
