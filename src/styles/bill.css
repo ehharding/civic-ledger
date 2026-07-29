@@ -119,6 +119,17 @@
   transform: translateY(-2px);
 }
 
+/* The border and shadow still mark the hover; only the movement is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  .bill-card {
+    transition: none;
+  }
+
+  .bill-card:hover {
+    transform: none;
+  }
+}
+
 .bill-card__topline,
 .bill-card__footer {
   display: flex;

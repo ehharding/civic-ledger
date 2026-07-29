@@ -153,9 +153,16 @@
     grid-template-columns: 1fr;
   }
 
+  /* Each facet takes the full line at this width, so the clear button does too rather than stranding as a short,
+     left-aligned fragment under three full-width controls. */
   .member-facet,
-  .member-facet select {
+  .member-facet select,
+  .member-facets__clear {
     width: 100%;
+  }
+
+  .member-facets__clear {
+    justify-content: center;
   }
 
   .activity-grid .bill-card:last-child {
@@ -203,9 +210,7 @@
     width: 21px;
     height: 21px;
   }
-}
 
-@media (max-width: 640px) {
   /* The portrait and the identity copy stop fitting side by side well before this; stacking keeps the name on one line
      instead of wrapping into a narrow column. */
   .member-hero {

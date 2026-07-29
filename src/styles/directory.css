@@ -43,14 +43,23 @@
   font-weight: 700;
 }
 
-.congress-switcher select {
-  min-width: 220px;
+/* The dropdown both directories dress their controls in. Stated here rather than once per component for the same reason
+   `.directory-search` and `.stage-filters` live here: the Congress picker and the member facets are deliberately the
+   same control, so they should stay the same control in one place. Only the widths differ, and each component sets its
+   own below — the member facets in member.css, which loads after this file and so wins on source order. */
+.congress-switcher select,
+.member-facet select {
+  min-height: var(--control-height);
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 7px;
   color: var(--ink);
   background: var(--paper);
   font-weight: 600;
+}
+
+.congress-switcher select {
+  min-width: 220px;
 }
 
 .directory-controls {

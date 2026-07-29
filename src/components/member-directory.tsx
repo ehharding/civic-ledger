@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowDownUp, Search, SlidersHorizontal, X } from "lucide-react";
 import { type ChangeEvent, type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { MemberCard } from "@/components/member-card";
@@ -341,12 +341,8 @@ export function MemberDirectory({
         </div>
 
         {isFiltered ? (
-          <button
-            className="button button--quiet member-facets__clear"
-            onClick={(): void => setFilters(NO_MEMBER_FILTERS)}
-            type="button"
-          >
-            Clear Filters
+          <button className="member-facets__clear" onClick={(): void => setFilters(NO_MEMBER_FILTERS)} type="button">
+            <X aria-hidden="true" size={14} /> Clear Filters
           </button>
         ) : null}
       </div>

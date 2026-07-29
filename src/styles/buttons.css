@@ -1,4 +1,9 @@
-/* Buttons and button-styled links used across every page. */
+/* Buttons and button-styled links used across every page.
+
+   Note the split in what these are actually applied to: `.secondary-link` is only ever worn by an `<a>`, while
+   `.button` is worn by both links (the home page's two calls to action, the 404's "Browse Bills") and by real
+   `<button>` elements (the bill directory's "Load More", the error page's "Try Again"). That is why the disabled
+   handling below is scoped to `.button` — a link has no disabled state to have. */
 
 .button,
 .secondary-link {
@@ -10,15 +15,27 @@
   border-radius: 6px;
   font-size: 0.9rem;
   font-weight: 750;
+  /* An `<a>` carries this already; a `<button>` does not — it defaults to an arrow, which quietly reads as "not
+     clickable" on every one of these that is a real button. */
+  cursor: pointer;
   transition:
     transform 150ms ease,
     background 150ms ease,
     color 150ms ease;
 }
 
-.button:hover,
+.button:hover:not(:disabled),
 .secondary-link:hover {
   transform: translateY(-1px);
+}
+
+/* "Load More" spends every fetch disabled, and without this it kept answering the pointer the whole time — lifting,
+   darkening, still showing a pointer cursor. A control that reacts to hover while deliberately refusing to be pressed
+   is inviting the press it is about to ignore, so the disabled state stops reacting at all and says so by dimming.
+   `:not(:disabled)` on each hover rather than an override afterwards, so nothing has to out-specify anything. */
+.button:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .button--primary {
@@ -27,7 +44,7 @@
   background: var(--navy);
 }
 
-.button--primary:hover {
+.button--primary:hover:not(:disabled) {
   background: var(--navy-deep);
 }
 
@@ -36,7 +53,7 @@
   color: var(--navy);
 }
 
-.button--quiet:hover {
+.button--quiet:hover:not(:disabled) {
   color: var(--burgundy);
 }
 
@@ -50,4 +67,18 @@
 .secondary-link:hover {
   border-color: var(--burgundy);
   color: var(--burgundy);
+}
+
+/* The same reasoning the skip link, the seating chart, and the "Load More" spinner are already guarded by: the lift is
+   decoration, and a hover loses nothing by holding still. The color changes are kept — they carry the meaning. */
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .secondary-link {
+    transition: none;
+  }
+
+  .button:hover:not(:disabled),
+  .secondary-link:hover {
+    transform: none;
+  }
 }

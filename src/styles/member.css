@@ -191,14 +191,9 @@
   color: var(--ink-faint);
 }
 
+/* Everything but the width comes from the shared dropdown rule in directory.css. */
 .member-facet select {
   min-width: 210px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  color: var(--ink);
-  background: var(--paper);
-  font-weight: 600;
 }
 
 /* The sort control holds five short, fixed labels rather than a roster-length list, so it needs less room than the
@@ -222,9 +217,45 @@
   font-weight: 500;
 }
 
+/* "Clear Filters" belongs to the row of controls, not to the page's button family.
+ *
+ * It used to be a `.button.button--quiet`, which is the style for a standalone call to action sitting on open page —
+ * the home page's "Learn" link, the bill directory's centered "Load More". Borrowed into a line of bordered dropdowns
+ * it read as a mistake: no border and no background gave it nothing to sit on, and `.button`'s 43px minimum made its
+ * box taller than the 38px selects beside it, so with the row bottom-aligned its label floated a few pixels above
+ * theirs. A control with no edges, no ground, and its own baseline looks like text that escaped from somewhere.
+ *
+ * So it is built like the controls it stands with — same height, same radius, same border — and set apart from them by
+ * what it doesn't take: no filled background, and the quieter `--ink-soft` the facet labels use rather than the `--ink`
+ * of a dropdown holding a value. It reads as the row's action rather than a fourth thing to choose from. Hover lands on
+ * burgundy, which is what every other reversible control in the app does on hover.
+ *
+ * The icon is left to inherit that color rather than toned down the way the facet labels' icons are. Those sit beside a
+ * label naming a control; this one is inside the control, and a compact action reads as one object when its mark and
+ * its word are the same weight of ink.
+ */
 .member-facets__clear {
-  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--control-height);
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink-soft);
+  background: transparent;
   font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.member-facets__clear:hover {
+  border-color: var(--burgundy);
+  color: var(--burgundy);
 }
 
 /* Narrower than .directory-grid's two columns: a member card carries a name and a seat rather than a wrapped bill
@@ -255,6 +286,12 @@
 .member-card__name {
   font-size: 1.02rem;
   line-height: 1.3;
+}
+
+/* The name is the only thing in this card you can click, and it was the one card title in the app that didn't
+   acknowledge a pointer — `.bill-card h3 a` and `.journey-card__title a` both go burgundy. Same hover, same meaning. */
+.member-card__name a:hover {
+  color: var(--burgundy);
 }
 
 .member-card__seat {

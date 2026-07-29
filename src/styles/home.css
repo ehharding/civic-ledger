@@ -41,6 +41,17 @@
   transform: translateY(-2px);
 }
 
+/* The deepened shadow still marks the hover; only the movement is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  .journey-card {
+    transition: none;
+  }
+
+  .journey-card:hover {
+    transform: none;
+  }
+}
+
 .journey-card__header {
   display: flex;
   align-items: flex-start;

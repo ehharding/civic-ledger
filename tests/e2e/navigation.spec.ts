@@ -130,10 +130,12 @@ test("the member directory filters in place and opens a member's page", async ({
   const memberName: string | null = await firstCardLink.textContent();
   expect(memberName).toBeTruthy();
 
-  // Filtering is entirely client-side, so narrowing should take effect without a navigation.
+  // Filtering is entirely client-side, so narrowing writes the view into the address bar with history.replaceState
+  // rather than navigating. Asserting the query string is what distinguishes that from "nothing happened yet" — a
+  // bare /\/members$/ would be satisfied by the un-narrowed page this test starts on, and so would pass before the
+  // filter ever ran.
   const surname: string = (memberName ?? "").split(",")[0] ?? "";
   await page.getByRole("searchbox", { name: /Search members/ }).fill(surname);
-  await expect(page).toHaveURL(/\/members$/);
 
   await page.locator(".member-card h3 a").first().click();
   await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
