@@ -313,6 +313,16 @@ export const MEMBER_DIRECTORY_PARAMS = {
   sort: "sort",
 } as const;
 
+/**
+ * Cap on the free-text query carried in the URL.
+ *
+ * Matches the bill search's own cap deliberately. This text is only ever matched against an already-loaded roster, so
+ * the limit isn't protecting a request — it just keeps an unbounded string from riding through the URL and into the
+ * page payload. Declared here rather than imported from `api-query.ts` so the browser bundle for this directory
+ * doesn't pull in that module's schema validation along with it.
+ */
+export const MAX_MEMBER_QUERY_LENGTH: number = 200;
+
 /** Everything the `/members` URL can express: what to show, and in what order. */
 export type MemberDirectoryQuery = {
   filters: MemberFilters;
@@ -384,6 +394,38 @@ export function parseJurisdictionFilter(raw: string | null | undefined, known: I
   }
 
   return ANY_FACET;
+}
+
+/**
+ * Reads a whole directory view out of a URL's query string.
+ *
+ * The exact counterpart to {@link memberDirectoryQueryString}, and the only thing that turns a `/members` URL into a
+ * view. Both sides of the boundary go through it: the route resolves the incoming request with it, and the browser
+ * re-reads the address bar with it whenever the URL changes underneath the directory — a soft navigation to another
+ * `/members` view, Back or Forward, or a shared link opened on a build with no server to resolve it. One parser means
+ * those two readings cannot drift into disagreeing about what a link means.
+ *
+ * Total, like every parser it delegates to: an absent, malformed, or stale param resolves to a usable default rather
+ * than an error, so a hand-edited or year-old link opens the unfiltered page at worst.
+ *
+ * @param params - The query string to read, already parsed.
+ * @param knownJurisdictions - The jurisdictions present in the roster being rendered, so `?state=` can only resolve to
+ *   one the control will actually offer. @see parseJurisdictionFilter
+ * @returns The view the URL asks for.
+ */
+export function parseMemberDirectoryQuery(
+  params: URLSearchParams,
+  knownJurisdictions: Iterable<string>,
+): MemberDirectoryQuery {
+  return {
+    filters: {
+      query: (params.get(MEMBER_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_MEMBER_QUERY_LENGTH),
+      chamber: parseChamberFilter(params.get(MEMBER_DIRECTORY_PARAMS.chamber)),
+      party: parsePartyFilter(params.get(MEMBER_DIRECTORY_PARAMS.party)),
+      state: parseJurisdictionFilter(params.get(MEMBER_DIRECTORY_PARAMS.state), knownJurisdictions),
+    },
+    sort: parseMemberSort(params.get(MEMBER_DIRECTORY_PARAMS.sort)),
+  };
 }
 
 /**

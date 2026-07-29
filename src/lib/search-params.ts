@@ -1,12 +1,8 @@
-import { MAX_QUERY_LENGTH, parseQueryParam } from "@/lib/api-query";
+import { parseQueryParam } from "@/lib/api-query";
 import {
   DEFAULT_MEMBER_DIRECTORY_QUERY,
-  MEMBER_DIRECTORY_PARAMS,
   type MemberDirectoryQuery,
-  parseChamberFilter,
-  parseJurisdictionFilter,
-  parseMemberSort,
-  parsePartyFilter,
+  parseMemberDirectoryQuery,
 } from "@/lib/congress/member-filter";
 import { BILL_DIRECTORY_PARAMS, type BillStageFilter, parseBillStageFilter } from "@/lib/congress/search";
 
@@ -45,6 +41,27 @@ export type RouteSearchParams = Record<string, string | string[] | undefined>;
 function readParam(params: RouteSearchParams, name: string): string | undefined {
   const value: string | string[] | undefined = params[name];
   return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Re-expresses a route's search params as a `URLSearchParams`.
+ *
+ * The bridge to {@link parseMemberDirectoryQuery}, which reads the address bar's own type so that the browser and this
+ * route can share one reading of a `/members` URL. Repeated params collapse to their first value on exactly the rule
+ * {@link readParam} already used, so this changes the shape of the input and nothing about how it is interpreted.
+ *
+ * @param params - The route's resolved search params.
+ * @returns The same params, in the shape a URL carries them.
+ */
+function toSearchParams(params: RouteSearchParams): URLSearchParams {
+  const search: URLSearchParams = new URLSearchParams();
+
+  for (const name of Object.keys(params)) {
+    const value: string | undefined = readParam(params, name);
+    if (value !== undefined) search.set(name, value);
+  }
+
+  return search;
 }
 
 /**
@@ -96,16 +113,5 @@ export async function resolveMemberDirectoryQuery(
 
   const params: RouteSearchParams = await searchParams;
 
-  return {
-    filters: {
-      // Capped by the same MAX_QUERY_LENGTH the bill search uses: this text is only ever matched against an
-      // already-loaded roster, but there is still no reason to carry an unbounded string through the URL and into the
-      // page payload.
-      query: (readParam(params, MEMBER_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_QUERY_LENGTH),
-      chamber: parseChamberFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.chamber)),
-      party: parsePartyFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.party)),
-      state: parseJurisdictionFilter(readParam(params, MEMBER_DIRECTORY_PARAMS.state), knownJurisdictions),
-    },
-    sort: parseMemberSort(readParam(params, MEMBER_DIRECTORY_PARAMS.sort)),
-  };
+  return parseMemberDirectoryQuery(toSearchParams(params), knownJurisdictions);
 }

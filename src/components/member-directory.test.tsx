@@ -3,12 +3,13 @@
  * count and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked
  * for is the view that renders, and that a preview roster doesn't claim to be a list of people currently holding seats.
  */
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
+import type React from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { MemberDirectory } from "@/components/member-directory";
-import type { MemberDirectoryQuery } from "@/lib/congress/member-filter";
+import { DEFAULT_MEMBER_DIRECTORY_QUERY, type MemberDirectoryQuery } from "@/lib/congress/member-filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members";
 
 function entry(overrides: Partial<MemberDirectoryEntry> = {}): MemberDirectoryEntry {
@@ -48,6 +49,14 @@ const roster: MemberDirectoryEntry[] = [
 function renderDirectory(props: Partial<Parameters<typeof MemberDirectory>[0]> = {}) {
   return render(<MemberDirectory congress={119} members={roster} source="live" {...props} />);
 }
+
+/**
+ * The address bar is shared state across a file's tests, and this directory now reads it as well as writing it — so a
+ * view one test narrows to would otherwise be the view the next one starts from.
+ */
+beforeEach((): void => {
+  window.history.replaceState(null, "", "/members");
+});
 
 /** The names currently rendered as cards, in order. */
 function shownNames(): string[] {
@@ -362,5 +371,107 @@ describe("MemberDirectory URL syncing", (): void => {
 
     expect(window.location.pathname).toBe("/members");
     expect(window.location.hash).toBe("#main-content");
+  });
+});
+
+/**
+ * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
+ * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the
+ * half that used to be silently overwritten with whatever the reader had last narrowed to.
+ */
+describe("MemberDirectory following a URL it did not write", (): void => {
+  beforeEach((): void => {
+    window.history.replaceState(null, "", "/members");
+  });
+
+  /** Navigates the way the router does: the URL changes, then the route re-renders with the view it resolved. */
+  function navigate(rerender: (ui: React.ReactElement) => void, search: string, query: MemberDirectoryQuery): void {
+    window.history.replaceState(null, "", `/members${search}`);
+    rerender(<MemberDirectory congress={119} initialQuery={query} members={roster} source="live" />);
+  }
+
+  it("widens again when the header's Members link is followed from a narrowed directory", (): void => {
+    window.history.replaceState(null, "", "/members?chamber=senate");
+    const { rerender } = render(
+      <MemberDirectory
+        congress={119}
+        initialQuery={{ filters: { query: "", chamber: "senate", party: "all", state: "all" }, sort: "name" }}
+        members={roster}
+        source="live"
+      />,
+    );
+    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+
+    navigate(rerender, "", { filters: { query: "", chamber: "all", party: "all", state: "all" }, sort: "name" });
+
+    expect(shownNames()).toHaveLength(3);
+    expect(window.location.search).toBe("");
+  });
+
+  it("follows a navigation from one narrowed view to another", (): void => {
+    window.history.replaceState(null, "", "/members?chamber=senate");
+    const { rerender } = render(
+      <MemberDirectory
+        congress={119}
+        initialQuery={{ filters: { query: "", chamber: "senate", party: "all", state: "all" }, sort: "name" }}
+        members={roster}
+        source="live"
+      />,
+    );
+
+    navigate(rerender, "?state=Georgia", {
+      filters: { query: "", chamber: "all", party: "all", state: "Georgia" },
+      sort: "name",
+    });
+
+    expect(shownNames()).toEqual(["Okafor, Daniel K."]);
+    expect(screen.getByLabelText("State or Territory")).toHaveValue("Georgia");
+  });
+
+  it("moves the grid when the reader presses Back", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    renderDirectory();
+
+    await user.click(screen.getByRole("button", { name: "Senate" }));
+    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+
+    await act(async (): Promise<void> => {
+      window.history.replaceState(null, "", "/members");
+      window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
+    });
+
+    expect(shownNames()).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "Both Chambers" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens a shared link narrowed even where the server could not read it", (): void => {
+    // What a static export hands over: the default view, because there was no server at request time to resolve the
+    // URL — while the URL itself still names a narrowed one.
+    window.history.replaceState(null, "", "/members?chamber=senate&sort=name-desc");
+    renderDirectory({ initialQuery: DEFAULT_MEMBER_DIRECTORY_QUERY });
+
+    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(screen.getByLabelText(/Sort By/)).toHaveValue("name-desc");
+  });
+
+  it("still lets the reader narrow normally after adopting a link the server could not read", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    window.history.replaceState(null, "", "/members?chamber=senate");
+    renderDirectory({ initialQuery: DEFAULT_MEMBER_DIRECTORY_QUERY });
+
+    await user.click(screen.getByRole("button", { name: "Both Chambers" }));
+
+    expect(shownNames()).toHaveLength(3);
+    expect(window.location.search).toBe("");
+  });
+
+  it("trusts the view the route resolved rather than re-reading the URL behind it", (): void => {
+    // A jurisdiction no longer in the roster is dropped server-side, so the grid must not quietly restore it from the
+    // URL that the route already decided to ignore.
+    window.history.replaceState(null, "", "/members?state=Wyoming");
+    renderDirectory({ initialQuery: DEFAULT_MEMBER_DIRECTORY_QUERY });
+
+    expect(shownNames()).toHaveLength(3);
+    expect(screen.getByLabelText("State or Territory")).toHaveValue("all");
   });
 });
