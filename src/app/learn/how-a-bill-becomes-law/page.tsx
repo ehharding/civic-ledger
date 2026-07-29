@@ -1,9 +1,8 @@
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { JSX } from "react";
-
 import { BillJourney } from "@/components/bill-journey";
+import { CalloutCard } from "@/components/callout-card";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { type BillStage, billStageLabels, billStages } from "@/lib/congress/types";
@@ -89,22 +88,16 @@ export default function BillLifecycleLessonPage(): JSX.Element {
         )}
       </div>
 
-      <section className="reading-card" aria-labelledby="lesson-next-heading">
-        <div className="reading-card__icon">
-          <ArrowUpRight aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <p className="section-kicker">Now See It in a Real Bill</p>
-          <h2 id="lesson-next-heading">Every Stage Here Maps to the Same Stepper on a Live Bill Record.</h2>
-          <p>
-            Open any bill in the directory and watch this same five-step journey track its actual, source-linked
-            progress.
-          </p>
-        </div>
-        <Link href="/bills" className="secondary-link">
-          Explore Bills <ArrowRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
+      <CalloutCard
+        body="Open any bill in the directory and watch this same five-step journey track its actual, source-linked progress."
+        heading="Every Stage Here Maps to the Same Stepper on a Live Bill Record."
+        headingId="lesson-next-heading"
+        href="/bills"
+        icon={ArrowUpRight}
+        kicker="Now See It in a Real Bill"
+        linkIcon={ArrowRight}
+        linkLabel="Explore Bills"
+      />
     </SiteShell>
   );
 }

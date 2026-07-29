@@ -53,17 +53,15 @@
     min-width: 0;
   }
 
-  .stage-filters {
+  .segmented-filter {
     justify-content: flex-start;
     flex-wrap: wrap;
   }
 
-  .learn-strip,
   .reading-card {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .learn-strip .secondary-link,
   .reading-card .secondary-link {
     grid-column: 2;
     justify-self: start;
@@ -169,14 +167,12 @@
     grid-column: auto;
   }
 
-  .learn-strip,
   .reading-card {
     grid-template-columns: 1fr;
     gap: 16px;
     padding: 24px;
   }
 
-  .learn-strip .secondary-link,
   .reading-card .secondary-link {
     grid-column: auto;
   }
@@ -185,15 +181,15 @@
     gap: 22px;
   }
 
-  .stage-filters {
+  .segmented-filter {
     gap: 5px;
   }
 
-  .stage-filters svg {
+  .segmented-filter svg {
     display: none;
   }
 
-  .stage-filters button {
+  .segmented-filter button {
     padding: 5px 8px;
     font-size: 0.7rem;
   }

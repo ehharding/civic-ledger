@@ -76,3 +76,67 @@ describe("HTML comments", (): void => {
     expect(sanitizeSummaryHtml("<p>Kept</p><!-- never closed")).toBe("<p>Kept</p>");
   });
 });
+
+/**
+ * Regression tests for the overlapping-tag bypass class.
+ *
+ * These are the payloads that defeated the previous implementation, which patched the input with a single `.replace()`
+ * and so let any text the tag pattern didn't match through untouched. Stripping an inner tag could splice the leftover
+ * fragments on either side of it into a *new*, live tag — so sanitizing the input was what created the payload.
+ *
+ * The property each of these asserts is the same one, and it is deliberately stated as "no raw `<` followed by a
+ * letter" rather than as an exact output string: what matters is that nothing reaches the browser as markup, not the
+ * particular escaping used to achieve that.
+ */
+describe("overlapping and malformed tags", (): void => {
+  /** Whether a fragment contains anything a browser would parse as an element. */
+  function containsLiveTag(fragment: string): boolean {
+    return /<\s*\/?\s*[a-zA-Z]/.test(fragment);
+  }
+
+  it.each([
+    [
+      "an <img> spliced together from the fragments around a stripped one",
+      "<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>",
+    ],
+    ["a script tag wrapped around another script tag", "<<script>script>alert(1)<</script>/script>"],
+    ["a script tag split across another one", "<scr<script>ipt>alert(1)</scr</script>ipt>"],
+    ["an iframe whose attribute value contains a tag", '<iframe srcdoc="<script>alert(1)</script>">'],
+    ["a stray opening bracket before a disallowed tag", "<<img src=x onerror=alert(1)>"],
+  ])("emits no live element for %s", (_name: string, payload: string): void => {
+    expect(containsLiveTag(sanitizeSummaryHtml(payload))).toBe(false);
+  });
+
+  /*
+   * `<svg/onload=…>` separates its name from its attributes with a slash rather than whitespace. The tag pattern used
+   * to require whitespace, so this matched nothing at all and was forwarded verbatim — an event handler that never met
+   * the allow-list on its way to the page.
+   */
+  it("strips a tag that separates its attributes with a slash instead of whitespace", (): void => {
+    expect(sanitizeSummaryHtml("<svg/onload=alert(1)>")).toBe("");
+    expect(sanitizeSummaryHtml("<p>Kept</p><svg/onload=alert(1)>")).toBe("<p>Kept</p>");
+  });
+
+  it("renders an unmatched angle bracket as visible text rather than forwarding it", (): void => {
+    expect(sanitizeSummaryHtml("5 < 6 and 7 > 6")).toBe("5 &lt; 6 and 7 &gt; 6");
+  });
+
+  /*
+   * The ampersand is left alone on purpose: CRS summaries carry real entities, and escaping it would turn every
+   * "AT&amp;T" into a visible "AT&amp;amp;T".
+   */
+  it("leaves existing entities intact rather than double-escaping them", (): void => {
+    expect(sanitizeSummaryHtml("<p>AT&amp;T and R&amp;D</p>")).toBe("<p>AT&amp;T and R&amp;D</p>");
+  });
+
+  /*
+   * A single-quoted href can carry a double quote, which would otherwise close the double-quoted attribute this
+   * re-emits and let everything after it become new attributes.
+   */
+  it("contains a double quote smuggled through a single-quoted href", (): void => {
+    const out: string = sanitizeSummaryHtml(`<a href='https://evil.test" onmouseover=alert(1)'>x</a>`);
+
+    expect(out).toContain("&quot;");
+    expect(out).not.toMatch(/"\s+onmouseover/);
+  });
+});

@@ -1,8 +1,9 @@
 import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
+import { LoadingStatus, SkeletonGrid } from "@/components/skeleton";
 
-/** Fixed-length placeholder grid that never reorders — index-as-key is safe here. */
+/** Roughly a screenful of the real roster, so the page doesn't grow noticeably when content arrives. */
 const SKELETON_CARD_COUNT: number = 9;
 
 /** The directory's second control row: party, jurisdiction, and sort. */
@@ -30,25 +31,17 @@ export default function MembersLoading(): JSX.Element {
         <div className="skeleton skeleton--search" />
         <div className="skeleton skeleton--filters" />
       </div>
-      <div className="skeleton-facets" aria-hidden="true">
-        {Array.from({ length: SKELETON_FACET_COUNT }).map(
-          (_: unknown, index: number): JSX.Element => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length skeleton row, never reorders
-            <div className="skeleton skeleton--facet" key={index} />
-          ),
-        )}
-      </div>
-      <div className="member-grid" aria-hidden="true">
-        {Array.from({ length: SKELETON_CARD_COUNT }).map(
-          (_: unknown, index: number): JSX.Element => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length skeleton grid, never reorders
-            <div className="skeleton skeleton--member-card" key={index} />
-          ),
-        )}
-      </div>
-      <span className="sr-only" role="status">
-        Loading Members…
-      </span>
+      <SkeletonGrid
+        blockClassName="skeleton skeleton--facet"
+        className="skeleton-facets"
+        count={SKELETON_FACET_COUNT}
+      />
+      <SkeletonGrid
+        blockClassName="skeleton skeleton--member-card"
+        className="member-grid"
+        count={SKELETON_CARD_COUNT}
+      />
+      <LoadingStatus>Loading Members…</LoadingStatus>
     </SiteShell>
   );
 }

@@ -1,8 +1,8 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
-
 import { BillJourney } from "@/components/bill-journey";
+import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
@@ -236,23 +236,16 @@ export function BillDetail({
         </aside>
       </div>
 
-      <section className="reading-card" aria-labelledby="reading-heading">
-        <div className="reading-card__icon">
-          <Landmark aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <p className="section-kicker">Read It With Context</p>
-          <h2 id="reading-heading">A Record Is a Starting Point, Not the Whole Story.</h2>
-          <p>
-            The summary above is written by the Congressional Research Service, not Civic Ledger — use the linked full
-            text for anything definitive. Committee context and update alerts are next, without obscuring the original
-            record.
-          </p>
-        </div>
-        <Link href="/learn" className="secondary-link">
-          Learn the Terms <ArrowUpRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
+      <CalloutCard
+        body="The summary above is written by the Congressional Research Service, not Civic Ledger — use the linked full text for anything definitive. Committee context and update alerts are next, without obscuring the original record."
+        heading="A Record Is a Starting Point, Not the Whole Story."
+        headingId="reading-heading"
+        href="/learn"
+        icon={Landmark}
+        kicker="Read It With Context"
+        linkIcon={ArrowUpRight}
+        linkLabel="Learn the Terms"
+      />
     </SiteShell>
   );
 }

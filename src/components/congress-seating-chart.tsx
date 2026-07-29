@@ -30,6 +30,7 @@ import {
   isNonVotingJurisdiction,
   type PartyTally,
   partyGroupLabels,
+  partyTintClass,
 } from "@/lib/congress/members";
 import { buildChamberSeating, type ChamberSeat, type ChamberSeating } from "@/lib/congress/seating";
 import { formatOrdinal } from "@/lib/format";
@@ -129,7 +130,7 @@ function Seat({
   isActive: boolean;
 }): JSX.Element {
   const label: string = formatMemberSummary(seat.member, chamber);
-  const className: string = `seating__seat seating__seat--${seat.member.party}${isShown ? " is-active" : ""}`;
+  const className: string = `seating__seat ${partyTintClass(seat.member.party)}${isShown ? " is-active" : ""}`;
   // Rounded to a fixed precision so the server's and the client's rendering of the same float agree exactly — an
   // unrounded trailing digit reads to React as a hydration mismatch.
   const cx: string = seat.position.x.toFixed(4);
@@ -181,7 +182,7 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
   return (
     <>
       <p className="seating-detail__name">{member.name}</p>
-      <p className={`seating-detail__party seating-detail__party--${member.party}`}>{formatMemberParty(member)}</p>
+      <p className={`seating-detail__party ${partyTintClass(member.party)}`}>{formatMemberParty(member)}</p>
       {seat.length > 0 ? <p className="seating-detail__seat">{seat}</p> : null}
       {nonVoting ? (
         <p className="seating-detail__note">
@@ -460,7 +461,7 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
         {selected.partyCounts.map(
           (tally: PartyTally): JSX.Element => (
             <li className="seating__legend-item" key={tally.party}>
-              <span aria-hidden="true" className={`seating__swatch seating__swatch--${tally.party}`} />
+              <span aria-hidden="true" className={`seating__swatch ${partyTintClass(tally.party)}`} />
               <span className="seating__legend-party">{partyGroupLabels[tally.party]}</span>
               <span className="seating__legend-count">
                 {tally.count}{" "}

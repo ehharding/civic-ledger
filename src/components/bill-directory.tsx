@@ -1,9 +1,10 @@
 "use client";
 
-import { Loader2, Search, SlidersHorizontal } from "lucide-react";
-import { type ChangeEvent, type JSX, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { type JSX, useEffect, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
+import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
@@ -16,6 +17,9 @@ import {
   type LegislativeBill,
 } from "@/lib/congress/types";
 import { formatOrdinal, pluralize } from "@/lib/format";
+
+/** The stage control's options: every stage, preceded by the "no filter" choice. */
+const STAGE_FILTER_OPTIONS: readonly BillStageFilter[] = ["all", ...billStages];
 
 /** Props for {@link BillDirectory}. */
 type BillDirectoryProps = {
@@ -147,36 +151,20 @@ export function BillDirectory({
   return (
     <section className="bill-directory" aria-label="Bill directory">
       <div className="directory-controls">
-        <div className="directory-search">
-          <Search aria-hidden="true" size={18} />
-          <label className="sr-only" htmlFor="bill-directory-search">
-            Search bill records
-          </label>
-          <input
-            id="bill-directory-search"
-            onChange={(event: ChangeEvent<HTMLInputElement, HTMLInputElement>): void => setQuery(event.target.value)}
-            placeholder="Search by bill, topic, or action"
-            type="search"
-            value={query}
-          />
-        </div>
-        <fieldset className="stage-filters">
-          <legend className="sr-only">Filter by legislative stage</legend>
-          <SlidersHorizontal aria-hidden="true" size={15} />
-          {(["all", ...billStages] as BillStageFilter[]).map(
-            (item: BillStageFilter): JSX.Element => (
-              <button
-                aria-pressed={stage === item}
-                className={stage === item ? "is-active" : ""}
-                key={item}
-                onClick={(): void => setStage(item)}
-                type="button"
-              >
-                {item === "all" ? "All Stages" : billStageLabels[item]}
-              </button>
-            ),
-          )}
-        </fieldset>
+        <DirectorySearch
+          id="bill-directory-search"
+          label="Search bill records"
+          onChange={setQuery}
+          placeholder="Search by bill, topic, or action"
+          value={query}
+        />
+        <SegmentedFilter
+          labelFor={(item: BillStageFilter): string => (item === "all" ? "All Stages" : billStageLabels[item])}
+          legend="Filter by legislative stage"
+          onSelect={setStage}
+          options={STAGE_FILTER_OPTIONS}
+          selected={stage}
+        />
       </div>
 
       <p className="directory-result-count" aria-live="polite">

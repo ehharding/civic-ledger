@@ -1,5 +1,5 @@
 /* Home-page-only pieces: the hero split (copy + featured-bill journey card). Everything else on the home route
-   (BillCard grid, the learn-strip promo, the trust grid) is shared with other pages and lives in its own file. */
+   (BillCard grid, the closing callout, the trust grid) is shared with other pages and lives in its own file. */
 
 .hero-grid {
   display: grid;

@@ -87,32 +87,13 @@
   overflow: visible;
 }
 
+/* Tinted by the .party-tint--* class the seat also carries. @see src/styles/party.css */
 .seating__seat {
-  fill: var(--party-other);
+  fill: var(--party-color, var(--party-other));
   cursor: pointer;
   transition:
     stroke-width 120ms ease,
     fill-opacity 120ms ease;
-}
-
-.seating__seat--democratic {
-  fill: var(--party-democratic);
-}
-
-.seating__seat--republican {
-  fill: var(--party-republican);
-}
-
-.seating__seat--independent {
-  fill: var(--party-independent);
-}
-
-.seating__seat--libertarian {
-  fill: var(--party-libertarian);
-}
-
-.seating__seat--other {
-  fill: var(--party-other);
 }
 
 /* The active seat is marked with a ring rather than a size change so the arc's spacing stays intact — a seat that
@@ -166,30 +147,11 @@
 
 .seating-detail__party {
   margin-top: 9px;
+  color: var(--party-color, var(--party-other));
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-}
-
-.seating-detail__party--democratic {
-  color: var(--party-democratic);
-}
-
-.seating-detail__party--republican {
-  color: var(--party-republican);
-}
-
-.seating-detail__party--independent {
-  color: var(--party-independent);
-}
-
-.seating-detail__party--libertarian {
-  color: var(--party-libertarian);
-}
-
-.seating-detail__party--other {
-  color: var(--party-other);
 }
 
 .seating-detail__seat {
@@ -233,27 +195,7 @@
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: var(--party-other);
-}
-
-.seating__swatch--democratic {
-  background: var(--party-democratic);
-}
-
-.seating__swatch--republican {
-  background: var(--party-republican);
-}
-
-.seating__swatch--independent {
-  background: var(--party-independent);
-}
-
-.seating__swatch--libertarian {
-  background: var(--party-libertarian);
-}
-
-.seating__swatch--other {
-  background: var(--party-other);
+  background: var(--party-color, var(--party-other));
 }
 
 .seating__legend-party {

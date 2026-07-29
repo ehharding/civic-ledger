@@ -13,17 +13,25 @@
   text-transform: uppercase;
 }
 
-/* The large marketing-style display heading. Shared by the home hero, PageHeader, and the empty/error states — all
-   short, fixed copy this app authors itself, so one fluid clamp works for all of them. */
+/* The large marketing-style display heading, shared by the home hero, PageHeader, and the empty/error states.
+   Everything all four agree on lives here; the two they don't agree on — the measure and the size — are set per-class
+   below. They used to be set here too and then overridden 45 lines later for .page-header h1, which left this block
+   claiming a size that heading never actually rendered at. */
 .hero-copy h1,
 .page-header h1,
 .empty-state h1,
 .error-page h1 {
-  max-width: 10ch;
   margin-top: 16px;
   color: var(--navy-deep);
-  font-size: clamp(3.2rem, 7vw, 5.7rem);
   line-height: 0.95;
+}
+
+/* The three that carry short, punchy copy this app authors itself, so one fluid clamp suits all of them. */
+.hero-copy h1,
+.empty-state h1,
+.error-page h1 {
+  max-width: 10ch;
+  font-size: clamp(3.2rem, 7vw, 5.7rem);
 }
 
 .section-heading {
@@ -34,14 +42,15 @@
   margin-bottom: 20px;
 }
 
-/* The mid-size section heading, reused verbatim by every card/panel type that has its own h2 (detail panels,
-   reading-card promos, glossary entries, the about page's principles, the home learn-strip). */
+/* The mid-size section heading every card/panel type with its own h2 starts from. Section headings, detail panels and
+   the reading-card promos use it as-is; the learn hub's glossary entries and the about page's principles inherit the
+   color and rhythm but retune the size in learn.css, which loads later. That override is deliberate — those two sit in
+   dense grids where the full display size would crowd — so it is left where it is rather than folded in here. */
 .section-heading h2,
 .detail-panel h2,
 .reading-card h2,
 .glossary-entry h2,
-.principle h2,
-.learn-strip h2 {
+.principle h2 {
   margin-top: 6px;
   color: var(--navy-deep);
   font-size: clamp(1.7rem, 3vw, 2.25rem);
@@ -66,6 +75,8 @@
   margin-bottom: 46px;
 }
 
+/* PageHeader's titles are real sentences rather than two-word slogans, so they get a wider measure and a slightly
+   gentler clamp than the three above. */
 .page-header h1 {
   max-width: 14ch;
   font-size: clamp(3rem, 5.8vw, 5rem);

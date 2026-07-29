@@ -3,6 +3,9 @@
  * inconsistent free-text labels, the derivation of non-voting House seats from the represented jurisdiction, and the
  * exact wording of the seat descriptions the chart uses as accessible names.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -21,8 +24,10 @@ import {
   normalizePartyName,
   type PartyGroup,
   type PartyTally,
+  partyGroups,
   partySeatingOrder,
   partySeatingRank,
+  partyTintClass,
   tallyPartyCounts,
 } from "@/lib/congress/members";
 
@@ -106,6 +111,27 @@ describe("partySeatingRank", (): void => {
 
   it("sorts an unlisted party last rather than throwing", (): void => {
     expect(partySeatingRank("nonexistent" as PartyGroup)).toBe(partySeatingOrder.length);
+  });
+});
+
+describe("partyTintClass", (): void => {
+  it("names the class for a group", (): void => {
+    expect(partyTintClass("democratic")).toBe("party-tint--democratic");
+  });
+
+  /*
+   * The point of the tint class is that party.css is the *only* place the five-way party-to-color mapping is written
+   * down, which is only true while that file actually covers every group. A party added to `partyGroups` without its
+   * rule would render in the neutral fallback gray everywhere it appears — on a chamber seat, in the legend, and on
+   * the member's own page — which reads as a real (wrong) answer rather than as a missing one. Reading the stylesheet
+   * is the only way to catch that from a unit test, so this reads it.
+   */
+  it("has a rule in party.css for every party group", (): void => {
+    const stylesheet: string = readFileSync(join(process.cwd(), "src/styles/party.css"), "utf8");
+
+    for (const group of partyGroups) {
+      expect(stylesheet).toContain(`.${partyTintClass(group)} {`);
+    }
   });
 });
 

@@ -2,8 +2,9 @@ import type { JSX } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
+import { LoadingStatus, SkeletonGrid } from "@/components/skeleton";
 
-/** Fixed-length placeholder grid that never reorders — index-as-key is safe here. */
+/** Matches the first page the real directory renders, so the grid doesn't change length when content arrives. */
 const SKELETON_CARD_COUNT: number = 6;
 
 /**
@@ -34,17 +35,8 @@ export function BillDirectorySkeleton({
         <div className="skeleton skeleton--search" />
         <div className="skeleton skeleton--filters" />
       </div>
-      <div className="directory-grid" aria-hidden="true">
-        {Array.from({ length: SKELETON_CARD_COUNT }).map(
-          (_: unknown, index: number): JSX.Element => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length skeleton grid, never reorders
-            <div className="skeleton skeleton--card" key={index} />
-          ),
-        )}
-      </div>
-      <span className="sr-only" role="status">
-        Loading Bills…
-      </span>
+      <SkeletonGrid blockClassName="skeleton skeleton--card" className="directory-grid" count={SKELETON_CARD_COUNT} />
+      <LoadingStatus>Loading Bills…</LoadingStatus>
     </SiteShell>
   );
 }

@@ -71,10 +71,15 @@
   background: var(--teal-surface);
 }
 
+/* Both are the paragraph directly under a panel heading, so they agree on their measure and the gap above them. They
+   deliberately disagree on everything else — see the two blocks below — so only the shared part is stated jointly. */
 .muted-copy,
 .latest-action-copy {
   max-width: 58ch;
   margin-top: 13px;
+}
+
+.muted-copy {
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
@@ -83,6 +88,8 @@
   margin-top: 35px;
 }
 
+/* The latest action is the one sentence on the page that says where the bill actually stands, so it is set larger and
+   in the serif rather than receding like the muted copy it shares a measure with. */
 .latest-action-copy {
   color: var(--ink);
   font-family: var(--serif), serif;

@@ -1,6 +1,7 @@
 import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
+import { LoadingStatus } from "@/components/skeleton";
 
 /**
  * Streamed by Next while the bill detail route's lookup resolves.
@@ -16,9 +17,7 @@ export default function BillDetailLoading(): JSX.Element {
         <div className="skeleton skeleton--meta" />
         <div className="skeleton skeleton--panel" />
       </div>
-      <span className="sr-only" role="status">
-        Loading Bill Record…
-      </span>
+      <LoadingStatus>Loading Bill Record…</LoadingStatus>
     </SiteShell>
   );
 }

@@ -58,31 +58,13 @@
   font-size: 0.92rem;
 }
 
+/* Tinted by the .party-tint--* class this element also carries. @see src/styles/party.css */
 .member-party {
+  color: var(--party-color, var(--party-other));
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   font-size: 0.82rem;
-}
-
-.member-party--democratic {
-  color: var(--party-democratic);
-}
-
-.member-party--republican {
-  color: var(--party-republican);
-}
-
-.member-party--independent {
-  color: var(--party-independent);
-}
-
-.member-party--libertarian {
-  color: var(--party-libertarian);
-}
-
-.member-party--other {
-  color: var(--party-other);
 }
 
 /* A former member's page is a perfectly valid page — this just keeps it from reading as a current officeholder. */
@@ -159,7 +141,7 @@
 }
 
 /* The browsable directory at /members (MemberDirectory + MemberCard). The search box and chamber pills reuse
-   .directory-search and .stage-filters from directory.css rather than restating them — the two directories are
+   .directory-search and .segmented-filter from directory.css rather than restating them — the two directories are
    deliberately the same control, so they should stay the same control in one place. */
 
 .member-facets {
@@ -276,7 +258,10 @@
   background: var(--paper);
 }
 
+/* Tinted by the .party-tint--* class this element also carries. @see src/styles/party.css. Smaller and tighter-tracked
+   than .member-party — a card packs this in beside the name, where the profile page gives it a line of its own. */
 .member-card__party {
+  color: var(--party-color, var(--party-other));
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;

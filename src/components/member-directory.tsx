@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowDownUp, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDownUp, X } from "lucide-react";
 import { type ChangeEvent, type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
 import { MemberCard } from "@/components/member-card";
 import {
   ANY_FACET,
@@ -250,39 +251,23 @@ export function MemberDirectory({
   return (
     <section className="member-directory" aria-label="Member directory">
       <div className="directory-controls">
-        <div className="directory-search">
-          <Search aria-hidden="true" size={18} />
-          <label className="sr-only" htmlFor="member-directory-search">
-            Search members by name or the place they represent
-          </label>
-          <input
-            id="member-directory-search"
-            onChange={(event: ChangeEvent<HTMLInputElement, HTMLInputElement>): void =>
-              update({ query: event.target.value })
-            }
-            placeholder="Search by name or place"
-            type="search"
-            value={filters.query}
-          />
-        </div>
+        <DirectorySearch
+          id="member-directory-search"
+          label="Search members by name or the place they represent"
+          onChange={(query: string): void => update({ query })}
+          placeholder="Search by name or place"
+          value={filters.query}
+        />
 
-        <fieldset className="stage-filters">
-          <legend className="sr-only">Filter by chamber</legend>
-          <SlidersHorizontal aria-hidden="true" size={15} />
-          {CHAMBER_OPTIONS.map(
-            (option: ChamberFilter): JSX.Element => (
-              <button
-                aria-pressed={filters.chamber === option}
-                className={filters.chamber === option ? "is-active" : ""}
-                key={option}
-                onClick={(): void => update({ chamber: option })}
-                type="button"
-              >
-                {option === ANY_FACET ? "Both Chambers" : chamberShortLabels[option as CongressChamber]}
-              </button>
-            ),
-          )}
-        </fieldset>
+        <SegmentedFilter
+          labelFor={(option: ChamberFilter): string =>
+            option === ANY_FACET ? "Both Chambers" : chamberShortLabels[option as CongressChamber]
+          }
+          legend="Filter by chamber"
+          onSelect={(chamber: ChamberFilter): void => update({ chamber })}
+          options={CHAMBER_OPTIONS}
+          selected={filters.chamber}
+        />
       </div>
 
       <div className="member-facets">

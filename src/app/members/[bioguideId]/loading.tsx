@@ -1,8 +1,9 @@
 import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
+import { LoadingStatus, SkeletonGrid } from "@/components/skeleton";
 
-/** Fixed-length placeholder grid that never reorders — index-as-key is safe here. */
+/** The member page shows a capped number of sponsored bills; this matches that cap. */
 const SKELETON_CARD_COUNT: number = 3;
 
 /**
@@ -25,17 +26,8 @@ export default function MemberLoading(): JSX.Element {
           <div className="skeleton skeleton--line" />
         </div>
       </div>
-      <div className="activity-grid" aria-hidden="true">
-        {Array.from({ length: SKELETON_CARD_COUNT }).map(
-          (_: unknown, index: number): JSX.Element => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length skeleton grid, never reorders
-            <div className="skeleton skeleton--card" key={index} />
-          ),
-        )}
-      </div>
-      <span className="sr-only" role="status">
-        Loading Member…
-      </span>
+      <SkeletonGrid blockClassName="skeleton skeleton--card" className="activity-grid" count={SKELETON_CARD_COUNT} />
+      <LoadingStatus>Loading Member…</LoadingStatus>
     </SiteShell>
   );
 }

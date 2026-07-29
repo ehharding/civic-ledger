@@ -1,9 +1,9 @@
 import { ArrowRight, BookOpenCheck, CircleHelp, Landmark, Scale } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
-
 import { BillCard } from "@/components/bill-card";
 import { BillJourney } from "@/components/bill-journey";
+import { CalloutCard } from "@/components/callout-card";
 import { CongressSeatingChart } from "@/components/congress-seating-chart";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { SiteShell } from "@/components/site-shell";
@@ -102,22 +102,17 @@ export function HomePage({
         )}
       </section>
 
-      <section className="learn-strip" aria-labelledby="learn-heading">
-        <div className="learn-strip__icon">
-          <BookOpenCheck aria-hidden="true" size={23} />
-        </div>
-        <div>
-          <p className="section-kicker">Civic Basics</p>
-          <h2 id="learn-heading">Understand the Verbs Behind the Headlines.</h2>
-          <p>
-            “Referred,” “Reported,” and “Passed” mean different things. The learning hub makes the pathway legible
-            without dumbing it down.
-          </p>
-        </div>
-        <Link href="/learn" className="secondary-link">
-          Visit the Glossary <ArrowRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
+      <CalloutCard
+        body="“Referred,” “Reported,” and “Passed” mean different things. The learning hub makes the pathway legible without dumbing it down."
+        heading="Understand the Verbs Behind the Headlines."
+        headingId="learn-heading"
+        href="/learn"
+        icon={BookOpenCheck}
+        kicker="Civic Basics"
+        linkIcon={ArrowRight}
+        linkLabel="Visit the Glossary"
+        spacing="spacious"
+      />
 
       <section className="trust-grid" aria-label="Product principles">
         <article>

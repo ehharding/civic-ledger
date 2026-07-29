@@ -1,8 +1,8 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
-
 import { BillCard } from "@/components/bill-card";
+import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
@@ -18,6 +18,7 @@ import {
   type MemberLeadershipRole,
   type MemberProfile,
   type MemberTerm,
+  partyTintClass,
 } from "@/lib/congress/members";
 import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
@@ -213,7 +214,7 @@ export function MemberDetail({
           <h1 id="member-name">{displayName}</h1>
 
           <div className="member-hero__meta">
-            <span className={`member-party member-party--${profile.party}`}>{formatMemberParty(profile)}</span>
+            <span className={`member-party ${partyTintClass(profile.party)}`}>{formatMemberParty(profile)}</span>
             {seat.length > 0 ? <span>{seat}</span> : null}
             {service.length > 0 ? <span>{service}</span> : null}
             {!profile.currentMember ? <span className="member-former">No longer serving</span> : null}
@@ -308,23 +309,16 @@ export function MemberDetail({
         total={profile.cosponsoredCount}
       />
 
-      <section className="reading-card" aria-labelledby="member-reading-heading">
-        <div className="reading-card__icon">
-          <Landmark aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <p className="section-kicker">Read It With Context</p>
-          <h2 id="member-reading-heading">Sponsorship Is Not a Scorecard.</h2>
-          <p>
-            Introducing or cosponsoring a bill records that a member put their name to it — not that it passed, not how
-            they voted, and not how effective they were. Civic Ledger reports what Congress.gov publishes and leaves the
-            judgment to you.
-          </p>
-        </div>
-        <Link href="/learn" className="secondary-link">
-          Learn the Terms <ArrowUpRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
+      <CalloutCard
+        body="Introducing or cosponsoring a bill records that a member put their name to it — not that it passed, not how they voted, and not how effective they were. Civic Ledger reports what Congress.gov publishes and leaves the judgment to you."
+        heading="Sponsorship Is Not a Scorecard."
+        headingId="member-reading-heading"
+        href="/learn"
+        icon={Landmark}
+        kicker="Read It With Context"
+        linkIcon={ArrowUpRight}
+        linkLabel="Learn the Terms"
+      />
     </SiteShell>
   );
 }

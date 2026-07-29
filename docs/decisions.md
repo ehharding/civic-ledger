@@ -397,3 +397,35 @@ the diagram is unattributed and ID-less, so a preview directory built from the c
 from `previewMemberProfiles` instead — the same seven placeholder people the preview bills already name, and the same
 ones their member pages already exist for. The scope note says they are placeholders and that some no longer hold a
 seat, rather than filtering the fixtures down to fake a shape they were never built for.
+
+## The Summary Sanitizer Assembles Its Output Instead of Patching Its Input
+
+`sanitizeSummaryHtml` used to run one `.replace()` across the raw fragment, rewriting each tag it recognized and
+leaving everything else alone. "Everything else" was the problem: a `<` that began no valid tag was not matched, so it
+was forwarded to the browser untouched.
+
+That is enough to reconstruct a live element out of a dead one. Given
+`<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, the pattern matched the inner `<img …>` and stripped it —
+correctly, since `img` is not allow-listed — which spliced the surviving `<i` and `mg src=x onerror=alert(1)>`
+fragments together into a working `<img onerror>`. Sanitizing the input was what produced the payload. A second bypass
+needed no splicing at all: the pattern required whitespace between a tag name and its attributes, so `<svg/onload=…>`
+matched nothing and passed through verbatim, never meeting the allow-list.
+
+The sanitizer now walks the input once and *builds* the output: text between recognized tags is escaped, and only a
+recognized, allow-listed tag is re-emitted as markup. A `<` that begins no valid tag becomes `&lt;` and renders as the
+character it is. Nothing reaches the browser as markup unless this file put it there deliberately, which closes the
+overlapping-tag class as a class rather than closing the two payloads that happened to find it.
+
+Two smaller decisions fall out of that:
+
+- **The ampersand is not escaped.** CRS summaries carry real entities — `&amp;` in "AT&T", `&nbsp;`, `&lt;` — and
+  escaping `&` would turn each one into visible literal text. An unescaped `&` cannot begin an element, so the safety
+  cost is nil.
+- **The `href` on an anchor escapes `&` before `"`.** In the other order, the `&quot;` produced by the second pass
+  would be re-escaped by the first into a visible `&amp;quot;`.
+
+This stays hand-written, consistent with "Tooling Intentionally Stays Small" above, because the input shape is narrow
+and the dependency-free constraint is a real one. But the tradeoff should be named honestly rather than assumed
+settled: a hand-written sanitizer is only ever as good as the bypasses someone thought to test, and the six regression
+cases beside it are precisely the record of which ones have been. If this is ever pointed at markup from a less
+predictable source than Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.

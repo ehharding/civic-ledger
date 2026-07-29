@@ -48,6 +48,24 @@ export function partySeatingRank(party: PartyGroup): number {
 }
 
 /**
+ * The class that tints an element by party.
+ *
+ * Four different things carry this — a seat in the chamber diagram, the diagram's read-out, the legend's swatch, and a
+ * member's party line on both their card and their page — and each needs a *different* CSS property tinted (`fill`,
+ * `color`, `background`). Rather than each restating the five-way party-to-color mapping in its own property, they all
+ * wear this one class, which sets a `--party-color` custom property that each of their own rules then reads.
+ *
+ * Built here rather than interpolated at each call site so the coupling between `PartyGroup` and the stylesheet is
+ * greppable from both ends: this is the only place that knows the class prefix.
+ *
+ * @param party - The group to tint for.
+ * @returns The tint class, e.g., `"party-tint--democratic"`. @see src/styles/party.css for the mapping itself.
+ */
+export function partyTintClass(party: PartyGroup): string {
+  return `party-tint--${party}`;
+}
+
+/**
  * Narrows Congress.gov's free-text party label to a {@link PartyGroup}.
  *
  * Prefix matching (rather than exact equality) is deliberate: the API's own documentation lists both "Democratic" and

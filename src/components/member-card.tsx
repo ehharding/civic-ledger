@@ -7,6 +7,7 @@ import {
   formatMemberParty,
   formatMemberSeat,
   type MemberDirectoryEntry,
+  partyTintClass,
 } from "@/lib/congress/members";
 import { memberHref } from "@/lib/member-route";
 
@@ -26,7 +27,7 @@ export function MemberCard({ entry }: { entry: MemberDirectoryEntry }): JSX.Elem
 
   return (
     <article className="member-card">
-      <p className={`member-card__party member-party--${entry.party}`}>{formatMemberParty(entry)}</p>
+      <p className={`member-card__party ${partyTintClass(entry.party)}`}>{formatMemberParty(entry)}</p>
       <h3 className="member-card__name">
         <Link href={memberHref(entry.bioguideId)}>{entry.name}</Link>
       </h3>

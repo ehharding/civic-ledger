@@ -1,8 +1,8 @@
 import { ArrowUpRight, BookOpenCheck } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { JSX } from "react";
 
+import { CalloutCard } from "@/components/callout-card";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { type GlossaryTerm, glossary } from "@/lib/glossary";
@@ -38,19 +38,17 @@ export default function LearnPage(): JSX.Element {
         )}
       </div>
 
-      <section className="reading-card reading-card--simple" aria-labelledby="next-lesson-heading">
-        <div className="reading-card__icon">
-          <BookOpenCheck aria-hidden="true" size={22} />
-        </div>
-        <div>
-          <p className="section-kicker">Lesson 1</p>
-          <h2 id="next-lesson-heading">The Path From an Introduced Bill to a Public Law.</h2>
-          <p>Walk through the same five stages that Bill Journey tracks on a real record.</p>
-        </div>
-        <Link href="/learn/how-a-bill-becomes-law" className="secondary-link">
-          Start the Lesson <ArrowUpRight aria-hidden="true" size={16} />
-        </Link>
-      </section>
+      <CalloutCard
+        body="Walk through the same five stages that Bill Journey tracks on a real record."
+        heading="The Path From an Introduced Bill to a Public Law."
+        headingId="next-lesson-heading"
+        href="/learn/how-a-bill-becomes-law"
+        icon={BookOpenCheck}
+        kicker="Lesson 1"
+        linkIcon={ArrowUpRight}
+        linkLabel="Start the Lesson"
+        spacing="flush"
+      />
     </SiteShell>
   );
 }

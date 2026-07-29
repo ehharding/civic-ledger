@@ -1,20 +1,34 @@
-/* Promo/callout blocks reused across routes: the warm "strip" card (home's learn-strip, the learn and bill-detail
-   pages' reading-card) and the home page's three-up trust grid. */
+/* Promo/callout blocks reused across routes: the warm "read this next" panel that closes five different pages
+   (CalloutCard), and the home page's three-up trust grid.
 
-.learn-strip,
+   There used to be a second class, .learn-strip, for the home page's copy of this panel. It differed from
+   .reading-card in exactly one declaration — the gap above it — while duplicating all six of the others, so it has
+   been folded in as the --spacious modifier below. One panel, three spacings. @see CalloutSpacing */
+
 .reading-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  margin-top: 72px;
+  /* Follows content that ends with no bottom margin of its own (a .detail-grid, or .lesson-steps), so the panel
+     carries the full gap by itself. The two modifiers below are the exceptions. */
+  margin-top: 48px;
   padding: 28px 30px;
   border: 1px solid var(--warm-border);
   border-radius: 12px;
   background: var(--warm);
 }
 
-.learn-strip__icon,
+/* The learn hub's copy follows a grid that already ends with its own spacing. */
+.reading-card--flush {
+  margin-top: 0;
+}
+
+/* The home page's copy follows the activity grid, whose rhythm is more generous than the rest of the app's. */
+.reading-card--spacious {
+  margin-top: 72px;
+}
+
 .reading-card__icon {
   display: grid;
   width: 46px;
@@ -25,27 +39,15 @@
   background: color-mix(in srgb, var(--paper) 80%, transparent);
 }
 
-.learn-strip h2,
 .reading-card h2 {
   max-width: 28ch;
 }
 
-.learn-strip p:not(.section-kicker),
 .reading-card p:not(.section-kicker) {
   max-width: 65ch;
   margin-top: 9px;
   color: var(--ink-soft);
   font-size: 0.91rem;
-}
-
-/* Shared by bill-detail.tsx and the how-a-bill-becomes-law lesson page — both stack this after content with no bottom
-   margin of its own (a .detail-grid, or .lesson-steps), so it carries the full gap by itself. */
-.reading-card {
-  margin-top: 48px;
-}
-
-.reading-card--simple {
-  margin-top: 0;
 }
 
 .trust-grid {

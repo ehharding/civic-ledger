@@ -44,7 +44,7 @@
 }
 
 /* The dropdown both directories dress their controls in. Stated here rather than once per component for the same reason
-   `.directory-search` and `.stage-filters` live here: the Congress picker and the member facets are deliberately the
+   `.directory-search` and `.segmented-filter` live here: the Congress picker and the member facets are deliberately the
    same control, so they should stay the same control in one place. Only the widths differ, and each component sets its
    own below — the member facets in member.css, which loads after this file and so wins on source order. */
 .congress-switcher select,
@@ -93,7 +93,11 @@
   color: var(--ink-faint);
 }
 
-.stage-filters {
+/* The row of mutually exclusive filter pills both directories open with (SegmentedFilter). Named for its shape rather
+   than its contents: the bill directory fills it with legislative stages and the member directory with chambers, and
+   it was called `.stage-filters` while already doing both — a chamber pill wearing a class named after stages is the
+   kind of thing that sends someone looking for a bug that isn't there. */
+.segmented-filter {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -104,7 +108,7 @@
   color: var(--ink-soft);
 }
 
-.stage-filters button {
+.segmented-filter button {
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 6px 9px;
@@ -115,8 +119,8 @@
   cursor: pointer;
 }
 
-.stage-filters button:hover,
-.stage-filters button.is-active {
+.segmented-filter button:hover,
+.segmented-filter button.is-active {
   border-color: var(--teal-border);
   color: var(--navy);
   background: var(--teal-surface);
