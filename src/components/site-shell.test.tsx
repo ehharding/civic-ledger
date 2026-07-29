@@ -27,7 +27,7 @@ describe("SiteShell", (): void => {
       </SiteShell>,
     );
 
-    expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute("href", `#${MAIN_CONTENT_ID}`);
+    expect(screen.getByRole("link", { name: "Skip to Main Content" })).toHaveAttribute("href", `#${MAIN_CONTENT_ID}`);
     expect(screen.getByRole("main")).toHaveAttribute("id", MAIN_CONTENT_ID);
   });
 
@@ -39,7 +39,7 @@ describe("SiteShell", (): void => {
     );
 
     const focusable: NodeListOf<Element> = container.querySelectorAll("a, button, input, select");
-    expect(focusable[0]).toHaveTextContent("Skip to main content");
+    expect(focusable[0]).toHaveTextContent("Skip to Main Content");
   });
 
   it("makes the main landmark focusable, so the skip link actually moves focus", (): void => {

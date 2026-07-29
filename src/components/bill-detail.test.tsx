@@ -46,14 +46,14 @@ describe("BillDetail", (): void => {
     render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("Sponsor: Rep. Test, Sample A. [D-ZZ-1]")).toBeInTheDocument();
-    expect(screen.getByText("5 cosponsors")).toBeInTheDocument();
+    expect(screen.getByText("5 Cosponsors")).toBeInTheDocument();
   });
 
   it("uses the singular form for exactly one cosponsor", (): void => {
     const withSponsor: LegislativeBill = { ...bill, cosponsorCount: 1 };
     render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
 
-    expect(screen.getByText("1 cosponsor")).toBeInTheDocument();
+    expect(screen.getByText("1 Cosponsor")).toBeInTheDocument();
   });
 
   it("omits sponsor and cosponsor lines when neither is present", (): void => {
@@ -61,7 +61,7 @@ describe("BillDetail", (): void => {
     render(<BillDetail bill={withoutSponsor} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.queryByText(/^Sponsor:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/cosponsor/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cosponsor/)).not.toBeInTheDocument();
   });
 
   it("renders the live summary's sanitized HTML with CRS attribution", (): void => {
@@ -89,14 +89,14 @@ describe("BillDetail", (): void => {
 
     // The most recent summary stays expanded; only the earlier ones are tucked behind the toggle.
     expect(screen.getByText("the current thing")).toBeInTheDocument();
-    expect(screen.getByText("Read the 1 earlier summary")).toBeInTheDocument();
+    expect(screen.getByText("Read the 1 Earlier Summary")).toBeInTheDocument();
     expect(screen.getByText(/As introduced, this bill would do the earlier thing/)).toBeInTheDocument();
   });
 
   it("shows no disclosure when a bill has only one summary", (): void => {
     render(<BillDetail bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
 
-    expect(screen.queryByText(/earlier summar/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Earlier Summar/)).not.toBeInTheDocument();
   });
 
   it("links the sponsor to their member page when a Bioguide ID is on file", (): void => {

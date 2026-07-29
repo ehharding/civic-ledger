@@ -1,6 +1,7 @@
 import { ArrowRight, BookOpenCheck, CircleHelp, Landmark, Scale } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
+
 import { BillCard } from "@/components/bill-card";
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";

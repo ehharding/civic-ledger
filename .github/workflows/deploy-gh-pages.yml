@@ -1,4 +1,4 @@
-name: Deploy (GitHub Pages demo)
+name: Deploy (GitHub Pages Demo)
 
 # This publishes a STATIC DEMO ONLY. GitHub Pages cannot hold the server-only CONGRESS_API_KEY and cannot run Next.js
 # route handlers or a database, so this build always renders the clearly labeled preview fixtures — never live

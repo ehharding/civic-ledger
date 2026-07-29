@@ -18,7 +18,7 @@ body:
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
+      label: Steps to Reproduce
       placeholder: |
         1. Go to '...'
         2. Click on '...'
@@ -29,7 +29,7 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected behavior
+      label: Expected Behavior
     validations:
       required: true
 
@@ -38,10 +38,10 @@ body:
     attributes:
       label: Where did this happen?
       options:
-        - Local development
-        - Vercel deployment
-        - GitHub Pages demo
-        - Not sure
+        - Local Development
+        - Vercel Deployment
+        - GitHub Pages Demo
+        - Not Sure
     validations:
       required: true
 
@@ -51,16 +51,16 @@ body:
       label: Live data or preview data?
       description: Check the "Live Congress.gov Data"/"Preview Data" banner shown on the page, if visible.
       options:
-        - Live data
-        - Preview data
-        - Not sure / not applicable
+        - Live Data
+        - Preview Data
+        - Not Sure / Not Applicable
     validations:
       required: false
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
+      label: Additional Context
       description: Screenshots, browser/OS, console errors, or anything else that would help.
     validations:
       required: false

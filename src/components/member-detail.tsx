@@ -1,6 +1,7 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
+
 import { BillCard } from "@/components/bill-card";
 import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";

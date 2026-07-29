@@ -23,7 +23,7 @@ export function SiteShell({ children }: { children: ReactNode }): JSX.Element {
   return (
     <div className="site-frame">
       <a className="skip-link" href={`#${MAIN_CONTENT_ID}`}>
-        Skip to main content
+        Skip to Main Content
       </a>
       <SiteHeader />
       {/* tabIndex={-1} so the skip link's target can actually receive focus; without it some browsers move the viewport

@@ -152,7 +152,7 @@ test("the skip link is the first tab stop and moves focus to the main landmark",
   await page.goto("/");
 
   await page.keyboard.press("Tab");
-  const skipLink: Locator = page.getByRole("link", { name: "Skip to main content" });
+  const skipLink: Locator = page.getByRole("link", { name: "Skip to Main Content" });
   await expect(skipLink).toBeFocused();
   // Hidden until focused, then a normal visible control — a skip link nobody can see is a skip link nobody can use.
   await expect(skipLink).toBeVisible();

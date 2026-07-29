@@ -1,6 +1,7 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
+
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
@@ -130,7 +131,7 @@ export function BillDetail({
           ) : null}
           {typeof bill.cosponsorCount === "number" ? (
             <span>
-              {bill.cosponsorCount} {pluralize(bill.cosponsorCount, "cosponsor")}
+              {bill.cosponsorCount} {pluralize(bill.cosponsorCount, "Cosponsor")}
             </span>
           ) : null}
         </div>
@@ -177,8 +178,8 @@ export function BillDetail({
                       what a chamber actually changed. */}
                   <details className="summary-history">
                     <summary className="summary-history__toggle">
-                      Read the {earlierSummaries.length} earlier{" "}
-                      {pluralize(earlierSummaries.length, "summary", "summaries")}
+                      Read the {earlierSummaries.length} Earlier{" "}
+                      {pluralize(earlierSummaries.length, "Summary", "Summaries")}
                     </summary>
                     <ol className="summary-history__list">
                       {earlierSummaries.map(
