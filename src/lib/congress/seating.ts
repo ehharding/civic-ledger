@@ -1,4 +1,5 @@
-import { type CongressMember, partySeatingRank } from "@/lib/congress/members";
+import { type CongressMember, compareMembersByName, partySeatingRank } from "@/lib/congress/members";
+import { compareText } from "@/lib/format";
 
 /**
  * Pure geometry for the chamber seating chart: given a seat count, lay out that many seats in concentric arcs across a
@@ -235,6 +236,11 @@ export type ChamberSeating = {
  * fully deterministic, so the same membership always produces the same picture rather than one that reshuffles whenever
  * the upstream list comes back in a different order.
  *
+ * Both text comparisons go through the app's shared, locale-pinned collation rather than a bare `localeCompare`. That
+ * matters more here than anywhere else in the app: this chart is laid out on the server and then laid out again in the
+ * browser, so two runtimes disagreeing about where a name falls would move ~540 seats between the server's HTML and
+ * the client's. @see compareText in format.ts.
+ *
  * @param a - One member to compare.
  * @param b - The other member to compare.
  * @returns A standard comparator result.
@@ -243,10 +249,10 @@ export function compareMembersForSeating(a: CongressMember, b: CongressMember): 
   const partyDelta: number = partySeatingRank(a.party) - partySeatingRank(b.party);
   if (partyDelta !== 0) return partyDelta;
 
-  const stateDelta: number = (a.state ?? "").localeCompare(b.state ?? "");
+  const stateDelta: number = compareText(a.state ?? "", b.state ?? "");
   if (stateDelta !== 0) return stateDelta;
 
-  return a.name.localeCompare(b.name);
+  return compareMembersByName(a, b);
 }
 
 /**

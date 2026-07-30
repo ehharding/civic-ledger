@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowDownUp, X } from "lucide-react";
-import { type ChangeEvent, type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type JSX, useCallback, useMemo, useState } from "react";
 
 import { CommitteeCard } from "@/components/committee-card";
 import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
+import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import {
   ANY_COMMITTEE_FACET,
   type CommitteeChamberFilter,
@@ -59,9 +60,10 @@ type CommitteeDirectoryProps = {
  *
  * Every narrowing happens in the browser against the list the server already sent — no request per keystroke, no
  * debounce, no loading state, and nothing to go wrong offline or in the static export. This is the same shape as
- * `MemberDirectory` down to the URL reconciliation, and deliberately so: the two are the same kind of page and a
- * reader should not have to learn each of them separately. @see MemberDirectory, whose comments explain the
- * `history.replaceState` and two-way reconciliation decisions this component inherits rather than restates.
+ * `MemberDirectory` down to the URL reconciliation, and deliberately so: the two are the same kind of page and a reader
+ * should not have to learn each of them separately — which is why the reconciliation itself is one shared hook rather
+ * than two copies that can drift.
+ * @see useDirectoryUrlSync.
  *
  * @param props - @see CommitteeDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the committee grid or an empty
@@ -99,52 +101,7 @@ export function CommitteeDirectory({
     setSort(view.sort);
   }, []);
 
-  /** The query string this component last wrote, or `undefined` before it has written one. */
-  const lastWritten = useRef<string | undefined>(undefined);
-
-  /**
-   * Keeps the address bar and the visible view agreeing, in whichever direction is out of date.
-   *
-   * @see the same effect in `MemberDirectory` for why this reconciles in both directions, why it runs on every render
-   *   rather than keyed to `queryString`, and why writes use `history.replaceState` rather than the router.
-   */
-  useEffect((): void => {
-    const current: string = window.location.search;
-
-    if (current === queryString) {
-      lastWritten.current = queryString;
-      return;
-    }
-
-    if (lastWritten.current === undefined) {
-      lastWritten.current = current;
-
-      // First reconciliation after mount: props normally win, except in a static export, which has no server to have
-      // resolved the URL and so hands over the default view while the address bar still names a narrowed one.
-      if (requestedQueryString.length === 0) adoptUrl(current);
-      return;
-    }
-
-    if (current === lastWritten.current) {
-      window.history.replaceState(null, "", `${window.location.pathname}${queryString}${window.location.hash}`);
-      lastWritten.current = queryString;
-      return;
-    }
-
-    lastWritten.current = current;
-    adoptUrl(current);
-  });
-
-  /** Follows Back and Forward, which restore a URL without re-rendering anything. */
-  useEffect((): (() => void) => {
-    function onPopState(): void {
-      lastWritten.current = window.location.search;
-      adoptUrl(window.location.search);
-    }
-
-    window.addEventListener("popstate", onPopState);
-    return (): void => window.removeEventListener("popstate", onPopState);
-  }, [adoptUrl]);
+  useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   const isFiltered: boolean = hasActiveCommitteeFilters(filters);
   const countLabel: string = isFiltered
@@ -162,7 +119,7 @@ export function CommitteeDirectory({
   }
 
   return (
-    <section className="member-directory" aria-label="Committee directory">
+    <section className="committee-directory" aria-label="Committee directory">
       <div className="directory-controls">
         <DirectorySearch
           id="committee-directory-search"
@@ -183,8 +140,8 @@ export function CommitteeDirectory({
         />
       </div>
 
-      <div className="member-facets">
-        <div className="member-facet">
+      <div className="directory-facets">
+        <div className="directory-facet">
           <label htmlFor="committee-type-filter">Committee Type</label>
           <select
             id="committee-type-filter"
@@ -204,7 +161,7 @@ export function CommitteeDirectory({
           </select>
         </div>
 
-        <div className="member-facet member-facet--sort">
+        <div className="directory-facet directory-facet--sort">
           {/* Reordering the grid in place is not the WCAG 3.2.2 "on input" pattern — nothing navigates, and the order
               is named in the result-count line below, which is a live region. @see MemberDirectory. */}
           <label htmlFor="committee-sort">
@@ -226,7 +183,11 @@ export function CommitteeDirectory({
         </div>
 
         {isFiltered ? (
-          <button className="member-facets__clear" onClick={(): void => setFilters(NO_COMMITTEE_FILTERS)} type="button">
+          <button
+            className="directory-facets__clear"
+            onClick={(): void => setFilters(NO_COMMITTEE_FILTERS)}
+            type="button"
+          >
             <X aria-hidden="true" size={14} /> Clear Filters
           </button>
         ) : null}

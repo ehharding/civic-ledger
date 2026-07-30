@@ -4,7 +4,7 @@
  * states, and "Load More" pagination — including its three stopping conditions (short page, empty page, request
  * failure).
  */
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -25,6 +25,15 @@ function searchResponse(bills: LegislativeBill[]): { ok: true; json: () => Promi
     json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched: 27, truncated: false }),
   };
 }
+
+/**
+ * The address bar is shared state across a file's tests, and this directory now reads it as well as writing it — so a
+ * view one test narrows to would otherwise be the view the next one starts from. The member and committee directory
+ * test files reset it the same way, for the same reason.
+ */
+beforeEach((): void => {
+  window.history.replaceState(null, "", "/bills");
+});
 
 describe("BillDirectory", (): void => {
   let user: UserEvent;
@@ -292,10 +301,6 @@ describe("BillDirectory", (): void => {
 });
 
 describe("BillDirectory deep links", (): void => {
-  beforeEach((): void => {
-    window.history.replaceState(null, "", "/bills");
-  });
-
   afterEach((): void => {
     vi.unstubAllGlobals();
   });
@@ -339,5 +344,64 @@ describe("BillDirectory deep links", (): void => {
     render(<BillDirectory bills={previewBills} initialQuery="broadband" canLoadMore={false} />);
 
     expect(window.location.search).toBe("?q=broadband");
+  });
+});
+
+/**
+ * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
+ * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the
+ * half that used to be silently overwritten with whatever the reader had last searched for.
+ *
+ * The member and committee directories reconcile the same way, through the same hook. @see useDirectoryUrlSync
+ */
+describe("BillDirectory following a URL it did not write", (): void => {
+  /** The titles currently rendered as cards. */
+  function shownTitles(): string[] {
+    return screen
+      .getAllByRole("heading", { level: 3 })
+      .map((heading: HTMLElement): string => heading.textContent ?? "");
+  }
+
+  it("widens again when the header's Bills link is followed from a searched directory", (): void => {
+    window.history.replaceState(null, "", "/bills?stage=law");
+    const { rerender } = render(
+      <BillDirectory bills={previewBills} initialQuery="" initialStage="law" canLoadMore={false} />,
+    );
+
+    const narrowed: number = shownTitles().length;
+    expect(narrowed).toBeLessThan(previewBills.length);
+
+    // How the router navigates: the URL changes, then the route re-renders with the view it resolved. Nothing
+    // remounts, which is exactly why a write-only mirror used to put the stale view straight back.
+    window.history.replaceState(null, "", "/bills");
+    rerender(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    expect(shownTitles()).toHaveLength(previewBills.length);
+    expect(window.location.search).toBe("");
+  });
+
+  it("moves the grid when the reader presses Back", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    await user.click(screen.getByRole("button", { name: "Became Law" }));
+    expect(window.location.search).toBe("?stage=law");
+
+    await act(async (): Promise<void> => {
+      window.history.replaceState(null, "", "/bills");
+      window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
+    });
+
+    expect(shownTitles()).toHaveLength(previewBills.length);
+    expect(screen.getByRole("button", { name: "All Stages" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens a shared link narrowed even where the server could not read it", (): void => {
+    // What a static export hands over: the default view, because there was no server at request time to resolve the
+    // URL — while the URL itself still names a narrowed one.
+    window.history.replaceState(null, "", "/bills?stage=law");
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    expect(screen.getByRole("button", { name: "Became Law" })).toHaveAttribute("aria-pressed", "true");
   });
 });

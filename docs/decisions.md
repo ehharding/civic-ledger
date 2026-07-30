@@ -506,3 +506,74 @@ can't conditionally show, since a fade would dim the last item even when nothing
 (a tap to reach any destination, plus JavaScript and focus management, for a nav that still fits). A sixth destination
 would fit the new row too. A seventh wants a different pattern, and the comment on `NAV_LINKS` is the marker for
 whoever gets there.
+
+## One Collator, One Date Order, for the Whole App
+
+`members.ts` carried a long, correct note explaining why its member ordering runs through a locale-pinned
+`Intl.Collator` rather than a bare `localeCompare`: the server sorts the roster before serializing it and the browser
+re-sorts the same list, `localeCompare` uses the *runtime's* locale, and where the two disagree the client-rendered
+order differs from the server-rendered one — a hydration mismatch across the whole grid. `"Ødegård"` sorts before
+`"Zimmerman"` under `en-US` and after it under `da-DK` or `sv-SE`. No sitting member's name triggers it today, which is
+exactly the point: the failure arrives with a new member rather than with a code change, and only for some readers.
+
+The argument was right and the reach was short. `committees.ts` held a byte-identical second collator, and four other
+orderings — the member directory's state sort, its jurisdiction facet list, and both comparisons behind the seating
+chart — used a bare `localeCompare` anyway. The seating one mattered most: that chart is laid out on the server and
+again in the browser, so a locale disagreement moves ~540 seats between the two renders.
+
+So there is now one `compareText` in `format.ts`, holding the collator and the reasoning, and every alphabetical
+ordering in the app goes through it. A rule that lives in one place is a rule that applies everywhere, rather than one
+that applies wherever someone remembered to reach for it.
+
+The same consolidation happened to dates, in the other direction. Three separate comparators sorted records newest
+first — `compareBillsByRecency`, `sortByDateDesc`, and the search-result ordering — each with slightly different
+handling of a missing date, and two of them reached for `localeCompare` while their own comments claimed plain string
+comparison. `compareIsoDatesDesc` states the rule once: every date this app sorts on is fixed-width, zero-padded, and
+most-significant-field-first, so direct comparison already *is* chronological order. Collating them would cost more and
+buy nothing on ASCII digits. Undated records falling last stops being a special case in each caller and becomes a
+consequence of the ordering, since an empty string is less than every real timestamp.
+
+## The Directories Reconcile With the URL Through One Shared Hook
+
+"A Narrowed Directory Is a Place, So It Has a URL" describes what each directory does with the address bar, and why the
+reconciliation runs in *both* directions: a component that only writes the URL silently overwrites every change the
+router makes, so following the header's own nav link from an already-narrowed directory appears to do nothing, and Back
+and Forward move the URL without moving the grid.
+
+That logic — a `lastWritten` ref, a three-case effect deliberately unkeyed so it can see a soft navigation, and a
+`popstate` listener — is subtle enough that it was worth writing carefully once. It had instead been written twice,
+verbatim, in the member and committee directories. The bill directory had only the write half, and so still had exactly
+the bug the other two had already diagnosed and fixed: from `/bills?q=broadband`, clicking "Bills" in the header
+soft-navigates without remounting the component, which then writes its stale query string straight back over the URL
+the router had just set.
+
+`useDirectoryUrlSync` is that state machine, stated once, with the reasoning attached. All three directories use it,
+which both removes the copy and fixes the third. Each directory still owns the *spelling* of its own view — its param
+names, its serializer, its parser — because what a view means is that directory's business; only the reconciling is
+shared.
+
+Giving the bill directory a client-side parser needed one further change. Its query param was parsed by
+`parseQueryParam` in `src/lib/api-query.ts`, which is zod-backed and server-oriented; importing it into a client
+component would have pulled that schema validation into the browser bundle, which is the precise thing
+`MAX_MEMBER_QUERY_LENGTH` exists to avoid. So `search.ts` gained `parseBillDirectoryQuery` and its own length cap,
+matching its two peers, and `resolveBillDirectoryQuery` now goes through the same parser the browser does. All three
+directories are one shape again.
+
+## The Shared Control Surface Is Named for What It Is
+
+The bill, member, and committee directories are meant to be the same page in three subjects — same search field, same
+filter pills, same facet dropdowns, same "Clear Filters" — and their stylesheets say so in three separate comments. But
+the facet rules were named `.member-facet`, `.member-facets`, `.member-facets__clear`, and lived in `member.css`, while
+dressing all three. `committee.css` had to point at `.member-facet` and explain that this was fine.
+
+This is the same problem `.stage-filters` had before it became `.segmented-filter`: a committee's type dropdown wearing
+a class named after members is the kind of thing that sends someone looking for a bug that isn't there. The rules are
+now `.directory-facet*` and live in `directory.css` beside `.directory-search`, `.segmented-filter`, and
+`.directory-result-count`, which are the classes they were always siblings of.
+
+Moving them also retired a cross-file source-order dependency. The facet width override sat in `member.css` and worked
+only because that file is imported after `directory.css`, where the shared dropdown rule it overrides lives — a comment
+had to explain the ordering. Both rules are now in one file, where the override sits a few lines below the rule it
+overrides and needs no explanation beyond that.
+
+One misnomer was fixed at the same time: the committee directory's own `<section>` carried `className="member-directory"`.

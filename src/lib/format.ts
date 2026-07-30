@@ -1,4 +1,63 @@
 /**
+ * The collator every alphabetical ordering in this app runs through.
+ *
+ * Pinned to one locale rather than left to `localeCompare`'s default, which is the *runtime's* locale — and the runtime
+ * differs on the two sides of this app. The server orders a roster or a committee list before serializing it; the
+ * browser re-orders the same list as the reader narrows. Where those two locales disagree the client-rendered order
+ * differs from the server-rendered one, which is a hydration mismatch across an entire grid. The disagreement is real
+ * rather than theoretical: `"Ødegård"` sorts before `"Zimmerman"` under `en-US` and after it under `da-DK` or `sv-SE`,
+ * because those alphabets place Ø past Z. No sitting member's name triggers it today, which is exactly why it is worth
+ * pinning — the failure would arrive with a new member rather than with a code change, and only for some readers.
+ *
+ * Constructed once rather than per comparison, which also matters at this size: ordering a full roster is a few
+ * thousand comparisons, and every bare `localeCompare` call builds a collator of its own.
+ *
+ * Lives here, in the module every other layer already depends on, rather than in `members.ts` or `committees.ts` where
+ * two byte-identical copies of it used to sit. One collator is what makes the guarantee above hold *everywhere* an
+ * ordering happens instead of only in the two places someone remembered to reach for it.
+ */
+const textCollator: Intl.Collator = new Intl.Collator("en-US");
+
+/**
+ * Orders two strings the way a reader of English expects.
+ *
+ * Collated rather than compared with `<`, so text carrying diacritics or apostrophes (Núñez, O'Halleran, Coeur
+ * d'Alene) sorts where a reader expects rather than where its code points fall. Use this for anything a person reads
+ * as a name or a place; ISO dates and other machine-formatted strings should be compared directly, since collation
+ * costs more and buys nothing on ASCII digits.
+ *
+ * @param a - One string to compare.
+ * @param b - The other string to compare.
+ * @returns A standard comparator result. @see textCollator for why the locale is fixed.
+ */
+export function compareText(a: string, b: string): number {
+  return textCollator.compare(a, b);
+}
+
+/**
+ * Orders two ISO date strings newest first.
+ *
+ * Compared directly rather than through {@link compareText} or a `Date`. Every date this app sorts on is either a bare
+ * `YYYY-MM-DD` (bill actions, CRS summaries) or a full ISO 8601 timestamp (bill text versions, committee history), and
+ * both forms are fixed-width, zero-padded, and most-significant-field-first — so plain string comparison already
+ * *is* chronological order. Collating them would cost more and buy nothing on ASCII digits, and constructing a `Date`
+ * per comparison would buy nothing at all.
+ *
+ * Three separate newest-first comparators used to spell this out by hand, each with its own slightly different
+ * handling of a missing date. This is that rule stated once.
+ *
+ * @param a - One date to compare. An absent date should be passed as an empty string.
+ * @param b - The other date to compare.
+ * @returns A standard comparator result. Undated records sort last, together, and fall out of the comparison rather
+ *   than needing a special case: an empty string is less than every real timestamp, and this order puts the greater
+ *   value first.
+ */
+export function compareIsoDatesDesc(a: string, b: string): number {
+  if (a === b) return 0;
+  return a < b ? 1 : -1;
+}
+
+/**
  * Chooses the singular or plural form of a noun for a count.
  *
  * Every count label in this app was spelling this out inline (`n === 1 ? "Member" : "Members"`), which is both repeated

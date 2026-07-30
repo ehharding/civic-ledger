@@ -1,4 +1,3 @@
-import { parseQueryParam } from "@/lib/api-query";
 import {
   type CommitteeDirectoryQuery,
   DEFAULT_COMMITTEE_DIRECTORY_QUERY,
@@ -9,7 +8,7 @@ import {
   type MemberDirectoryQuery,
   parseMemberDirectoryQuery,
 } from "@/lib/congress/member-filter";
-import { BILL_DIRECTORY_PARAMS, type BillStageFilter, parseBillStageFilter } from "@/lib/congress/search";
+import { type BillDirectoryQuery, DEFAULT_BILL_DIRECTORY_QUERY, parseBillDirectoryQuery } from "@/lib/congress/search";
 
 /**
  * Resolves each directory's shareable deep link from the request.
@@ -89,17 +88,10 @@ function canReadRequest(): boolean {
  * @returns The starting search and stage filter. In a static export, or for a URL carrying neither param, this is an
  *   empty search across all stages.
  */
-export async function resolveBillDirectoryQuery(
-  searchParams: Promise<RouteSearchParams>,
-): Promise<{ query: string; stage: BillStageFilter }> {
-  if (!canReadRequest()) return { query: "", stage: "all" };
+export async function resolveBillDirectoryQuery(searchParams: Promise<RouteSearchParams>): Promise<BillDirectoryQuery> {
+  if (!canReadRequest()) return DEFAULT_BILL_DIRECTORY_QUERY;
 
-  const params: RouteSearchParams = await searchParams;
-
-  return {
-    query: parseQueryParam(readParam(params, BILL_DIRECTORY_PARAMS.query) ?? null),
-    stage: parseBillStageFilter(readParam(params, BILL_DIRECTORY_PARAMS.stage)),
-  };
+  return parseBillDirectoryQuery(toSearchParams(await searchParams));
 }
 
 /**

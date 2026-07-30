@@ -1,4 +1,4 @@
-import { formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
+import { compareText, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
 
 /**
  * The party groupings this app renders. Congress.gov publishes a free-text `partyName` whose documented values are
@@ -476,26 +476,11 @@ export type MemberDirectoryEntry = {
 };
 
 /**
- * The collator every member ordering in this app runs through.
- *
- * Pinned to one locale rather than left to `localeCompare`'s default, which is the *runtime's* locale — and the runtime
- * differs on the two sides of this app. The server sorts the roster in Node's locale before serializing it; the browser
- * re-sorts the same list in the reader's. Where those two disagree the client-rendered order differs from the
- * server-rendered one, which is a hydration mismatch across the entire member grid. The disagreement is real rather
- * than theoretical: `"Ødegård"` sorts before `"Zimmerman"` under `en-US` and after it under `da-DK` or `sv-SE`, because
- * those alphabets place Ø past Z. No sitting member's name triggers it today, which is exactly why it is worth pinning
- * now — the failure would arrive with a new member rather than with a code change, and only for some readers.
- *
- * Reused rather than constructed per comparison, which also matters at this size: ordering a full roster is a few
- * thousand comparisons, and `localeCompare` builds a collator on each one.
- */
-const memberNameCollator: Intl.Collator = new Intl.Collator("en-US");
-
-/**
  * Orders members alphabetically by their last-name-first name.
  *
- * Collated rather than compared with `<`, so names carrying diacritics or apostrophes (Núñez, O'Halleran) sort where a
- * reader expects rather than where their code points fall. @see memberNameCollator for why the locale is fixed.
+ * Collated through the app's one pinned collator rather than compared with `<`, so names carrying diacritics or
+ * apostrophes (Núñez, O'Halleran) sort where a reader expects rather than where their code points fall.
+ * @see compareText in format.ts, which explains why the locale is fixed rather than left to the runtime's.
  *
  * Declared structurally so it can order any named member shape — a directory entry, a `CongressMember`, a profile —
  * rather than only the one it was written for.
@@ -505,7 +490,7 @@ const memberNameCollator: Intl.Collator = new Intl.Collator("en-US");
  * @returns A standard comparator result.
  */
 export function compareMembersByName(a: { name: string }, b: { name: string }): number {
-  return memberNameCollator.compare(a.name, b.name);
+  return compareText(a.name, b.name);
 }
 
 /**

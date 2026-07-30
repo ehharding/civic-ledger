@@ -43,6 +43,7 @@ import {
   congressGovBillUrl,
   type LegislativeBill,
 } from "@/lib/congress/types";
+import { compareIsoDatesDesc } from "@/lib/format";
 
 /**
  * Translation from Congress.gov's wire shapes into this app's stable internal model.
@@ -408,9 +409,10 @@ export function mapCommitteeProfile(
 /**
  * Sorts date-stamped records newest first, leaving the input array untouched.
  *
- * Plain string comparison is enough for every date this adapter sorts on: bare `YYYY-MM-DD` dates (summaries) and full
- * ISO 8601 timestamps (text versions) both sort correctly as strings, so there's no need to construct a `Date` per
- * comparison. Records with no date sort last rather than being dropped — an undated summary is still a real summary.
+ * Ordering is {@link compareIsoDatesDesc}, shared with every other date-ordered list in the app. All this adds is
+ * reading the date off an arbitrary field, which is what lets one function serve summaries (`actionDate`) and text
+ * versions (`date`) alike. Records with no date sort last rather than being dropped — an undated summary is still a
+ * real summary.
  *
  * @typeParam Item - Any record carrying an optional ISO date under `key`.
  * @param items - The records to order.
@@ -418,7 +420,7 @@ export function mapCommitteeProfile(
  * @returns A new array, most recent first.
  */
 export function sortByDateDesc<Item>(items: Item[], key: keyof Item): Item[] {
-  return [...items].sort((a: Item, b: Item): number => String(b[key] ?? "").localeCompare(String(a[key] ?? "")));
+  return [...items].sort((a: Item, b: Item): number => compareIsoDatesDesc(String(a[key] ?? ""), String(b[key] ?? "")));
 }
 
 /**

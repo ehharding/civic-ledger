@@ -1,10 +1,11 @@
 "use client";
 
 import { ArrowDownUp, X } from "lucide-react";
-import { type ChangeEvent, type JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type JSX, useCallback, useMemo, useState } from "react";
 
 import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
 import { MemberCard } from "@/components/member-card";
+import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import {
   ANY_FACET,
   type ChamberFilter,
@@ -103,8 +104,9 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
  * @see filterMembers for the rules themselves, and sortMembers for the orders they can be read in.
  *
  * The current view is mirrored into the address bar as the reader narrows, so any state of this page can be linked,
- * bookmarked, or reopened. @see the note on the effect below for why that is `history.replaceState` rather than a
- * router navigation.
+ * bookmarked, or reopened — and a URL that changes underneath the page is followed rather than overwritten.
+ * @see useDirectoryUrlSync, which all three of this app's directories share, for how that reconciliation works and why
+ * it writes with `history.replaceState` rather than a router navigation.
  *
  * @param props - @see MemberDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
@@ -158,80 +160,7 @@ export function MemberDirectory({
     [jurisdictionValues],
   );
 
-  /**
-   * The query string this component last wrote, or `undefined` before it has written one.
-   *
-   * This is what separates "the reader narrowed something" from "the URL changed underneath us", which look identical
-   * from inside a render and need opposite responses. @see the reconciliation effect below.
-   */
-  const lastWritten = useRef<string | undefined>(undefined);
-
-  /**
-   * Keeps the address bar and the visible view agreeing, in whichever direction is out of date.
-   *
-   * The URL here is genuinely shared: this component writes it as the reader narrows, and the router rewrites it on a
-   * navigation. Only writing it — which is what this effect used to do — means every change the router makes is
-   * silently overwritten with stale client state, so following the header's own "Members" link from an
-   * already-narrowed directory appears to do nothing at all, and Back and Forward move the URL without moving the
-   * grid. Reconciling in both directions is what makes the URL a description of the view rather than a one-way log of
-   * it.
-   *
-   * Deliberately run on every render rather than keyed to `queryString`: a soft navigation to a different `/members`
-   * view changes the URL without changing any of this component's state, so an effect that only fires when the state
-   * moves would never see it. The body is two string comparisons and returns immediately in the settled case.
-   *
-   * `history.replaceState` rather than `router.replace` for writes, unchanged and for the original reason: a router
-   * navigation re-runs this route on the server, and doing that per keystroke would undo the point of a directory that
-   * filters in the browser. `replace` rather than `push` likewise — typing seven letters should not leave seven
-   * entries for Back to walk out of. Path and hash are read from `window.location` rather than rebuilt from a route
-   * constant, which keeps both the static demo's `basePath` and the skip link's fragment intact.
-   */
-  useEffect((): void => {
-    const current: string = window.location.search;
-
-    if (current === queryString) {
-      lastWritten.current = queryString;
-      return;
-    }
-
-    if (lastWritten.current === undefined) {
-      lastWritten.current = current;
-
-      // First reconciliation after mount. The route normally resolved this URL already, so props win. The exception is
-      // a static export, which has no server at request time and so hands over the default view while the URL still
-      // names a narrowed one — the one case where the URL is the better source, and the reason a shared link opens
-      // narrowed on the GitHub Pages demo rather than quietly widening to the whole roster and erasing its own params.
-      if (requestedQueryString.length === 0) adoptUrl(current);
-      return;
-    }
-
-    if (current === lastWritten.current) {
-      // The URL is still exactly what this component last wrote, so it is the view that moved on.
-      window.history.replaceState(null, "", `${window.location.pathname}${queryString}${window.location.hash}`);
-      lastWritten.current = queryString;
-      return;
-    }
-
-    // Something else moved the URL: a navigation to another `/members` view, or Back or Forward.
-    lastWritten.current = current;
-    adoptUrl(current);
-  });
-
-  /**
-   * Follows Back and Forward.
-   *
-   * A `popstate` restores a URL without re-rendering anything, so the reconciliation above would not otherwise run
-   * until something else happened to re-render this component.
-   */
-  useEffect((): (() => void) => {
-    function onPopState(): void {
-      lastWritten.current = window.location.search;
-      adoptUrl(window.location.search);
-    }
-
-    window.addEventListener("popstate", onPopState);
-    return (): void => window.removeEventListener("popstate", onPopState);
-  }, [adoptUrl]);
+  useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   const isFiltered: boolean = hasActiveMemberFilters(filters);
   const countLabel: string = isFiltered
@@ -270,8 +199,8 @@ export function MemberDirectory({
         />
       </div>
 
-      <div className="member-facets">
-        <div className="member-facet">
+      <div className="directory-facets">
+        <div className="directory-facet">
           <label htmlFor="member-party-filter">Party</label>
           <select
             id="member-party-filter"
@@ -291,7 +220,7 @@ export function MemberDirectory({
           </select>
         </div>
 
-        <div className="member-facet">
+        <div className="directory-facet">
           <label htmlFor="member-state-filter">State or Territory</label>
           <select
             id="member-state-filter"
@@ -303,7 +232,7 @@ export function MemberDirectory({
           </select>
         </div>
 
-        <div className="member-facet member-facet--sort">
+        <div className="directory-facet directory-facet--sort">
           {/* Reordering the grid in place is not the WCAG 3.2.2 "on input" pattern the Congress picker has to warn
               about — nothing navigates, and the reader stays exactly where they were. The order is named in the
               result-count line below, which is a live region, so the change is announced rather than only visible. */}
@@ -326,7 +255,7 @@ export function MemberDirectory({
         </div>
 
         {isFiltered ? (
-          <button className="member-facets__clear" onClick={(): void => setFilters(NO_MEMBER_FILTERS)} type="button">
+          <button className="directory-facets__clear" onClick={(): void => setFilters(NO_MEMBER_FILTERS)} type="button">
             <X aria-hidden="true" size={14} /> Clear Filters
           </button>
         ) : null}

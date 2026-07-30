@@ -49,7 +49,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .member-facet select {
+  .directory-facet select {
     min-width: 0;
   }
 
@@ -176,13 +176,13 @@
 
   /* Each facet takes the full line at this width, so the clear button does too rather than stranding as a short,
      left-aligned fragment under three full-width controls. */
-  .member-facet,
-  .member-facet select,
-  .member-facets__clear {
+  .directory-facet,
+  .directory-facet select,
+  .directory-facets__clear {
     width: 100%;
   }
 
-  .member-facets__clear {
+  .directory-facets__clear {
     justify-content: center;
   }
 

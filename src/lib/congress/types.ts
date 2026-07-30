@@ -1,4 +1,4 @@
-import { formatOrdinal } from "@/lib/format";
+import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
 
 /**
  * The five stages of `BillJourney`'s educational progress cue, in order.
@@ -140,8 +140,10 @@ export type LegislativeBill = {
  * Orders bills most-recently-introduced first.
  *
  * Compares `introducedDate`, falling back to the latest action's date for a record that carries no introduction date —
- * which is rare, but a bill sorted to an arbitrary position is worse than one sorted by the only date it has. Bare
- * `YYYY-MM-DD` strings sort correctly as strings, so this needs no `Date` per comparison.
+ * which is rare, but a bill sorted to an arbitrary position is worse than one sorted by the only date it has.
+ *
+ * The comparison itself is {@link compareIsoDatesDesc}, which this shares with every other date-ordered list in the
+ * app. All this adds is which of a bill's two dates to hand it.
  *
  * @param a - One bill to compare.
  * @param b - The other bill to compare.
@@ -152,11 +154,7 @@ export function compareBillsByRecency(a: LegislativeBill, b: LegislativeBill): n
   const dateA: string = a.introducedDate ?? a.latestAction.date ?? "";
   const dateB: string = b.introducedDate ?? b.latestAction.date ?? "";
 
-  if (dateA === dateB) return 0;
-  if (dateA.length === 0) return 1;
-  if (dateB.length === 0) return -1;
-
-  return dateB.localeCompare(dateA);
+  return compareIsoDatesDesc(dateA, dateB);
 }
 
 /**

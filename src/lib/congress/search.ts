@@ -16,6 +16,24 @@ export const BILL_DIRECTORY_PARAMS = {
 } as const;
 
 /**
+ * Cap on the free-text query carried in the URL.
+ *
+ * Matches the two other directories' caps deliberately, and is declared here rather than imported from
+ * `src/lib/api-query.ts` for the same reason `MAX_MEMBER_QUERY_LENGTH` is: this module is isomorphic, and pulling in
+ * that one would drag its schema validation into the browser bundle behind it.
+ */
+export const MAX_BILL_QUERY_LENGTH: number = 200;
+
+/** Everything the `/bills` URL can express: what to search for, and which stage to narrow to. */
+export type BillDirectoryQuery = {
+  query: string;
+  stage: BillStageFilter;
+};
+
+/** An unsearched, unnarrowed directory — what a bare `/bills` means. */
+export const DEFAULT_BILL_DIRECTORY_QUERY: BillDirectoryQuery = { query: "", stage: "all" };
+
+/**
  * Parses the `stage` query param.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
@@ -26,6 +44,27 @@ export function parseBillStageFilter(raw: string | null | undefined): BillStageF
   const value: string = (raw ?? "").trim().toLowerCase();
 
   return billStages.find((stage: BillStage): boolean => stage === value) ?? "all";
+}
+
+/**
+ * Reads a whole directory view out of a URL's query string.
+ *
+ * The exact counterpart to {@link billDirectoryQueryString}, and the peer of `parseMemberDirectoryQuery` and
+ * `parseCommitteeDirectoryQuery`. Both sides of the boundary go through it — the route resolves the incoming request
+ * with it, and the browser re-reads the address bar with it whenever the URL changes underneath the directory — so
+ * the two readings cannot drift into disagreeing about what a link means.
+ *
+ * Total, like the parsers it delegates to: an absent or malformed param resolves to a usable default rather than to an
+ * error, so a hand-edited or truncated link opens the unsearched page at worst.
+ *
+ * @param params - The query string to read, already parsed.
+ * @returns The view the URL asks for.
+ */
+export function parseBillDirectoryQuery(params: URLSearchParams): BillDirectoryQuery {
+  return {
+    query: (params.get(BILL_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_BILL_QUERY_LENGTH),
+    stage: parseBillStageFilter(params.get(BILL_DIRECTORY_PARAMS.stage)),
+  };
 }
 
 /**

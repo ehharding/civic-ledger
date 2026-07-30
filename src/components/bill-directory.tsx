@@ -1,14 +1,20 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { type JSX, useEffect, useState } from "react";
+import { type JSX, useCallback, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
 import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
+import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { type BillStageFilter, billDirectoryQueryString } from "@/lib/congress/search";
+import {
+  type BillDirectoryQuery,
+  type BillStageFilter,
+  billDirectoryQueryString,
+  parseBillDirectoryQuery,
+} from "@/lib/congress/search";
 import {
   billIdentityKey,
   billStageLabels,
@@ -74,25 +80,35 @@ export function BillDirectory({
   const isSearchActive: boolean = query.trim().length > 0;
 
   const queryString: string = billDirectoryQueryString(query, stage);
+  const requestedQueryString: string = billDirectoryQueryString(initialQuery, initialStage);
 
   /**
-   * Mirrors the current search and stage into the address bar, so a directory view can be linked and bookmarked.
+   * Takes the view a URL names as the current one.
    *
-   * This route could already *receive* a `?q=` link — the site header's search form sends one — but nothing ever
-   * produced one from the page itself, so a reader who found something here had no way to hand it to anyone else. The
-   * two halves now use the same spelling of that URL. @see billDirectoryQueryString
-   *
-   * `history.replaceState` rather than a router navigation, for the same reason `MemberDirectory` uses it: the URL is
-   * recording client state, not requesting a new render, and re-running the route on every keystroke would fight the
-   * debounced search this component already does carefully. `replace` rather than `push` keeps typing out of the back
-   * button's history.
-   *
-   * Reading the path off `window.location` rather than rebuilding it also means this stays correct on `/bills` and
-   * `/bills/[congress]` alike, and under the static demo's `basePath`, without either being special-cased.
+   * Read through the same parser the route uses, so the browser and the server cannot disagree about what a link
+   * means.
+   * @see parseBillDirectoryQuery
    */
-  useEffect((): void => {
-    window.history.replaceState(null, "", `${window.location.pathname}${queryString}${window.location.hash}`);
-  }, [queryString]);
+  const adoptUrl: (location: string) => void = useCallback((location: string): void => {
+    const view: BillDirectoryQuery = parseBillDirectoryQuery(new URLSearchParams(location));
+
+    setQuery(view.query);
+    setStage(view.stage);
+  }, []);
+
+  /**
+   * Mirrors the current search and stage into the address bar, and follows the URL when something else moves it.
+   *
+   * This route could always *receive* a `?q=` link — the site header's search form sends one — but nothing produced
+   * one from the page itself, so a reader who found something here had no way to hand it to anyone else. Both halves
+   * now use the same spelling of that URL. @see billDirectoryQueryString
+   *
+   * Reconciling in both directions rather than only writing is what makes the header's own "Bills" link work from an
+   * already-narrowed directory: a soft navigation to `/bills` changes the URL without remounting this component, so a
+   * write-only mirror would put the stale query string straight back and the page would appear to ignore the click.
+   * @see useDirectoryUrlSync, shared with the member and committee directories.
+   */
+  useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   /**
    * Fetches the next page from `/api/bills` and appends it.

@@ -11,6 +11,7 @@ import {
   partySeatingOrder,
   partySeatingRank,
 } from "@/lib/congress/members";
+import { compareText } from "@/lib/format";
 
 /**
  * The member directory's narrowing rules: free-text matching plus the three facet filters, and the two helpers that
@@ -159,7 +160,7 @@ function compareByJurisdiction(a: MemberDirectoryEntry, b: MemberDirectoryEntry)
   if (stateA !== stateB) {
     if (stateA.length === 0) return 1;
     if (stateB.length === 0) return -1;
-    return stateA.localeCompare(stateB);
+    return compareText(stateA, stateB);
   }
 
   return (a.district ?? 0) - (b.district ?? 0);
@@ -266,7 +267,7 @@ export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): Jurisd
         group: isNonVotingJurisdiction(state) ? "territory" : "state",
       }),
     )
-    .sort((a: JurisdictionOption, b: JurisdictionOption): number => a.label.localeCompare(b.label));
+    .sort((a: JurisdictionOption, b: JurisdictionOption): number => compareText(a.label, b.label));
 }
 
 /**

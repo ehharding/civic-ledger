@@ -43,7 +43,7 @@ import {
   DEFAULT_PAGE_SIZE,
   type LegislativeBill,
 } from "@/lib/congress/types";
-import { formatOrdinal } from "@/lib/format";
+import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
 
 /**
  * Everything this app reads about *bills*: list snapshots, pagination, single-bill lookup, the CRS summary and official
@@ -405,7 +405,7 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
     if (aPinned !== bPinned) return aPinned ? -1 : 1;
   }
 
-  return (b.latestAction.date ?? "").localeCompare(a.latestAction.date ?? "");
+  return compareIsoDatesDesc(a.latestAction.date ?? "", b.latestAction.date ?? "");
 }
 
 /**

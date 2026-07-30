@@ -2,7 +2,7 @@
    (CommitteeDetail). Breakpoint overrides live in responsive.css with the rest.
 
    The controls above the grid — the search box, the chamber pills, the type and sort dropdowns, "Clear Filters" —
-   deliberately reuse .directory-search, .segmented-filter, .member-facet and friends rather than restating them. The
+   deliberately reuse .directory-search, .segmented-filter, .directory-facet and friends rather than restating them. The
    three directories in this app are meant to be the same control surface, so they should stay the same control in one
    place; only the grid and the cards below them are this file's own. */
 

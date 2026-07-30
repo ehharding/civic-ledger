@@ -1,11 +1,12 @@
 /**
  * Covers formatOrdinal's suffix rules (including the 11th/12th/13th exception to the usual st/nd/rd pattern), the
- * timezone pinning that keeps formatDate from rolling a date back a day, and the two small display helpers the rest of
- * the app leans on for counts and for casing upstream free text.
+ * timezone pinning that keeps formatDate from rolling a date back a day, the two comparison rules every ordering in
+ * the app shares, and the two small display helpers the rest of it leans on for counts and for casing upstream free
+ * text.
  */
 import { afterEach, describe, expect, it } from "vitest";
 
-import { formatDate, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
+import { compareIsoDatesDesc, compareText, formatDate, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
 
 describe("formatOrdinal", (): void => {
   it("uses st/nd/rd for numbers ending in 1, 2, or 3", (): void => {
@@ -122,5 +123,55 @@ describe("toTitleCase", (): void => {
   it("returns an empty string for blank input rather than a stray space", (): void => {
     expect(toTitleCase("")).toBe("");
     expect(toTitleCase("   ")).toBe("");
+  });
+});
+
+describe("compareText", (): void => {
+  it("orders plain ASCII names alphabetically", (): void => {
+    expect(compareText("Alvarez", "Bennett")).toBeLessThan(0);
+    expect(compareText("Bennett", "Alvarez")).toBeGreaterThan(0);
+    expect(compareText("Bennett", "Bennett")).toBe(0);
+  });
+
+  it("collates diacritics and apostrophes where a reader expects them, not where their code points fall", (): void => {
+    // Núñez sorts among the N names. By code point, ñ (U+00F1) is past every unaccented letter, which would file it
+    // after "Nz" — and, in a member grid, well away from the other N's.
+    expect(compareText("Núñez", "Ortiz")).toBeLessThan(0);
+    expect(compareText("Nash", "Núñez")).toBeLessThan(0);
+    expect(compareText("O'Halleran", "Ochoa")).toBeLessThan(0);
+  });
+
+  it("is pinned to one locale, so a server and a browser cannot disagree about an ordering", (): void => {
+    // The failure this guards against is a hydration mismatch, not a wrong-looking list: da-DK and sv-SE place Ø past
+    // Z, so an unpinned collator would order these two differently on either side of the app.
+    const ordered: string[] = ["Ødegård", "Zimmerman"].sort(compareText);
+
+    expect(ordered).toEqual(["Ødegård", "Zimmerman"]);
+  });
+});
+
+describe("compareIsoDatesDesc", (): void => {
+  it("puts the more recent date first, for both bare dates and full timestamps", (): void => {
+    expect(compareIsoDatesDesc("2026-07-14", "2025-01-03")).toBeLessThan(0);
+    expect(compareIsoDatesDesc("2025-01-03", "2026-07-14")).toBeGreaterThan(0);
+    expect(compareIsoDatesDesc("2022-02-15T05:00:00Z", "2022-02-14T05:00:00Z")).toBeLessThan(0);
+  });
+
+  it("treats identical dates as ties, so a caller's own tiebreak survives", (): void => {
+    expect(compareIsoDatesDesc("2026-07-14", "2026-07-14")).toBe(0);
+  });
+
+  it("sorts undated records last without needing a special case", (): void => {
+    const ordered: string[] = ["", "2025-01-03", "", "2026-07-14"].sort(compareIsoDatesDesc);
+
+    expect(ordered).toEqual(["2026-07-14", "2025-01-03", "", ""]);
+  });
+
+  it("orders across a year, month, and day boundary that string comparison could get wrong", (): void => {
+    // Zero-padding is what makes plain comparison correct here: "2026-01-09" < "2026-01-10" only because the day is
+    // two digits wide.
+    const ordered: string[] = ["2026-01-09", "2026-01-10", "2025-12-31", "2026-02-01"].sort(compareIsoDatesDesc);
+
+    expect(ordered).toEqual(["2026-02-01", "2026-01-10", "2026-01-09", "2025-12-31"]);
   });
 });

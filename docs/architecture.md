@@ -27,14 +27,15 @@ flowchart LR
 |----------------------------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
 | `src/app`                                          | Routes, metadata, route handlers                | Never expose the government API key.                              |
 | `src/components`                                   | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/hooks`                                        | Client-side async behavior extracted from views | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/db`                                           | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/hooks`                                        | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/lib/api-query.ts`                             | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
+| `src/lib/format.ts`                                | Shared display and comparison rules             | One collator and one date order for the whole app.                |
+| `src/lib/glossary.ts`                              | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 | `src/lib/search-params.ts`                         | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`                                 | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
 | `src/lib/congress/seating.ts`                      | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
-| `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
-| `src/lib/glossary.ts`                              | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 
 ### Inside the Congress Adapter
 
@@ -99,15 +100,21 @@ whose record carries no Bioguide ID, since a directory row that opens nothing is
 entirely in the browser against `member-filter.ts`, which is pure and imports no server module — see "The Member
 Directory Filters in the Browser" in `docs/decisions.md`.
 
-Both directories mirror their current view into the address bar, so a search, a set of facets, or a chosen order can be
-linked and bookmarked (`/members?chamber=senate&sort=state`, `/bills?q=broadband&stage=law`). Each one's URL spelling
-lives beside its rules rather than in its route — `MEMBER_DIRECTORY_PARAMS`/`memberDirectoryQueryString` in
-`member-filter.ts`, `BILL_DIRECTORY_PARAMS`/`billDirectoryQueryString` in `search.ts` — because those names cross a
-boundary the server and the browser both write to. `src/lib/search-params.ts` is the server half: it reads the request
-and resolves a starting view, so a shared link renders already narrowed on its first paint rather than flashing the
-full list. The browser half writes with `history.replaceState` rather than a router navigation, since the URL is
-recording client state rather than requesting a render — see "A Narrowed Directory Is a Place, So It Has a URL" in
-`docs/decisions.md`.
+All three directories mirror their current view into the address bar, so a search, a set of facets, or a chosen order
+can be linked and bookmarked (`/members?chamber=senate&sort=state`, `/bills?q=broadband&stage=law`,
+`/committees?type=standing`). Each one's URL spelling lives beside its rules rather than in its route —
+`MEMBER_DIRECTORY_PARAMS`/`memberDirectoryQueryString` in `member-filter.ts`, `BILL_DIRECTORY_PARAMS`/
+`billDirectoryQueryString` in `search.ts`, and the committee pair in `committee-filter.ts` — because those names cross
+a boundary the server and the browser both write to. Each also has one parser that *both* sides go through
+(`parseMemberDirectoryQuery`, `parseBillDirectoryQuery`, `parseCommitteeDirectoryQuery`), so a route and a browser can
+never disagree about what a given link means.
+
+`src/lib/search-params.ts` is the server half: it reads the request and resolves a starting view, so a shared link
+renders already narrowed on its first paint rather than flashing the full list. The browser half is one shared hook,
+`useDirectoryUrlSync`, which reconciles in *both* directions — writing the URL as the reader narrows, and following it
+when something else moves it, such as a soft navigation from the header's own nav link or a press of Back. Writes use
+`history.replaceState` rather than a router navigation, since the URL is recording client state rather than requesting
+a render — see "A Narrowed Directory Is a Place, So It Has a URL" in `docs/decisions.md`.
 
 An *individual* member (`/members/[bioguideId]`) is a separate read in `member-profile.ts`, against a different
 endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list

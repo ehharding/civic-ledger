@@ -1,3 +1,5 @@
+import { compareText } from "@/lib/format";
+
 /**
  * The committee domain model: the closed unions the rest of the app switches on, the three committee shapes it
  * renders, and the helpers that decide how a committee reads on screen.
@@ -269,17 +271,11 @@ export type CommitteeProfile = CommitteeSummary & {
 export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committees";
 
 /**
- * The collator every committee ordering runs through.
- *
- * Pinned to one locale for exactly the reason `memberNameCollator` is: the server orders the directory before
- * serializing it and the browser re-orders the same list as the reader narrows, and where the two runtimes' default
- * locales disagree the client-rendered order differs from the server-rendered one — a hydration mismatch across the
- * whole grid. @see memberNameCollator in members.ts for the worked example.
- */
-const committeeNameCollator: Intl.Collator = new Intl.Collator("en-US");
-
-/**
  * Orders committees alphabetically by name.
+ *
+ * Collated through the app's one pinned collator, for exactly the reason `compareMembersByName` is: the server orders
+ * the directory before serializing it and the browser re-orders the same list as the reader narrows, and two runtimes
+ * disagreeing about alphabetical order is a hydration mismatch across the whole grid. @see compareText in format.ts.
  *
  * Declared structurally so it orders any named committee shape — a summary, a profile, a subcommittee — rather than
  * only the one it was written for.
@@ -289,7 +285,7 @@ const committeeNameCollator: Intl.Collator = new Intl.Collator("en-US");
  * @returns A standard comparator result.
  */
 export function compareCommitteesByName(a: { name: string }, b: { name: string }): number {
-  return committeeNameCollator.compare(a.name, b.name);
+  return compareText(a.name, b.name);
 }
 
 /**
