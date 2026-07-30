@@ -20,12 +20,16 @@ import {
   BILL_PATH_TYPES,
   billCacheTags,
   buildCongressUrl,
+  COMMITTEE_LIST_CACHE_TAG,
   CONGRESS_API_BASE,
+  committeeCacheTags,
   getCongressApiKey,
   MEMBER_LIST_CACHE_TAG,
   memberCacheTags,
   normalizeBillRouteParams,
   normalizeBioguideId,
+  normalizeCommitteeChamberSegment,
+  normalizeSystemCode,
 } from "@/lib/congress/http";
 
 /**
@@ -128,6 +132,67 @@ describe("normalizeBioguideId", (): void => {
     for (const hostile of HOSTILE_SEGMENTS) {
       expect(normalizeBioguideId(hostile)).toBeNull();
     }
+  });
+});
+
+describe("normalizeSystemCode", (): void => {
+  it("accepts a real system code and lower-cases it, so one committee has one URL", (): void => {
+    expect(normalizeSystemCode("HSAG00")).toBe("hsag00");
+    expect(normalizeSystemCode(" hsag14 ")).toBe("hsag14");
+  });
+
+  it("rejects the preview fixtures' deliberately invalid codes, so a placeholder is never requested upstream", (): void => {
+    expect(normalizeSystemCode("preview-01")).toBeNull();
+    expect(normalizeSystemCode("preview-01a")).toBeNull();
+  });
+
+  it("rejects anything that isn't letters followed by two digits", (): void => {
+    expect(normalizeSystemCode("hsag0")).toBeNull();
+    expect(normalizeSystemCode("hsag000")).toBeNull();
+    expect(normalizeSystemCode("00hsag")).toBeNull();
+    expect(normalizeSystemCode("hs ag00")).toBeNull();
+  });
+
+  it("rejects every hostile segment", (): void => {
+    for (const hostile of HOSTILE_SEGMENTS) {
+      expect(normalizeSystemCode(hostile)).toBeNull();
+    }
+  });
+});
+
+describe("normalizeCommitteeChamberSegment", (): void => {
+  /*
+   * The committee endpoint takes its chamber in the path, which makes this the same class of guard as the two above —
+   * and it is narrowed against the app's own closed union, so no separate list of accepted spellings can drift out of
+   * step with the model.
+   */
+  it("accepts each chamber the endpoint takes, in any case", (): void => {
+    expect(normalizeCommitteeChamberSegment("house")).toBe("house");
+    expect(normalizeCommitteeChamberSegment("SENATE")).toBe("senate");
+    expect(normalizeCommitteeChamberSegment(" joint ")).toBe("joint");
+  });
+
+  it("rejects a chamber the endpoint has no path for", (): void => {
+    expect(normalizeCommitteeChamberSegment("assembly")).toBeNull();
+    expect(normalizeCommitteeChamberSegment("House of Representatives")).toBeNull();
+    expect(normalizeCommitteeChamberSegment("")).toBeNull();
+  });
+
+  it("rejects every hostile segment", (): void => {
+    for (const hostile of HOSTILE_SEGMENTS) {
+      expect(normalizeCommitteeChamberSegment(hostile)).toBeNull();
+    }
+  });
+});
+
+describe("committeeCacheTags", (): void => {
+  /* The list tag is shared so the whole family can be revalidated at once; the per-committee tag scopes one record. */
+  it("tags a committee with both the shared list tag and its own", (): void => {
+    expect(committeeCacheTags("hsag00")).toEqual([COMMITTEE_LIST_CACHE_TAG, "committee-hsag00"]);
+  });
+
+  it("does not collide with the member family's tags", (): void => {
+    expect(COMMITTEE_LIST_CACHE_TAG).not.toBe(MEMBER_LIST_CACHE_TAG);
   });
 });
 

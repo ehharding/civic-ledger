@@ -1,5 +1,9 @@
 import type {
   CongressApiBill,
+  CongressApiCommittee,
+  CongressApiCommitteeDetail,
+  CongressApiCommitteeHistory,
+  CongressApiCommitteeRef,
   CongressApiLeadership,
   CongressApiMember,
   CongressApiMemberDetail,
@@ -9,6 +13,16 @@ import type {
   CongressApiTextFormat,
   CongressApiTextVersion,
 } from "@/lib/congress/api-schema";
+import {
+  type CommitteeChamber,
+  type CommitteeHistoryEntry,
+  type CommitteeProfile,
+  type CommitteeSummary,
+  compareCommitteesByName,
+  normalizeCommitteeChamber,
+  normalizeCommitteeType,
+  type Subcommittee,
+} from "@/lib/congress/committees";
 import {
   type CongressChamber,
   type CongressMember,
@@ -268,6 +282,127 @@ export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadership
   if (!type) return null;
 
   return { type, congress: role.congress };
+}
+
+/**
+ * Maps a reference to a committee named from inside another committee's record — a `parent`, or an entry in a
+ * `subcommittees` array.
+ *
+ * @param ref - A validated committee reference.
+ * @returns The mapped reference, or `null` when it carries no code or no name. A subcommittee with no code cannot be
+ *   opened and one with no name cannot be labeled, and either way there is nothing to put in a list.
+ */
+export function mapCommitteeRef(ref: CongressApiCommitteeRef): Subcommittee | null {
+  const systemCode: string = (ref.systemCode ?? "").trim().toLowerCase();
+  const name: string = (ref.name ?? "").trim();
+
+  if (systemCode.length === 0 || name.length === 0) return null;
+
+  return { systemCode, name };
+}
+
+/**
+ * Maps a raw committee-list entry into the app's {@link CommitteeSummary} shape.
+ *
+ * @param committee - A validated entry from the committee list endpoint.
+ * @returns The mapped summary, or `null` when the record has no system code, no name, or no recognizable chamber. The
+ *   chamber check is what drops the API's `"NoChamber"` records, which are not committees of either body.
+ */
+export function mapCongressCommittee(committee: CongressApiCommittee): CommitteeSummary | null {
+  const systemCode: string = (committee.systemCode ?? "").trim().toLowerCase();
+  const name: string = (committee.name ?? "").trim();
+  const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
+
+  if (systemCode.length === 0 || name.length === 0 || !chamber) return null;
+
+  const typeName: string | undefined = committee.committeeTypeCode ?? committee.type;
+  const parent: Subcommittee | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
+
+  return {
+    systemCode,
+    name,
+    chamber,
+    type: normalizeCommitteeType(typeName),
+    typeName,
+    parent: parent ?? undefined,
+    subcommitteeCount: mapUsable(committee.subcommittees, mapCommitteeRef).length,
+  };
+}
+
+/**
+ * Maps one entry in a committee's history.
+ *
+ * @param entry - A validated history entry from the committee item endpoint.
+ * @returns The mapped entry, or `null` when it names the committee neither formally nor by its Library of Congress
+ *   name — a span with no name on it says only that time passed.
+ */
+export function mapCommitteeHistory(entry: CongressApiCommitteeHistory): CommitteeHistoryEntry | null {
+  const official: string = (entry.officialName ?? "").trim();
+  const library: string = (entry.libraryOfCongressName ?? "").trim();
+  const name: string = official.length > 0 ? official : library;
+
+  if (name.length === 0) return null;
+
+  return {
+    name,
+    // Only carried when it says something the formal name didn't, so the page isn't printing one string twice.
+    libraryName: library.length > 0 && library !== name ? library : undefined,
+    startDate: entry.startDate,
+    endDate: entry.endDate,
+    establishingAuthority: entry.establishingAuthority,
+  };
+}
+
+/**
+ * Maps a raw committee item-endpoint record into the app's {@link CommitteeProfile} shape.
+ *
+ * Two of this record's fields don't come from the record. The **chamber** is taken from the path that was requested,
+ * because the item endpoint doesn't return one — the chamber is in the URL, so the response doesn't restate it. The
+ * **name** is read out of `history`, for the same reason: unlike every list entry, an item record carries no `name`
+ * field at all, and its current formal name is the most recent history entry's. Both are resolved here rather than in
+ * the fetcher so one definition of "what is this committee called" covers every page that renders one.
+ *
+ * @param committee - A validated record from the committee item endpoint.
+ * @param systemCode - The code that was looked up, used when the payload itself omits one.
+ * @param chamber - The chamber whose endpoint was asked, since the record doesn't say.
+ * @returns The mapped profile, or `null` when no history entry names the committee — with no name there is nothing to
+ *   title the page with, and inventing one from the system code would be a guess printed as a fact.
+ */
+export function mapCommitteeProfile(
+  committee: CongressApiCommitteeDetail,
+  systemCode: string,
+  chamber: CommitteeChamber,
+): CommitteeProfile | null {
+  // Newest first, so `history[0]` is "what it is called now" both here and on the page itself.
+  const history: CommitteeHistoryEntry[] = sortByDateDesc(
+    mapUsable(committee.history, mapCommitteeHistory),
+    "startDate",
+  );
+
+  const current: CommitteeHistoryEntry | undefined = history[0];
+  if (!current) return null;
+
+  const parent: Subcommittee | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
+  const subcommittees: Subcommittee[] = mapUsable(committee.subcommittees, mapCommitteeRef).sort(
+    compareCommitteesByName,
+  );
+
+  return {
+    systemCode: (committee.systemCode ?? systemCode).trim().toLowerCase(),
+    name: current.name,
+    chamber,
+    type: normalizeCommitteeType(committee.type),
+    typeName: committee.type,
+    parent: parent ?? undefined,
+    subcommitteeCount: subcommittees.length,
+    // Absent means "the API didn't say", which for a committee record it only does for bodies no longer constituted.
+    isCurrent: committee.isCurrent ?? false,
+    history,
+    subcommittees,
+    billCount: committee.bills?.count,
+    reportCount: committee.reports?.count,
+    nominationCount: committee.nominations?.count,
+  };
 }
 
 /**

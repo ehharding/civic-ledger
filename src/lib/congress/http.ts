@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 
+import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees";
 import { isBioguideId } from "@/lib/congress/members";
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/types";
 
@@ -166,6 +167,49 @@ export function memberCacheTags(bioguideId: string): string[] {
 export function normalizeBioguideId(raw: string): string | null {
   const value: string = raw.trim().toUpperCase();
   return isBioguideId(value) ? value : null;
+}
+
+/** Cache tag shared by every committee-list request, regardless of which Congress it asks for. */
+export const COMMITTEE_LIST_CACHE_TAG: string = "congress-committees";
+
+/**
+ * The two cache tags shared by every request scoped to one committee, so one committee's record can be revalidated
+ * without dropping the whole list.
+ */
+export function committeeCacheTags(systemCode: string): string[] {
+  return [COMMITTEE_LIST_CACHE_TAG, `committee-${systemCode}`];
+}
+
+/**
+ * Narrows a potentially user-influenced committee system code to the exact path-segment format Congress.gov accepts,
+ * before it is interpolated into an outbound URL.
+ *
+ * Same reasoning as {@link normalizeBioguideId}: this arrives from the URL bar, so validating the *shape* rather than
+ * escaping means a malformed value can never reach Congress.gov at all.
+ *
+ * @param raw - The raw `systemCode` route param.
+ * @returns The lower-cased code, or `null` when it isn't the letters-then-two-digits form Congress.gov issues. A
+ *   `null` is not the same as "not found": the preview fixtures use codes that deliberately fail this guard and are
+ *   resolved locally instead, never upstream. @see isCommitteeSystemCode
+ */
+export function normalizeSystemCode(raw: string): string | null {
+  const value: string = raw.trim().toLowerCase();
+  return isCommitteeSystemCode(value) ? value : null;
+}
+
+/**
+ * Narrows a route's chamber segment to one Congress.gov's committee endpoint accepts.
+ *
+ * The committee endpoint takes the chamber in the path (`/committee/house/hsag00`), which makes this the same class of
+ * guard as the two above — and the same closed union the app already models, so no separate list of accepted spellings
+ * can drift out of step with it.
+ *
+ * @param raw - The raw `chamber` route param.
+ * @returns The chamber, or `null` when the segment names none.
+ */
+export function normalizeCommitteeChamberSegment(raw: string): CommitteeChamber | null {
+  const value: string = raw.trim().toLowerCase();
+  return committeeChambers.find((chamber: CommitteeChamber): boolean => chamber === value) ?? null;
 }
 
 /**

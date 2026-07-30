@@ -1,0 +1,205 @@
+/* The committee directory at /committees (CommitteeDirectory + CommitteeCard) and the individual committee page
+   (CommitteeDetail). Breakpoint overrides live in responsive.css with the rest.
+
+   The controls above the grid — the search box, the chamber pills, the type and sort dropdowns, "Clear Filters" —
+   deliberately reuse .directory-search, .segmented-filter, .member-facet and friends rather than restating them. The
+   three directories in this app are meant to be the same control surface, so they should stay the same control in one
+   place; only the grid and the cards below them are this file's own. */
+
+/*
+ * The one place a committee type is mapped to a color, on exactly the pattern party.css establishes and for the same
+ * reason: two things tint by type (a card's chip and the hero's), and a mapping restated per consumer is a mapping
+ * that goes half-updated the day a sixth type appears.
+ *
+ * These reuse the existing brand accents rather than introducing five new tokens. The distinction being drawn is much
+ * softer than the party one — nobody needs to identify a select committee at a glance across a chart of 441 of them —
+ * so a type reads primarily as its own printed label, with color as a quiet second signal. Every chip states its type
+ * in text, so color carries nothing on its own.
+ */
+.committee-type--standing {
+  --committee-color: var(--navy);
+}
+
+.committee-type--select {
+  --committee-color: var(--burgundy);
+}
+
+.committee-type--joint {
+  --committee-color: var(--green);
+}
+
+.committee-type--commission {
+  --committee-color: var(--amber-deep);
+}
+
+.committee-type--other {
+  --committee-color: var(--ink-faint);
+}
+
+/* Two across rather than the member grid's three. A committee's name is a full phrase — "Committee on Transportation
+   and Infrastructure" — where a member's is two or three words, so three columns would wrap nearly every card's title
+   onto a third line and turn a scannable list into a wall. */
+.committee-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.committee-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+/* Tinted by the .committee-type--* class this element also carries, with the neutral fallback every tinted element in
+   this app pairs with its custom property. */
+.committee-card__type {
+  color: var(--committee-color, var(--ink-faint));
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.committee-card__name {
+  font-size: 1.02rem;
+  line-height: 1.35;
+}
+
+/* Same hover as .member-card__name a and .bill-card h3 a — the one clickable thing in a card acknowledges the
+   pointer. */
+.committee-card__name a:hover {
+  color: var(--burgundy);
+}
+
+.committee-card__meta {
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+}
+
+/* The individual committee page's hero. A single column rather than the member hero's portrait-and-copy pair: there is
+   no committee portrait to sit beside, and Congress.gov publishes no emblem or seal through the API. */
+.committee-hero {
+  padding-bottom: 30px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--line);
+}
+
+.committee-hero h1 {
+  margin-top: 6px;
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+}
+
+.committee-hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-top: 16px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+/* Tinted by the .committee-type--* class this element also carries. @see the mapping at the top of this file. */
+.committee-hero__type {
+  color: var(--committee-color, var(--ink-faint));
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
+/* The one-sentence explanation of what this kind of committee is. Set at reading width and in the body face rather
+   than as another line of metadata: it is the sentence that makes the page educational rather than a lookup, and
+   burying it in the meta row beside the chamber would read as a caption. */
+.committee-hero__lead {
+  max-width: 62ch;
+  margin-top: 18px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+/* The system code, printed as the identifier it is so a reader can match it against the address bar on Congress.gov.
+   Monospaced because it is a literal string to be compared character by character, not a word to be read. */
+.committee-code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--canvas) 60%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+}
+
+.committee-stats,
+.committee-subcommittees {
+  margin-top: 48px;
+}
+
+.committee-stats .muted-copy,
+.committee-subcommittees .muted-copy {
+  margin-top: 10px;
+  max-width: 62ch;
+}
+
+/* A <dl> laid out as a row of figures. `auto-fit` rather than a fixed column count because the Senate's committees
+   carry three of these and the House's two, and a fixed grid would strand an empty third column on most pages. */
+.committee-stats__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.committee-stats__item {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.committee-stats__item dt {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.committee-stats__item dd {
+  margin-top: 6px;
+  color: var(--ink);
+  font-family: var(--serif), serif;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+/* Two columns of plain links rather than a grid of cards. A subcommittee list is a table of contents for the page's
+   own parent committee, and giving each entry a card's worth of chrome would make the children look weightier than the
+   body they sit under. */
+.committee-subcommittee-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  padding: 0;
+  margin-top: 20px;
+  list-style: none;
+}
+
+.committee-subcommittee-list li {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.committee-subcommittee-list a {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.committee-subcommittee-list a:hover {
+  color: var(--burgundy);
+}

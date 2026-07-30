@@ -21,6 +21,7 @@ test("home page renders the hero and primary nav", async ({
   const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
   await expect(primaryNav.getByRole("link", { name: "Bills" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Members" })).toBeVisible();
+  await expect(primaryNav.getByRole("link", { name: "Committees" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Learn" })).toBeVisible();
   await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeVisible();
 });
@@ -40,6 +41,11 @@ test("primary nav links land on the right page", async ({
   await expect(page).toHaveURL(/\/members$/);
   await expect(page.getByRole("heading", { level: 1, name: "The People Who Write It." })).toBeVisible();
   await expect(page).toHaveTitle("Members — Civic Ledger");
+
+  await primaryNav.getByRole("link", { name: "Committees" }).click();
+  await expect(page).toHaveURL(/\/committees$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Where Bills Actually Go." })).toBeVisible();
+  await expect(page).toHaveTitle("Committees — Civic Ledger");
 
   await primaryNav.getByRole("link", { name: "Learn" }).click();
   await expect(page).toHaveURL(/\/learn$/);
@@ -159,4 +165,30 @@ test("the skip link is the first tab stop and moves focus to the main landmark",
 
   await skipLink.press("Enter");
   await expect(page.getByRole("main")).toBeFocused();
+});
+
+test("a committee page explains what its kind of committee is and lists its subcommittees", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/committees");
+
+  // The subcommittee count on a card is the promise that the parent's page has something one level down; this is the
+  // test that the promise is kept, since the directory deliberately doesn't list subcommittees itself.
+  const withSubcommittees: Locator = page
+    .locator(".committee-card")
+    .filter({ hasText: /subcommittee/ })
+    .first();
+  await withSubcommittees.locator("h3 a").click();
+
+  await expect(page.getByRole("region", { name: "Recorded History" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Subcommittees" })).toBeVisible();
+
+  // The type explainer is the reason this page exists rather than the directory linking straight out.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const firstSubcommittee: Locator = page.locator(".committee-subcommittee-list a").first();
+  await firstSubcommittee.click();
+
+  await expect(page).toHaveURL(/\/committees\/(house|senate|joint)\/[a-z0-9-]+$/);
+  await expect(page.getByText(/Subcommittee of/)).toBeVisible();
 });

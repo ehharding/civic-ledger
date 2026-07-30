@@ -12,7 +12,7 @@ export const MAIN_CONTENT_ID: string = "main-content";
  * loading boundaries free to opt into the chrome (they do) or render without it, instead of inheriting it unavoidably.
  *
  * The skip link is the first focusable thing on every page. Without it, reaching the content by keyboard means tabbing
- * past the wordmark, three navigation links, and the search box on every single route — and on the home page, then
+ * past the wordmark, every navigation link, and the search box on every single route — and on the home page, then
  * arriving at a chamber diagram of several hundred seats. It's visually hidden until focused, at which point it becomes
  * a normal visible control (a skip link nobody can see is a skip link nobody can use).
  *

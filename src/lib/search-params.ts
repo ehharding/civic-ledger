@@ -1,5 +1,10 @@
 import { parseQueryParam } from "@/lib/api-query";
 import {
+  type CommitteeDirectoryQuery,
+  DEFAULT_COMMITTEE_DIRECTORY_QUERY,
+  parseCommitteeDirectoryQuery,
+} from "@/lib/congress/committee-filter";
+import {
   DEFAULT_MEMBER_DIRECTORY_QUERY,
   type MemberDirectoryQuery,
   parseMemberDirectoryQuery,
@@ -9,9 +14,9 @@ import { BILL_DIRECTORY_PARAMS, type BillStageFilter, parseBillStageFilter } fro
 /**
  * Resolves each directory's shareable deep link from the request.
  *
- * Both directories in this app can be linked to in a particular state — a bill search, or a narrowed and reordered
- * roster — and both resolve that state here rather than in their own route, so the two can't drift apart on the one
- * thing they genuinely share: how a query param is turned into a starting view.
+ * All three directories in this app can be linked to in a particular state — a bill search, or a narrowed and
+ * reordered roster of people or committees — and all three resolve that state here rather than in their own route, so
+ * they can't drift apart on the one thing they genuinely share: how a query param is turned into a starting view.
  *
  * Every parser these delegate to is total, in the same sense `src/lib/api-query.ts` describes: an absent, malformed, or
  * stale param resolves to a usable default rather than to an error. A shared link is exactly the kind of URL that gets
@@ -114,4 +119,22 @@ export async function resolveMemberDirectoryQuery(
   const params: RouteSearchParams = await searchParams;
 
   return parseMemberDirectoryQuery(toSearchParams(params), knownJurisdictions);
+}
+
+/**
+ * Resolves the committee directory's shareable view from the request.
+ *
+ * Takes no equivalent of the member directory's `knownJurisdictions`, because neither of this directory's facets is
+ * derived from the data: chamber and committee type are both closed unions the app declares, so a stale `?type=` param
+ * can be validated against the model itself rather than against the list in hand.
+ *
+ * @param searchParams - The route's `searchParams` promise, passed straight through from the page component.
+ * @returns The starting filters and order. In a static export this is always the unfiltered default view.
+ */
+export async function resolveCommitteeDirectoryQuery(
+  searchParams: Promise<RouteSearchParams>,
+): Promise<CommitteeDirectoryQuery> {
+  if (!canReadRequest()) return DEFAULT_COMMITTEE_DIRECTORY_QUERY;
+
+  return parseCommitteeDirectoryQuery(toSearchParams(await searchParams));
 }

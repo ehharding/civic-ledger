@@ -10,14 +10,16 @@ export const dynamic = "force-static";
 /**
  * Static top-level routes. Their content changes rarely, so they carry a low change frequency.
  *
- * `/members` belongs here even though the roster behind it is live data: the *route* is fixed and reachable without an
- * API key, which is all a crawler needs. Individual member pages still stay out — see "Member Routes Stay Out of the
- * Sitemap" in `docs/decisions.md` — and the directory is now the page that leads a crawler to all of them.
+ * `/members` and `/committees` belong here even though the data behind them is live: the *routes* are fixed and
+ * reachable without an API key, which is all a crawler needs. Individual member and committee pages still stay out —
+ * see "Member Routes Stay Out of the Sitemap" in `docs/decisions.md`, whose reasoning applies unchanged to committees —
+ * and each directory is the page that leads a crawler to all of them.
  */
 const STATIC_ROUTES: readonly string[] = [
   "",
   "/bills",
   "/members",
+  "/committees",
   "/learn",
   "/learn/how-a-bill-becomes-law",
   "/about",

@@ -41,17 +41,21 @@ flowchart LR
 `src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
 components, and tests import one stable path while the internals stay free to move.
 
-| Module                | Responsibility                                                                |
-|-----------------------|-------------------------------------------------------------------------------|
-| `api-schema.ts`       | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
-| `http.ts`             | Key access, URL building, caching policy, one request helper, route guards.   |
-| `mappers.ts`          | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
-| `bills.ts`            | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
-| `composition.ts`      | Chamber membership, including the member list's pagination.                   |
-| `member-directory.ts` | The same membership, reshaped into one browsable alphabetical roster.         |
-| `member-filter.ts`    | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
-| `member-profile.ts`   | One member's own record, plus the legislation they sponsored and cosponsored. |
-| `client.ts`           | Public surface. Re-exports only.                                              |
+| Module                   | Responsibility                                                                |
+|--------------------------|-------------------------------------------------------------------------------|
+| `api-schema.ts`          | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
+| `http.ts`                | Key access, URL building, caching policy, one request helper, route guards.   |
+| `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
+| `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
+| `composition.ts`         | Chamber membership, including the member list's pagination.                   |
+| `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
+| `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
+| `member-profile.ts`      | One member's own record, plus the legislation they sponsored and cosponsored. |
+| `committees.ts`          | The committee model: chambers, types, shapes, display helpers. Pure; no I/O.  |
+| `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.              |
+| `committee-filter.ts`    | That directory's narrowing, ordering, and URL rules. Pure and isomorphic.     |
+| `committee-profile.ts`   | One committee's record, its name history, and its subcommittees.              |
+| `client.ts`              | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:
 

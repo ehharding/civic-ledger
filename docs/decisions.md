@@ -429,3 +429,80 @@ and the dependency-free constraint is a real one. But the tradeoff should be nam
 settled: a hand-written sanitizer is only ever as good as the bypasses someone thought to test, and the six regression
 cases beside it are precisely the record of which ones have been. If this is ever pointed at markup from a less
 predictable source than Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.
+
+## The Committee Directory Lists Parents and Folds Subcommittees Into Them
+
+Congress.gov's `/v3/committee/{congress}` endpoint returns subcommittees as *peers* of their parents: the House
+Agriculture Committee and its six subcommittees arrive as seven records in one flat array, distinguishable only by a
+`parent` field on six of them. Rendered as it arrives, that puts "Livestock and Foreign Agriculture Subcommittee" in
+the same alphabetical run as the Judiciary Committee, as though a reader were being offered a choice between two
+comparable bodies. They are not comparable: a subcommittee only means anything in relation to its parent.
+
+So `buildCommitteeDirectory` keeps the records with no `parent` and drops the rest. Nothing becomes unreachable —
+every parent's page lists its subcommittees, each linking to a page of its own — and every card carries the count, so
+the directory states how much sits one level down rather than silently flattening it away. The scope note says the
+same thing in words, because a reader who counts 20-odd House committees where they expected 150 rows deserves to know
+why rather than to wonder.
+
+The same reasoning is why `"Subcommittee"`, a documented value of the API's own `committeeTypeCode`, is not one of this
+app's `committeeTypes`. Being a subcommittee is a fact about a record's relationship to another record, and this app
+models it structurally. A type that restated it would be a second answer to the same question, free to disagree with
+the first.
+
+## Committee Names Are Displayed Verbatim, and Rewritten Only for Search
+
+The same committee is published under two word orders depending on where you meet it. The list endpoint says
+`"Agriculture Committee"`. A bill's referral line, the chambers' own sites, and the committee's item-level
+`officialName` all say `"Committee on Agriculture"`. A reader who copies a referral line off a bill page and pastes it
+into the committee search box is searching for a string that appears nowhere in the list data.
+
+The first attempt at this rewrote the name for *display*, moving a trailing "Committee" to the front. That is wrong,
+and a component test caught it: "Committee" is part of the proper name of some bodies rather than a suffix on a
+subject, so the rewrite turned the Joint Economic Committee into "Committee on Joint Economic". Nothing in the string
+distinguishes the two cases, and a project whose claim is that you can check it against the record should not be
+inventing names for the bodies in it.
+
+So the app displays whatever Congress.gov published, and `committeeSearchTerms` confines the rewrite to matching, where
+a variant that reads oddly costs nothing because nobody ever sees one. A visible consequence worth naming: the
+directory card and the committee's own page can show the same committee under different word orders, because the list
+and item endpoints publish it differently. Both are verbatim, which is the property that matters.
+
+## The Committee Page Has No Roster, and No Deep Link
+
+Two things a reader might reasonably expect on a committee page are deliberately absent.
+
+**No membership.** Congress.gov's committee endpoints publish no roster. Assembling one by inference — from members'
+own records, from bill referrals, from anywhere — would be the single most plausible-looking fabrication this app could
+ship, because a list of names under a committee heading reads as a fact whatever caveat sits beside it. The page says
+what the API says and stops.
+
+**No per-committee link to congress.gov.** Their committee URLs take the form `/committee/house-agriculture/hsag00`: a
+name slug, then the system code. The slug is not published by the API, and deriving it from the name is guesswork that
+diverges further the longer the name gets. A guessed slug that happens to be wrong produces a link that looks
+authoritative and lands on a 404, which is worse for this project than one extra click. The page links Congress.gov's
+committee index and prints the system code beside it, which is the thing that actually identifies the committee at the
+destination.
+
+What the page does carry instead is the committee's recorded name history, which is the most genuinely educational
+thing the API publishes about one. A committee's jurisdiction is usually rewritten by renaming it — "Committee on
+Education and Labor" becoming "Committee on Education and the Workforce" and back again tracks which party held the
+chamber, not a clerical tidy-up — and that story is invisible from a current name alone.
+
+## Five Destinations Is Where the Header Stops Sharing a Line
+
+The site header is a three-column grid: wordmark, nav, search. Below 900px the search is hidden; below 640px the nav
+used to wrap in place, right-aligned under the wordmark. That worked at four destinations and stops working at five —
+squeezed into the column beside the wordmark, the labels wrap into a ragged two- or three-line block hanging off the
+right edge, and every destination added after that makes it worse.
+
+Adding `/committees` is what forced the question, and the fix chosen is the one that scales rather than the one that
+defers: below 640px the nav takes a full-width row of its own, left-aligned under the wordmark. Five labels fit on one
+line on any phone wider than about 340px, and below that they wrap to a tidy left-aligned second line instead of a
+staircase. The cost is roughly 12px of a sticky header, taken deliberately — the alternative was shrinking type
+already set at 0.78rem.
+
+The alternatives considered and rejected: a horizontally scrollable strip (hides destinations behind an affordance CSS
+can't conditionally show, since a fade would dim the last item even when nothing is overflowing), and a disclosure menu
+(a tap to reach any destination, plus JavaScript and focus management, for a nav that still fits). A sixth destination
+would fit the new row too. A seventh wants a different pattern, and the comment on `NAV_LINKS` is the marker for
+whoever gets there.

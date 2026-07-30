@@ -53,6 +53,12 @@
     min-width: 0;
   }
 
+  /* A subcommittee name is as long as its parent's, so two columns of them start colliding well before the card grid
+     does. */
+  .committee-subcommittee-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .segmented-filter {
     justify-content: flex-start;
     flex-wrap: wrap;
@@ -75,8 +81,23 @@
     width: min(100% - 32px, 1180px);
   }
 
+  /* The nav gets a row of its own below this width.
+   *
+   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That worked at four
+   * destinations and stops working at five: squeezed into the column beside the wordmark, the links wrap into a
+   * ragged two- or three-line block hanging off the right edge, and every one added after that makes it worse. The
+   * fix that scales is to stop sharing the line — a full-width row left-aligned under the wordmark fits five labels
+   * on one line on any phone wider than about 340px, and wraps to a tidy left-aligned second line below that instead
+   * of a staircase.
+   *
+   * The cost is roughly 12px of a sticky header, which is the trade being made deliberately: the alternative is
+   * shrinking the type again, and these labels are already at 0.78rem. */
   .site-header__inner {
-    min-height: 64px;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    min-height: 0;
+    gap: 4px;
+    padding-block: 10px;
   }
 
   .wordmark {
@@ -88,12 +109,13 @@
     height: 27px;
   }
 
-  /* Four destinations no longer fit on one line at this width. Wrapping (rather than shrinking the type further) keeps
-     every label readable and right-aligned under the wordmark. */
+  /* Overrides the `justify-self: end` set at 900px, which would otherwise shrink this row to its content and keep it
+     pinned right even now that it has a line to itself. */
   .primary-nav {
     flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px 15px;
+    justify-self: start;
+    justify-content: flex-start;
+    gap: 6px 16px;
     font-size: 0.78rem;
   }
 
@@ -144,6 +166,7 @@
   }
 
   .activity-grid,
+  .committee-grid,
   .directory-grid,
   .glossary-grid,
   .member-grid,

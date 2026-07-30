@@ -217,6 +217,77 @@ export const congressApiCosponsoredLegislationResponseSchema = z.looseObject({
   cosponsoredLegislation: z.array(congressApiBillSchema).optional().catch(undefined),
 });
 
+/**
+ * A committee named from inside another committee's record — a `parent` on a subcommittee, or an entry in a parent's
+ * `subcommittees` array. Both spellings carry the same three fields, so one schema covers both.
+ */
+export const congressApiCommitteeRefSchema = z.looseObject({
+  systemCode: optionalString,
+  name: optionalString,
+  url: optionalString,
+});
+
+/**
+ * Shape of one entry in `GET /v3/committee/{congress}` (the committee *list* endpoint).
+ *
+ * `committeeTypeCode` is the list endpoint's spelling of what the item endpoint calls `type`; both are accepted here so
+ * one schema and one mapper cover a committee arriving from either.
+ */
+export const congressApiCommitteeSchema = z.looseObject({
+  systemCode: optionalString,
+  name: optionalString,
+  chamber: optionalString,
+  committeeTypeCode: optionalString,
+  type: optionalString,
+  parent: congressApiCommitteeRefSchema.optional().catch(undefined),
+  subcommittees: z.array(congressApiCommitteeRefSchema).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/committee/{congress}`. */
+export const congressApiCommitteeListResponseSchema = z.looseObject({
+  committees: z.array(congressApiCommitteeSchema).optional().catch(undefined),
+  pagination: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+});
+
+/** One recorded name-and-span in a committee's history. @see CommitteeHistoryEntry for why this is worth rendering. */
+export const congressApiCommitteeHistorySchema = z.looseObject({
+  officialName: optionalString,
+  libraryOfCongressName: optionalString,
+  startDate: optionalString,
+  endDate: optionalString,
+  establishingAuthority: optionalString,
+});
+
+/** A count-and-link collection on a committee record (`bills`, `reports`, `nominations`). */
+const congressApiCommitteeCollectionSchema = z.looseObject({
+  count: optionalNumber,
+  url: optionalString,
+});
+
+/**
+ * Shape of `GET /v3/committee/{chamber}/{systemCode}` (the committee *item* endpoint).
+ *
+ * Note what this record does *not* carry: a `chamber`, and — unlike every list entry — a `name`. The chamber is known
+ * from the path that was requested, and the name has to be read out of `history`, whose most recent entry is the
+ * committee's current formal name. @see mapCommitteeProfile, which is where both of those are resolved.
+ */
+export const congressApiCommitteeDetailSchema = z.looseObject({
+  systemCode: optionalString,
+  type: optionalString,
+  isCurrent: z.boolean().optional().catch(undefined),
+  history: z.array(congressApiCommitteeHistorySchema).optional().catch(undefined),
+  parent: congressApiCommitteeRefSchema.optional().catch(undefined),
+  subcommittees: z.array(congressApiCommitteeRefSchema).optional().catch(undefined),
+  bills: congressApiCommitteeCollectionSchema.optional().catch(undefined),
+  reports: congressApiCommitteeCollectionSchema.optional().catch(undefined),
+  nominations: congressApiCommitteeCollectionSchema.optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/committee/{chamber}/{systemCode}`. */
+export const congressApiCommitteeDetailResponseSchema = z.looseObject({
+  committee: congressApiCommitteeDetailSchema.optional().catch(undefined),
+});
+
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;
 export type CongressApiBill = z.infer<typeof congressApiBillSchema>;
 export type CongressApiListResponse = z.infer<typeof congressApiListResponseSchema>;
@@ -235,3 +306,9 @@ export type CongressApiMemberDetail = z.infer<typeof congressApiMemberDetailSche
 export type CongressApiMemberDetailResponse = z.infer<typeof congressApiMemberDetailResponseSchema>;
 export type CongressApiSponsoredLegislationResponse = z.infer<typeof congressApiSponsoredLegislationResponseSchema>;
 export type CongressApiCosponsoredLegislationResponse = z.infer<typeof congressApiCosponsoredLegislationResponseSchema>;
+export type CongressApiCommitteeRef = z.infer<typeof congressApiCommitteeRefSchema>;
+export type CongressApiCommittee = z.infer<typeof congressApiCommitteeSchema>;
+export type CongressApiCommitteeListResponse = z.infer<typeof congressApiCommitteeListResponseSchema>;
+export type CongressApiCommitteeHistory = z.infer<typeof congressApiCommitteeHistorySchema>;
+export type CongressApiCommitteeDetail = z.infer<typeof congressApiCommitteeDetailSchema>;
+export type CongressApiCommitteeDetailResponse = z.infer<typeof congressApiCommitteeDetailResponseSchema>;
