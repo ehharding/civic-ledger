@@ -13,7 +13,8 @@
  * The rest covers what "configured" means for the key, since an empty-string key and an absent one have to behave
  * identically for the preview path to work.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import {
   BILL_LIST_CACHE_TAG,
@@ -22,7 +23,9 @@ import {
   buildCongressUrl,
   COMMITTEE_LIST_CACHE_TAG,
   CONGRESS_API_BASE,
+  type CongressRequestResult,
   committeeCacheTags,
+  fetchCongressGov,
   getCongressApiKey,
   MEMBER_LIST_CACHE_TAG,
   memberCacheTags,
@@ -30,6 +33,8 @@ import {
   normalizeBioguideId,
   normalizeCommitteeChamberSegment,
   normalizeSystemCode,
+  REQUEST_TIMEOUT_MS,
+  requestCongressJson,
 } from "@/lib/congress/http";
 
 /**
@@ -248,6 +253,53 @@ describe("getCongressApiKey", (): void => {
     process.env.CONGRESS_API_KEY = "  test-key\n";
 
     expect(getCongressApiKey()).toBe("test-key");
+  });
+});
+
+describe("request timeout", (): void => {
+  /*
+   * The point of the timeout is not that a slow request is canceled — it is that a stalled one still resolves into the
+   * adapter's ordinary "failed" outcome instead of never resolving at all. A request that never settles never reaches
+   * the catch that would have produced the fallback, which is the one upstream failure mode the rest of this module's
+   * "nothing throws" design does not cover on its own.
+   */
+  afterEach((): void => {
+    vi.unstubAllGlobals();
+  });
+
+  it("bounds every request with an abort signal, alongside the shared cache window", (): void => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    void fetchCongressGov(buildCongressUrl("/bill/119", "test-key"), [BILL_LIST_CACHE_TAG]);
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit & { next?: { tags?: string[] } };
+
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.next?.tags).toEqual([BILL_LIST_CACHE_TAG]);
+  });
+
+  it("allows a request long enough to be a real answer rather than a slow one", (): void => {
+    expect(REQUEST_TIMEOUT_MS).toBeGreaterThanOrEqual(5_000);
+    expect(REQUEST_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
+  });
+
+  it("reports a timed-out request as failed, not as not-found, so the caller falls back rather than 404s", async (): Promise<void> => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError")),
+    );
+    const consoleError = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+
+    const result: CongressRequestResult<unknown> = await requestCongressJson(
+      buildCongressUrl("/bill/119", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      z.unknown(),
+      "bill list",
+    );
+
+    expect(result).toEqual({ outcome: "failed" });
+    consoleError.mockRestore();
   });
 });
 

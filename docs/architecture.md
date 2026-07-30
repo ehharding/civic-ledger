@@ -33,6 +33,7 @@ flowchart LR
 | `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
 | `src/lib/format.ts`                                | Shared display and comparison rules             | One collator and one date order for the whole app.                |
 | `src/lib/glossary.ts`                              | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
+| `src/lib/metadata.ts`                              | How a page names itself to crawlers and shares  | One call per page; compose share tags, never assume inheritance.  |
 | `src/lib/search-params.ts`                         | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`                                 | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
 | `src/lib/congress/seating.ts`                      | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
@@ -77,7 +78,9 @@ page. Only a payload that isn't an object at all is rejected outright.
    additionally calls `getCongressComposition` for the chamber diagram, concurrently rather than in sequence; the two
    datasets carry independent provenance and fall back independently.
 2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill/{congress}?format=json` and lets
-   Next cache the result for five minutes.
+   Next cache the result for five minutes. Every request is bounded by `REQUEST_TIMEOUT_MS`, so a stalled connection
+   becomes an ordinary `failed` outcome — and therefore a labeled fallback — instead of a page that never finishes
+   rendering. That bound matters most in the search sweep, which awaits one request per supported Congress at once.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
@@ -154,6 +157,8 @@ history, notification delivery, or more than a few API-facing features.
   `src/lib/search-params.ts`). None of the directory's own query params is ever interpolated into an upstream request;
   they only ever select among values already in hand.
 - Upstream payloads are validated at runtime, not cast.
+- Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
+  hold a server render open indefinitely.
 - No political-affiliation targeting or persuasion logic belongs in the product.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
   real links.

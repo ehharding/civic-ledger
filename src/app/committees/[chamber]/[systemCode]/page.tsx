@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
 import { CommitteeDetail } from "@/components/committee-detail";
+import { committeeHref } from "@/lib/committee-route";
 import { type CommitteeProfileResult, getCommitteeProfile } from "@/lib/congress/client";
 import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees";
 import { previewCommitteeProfiles } from "@/lib/congress/fixtures";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 
 /** Params for the individual committee route (`/committees/[chamber]/[systemCode]`). */
 type CommitteePageProps = {
@@ -48,12 +50,13 @@ export async function generateMetadata({ params }: CommitteePageProps): Promise<
   const { chamber, systemCode } = await params;
   const { profile }: CommitteeProfileResult = await getCommitteeProfile(chamber, systemCode);
 
-  if (!profile) return { title: "Committee Not Found" };
+  if (!profile) return notFoundMetadata("Committee Not Found");
 
-  return {
+  return pageMetadata({
     title: profile.name,
     description: describeCommittee(profile),
-  };
+    path: committeeHref(profile.chamber, profile.systemCode),
+  });
 }
 
 /**

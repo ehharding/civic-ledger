@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { type CommitteeDirectoryResult, getCommitteeDirectory } from "@/lib/congress/client";
 import type { CommitteeDirectoryQuery } from "@/lib/congress/committee-filter";
+import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveCommitteeDirectoryQuery } from "@/lib/search-params";
 
 /**
@@ -17,7 +18,12 @@ import { type RouteSearchParams, resolveCommitteeDirectoryQuery } from "@/lib/se
  */
 export const revalidate: number = 300;
 
-export const metadata: Metadata = { title: "Committees" };
+export const metadata: Metadata = pageMetadata({
+  title: "Committees",
+  description:
+    "Every standing, select, and joint committee of Congress — the bodies most bills are referred to and never leave.",
+  path: "/committees",
+});
 
 /** Params for the committee directory route — the shareable `?q=`/`?chamber=`/`?type=`/`?sort=` view. */
 type CommitteesPageProps = {

@@ -6,8 +6,13 @@ import { CalloutCard } from "@/components/callout-card";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { type BillStage, billStageLabels, billStages } from "@/lib/congress/types";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "How a Bill Becomes a Law" };
+export const metadata: Metadata = pageMetadata({
+  title: "How a Bill Becomes a Law",
+  description: "The five stages every bill passes through, from introduction to enactment, walked one step at a time.",
+  path: "/learn/how-a-bill-becomes-law",
+});
 
 /** One step of the lesson: the BillJourney stage it pins, plus a plain-English explanation of what happens there. */
 type LessonStep = {

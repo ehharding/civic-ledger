@@ -11,6 +11,7 @@ import {
   listMemberJurisdictions,
   type MemberDirectoryQuery,
 } from "@/lib/congress/member-filter";
+import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/search-params";
 
 /**
@@ -22,7 +23,11 @@ import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/searc
  */
 export const revalidate: number = 300;
 
-export const metadata: Metadata = { title: "Members" };
+export const metadata: Metadata = pageMetadata({
+  title: "Members",
+  description: "Every member currently seated in the House and Senate, searchable by name, state, party, or chamber.",
+  path: "/members",
+});
 
 /** Params for the member directory route — the shareable `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=` view. */
 type MembersPageProps = {

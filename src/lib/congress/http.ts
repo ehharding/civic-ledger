@@ -31,6 +31,25 @@ export const REVALIDATE_SECONDS: number = 300;
 export const MAX_API_PAGE_SIZE: number = 250;
 
 /**
+ * How long a single Congress.gov request may take before it is abandoned, in milliseconds.
+ *
+ * `fetch` has no timeout of its own: a connection that opens and then stalls hangs until the platform's own socket
+ * timeout, which on a Node host is minutes and on some is never. That is the one upstream failure mode this adapter's
+ * "nothing throws, everything degrades" design does *not* cover on its own — a request that never settles never
+ * reaches the `catch` that would have turned it into `{ outcome: "failed" }`, so the page waits instead of falling
+ * back.
+ *
+ * The cost of that is worst exactly where the app fans out widest. `getSearchResults` awaits one request per supported
+ * Congress — a couple of dozen of them, in parallel — so without a bound, the slowest single connection sets the
+ * latency of the whole search, and one stalled socket holds the entire result set hostage. With one, that Congress
+ * simply drops out of the sweep and the search returns what the rest of them found.
+ *
+ * Ten seconds is well past Congress.gov's normal response time for the largest page this app asks for (250 records)
+ * while still being far short of how long a person will wait before assuming the page is broken.
+ */
+export const REQUEST_TIMEOUT_MS: number = 10_000;
+
+/**
  * Reads the server-only Congress.gov API key.
  *
  * Read through this helper rather than `process.env` directly so every data path agrees on what "configured" means: a
@@ -66,17 +85,24 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
 }
 
 /**
- * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window and headers.
+ * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window, headers, and timeout.
+ *
+ * The abort signal is per-call rather than shared, since each request needs its own clock — and it is safe to pass
+ * alongside `next.revalidate`: Next strips the signal when it re-requests a stale entry in the background, so a
+ * timeout bounds the request a reader is actually waiting on without ever cancelling a revalidation.
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags, so a future revalidation hook can invalidate a whole family of requests at once.
- * @returns The raw response. Prefer {@link requestCongressJson}, which also handles status codes and parsing; this is
- *   exported mainly for the rare caller that needs the response itself.
+ * @returns The raw response. Rejects with a `TimeoutError` if the request outlasts {@link REQUEST_TIMEOUT_MS}, which
+ *   {@link requestCongressJson} turns into an ordinary `{ outcome: "failed" }` like any other transport failure.
+ *   Prefer that function, which also handles status codes and parsing; this is exported mainly for the rare caller
+ *   that needs the response itself.
  */
 export function fetchCongressGov(url: URL, tags: string[]): Promise<Response> {
   return fetch(url, {
     next: { revalidate: REVALIDATE_SECONDS, tags },
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 }
 

@@ -6,8 +6,13 @@ import { CalloutCard } from "@/components/callout-card";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
 import { type GlossaryTerm, glossary } from "@/lib/glossary";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "Learn" };
+export const metadata: Metadata = pageMetadata({
+  title: "Learn",
+  description: "Plain-English definitions for the vocabulary of the legislative process.",
+  path: "/learn",
+});
 
 /**
  * The glossary route.

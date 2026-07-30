@@ -13,6 +13,7 @@ import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/fixtures";
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
 /** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable deep link. */
@@ -36,17 +37,27 @@ export function generateStaticParams(): { congress: string }[] {
 }
 
 /**
- * Builds the per-Congress page title.
+ * Builds the per-Congress page title, description, and share tags.
  *
  * @param params - The route's `congress` param.
- * @returns e.g., `"118th Congress Bills"`, or the generic `"Bills"` for an out-of-range Congress — the page itself
- *   renders a 404 in that case, so the metadata simply avoids implying a page that isn't there.
+ * @returns e.g., `"118th Congress Bills"`, naming the calendar years that Congress sat so a shared link says *when* as
+ *   well as which. An out-of-range Congress gets the `noindex` not-found metadata instead — the page itself renders a
+ *   404 in that case, and the tags should agree rather than implying a page that isn't there.
  */
 export async function generateMetadata({ params }: CongressBillsPageProps): Promise<Metadata> {
   const { congress: rawCongress } = await params;
   const congress: number | null = parseCongressParam(rawCongress);
 
-  return { title: congress === null ? "Bills" : `${formatOrdinal(congress)} Congress Bills` };
+  if (congress === null) return notFoundMetadata("Congress Not Found");
+
+  const { startYear, endYear } = getCongressYearRange(congress);
+  const ordinal: string = formatOrdinal(congress);
+
+  return pageMetadata({
+    title: `${ordinal} Congress Bills`,
+    description: `Bills and resolutions introduced in the ${ordinal} Congress (${startYear}–${endYear}).`,
+    path: `/bills/${congress}`,
+  });
 }
 
 /**

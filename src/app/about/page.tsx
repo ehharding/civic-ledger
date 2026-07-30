@@ -4,8 +4,13 @@ import type { ForwardRefExoticComponent, JSX, RefAttributes } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
+import { pageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = { title: "About" };
+export const metadata: Metadata = pageMetadata({
+  title: "About",
+  description: "How Civic Ledger sources its records, labels its data, and links back to the official register.",
+  path: "/about",
+});
 
 /** One product principle shown on the /about (Methodology) page: its icon, title, and one-line explanation. */
 type Principle = {

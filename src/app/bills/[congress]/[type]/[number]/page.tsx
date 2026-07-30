@@ -3,9 +3,12 @@ import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
 import { BillDetail } from "@/components/bill-detail";
+import { billHref } from "@/lib/bill-route";
 import { type BillLookupResult, getBillById, getBillSummaries, getBillTextVersions } from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
 import type { BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import { formatOrdinal } from "@/lib/format";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 
 /** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {
@@ -44,12 +47,17 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
   const route: BillRouteParams = await params;
   const { bill }: BillLookupResult = await getBillById(route);
 
-  if (!bill) return { title: "Bill Not Found" };
+  if (!bill) return notFoundMetadata("Bill Not Found");
 
-  return {
+  return pageMetadata({
     title: `${bill.type} ${bill.number}: ${bill.title}`,
-    description: bill.latestAction.text,
-  };
+    // The latest action is the most useful single sentence about a bill — it says where the bill actually *is*, which
+    // is the question someone following a shared link is most often asking. Falls back to naming the bill, since a
+    // freshly introduced record can carry no action text at all.
+    description:
+      bill.latestAction.text ?? `${bill.type} ${bill.number} in the ${formatOrdinal(bill.congress)} Congress.`,
+    path: billHref(bill),
+  });
 }
 
 /**

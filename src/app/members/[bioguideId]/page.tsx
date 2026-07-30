@@ -12,6 +12,8 @@ import {
   formatMemberTitle,
   type MemberProfile,
 } from "@/lib/congress/members";
+import { memberHref } from "@/lib/member-route";
+import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 
 /** Params for the individual member route (`/members/[bioguideId]`). */
 type MemberPageProps = {
@@ -47,15 +49,16 @@ export async function generateMetadata({ params }: MemberPageProps): Promise<Met
   const { bioguideId } = await params;
   const { profile }: MemberProfileResult = await getMemberProfile(bioguideId);
 
-  if (!profile) return { title: "Member Not Found" };
+  if (!profile) return notFoundMetadata("Member Not Found");
 
   const seat: string = formatMemberSeat(profile, profile.chamber);
 
-  return {
+  return pageMetadata({
     title: `${formatMemberName(profile)} — ${formatMemberTitle(profile)}`,
     description:
       seat.length > 0 ? `${formatMemberTitle(profile)} representing ${seat}.` : chamberLabels[profile.chamber],
-  };
+    path: memberHref(profile.bioguideId),
+  });
 }
 
 /**

@@ -9,9 +9,14 @@ import { SiteShell } from "@/components/site-shell";
 import { getCongressSnapshot } from "@/lib/congress/client";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
-export const metadata: Metadata = { title: "Bills" };
+export const metadata: Metadata = pageMetadata({
+  title: "Bills",
+  description: "Browse and search bills and resolutions before Congress, by topic, citation, or legislative stage.",
+  path: "/bills",
+});
 
 /**
  * Bill directory route for the *current* Congress.
