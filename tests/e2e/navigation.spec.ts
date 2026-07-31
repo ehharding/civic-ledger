@@ -89,7 +89,7 @@ test("the bill-lifecycle lesson is reachable from /learn and links onward to /bi
 }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
   await page.goto("/learn");
 
-  await page.getByRole("link", { name: "Start the Lesson" }).click();
+  await page.getByRole("link", { name: "Start the lesson: How a Bill Becomes a Law" }).click();
   await expect(page).toHaveURL(/\/learn\/how-a-bill-becomes-law$/);
   await expect(
     page.getByRole("heading", { level: 1, name: "The Path From an Introduced Bill to a Public Law." }),
@@ -102,6 +102,45 @@ test("the bill-lifecycle lesson is reachable from /learn and links onward to /bi
 
   await page.getByRole("link", { name: "Explore Bills" }).click();
   await expect(page).toHaveURL(/\/bills$/);
+});
+
+test("every lesson cites primary sources and states what it leaves out", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  // The rule `docs/roadmap.md` gated the second and third modules on, checked through the rendered page rather than
+  // only in the registry: a citation list that stopped rendering would leave the prose making uncheckable claims.
+  for (const slug of ["how-a-bill-becomes-law", "what-committees-do", "how-congress-votes"]) {
+    await page.goto(`/learn/${slug}`);
+
+    const sources: Locator = page.getByRole("region", { name: "Sources" });
+    await expect(sources).toBeVisible();
+    expect(await sources.getByRole("link").count()).toBeGreaterThan(0);
+
+    await expect(page.getByText(/written by Civic Ledger, not published by Congress/)).toBeVisible();
+    await expect(page.getByRole("region", { name: /^What This/ })).toBeVisible();
+  }
+});
+
+test("the committee lesson leads to the committee directory", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/learn");
+
+  await page.getByRole("link", { name: "Start the lesson: What a Committee Actually Does" }).click();
+  await expect(page).toHaveURL(/\/learn\/what-committees-do$/);
+
+  // The lesson's headline refusal, and the one this app is most often asked for. @see docs/data-policy.md.
+  await expect(page.getByText(/publish no roster/)).toBeVisible();
+
+  await page.getByRole("link", { name: "Browse Committees" }).click();
+  await expect(page).toHaveURL(/\/committees$/);
+});
+
+test("an unknown lesson slug is a 404, not an empty lesson", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  const response = await page.goto("/learn/how-a-bill-becomes-a-sandwich");
+  expect(response?.status()).toBe(404);
 });
 
 test("a bill's sponsor leads to their member page", async ({

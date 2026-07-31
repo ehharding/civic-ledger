@@ -42,14 +42,20 @@
   margin-bottom: 20px;
 }
 
-/* The mid-size section heading every card/panel type with its own h2 starts from. Section headings, detail panels and
-   the reading-card promos use it as-is; the learn hub's glossary entries and the about page's principles inherit the
-   color and rhythm but retune the size in learn.css, which loads later. That override is deliberate — those two sit in
-   dense grids where the full display size would crowd — so it is left where it is rather than folded in here. */
+/* The mid-size section heading every card/panel type with its own heading starts from. Section headings, detail panels
+   and the reading-card promos use it as-is; the learn hub's lesson cards and glossary entries and the about page's
+   principles inherit the color and rhythm but retune the size in learn.css, which loads later. That override is
+   deliberate — those sit in dense grids where the full display size would crowd — so it is left where it is rather
+   than folded in here.
+
+   The selector lists an `h3` twice for a reason that is about document outline rather than looks: a glossary entry and
+   a lesson card both sit *under* a section heading on /learn, so they are h3s wearing the h2 treatment, not h2s. */
 .section-heading h2,
 .detail-panel h2,
 .reading-card h2,
-.glossary-entry h2,
+.lesson-sources h2,
+.lesson-index__item h3,
+.glossary-entry h3,
 .principle h2 {
   margin-top: 6px;
   color: var(--navy-deep);

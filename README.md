@@ -54,7 +54,7 @@ pnpm exec playwright install chromium
 | `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, official text versions, and an educational journey cue     |
 | `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships               |
 | `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, and subcommittees                            |
-| `/learn`, `/learn/how-a-bill-becomes-law`        | Civic glossary and the first source-linked learning module                        |
+| `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                           |
 | `/about`                                         | Methodology: how records are sourced, labeled, and linked back                    |
 | `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                            |
 
@@ -69,6 +69,9 @@ Behind those routes:
 - **A search that states its own limits.** Congress.gov's bill endpoint has no keyword parameter, so search sweeps every
   supported Congress's most recently active bills — and the result copy says so rather than implying an exhaustive
   query.
+- **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
+  ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including,
+  in the voting module, that this app holds no roll-call data at all.
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.

@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
 import { type CongressHistoryEntry, listCongresses } from "@/lib/congress/congress-history";
+import { lessonHref } from "@/lib/lesson-route";
+import { type Lesson, lessons } from "@/lib/lessons";
 import { getSiteUrl } from "@/lib/site";
 
 // Reads no request data, so it's safe to include in a STATIC_EXPORT=true build (see robots.ts for the same reasoning) —
@@ -23,7 +25,10 @@ const STATIC_ROUTES: readonly string[] = [
   "/members",
   "/committees",
   "/learn",
-  "/learn/how-a-bill-becomes-law",
+  // Every learning module, read out of the registry rather than listed here. These are the one kind of individual
+  // record page this file *does* enumerate, and the reason is the one it withholds from bills and members: the list is
+  // computed with no I/O, so including it costs the file none of its "cheap and reliable" property.
+  ...lessons.map((lesson: Lesson): string => lessonHref(lesson.slug)),
   "/about",
 ];
 

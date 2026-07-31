@@ -19,6 +19,7 @@ import {
   type Subcommittee,
 } from "@/lib/congress/committees";
 import type { CongressSnapshot } from "@/lib/congress/types";
+import { lessonHref } from "@/lib/lesson-route";
 
 /** Props for {@link CommitteeDetail} — everything the committee route resolves server-side. */
 type CommitteeDetailProps = {
@@ -234,15 +235,19 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt }: Commit
         )}
       </section>
 
+      {/* Points at the committee module rather than the lifecycle one it used to: referral, markup, and the silence
+          that ends most bills are what this page's reader is holding a half-answer to, and the lifecycle lesson covers
+          all three in a single sentence. Built through `lessonHref` because the lesson routes are now one dynamic
+          segment, so a literal here is both untyped and a slug typed in a second place. */}
       <CalloutCard
         body="Most bills are referred to a committee and never leave it. That is the ordinary outcome rather than a failure of one — a committee's job includes deciding what not to take up, and a referral is the beginning of that process, not a verdict on it."
         heading="A Referral Is Not a Vote."
         headingId="committee-reading-heading"
-        href="/learn/how-a-bill-becomes-law"
+        href={lessonHref("what-committees-do")}
         icon={Landmark}
         kicker="Read It With Context"
         linkIcon={ArrowUpRight}
-        linkLabel="See the Whole Path"
+        linkLabel="See What a Committee Does"
       />
     </SiteShell>
   );

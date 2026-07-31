@@ -1,4 +1,5 @@
-/* /learn (glossary + lesson steps) and /about (product principles). */
+/* /learn (lesson index + glossary), the individual lesson modules under /learn/[slug], and /about (product
+   principles). */
 
 .lesson-steps {
   display: flex;
@@ -13,6 +14,118 @@
 
 .lesson-step .bill-journey {
   margin-top: 22px;
+}
+
+/* The honest-limits panel that closes every lesson before its sources. It wears .detail-panel--accent's teal rather
+   than the preview notice's amber deliberately: this is not a warning that something is wrong, it is the lesson
+   naming the simplification it just made. @see LessonArticle. */
+.lesson-limits {
+  margin-top: 34px;
+}
+
+.lesson-limits h2 {
+  margin-top: 6px;
+  font-size: 1.42rem;
+}
+
+.lesson-limits ul {
+  display: grid;
+  gap: 13px;
+  max-width: 62ch;
+  margin: 16px 0 0;
+  padding-left: 19px;
+  list-style: disc;
+}
+
+.lesson-limits li {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.lesson-limits li::marker {
+  color: var(--burgundy);
+}
+
+.lesson-sources {
+  margin-top: 34px;
+  border-top: 1px solid var(--line-dark);
+  padding-top: 26px;
+}
+
+.lesson-sources h2 {
+  font-size: 1.42rem;
+}
+
+/* One citation per row, each a title and the publisher under it, rather than a run-in list. The publisher is the part
+   that tells a reader whether the link is worth following, so it gets its own line instead of a parenthetical. */
+.lesson-source-list {
+  display: grid;
+  gap: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.lesson-source-list li {
+  display: grid;
+  gap: 3px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lesson-source-list__publisher {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+/* The learn hub's list of modules. A numbered list because the order is a claim — each module assumes the one above
+   it — but the marker is suppressed, since every card already prints "Lesson N" in its own kicker and two numbers on
+   one row would disagree the moment a module moved. */
+.lesson-index {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-dark);
+  list-style: none;
+}
+
+.lesson-index__item {
+  display: grid;
+  gap: 0;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lesson-index__item h3 {
+  max-width: 24ch;
+}
+
+.lesson-index__summary {
+  max-width: 62ch;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.lesson-index__meta {
+  margin-top: 9px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+}
+
+.lesson-index .text-link {
+  margin-top: 15px;
+}
+
+/* The glossary follows the lesson list, which ends on its own hairline, so this heading supplies the gap between the
+   two sections rather than leaving them touching. */
+.learn-glossary-heading {
+  margin-top: 52px;
 }
 
 .glossary-grid {
@@ -32,7 +145,7 @@
   border-color: var(--burgundy);
 }
 
-.glossary-entry h2 {
+.glossary-entry h3 {
   max-width: 21ch;
   font-size: 1.58rem;
 }

@@ -1,10 +1,10 @@
 /**
- * Covers all three in-app route builders.
+ * Covers all four in-app route builders.
  *
  * They are three lines each, but `docs/architecture.md` gives them a rule — "One definition per route shape; never
- * build a route inline" — which means every link to a bill, a person, or a committee in this app resolves through them.
- * A drift here is not a broken helper, it is every card, seat, sponsor line, and referral link pointing somewhere that
- * doesn't exist.
+ * build a route inline" — which means every link to a bill, a person, a committee, or a lesson in this app resolves
+ * through them. A drift here is not a broken helper, it is every card, seat, sponsor line, and referral link pointing
+ * somewhere that doesn't exist.
  *
  * What's pinned down is the normalization each performs, since that is what lets an inconsistently-cased upstream
  * record and a hand-typed URL land on the same page.
@@ -14,6 +14,8 @@ import { describe, expect, it } from "vitest";
 import { billHref } from "@/lib/bill-route";
 import { committeeHref } from "@/lib/committee-route";
 import { billIdentityKey } from "@/lib/congress/types";
+import { lessonHref } from "@/lib/lesson-route";
+import { findLesson, type Lesson, lessons } from "@/lib/lessons";
 import { memberHref } from "@/lib/member-route";
 
 describe("billHref", (): void => {
@@ -74,5 +76,24 @@ describe("committeeHref", (): void => {
     // The same system code under a different chamber is a different page — which is the whole reason the chamber is a
     // path segment rather than something the route has to guess back. @see committeeHref.
     expect(committeeHref("house", "hsag00")).not.toBe(committeeHref("senate", "hsag00"));
+  });
+});
+
+describe("lessonHref", (): void => {
+  it("builds the lesson route from the slug alone", (): void => {
+    expect(lessonHref("how-a-bill-becomes-law")).toBe("/learn/how-a-bill-becomes-law");
+  });
+
+  it("lower-cases and trims, matching what findLesson accepts", (): void => {
+    expect(lessonHref("  How-Congress-Votes  ")).toBe("/learn/how-congress-votes");
+  });
+
+  it("round-trips: every route it builds resolves back to the lesson it was built from", (): void => {
+    // The sitemap, the hub index, and each lesson's own callout all go through this. A slug that builds a URL the
+    // route can't resolve is a listed page that 404s.
+    for (const lesson of lessons) {
+      const slug: string = lessonHref(lesson.slug).replace("/learn/", "");
+      expect(findLesson(slug)).toBe(lesson as Lesson);
+    }
   });
 });

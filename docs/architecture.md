@@ -16,6 +16,11 @@ nominations, treaties, roll-call votes, the *Congressional Record* — but a bro
 more expensive to keep fresh than a focused surface is. Those are future verticals, not omissions; see
 [Roadmap](roadmap.md).
 
+A collection being out of scope does not make it out of bounds for the `/learn` modules: `/learn/how-congress-votes`
+explains roll-call votes and then says outright that this app holds none, linking the two chambers' own tallies. The
+rule that keeps that honest rather than misleading is in
+[Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources).
+
 ```mermaid
 flowchart LR
     V[Visitor] --> N[Next.js App Router]
@@ -38,20 +43,21 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 
 ## Boundaries
 
-| Layer                                          | Responsibility                                  | Rule                                                              |
-|------------------------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`                                      | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`                               | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/db`                                       | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
-| `src/hooks`                                    | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
-| `src/lib/api-query.ts`                         | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/*-route.ts` (bill, member, committee) | In-app route construction                       | One definition per route shape; never build a route inline.       |
-| `src/lib/format.ts`                            | Shared display and comparison rules             | One collator and one date order for the whole app.                |
-| `src/lib/glossary.ts`                          | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
-| `src/lib/metadata.ts`                          | How a page names itself to crawlers and shares  | One call per page; compose share tags, never assume inheritance.  |
-| `src/lib/search-params.ts`                     | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
-| `src/lib/congress`                             | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/congress/seating.ts`                  | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
+| Layer                         | Responsibility                                  | Rule                                                              |
+|-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
+| `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
+| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
+| `src/hooks`                   | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
+| `src/lib/api-query.ts`        | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/*-route.ts`          | In-app route construction                       | One definition per route shape; never build a route inline.       |
+| `src/lib/format.ts`           | Shared display and comparison rules             | One collator and one date order for the whole app.                |
+| `src/lib/glossary.ts`         | Curated editorial vocabulary                    | Cover every term the lessons lean on.                             |
+| `src/lib/lessons.ts`          | Curated editorial learning content              | Cite primary sources; state what each lesson leaves out.          |
+| `src/lib/metadata.ts`         | How a page names itself to crawlers and shares  | One call per page; compose share tags, never assume inheritance.  |
+| `src/lib/search-params.ts`    | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
+| `src/lib/congress`            | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
+| `src/lib/congress/seating.ts` | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
 
 ### Inside the Congress Adapter
 
@@ -269,7 +275,9 @@ wrong from the control's point of view.
 
 `sitemap.ts` enumerates every supported Congress because that list is *computed* — `listCongresses` derives it from a
 fixed constitutional cadence with no I/O — which is what lets the file stay `force-static` and work in the static
-export.
+export. Every learning module is listed on the same test: `lessons` is a local array, so reading it costs the file
+none of the "cheap and reliable" property that keeps individual records out. The route enumerates itself from the same
+array in `generateStaticParams`, which is what makes a listed lesson URL and a prerendered lesson page the same set.
 
 Individual member, bill, and committee pages stay out. They are bounded and individually useful, so they look like they
 belong; they don't, yet. Knowing who currently holds a seat requires a live Congress.gov request, which would make

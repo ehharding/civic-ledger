@@ -160,6 +160,30 @@ publishes about one. A committee's jurisdiction is usually rewritten by renaming
 becoming "Committee on Education and the Workforce" and back again tracks which party held the chamber, not a clerical
 tidy-up), and that story is invisible from a current name alone.
 
+## Editorial Content Cites Its Sources
+
+The `/learn` modules are the one place this app writes prose about how Congress works rather than presenting a record it
+received. That makes them the one place it can be wrong in its own voice, so they carry two obligations no other surface
+does, both rendered on the page rather than kept in a doc:
+
+- **Every module ends with its sources**, each naming its publisher (`LessonSources`). The rule is primary sources only
+  — house.gov, senate.gov, clerk.house.gov, congress.gov, and the National Archives' transcription of the Constitution —
+  over https, no secondary explainers, nothing paywalled. A citation a reader cannot open is decoration. Enforced in
+  `src/lib/lessons.test.ts`, which checks the host, the scheme, the publisher, and that no lesson cites the same
+  document twice.
+- **Every module states what it leaves out**, in its own `limits` list. Each of these lessons is a simplification — that
+  is what a lesson is — and a simplification that doesn't say so is just an inaccuracy. The panel sits between the last
+  step and the sources, so a reader who skims still passes it.
+
+A third rule follows from the rest of this document: **a lesson never implies this app shows something it doesn't.** The
+voting module is the sharp case. Civic Ledger holds no roll-call data at all, so the lesson says so in the same breath
+as it explains what a recorded vote is, and sends the reader to the two chambers' own tallies. Explaining a thing the
+interface cannot show is useful; explaining it in a way that leaves a reader hunting the interface for it is not.
+
+The glossary (`src/lib/glossary.ts`) is deliberately exempt. The line is length rather than rigor: a one-line definition
+of "cosponsor" is vocabulary, and a five-step account of how a chamber records a vote is a claim. What the glossary owes
+instead is coverage of the terms the lessons lean on.
+
 ## What This Product Will Not Do
 
 **No scoring.** Member pages report what Congress.gov publishes — service record, party, jurisdiction, and the

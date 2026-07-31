@@ -19,11 +19,23 @@ anything resembling notification.
 which is why it is the first thing that needs auth — and why the schema's scope note is worth keeping honest as it
 grows: congressional records are not stored there and are not mirrored.
 
-## 3. More Learning Modules
+## 3. A Fourth Learning Module
 
-The first source-linked module covers the five-stage bill lifecycle at `/learn/how-a-bill-becomes-law`. Committees and
-voting are the natural next two. `src/lib/glossary.ts` is the boundary: curated editorial content, and it should start
-citing sources once lessons become long-form.
+The three this item originally asked for are built — the bill lifecycle, what a committee does, and how Congress votes
+— and they share one registry (`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that
+file rather than a new page. The condition attached here was met rather than dropped: a lesson cites its sources, and
+every module also prints what it leaves out. See
+[Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the standing rule and its
+enforcement point.
+
+**What a fourth module needs first, and none of the three did: a retrieval date.** Every citation today is a stable
+explanatory page on house.gov, senate.gov, clerk.house.gov, or the National Archives — documents whose content is not
+versioned by when you read them. A module citing a CRS report, a specific Congress's rules, or anything else that is
+revised in place needs the date it was read printed beside the link, and `LessonSource` carries no such field. Add it
+with the first citation that requires it, not before.
+
+The glossary stays uncited by design. The line is length, not rigor: a one-line definition is vocabulary anyone can
+confirm in a sentence, and a five-step explanation is a claim.
 
 ## 4. Committee Membership — Blocked
 
