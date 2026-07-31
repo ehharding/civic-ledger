@@ -39,8 +39,10 @@ export const MAX_QUERY_LENGTH: number = 200;
 const offsetSchema: z.ZodCatch<z.ZodPipe<z.ZodCoercedNumber, z.ZodTransform<number, number>>> = z.coerce
   .number()
   .transform((value: number): number =>
+    /* v8 ignore start -- `z.coerce.number()` rejects NaN and Infinity itself, so `.catch(0)` fires before this runs. */
     Number.isFinite(value) ? Math.min(MAX_BILL_OFFSET, Math.max(0, Math.trunc(value))) : 0,
   )
+  /* v8 ignore stop */
   .catch(0);
 
 /**

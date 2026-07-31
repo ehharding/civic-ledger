@@ -138,6 +138,18 @@ describe("computeSeatingGeometry", (): void => {
   it("honors an explicit row count", (): void => {
     expect(computeSeatingGeometry(SENATE_SEATS, 4).rows).toBe(4);
   });
+
+  it("sizes seats from the arcs that actually hold them when an arc comes back empty", (): void => {
+    // With more arcs than seats, the rebalancing loop gives up rather than emptying its only donor, so some arcs end
+    // up with nothing on them. Seat size is derived from the tightest *occupied* arc; an empty one has no spacing to
+    // contribute and must be skipped rather than divided by.
+    const geometry: SeatingGeometry = computeSeatingGeometry(1, 3);
+
+    expect(geometry.rows).toBe(3);
+    expect(geometry.positions).toHaveLength(1);
+    expect(geometry.seatRadius).toBeGreaterThan(0);
+    expect(Number.isFinite(geometry.seatRadius)).toBe(true);
+  });
 });
 
 describe("compareMembersForSeating", (): void => {
@@ -226,15 +238,26 @@ describe("single-arc and forced-arc geometry", (): void => {
     }
   });
 
-  it("omits members it cannot seat rather than drawing two people on one seat", (): void => {
-    // Only reachable by forcing an arc count too small to hold everyone, which is why the guard exists at all.
+  it("fits everyone onto one arc rather than dropping members", (): void => {
+    // Forcing a single arc doesn't reduce capacity — the distribution puts every seat on whatever arcs exist.
     const roster: CongressMember[] = members({ democratic: 30, republican: 30 });
     const seating: ChamberSeating = buildChamberSeating(roster, 1);
 
-    expect(seating.seats.length).toBeLessThanOrEqual(roster.length);
+    expect(seating.seats).toHaveLength(roster.length);
     expect(seating.seats).toHaveLength(seating.geometry.positions.length);
     // Whoever is drawn is drawn once, in their own position.
     expect(new Set(seating.seats.map((seat: ChamberSeat): string => seat.key)).size).toBe(seating.seats.length);
+  });
+
+  it("omits members it cannot seat rather than drawing two people on one seat", (): void => {
+    // Forcing zero arcs is the one input that yields fewer positions than members: the geometry short-circuits to an
+    // empty half-disc while the roster is still full. The guard is what keeps that from indexing past the end and
+    // seating people on `undefined`.
+    const roster: CongressMember[] = members({ democratic: 30, republican: 30 });
+    const seating: ChamberSeating = buildChamberSeating(roster, 0);
+
+    expect(seating.geometry.positions).toEqual([]);
+    expect(seating.seats).toEqual([]);
   });
 });
 

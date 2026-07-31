@@ -1,10 +1,21 @@
 # Civic Ledger
 
+[![CI][ci-badge]][ci-workflow]
+[![Vercel][vercel-badge]][vercel-workflow]
+[![Pages Demo][pages-badge]][pages-workflow]
+[![Coverage][coverage-badge]](#quality-checks)
+[![Node][node-badge]](.nvmrc)
+[![License: MIT][license-badge]](LICENSE)
+
 An accessible, source-conscious front end for understanding the work of the United States Congress. It is designed to
 make the legislative process more legible without replacing the official record.
 
 > The app runs with clearly marked preview records until `CONGRESS_API_KEY` is set. Preview content is fictional and is
 > never presented as live congressional data.
+
+**[Browse the UI demo →][pages-demo]** — a static build on GitHub Pages. It renders the labeled preview fixtures only:
+GitHub Pages cannot hold a server-side API key or run route handlers, so it is the interface, not the live record. See
+[Deployment in One Paragraph](#deployment-in-one-paragraph).
 
 ## Start Locally
 
@@ -43,6 +54,13 @@ pnpm test:coverage # Unit tests with a V8 coverage report
 `test:coverage` reports on every source file rather than only the ones a test happens to import, so a module with no
 test at all shows up as a `0%` row instead of being absent from the summary. It writes a browsable report to
 `coverage/index.html`.
+
+Statements, branches, functions, and lines all sit at **100%**, and `vitest.config.mts` sets all four thresholds to 100
+so a regression fails the build rather than waiting to be noticed in a diff. That number is only meaningful because the
+handful of genuinely unreachable guards — `noUncheckedIndexedAccess` fallbacks over indices a loop bound has already
+proven valid, and handlers guarding against state their own render condition excludes — are excluded at their own lines
+with a `v8 ignore` comment and a stated reason, rather than being hidden inside a slack threshold. Anything reachable
+gets a test instead.
 
 To prepare browsers once for local Playwright runs:
 
@@ -112,3 +130,21 @@ should never be represented as the live product. Full instructions and the stati
 ## License
 
 [MIT](LICENSE).
+
+<!--
+  Badge definitions. Kept here rather than inline so the header stays readable and every line fits the 120-column
+  prose width. The three pipeline badges read live from GitHub Actions; the rest are static and are only accurate
+  because something in the repo enforces them — the coverage figure by the thresholds in `vitest.config.mts`, the
+  Node version by `.nvmrc` and `engines`.
+-->
+
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/ehharding/civic-ledger/ci.yml?branch=main&label=CI
+[ci-workflow]: https://github.com/ehharding/civic-ledger/actions/workflows/ci.yml
+[vercel-badge]: https://img.shields.io/github/actions/workflow/status/ehharding/civic-ledger/deploy-vercel.yml?branch=main&label=Vercel
+[vercel-workflow]: https://github.com/ehharding/civic-ledger/actions/workflows/deploy-vercel.yml
+[pages-badge]: https://img.shields.io/github/actions/workflow/status/ehharding/civic-ledger/deploy-gh-pages.yml?branch=main&label=Pages%20Demo
+[pages-workflow]: https://github.com/ehharding/civic-ledger/actions/workflows/deploy-gh-pages.yml
+[pages-demo]: https://ehharding.github.io/civic-ledger/
+[coverage-badge]: https://img.shields.io/badge/coverage-100%25-brightgreen
+[node-badge]: https://img.shields.io/badge/node-24-brightgreen?logo=node.js&logoColor=white
+[license-badge]: https://img.shields.io/badge/license-MIT-blue

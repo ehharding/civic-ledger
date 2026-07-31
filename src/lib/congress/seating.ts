@@ -109,24 +109,40 @@ export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): n
 
   // Flooring each share loses less than one seat per arc, so there are always fewer leftovers than arcs to hand them
   // to; the modulo is belt-and-braces against a caller passing pathological radii.
+  /*
+   * Every `?? 0` from here down indexes `counts` or `byLargestRemainder` at an index a loop bound or a modulo has
+   * already proven valid, so none of the fallbacks can fire — they are here only because `noUncheckedIndexedAccess`
+   * types an indexed read as possibly-`undefined` regardless. Each is hoisted onto its own `v8 ignore`d line so the
+   * real control flow beside it stays measured rather than being ignored along with the guard.
+   */
   const leftover: number = seatCount - assigned;
   for (let seat: number = 0; seat < leftover; seat++) {
+    /* v8 ignore start */
     const target: number = byLargestRemainder[seat % byLargestRemainder.length] ?? 0;
     counts[target] = (counts[target] ?? 0) + 1;
+    /* v8 ignore stop */
   }
 
   // An arc allocated zero seats would render as a visible gap in the half-disc. Since `defaultRowCount` never returns
   // more arcs than there are seats, there is always a donor arc with at least two.
   for (let row: number = 0; row < counts.length; row++) {
-    if ((counts[row] ?? 0) > 0) continue;
+    /* v8 ignore start */
+    const current: number = counts[row] ?? 0;
+    /* v8 ignore stop */
+    if (current > 0) continue;
 
     const donor: number = counts.reduce(
+      /* v8 ignore start */
       (best: number, count: number, index: number): number => (count > (counts[best] ?? 0) ? index : best),
+      /* v8 ignore stop */
       0,
     );
-    if ((counts[donor] ?? 0) < 2) break;
+    /* v8 ignore start */
+    const donorCount: number = counts[donor] ?? 0;
+    /* v8 ignore stop */
+    if (donorCount < 2) break;
 
-    counts[donor] = (counts[donor] ?? 0) - 1;
+    counts[donor] = donorCount - 1;
     counts[row] = 1;
   }
 
@@ -173,7 +189,9 @@ export function computeSeatingGeometry(seatCount: number, rowOverride?: number):
 
   // A seat has to fit both between its neighbors along its own arc and between the arc it's on and the next one out.
   const tightestArcSpacing: number = radii.reduce((tightest: number, radius: number, row: number): number => {
+    /* v8 ignore start -- `distributeSeatsAcrossRows` returns one entry per radius, so this index always resolves. */
     const count: number = seatsPerRow[row] ?? 0;
+    /* v8 ignore stop */
     return count > 0 ? Math.min(tightest, (Math.PI * radius) / count) : tightest;
   }, Number.POSITIVE_INFINITY);
 
@@ -187,8 +205,10 @@ export function computeSeatingGeometry(seatCount: number, rowOverride?: number):
 
   const positions: SeatPosition[] = [];
   for (let row: number = 0; row < rows; row++) {
+    /* v8 ignore start -- both arrays are exactly `rows` long, so the loop bound has already proven these resolve. */
     const radius: number = radii[row] ?? 0;
     const count: number = seatsPerRow[row] ?? 0;
+    /* v8 ignore stop */
 
     for (let seat: number = 0; seat < count; seat++) {
       const angle: number = Math.PI - (Math.PI * (seat + 0.5)) / count;

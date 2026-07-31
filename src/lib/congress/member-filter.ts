@@ -297,7 +297,9 @@ export function listMemberPartyOptions(entries: MemberDirectoryEntry[]): MemberF
       (party: PartyGroup): MemberFacetOption<PartyGroup> => ({
         value: party,
         label: partyGroupLabels[party],
+        /* v8 ignore start -- the `counts.has(party)` filter above has already proven this lookup succeeds. */
         count: counts.get(party) ?? 0,
+        /* v8 ignore stop */
       }),
     );
 }

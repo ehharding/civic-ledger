@@ -84,13 +84,17 @@ function tabId(chamber: CongressChamber): string {
  * @returns The seat index, or `null` when the event landed somewhere that isn't a seat.
  */
 function seatIndexFromEvent(target: EventTarget | null): number | null {
+  /* v8 ignore start -- React only dispatches these handlers with an Element target; the narrowing is for the type. */
   if (!(target instanceof Element)) return null;
+  /* v8 ignore stop */
 
   const raw: string | null = target.closest("[data-seat-index]")?.getAttribute("data-seat-index") ?? null;
   if (raw === null) return null;
 
   const index: number = Number(raw);
+  /* v8 ignore start -- this component writes every `data-seat-index` itself, always from a loop index. */
   return Number.isInteger(index) ? index : null;
+  /* v8 ignore stop */
 }
 
 /**
@@ -268,7 +272,9 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
   }
 
   function handleChartKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
+    /* v8 ignore start -- the `<svg>` this is attached to only renders when there is at least one seat. */
     if (seating.seats.length === 0) return;
+    /* v8 ignore stop */
 
     // Enter and Space lock the read-out on a seat that has nowhere to go. A seat whose member has a page is a real
     // link, so activation is left to the browser: intercepting it would break "Enter opens the link", and with it

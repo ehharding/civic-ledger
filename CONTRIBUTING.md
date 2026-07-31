@@ -27,11 +27,21 @@ pnpm build
 Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a
 fixture or unit test for the upstream shape it supports.
 
-`pnpm test:coverage` shows what the suite actually reaches. Treat it as a way to find untested code rather than a
-number to raise: the useful signal is a `0%` row on a module that has real branches in it, not the percentage at the
-bottom. Some rows are expected to stay low — route-segment files and server components are exercised by the Playwright
-suite in a real browser instead, which is why the coverage config excludes the layout, loading, and error boundaries
-rather than pretending a jsdom test of them would mean something.
+`pnpm test:coverage` shows what the suite actually reaches. Statements, branches, functions, and lines are all at 100%,
+and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data and
+declarative files are excluded outright — the preview fixtures and the Drizzle schema.
+
+Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
+was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether
+the assertions beneath it are worth anything.
+
+The one case for reaching past a test is a guard no input can reach — an `arr[i] ?? fallback` over an index a loop
+bound has already proven valid, or a handler guarding against state its own render condition excludes. Testing those
+means fabricating a value the app cannot produce, which pins the guard rather than the behavior. Mark them at the line
+with a `/* v8 ignore start */` … `/* v8 ignore stop */` pair and a stated reason, so the exclusion is visible in the
+diff that adds it. If a branch is reachable at all, write the test instead — and note that `v8 ignore next` is the
+wrong tool here: this project's coverage provider only honors the hint when the comment *begins* with it, and it
+ignores the count in `next 2`.
 
 Two kinds of code are worth testing directly even when a component test already drags them over the line:
 

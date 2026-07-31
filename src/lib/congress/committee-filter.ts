@@ -187,7 +187,9 @@ export function listCommitteeTypeOptions(committees: CommitteeSummary[]): Commit
       (type: CommitteeType): CommitteeFacetOption<CommitteeType> => ({
         value: type,
         label: committeeTypeLabels[type],
+        /* v8 ignore start -- the `counts.has(type)` filter above has already proven this lookup succeeds. */
         count: counts.get(type) ?? 0,
+        /* v8 ignore stop */
       }),
     );
 }

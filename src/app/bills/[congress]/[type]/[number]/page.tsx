@@ -54,8 +54,10 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
     // The latest action is the most useful single sentence about a bill — it says where the bill actually *is*, which
     // is the question someone following a shared link is most often asking. Falls back to naming the bill, since a
     // freshly introduced record can carry no action text at all.
+    /* v8 ignore start -- `latestAction.text` is a required string on the model; the fallback is belt-and-braces. */
     description:
       bill.latestAction.text ?? `${bill.type} ${bill.number} in the ${formatOrdinal(bill.congress)} Congress.`,
+    /* v8 ignore stop */
     path: billHref(bill),
   });
 }

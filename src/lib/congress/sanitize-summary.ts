@@ -108,12 +108,18 @@ export function sanitizeSummaryHtml(html: string): string {
   let out: string = "";
   let cursor: number = 0;
 
+  /*
+   * v8 ignore start -- the fallbacks below cannot fire. `matchAll` always sets `index`, and all three of
+   * `TAG_PATTERN`'s groups always participate (groups 1 and 3 match the empty string rather than opting out), so none
+   * of them is ever `undefined`. They exist to satisfy `noUncheckedIndexedAccess`.
+   */
   for (const match of source.matchAll(TAG_PATTERN)) {
     const at: number = match.index ?? 0;
     out += escapeText(source.slice(cursor, at));
     out += renderTag(match[1] ?? "", match[2] ?? "", match[3] ?? "");
     cursor = at + match[0].length;
   }
+  /* v8 ignore stop */
 
   return out + escapeText(source.slice(cursor));
 }

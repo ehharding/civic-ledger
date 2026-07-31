@@ -45,15 +45,16 @@ export default defineConfig({
         "src/db/schema.ts",
       ],
       /**
-       * Ratchets, so a regression fails CI rather than waiting to be noticed in a diff.
+       * All four at 100, so any regression fails CI rather than waiting to be noticed in a diff.
        *
-       * Every function and every line is covered. Route components — including the async server ones — are unit-tested
-       * directly: an async component is a function returning an element, so it can be awaited and rendered like any
-       * other. Playwright still owns the browser-level checks; these are the cheaper, more specific half.
+       * Route components — including the async server ones — are unit-tested directly: an async component is a
+       * function returning an element, so it can be awaited and rendered like any other. Playwright still owns the
+       * browser-level checks; these are the cheaper, more specific half.
        *
-       * Statements and branches stop just short of 100, and the gap is deliberate rather than a backlog. What is left
-       * is code that cannot be reached from *any* input, because the type system or the value's own construction has
-       * already ruled the case out:
+       * A round 100 is only honest because the handful of genuinely unreachable guards are excluded *at their own
+       * lines*, with `/* v8 ignore next *\/` and a one-line reason, rather than being absorbed into a slack threshold
+       * here. Those are cases no input can reach, because the type system or the value's own construction has already
+       * ruled them out:
        *
        * - `arr[i] ?? fallback` guards required by `noUncheckedIndexedAccess`, over indices a loop bound has already
        *   proven valid (`seating.ts`, `sanitize-summary.ts`).
@@ -62,12 +63,11 @@ export default defineConfig({
        *   its keyboard handler to an `<svg>` that only exists when there is at least one seat.
        * - A `??` whose left side the model types as a required `string` (the bill route's metadata description).
        *
-       * Writing a test for any of these would mean fabricating a value the app cannot produce, which pins the guard
-       * rather than the behavior. Deleting them would mean trading a harmless safety net — and, for the indexed ones,
-       * type safety itself — for a round number. Raise these figures when real coverage rises; do not chase them by
-       * asserting against impossible inputs.
+       * The rule that keeps this number meaningful: reach for a new ignore only when writing the test would mean
+       * fabricating a value the app cannot produce — a test that pins a guard rather than a behavior. Everything
+       * reachable gets a test instead.
        */
-      thresholds: { statements: 99.7, branches: 97.7, functions: 100, lines: 100 },
+      thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
     },
   },
 });

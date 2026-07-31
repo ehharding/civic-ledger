@@ -402,7 +402,11 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
   if (pinnedKey) {
     const aPinned: boolean = billIdentityKey(a) === pinnedKey;
     const bPinned: boolean = billIdentityKey(b) === pinnedKey;
+    // The `-1` arm never runs: the caller prepends the pinned bill, so V8's sort never presents it as `a`. Kept
+    // anyway so the comparator is correct on its own terms rather than only in the one order it is called in today.
+    /* v8 ignore start */
     if (aPinned !== bPinned) return aPinned ? -1 : 1;
+    /* v8 ignore stop */
   }
 
   return compareIsoDatesDesc(a.latestAction.date ?? "", b.latestAction.date ?? "");

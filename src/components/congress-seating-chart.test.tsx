@@ -411,6 +411,18 @@ describe("CongressSeatingChart's click and keyboard selection", (): void => {
     expect(screen.getByRole("tab", { name: /Senate/ })).toHaveAttribute("aria-selected", "true");
   });
 
+  it("ignores a tab keypress when the composition carries no chambers at all", (): void => {
+    // A composition that came back without chambers still renders — the panel falls back to an empty chamber rather
+    // than throwing — so the tablist is present and focusable with nothing to move between.
+    render(<CongressSeatingChart composition={composition({ chambers: [] })} />);
+
+    expect((): void => {
+      fireEvent.keyDown(screen.getByRole("tablist"), { key: "ArrowRight" });
+    }).not.toThrow();
+
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+  });
+
   it("ignores a seat keypress on a chamber with no seats to move between", (): void => {
     const { container } = render(
       <CongressSeatingChart
