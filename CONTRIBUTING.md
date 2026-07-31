@@ -27,6 +27,20 @@ pnpm build
 Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a
 fixture or unit test for the upstream shape it supports.
 
+`pnpm test:coverage` shows what the suite actually reaches. Treat it as a way to find untested code rather than a
+number to raise: the useful signal is a `0%` row on a module that has real branches in it, not the percentage at the
+bottom. Some rows are expected to stay low — route-segment files and server components are exercised by the Playwright
+suite in a real browser instead, which is why the coverage config excludes the layout, loading, and error boundaries
+rather than pretending a jsdom test of them would mean something.
+
+Two kinds of code are worth testing directly even when a component test already drags them over the line:
+
+- **Anything that races.** Debouncing, aborting, out-of-order responses, and reconciling state against the address bar
+  all keep working by accident until they don't, and statement coverage through a component says nothing about whether
+  the guard still holds. @see `use-bill-search.test.ts` and `use-directory-url-sync.test.ts`.
+- **Wording a reader is shown.** Display helpers live in the model (`members.ts`, `committees.ts`) specifically so the
+  sentence a page prints can be asserted here rather than only reached by rendering a route.
+
 ## Where Documentation Goes
 
 Documentation scales here by having **one home per fact**, chosen by audience rather than topic:

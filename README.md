@@ -34,10 +34,15 @@ make the legislative process more legible without replacing the official record.
 ## Quality Checks
 
 ```bash
-pnpm check    # TypeScript + Biome + unit tests
-pnpm build    # Production build
-pnpm test:e2e # Playwright browser checks
+pnpm check         # TypeScript + Biome + unit tests
+pnpm build         # Production build
+pnpm test:e2e      # Playwright browser checks
+pnpm test:coverage # Unit tests with a V8 coverage report
 ```
+
+`test:coverage` reports on every source file rather than only the ones a test happens to import, so a module with no
+test at all shows up as a `0%` row instead of being absent from the summary. It writes a browsable report to
+`coverage/index.html`.
 
 To prepare browsers once for local Playwright runs:
 
