@@ -16,11 +16,15 @@ import {
   type CommitteeChamber,
   type CommitteeHistoryEntry,
   type CommitteeType,
+  committeeSearchTerms,
   committeeTypeLabels,
   committeeTypeNounPhrases,
   committeeTypes,
   describeCommittee,
   formatCommitteeHistoryYears,
+  isCommitteeSystemCode,
+  normalizeCommitteeChamber,
+  normalizeCommitteeType,
 } from "@/lib/congress/committees";
 
 /** A history entry with only the fields a given case is about. */
@@ -116,5 +120,75 @@ describe("formatCommitteeHistoryYears", (): void => {
 
     expect(span).toContain("–");
     expect(span).not.toContain("-");
+  });
+});
+
+describe("normalizeCommitteeChamber", (): void => {
+  it("recognizes each chamber a committee can belong to, in any case", (): void => {
+    expect(normalizeCommitteeChamber("House")).toBe("house");
+    expect(normalizeCommitteeChamber("House of Representatives")).toBe("house");
+    expect(normalizeCommitteeChamber("SENATE")).toBe("senate");
+    expect(normalizeCommitteeChamber(" Joint ")).toBe("joint");
+  });
+
+  it("rejects the API's own NoChamber records rather than filing them under a body they are not part of", (): void => {
+    expect(normalizeCommitteeChamber("NoChamber")).toBeNull();
+  });
+
+  it("rejects an absent or unrecognized chamber", (): void => {
+    expect(normalizeCommitteeChamber(undefined)).toBeNull();
+    expect(normalizeCommitteeChamber("")).toBeNull();
+    expect(normalizeCommitteeChamber("Continental Congress")).toBeNull();
+  });
+});
+
+describe("normalizeCommitteeType", (): void => {
+  it("maps each upstream type onto the category this app groups by", (): void => {
+    expect(normalizeCommitteeType("Standing")).toBe("standing");
+    expect(normalizeCommitteeType("Select")).toBe("select");
+    expect(normalizeCommitteeType("Special")).toBe("select");
+    expect(normalizeCommitteeType("Joint")).toBe("joint");
+    expect(normalizeCommitteeType("Commission or Caucus")).toBe("commission");
+    expect(normalizeCommitteeType("Caucus")).toBe("commission");
+  });
+
+  it("falls back to 'other' rather than throwing, so a new upstream category changes a label and nothing else", (): void => {
+    expect(normalizeCommitteeType(undefined)).toBe("other");
+    expect(normalizeCommitteeType("")).toBe("other");
+    expect(normalizeCommitteeType("Advisory Panel")).toBe("other");
+  });
+});
+
+describe("isCommitteeSystemCode", (): void => {
+  it("accepts the letters-then-two-digits form Congress.gov issues, in any case", (): void => {
+    expect(isCommitteeSystemCode("hsag00")).toBe(true);
+    expect(isCommitteeSystemCode(" SSAF00 ")).toBe(true);
+  });
+
+  it("rejects anything that is not that form, including an absent value", (): void => {
+    // This guard is what keeps a route-derived segment out of an outbound URL, so it has to reject rather than escape.
+    expect(isCommitteeSystemCode(undefined)).toBe(false);
+    expect(isCommitteeSystemCode("")).toBe(false);
+    expect(isCommitteeSystemCode("preview-01")).toBe(false);
+    expect(isCommitteeSystemCode("hsag0")).toBe(false);
+    expect(isCommitteeSystemCode("../secrets")).toBe(false);
+  });
+});
+
+describe("committeeSearchTerms", (): void => {
+  it("adds the leading form so 'Joint Economic Committee' is findable as 'committee on joint economic'", (): void => {
+    expect(committeeSearchTerms("Joint Economic Committee")).toEqual([
+      "joint economic committee",
+      "committee on joint economic",
+    ]);
+  });
+
+  it("returns only the name itself when no trailing 'Committee' can be moved", (): void => {
+    expect(committeeSearchTerms("Committee on Agriculture")).toEqual(["committee on agriculture"]);
+  });
+
+  it("yields nothing for an empty or whitespace-only name", (): void => {
+    expect(committeeSearchTerms("")).toEqual([]);
+    expect(committeeSearchTerms("   ")).toEqual([]);
   });
 });

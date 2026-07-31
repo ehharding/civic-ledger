@@ -169,3 +169,90 @@ describe("BillDetail", (): void => {
     ).toBeInTheDocument();
   });
 });
+
+describe("BillDetail with a sparse record", (): void => {
+  /** The same bill with every optional field stripped — a freshly-introduced record that carries almost nothing. */
+  const bare: LegislativeBill = {
+    congress: bill.congress,
+    type: bill.type,
+    number: bill.number,
+    title: bill.title,
+    originChamber: bill.originChamber,
+    latestAction: { text: "Introduced in House." },
+    stage: "introduced",
+    officialUrl: bill.officialUrl,
+  };
+
+  it("omits the policy area, introduced date, and action date when the record carries none", (): void => {
+    render(<BillDetail bill={bare} source="live" summaries={[]} textVersions={[]} />);
+
+    // A sparse record is a normal record, not a broken one: the page renders without empty labels standing in for
+    // fields Congress.gov has not published.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(bare.title);
+    expect(screen.queryByText(/^Introduced \w+ \d/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Recorded /)).not.toBeInTheDocument();
+    expect(screen.queryByText(bill.policyArea as string)).not.toBeInTheDocument();
+  });
+
+  it("captions an undated summary without a trailing comma where the date would be", (): void => {
+    render(
+      <BillDetail
+        bill={bill}
+        source="live"
+        summaries={[{ versionCode: "00", actionDesc: "Introduced in House", html: "<p>Body.</p>" }]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Congressional Research Service summary — Introduced in House")).toBeInTheDocument();
+  });
+
+  it("lists an undated text version by type alone", (): void => {
+    render(
+      <BillDetail
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[{ type: "Introduced in House", formats: [{ type: "PDF", url: "https://example.test/a.pdf" }] }]}
+      />,
+    );
+
+    expect(screen.getByText("Introduced in House")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /PDF/ })).toHaveAttribute("href", "https://example.test/a.pdf");
+  });
+
+  it("keys earlier summaries by their action description when they share a version and carry no date", (): void => {
+    // Two summaries with the same version code and no dates would collide on a date-only key, and React would drop
+    // one of them silently.
+    render(
+      <BillDetail
+        bill={bill}
+        source="live"
+        summaries={[
+          { versionCode: "00", actionDesc: "Reported to House", html: "<p>Newest.</p>" },
+          { versionCode: "00", actionDesc: "Introduced in House", html: "<p>Earlier.</p>" },
+        ]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Newest.")).toBeInTheDocument();
+    expect(screen.getByText("Earlier.")).toBeInTheDocument();
+  });
+
+  it("keys multiple undated text versions by position rather than collapsing them", (): void => {
+    render(
+      <BillDetail
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[
+          { type: "Introduced in House", formats: [{ type: "PDF", url: "https://example.test/a.pdf" }] },
+          { type: "Reported in House", formats: [{ type: "PDF", url: "https://example.test/b.pdf" }] },
+        ]}
+      />,
+    );
+
+    expect(screen.getAllByRole("link", { name: /PDF/ })).toHaveLength(2);
+  });
+});

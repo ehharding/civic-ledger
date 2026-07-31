@@ -255,3 +255,35 @@ describe("getMemberProfile with an API key", (): void => {
     ]);
   });
 });
+
+describe("getMemberProfile with an unusable live payload", (): void => {
+  it("treats a 200 carrying no member as nobody by that ID", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(alwaysRespond({})));
+
+    const result: MemberProfileResult = await getMemberProfile("L000174");
+
+    // Absent and `live`, not an outage: the request succeeded and the answer was "nobody here". The route renders that
+    // as a 404, which is the truthful thing to show.
+    expect(result.profile).toBeUndefined();
+    expect(result.source).toBe("live");
+  });
+
+  it("treats a member record with no usable term as nobody by that ID", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    // A name but no term naming a recognizable chamber — there is no way to describe the seat, so there is no page.
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementation(
+          alwaysRespond({ member: { bioguideId: "L000174", invertedOrderName: "Leahy, Patrick J." } }),
+        ),
+    );
+
+    const result: MemberProfileResult = await getMemberProfile("L000174");
+
+    expect(result.profile).toBeUndefined();
+    expect(result.source).toBe("live");
+  });
+});

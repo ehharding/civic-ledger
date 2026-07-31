@@ -36,6 +36,13 @@ describe("parseOffsetParam", (): void => {
     expect(parseOffsetParam("")).toBe(0);
   });
 
+  it("falls back to the first page for a value that coerces to a number but is not finite", (): void => {
+    // `Number("Infinity")` is `Infinity`, not `NaN`, so it survives coercion and then has to be caught on the way out —
+    // `Math.min(ceiling, Infinity)` would otherwise be the ceiling, silently turning a nonsense param into a deep page.
+    expect(parseOffsetParam("Infinity")).toBe(0);
+    expect(parseOffsetParam("-Infinity")).toBe(0);
+  });
+
   it("clamps an absurd offset to the ceiling", (): void => {
     expect(parseOffsetParam("999999999")).toBe(MAX_BILL_OFFSET);
     expect(parseOffsetParam("1e40")).toBe(MAX_BILL_OFFSET);

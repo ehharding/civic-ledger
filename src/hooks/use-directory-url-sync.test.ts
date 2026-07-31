@@ -12,7 +12,7 @@
  * that the right thing happened and that the wrong one didn't. A test that only checked `adopt` was called would still
  * pass if the hook also clobbered the URL on its way there.
  */
-import { act, renderHook } from "@testing-library/react";
+import { act, type RenderHookResult, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, type Mock, type MockInstance, vi } from "vitest";
 
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
@@ -41,7 +41,7 @@ function setUrl(url: string): void {
 let adopt: Mock<(search: string) => void>;
 let replaceState: MockInstance<typeof window.history.replaceState>;
 
-function renderSync(initialProps: SyncProps) {
+function renderSync(initialProps: SyncProps): RenderHookResult<void, SyncProps> {
   return renderHook(
     ({ queryString, requestedQueryString }: SyncProps): void =>
       useDirectoryUrlSync({ queryString, requestedQueryString, adopt }),

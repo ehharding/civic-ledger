@@ -10,7 +10,7 @@
  *
  * Fake timers throughout, since the alternative is a suite that waits a real third of a second per search.
  */
-import { act, renderHook } from "@testing-library/react";
+import { act, type RenderHookResult, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type BillSearchState, SEARCH_DEBOUNCE_MS, useBillSearch } from "@/hooks/use-bill-search";
@@ -29,7 +29,9 @@ function searchResponse(bills: LegislativeBill[], congressesSearched = 27, trunc
 
 type HookProps = { query: string; fallback: LegislativeBill[] };
 
-function renderSearch(initialProps: HookProps = { query: "", fallback: previewBills }) {
+function renderSearch(
+  initialProps: HookProps = { query: "", fallback: previewBills },
+): RenderHookResult<BillSearchState, HookProps> {
   return renderHook(({ query, fallback }: HookProps): BillSearchState => useBillSearch(query, fallback), {
     initialProps,
   });
@@ -247,6 +249,40 @@ describe("useBillSearch", (): void => {
       });
 
       expect(result.current.results).toEqual([secondBill]);
+      expect(result.current.isSearching).toBe(false);
+    });
+
+    it("ignores a superseded request that rejects, rather than treating the abort as an outage", async (): Promise<void> => {
+      // The other half of the supersede case: a real abort makes `fetch` *reject*, and without the guard that
+      // rejection would land in the fallback path and flip `degraded` on — telling the reader that broader search is
+      // unavailable at the exact moment it succeeded.
+      let rejectStale: ((reason: Error) => void) | undefined;
+
+      const fetchMock = vi
+        .fn()
+        .mockImplementationOnce(
+          (): Promise<Response> =>
+            new Promise<Response>((_resolve: (response: Response) => void, reject: (reason: Error) => void): void => {
+              rejectStale = reject;
+            }),
+        )
+        .mockResolvedValue(searchResponse([secondBill]));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { result, rerender } = renderSearch({ query: "broadband", fallback: previewBills });
+      await flushDebounce();
+
+      rerender({ query: "rural", fallback: previewBills });
+      await flushDebounce();
+      expect(result.current.results).toEqual([secondBill]);
+
+      await act(async (): Promise<void> => {
+        rejectStale?.(new DOMException("The user aborted a request.", "AbortError"));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      expect(result.current.results).toEqual([secondBill]);
+      expect(result.current.degraded).toBe(false);
       expect(result.current.isSearching).toBe(false);
     });
 

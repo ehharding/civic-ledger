@@ -244,6 +244,30 @@ describe("sortMembers", (): void => {
     expect(names(sortMembers(mixed, "state"))).toEqual(["Adams, Nia", "Nobody, A."]);
   });
 
+  it("sorts members with no jurisdiction last regardless of which side of the comparison they land on", (): void => {
+    // The previous case only ever meets the empty jurisdiction as the *second* operand. Reversing the input is what
+    // exercises the other half of the same rule — a comparator that returned the wrong sign on one side only would
+    // produce an order that depends on the roster's arrival order, which is exactly the bug worth catching.
+    const mixed: MemberDirectoryEntry[] = [
+      entry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
+      entry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
+      entry({ bioguideId: "Z000015", name: "Zender, Kai", state: undefined }),
+    ];
+
+    expect(names(sortMembers(mixed, "state"))).toEqual(["Adams, Nia", "Nobody, A.", "Zender, Kai"]);
+  });
+
+  it("treats a seatless member of a state as at-large, so two senators sort by name", (): void => {
+    // Senators carry no district. Falling back to 0 puts them where an at-large representative would go, which is the
+    // seat they actually hold: the whole state.
+    const senators: MemberDirectoryEntry[] = [
+      entry({ bioguideId: "W000016", name: "Whitmore, Louise B.", state: "Maine", district: undefined }),
+      entry({ bioguideId: "K000017", name: "King, Dana", state: "Maine", district: undefined }),
+    ];
+
+    expect(names(sortMembers(senators, "state"))).toEqual(["King, Dana", "Whitmore, Louise B."]);
+  });
+
   it("groups by party in seating order, alphabetically within each", (): void => {
     expect(names(sortMembers(roster, "party"))).toEqual([
       "Bennett, Marcus T.",

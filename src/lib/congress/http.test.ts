@@ -284,6 +284,25 @@ describe("request timeout", (): void => {
     expect(REQUEST_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
   });
 
+  it("reports a payload whose shape doesn't match as failed rather than handing it on", async (): Promise<void> => {
+    // The untrusted-input boundary: a 200 is not the same as a usable response. Validating here rather than at each
+    // call site is what lets every caller assume the payload it receives is the shape it asked for.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ bills: "not an array" }))));
+    const consoleError = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+
+    const result: CongressRequestResult<{ bills: unknown[] }> = await requestCongressJson(
+      buildCongressUrl("/bill/119", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      z.object({ bills: z.array(z.unknown()) }),
+      "bill list",
+    );
+
+    expect(result).toEqual({ outcome: "failed" });
+    // Logged, never rendered — the caller decides what a person sees, and it is never an upstream error message.
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it("reports a timed-out request as failed, not as not-found, so the caller falls back rather than 404s", async (): Promise<void> => {
     vi.stubGlobal(
       "fetch",

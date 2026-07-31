@@ -18,11 +18,11 @@ function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
   return { ...base, ...overrides };
 }
 
-/** A resolved /api/bills/search response for the given bills, with no truncation. */
-function searchResponse(bills: LegislativeBill[]): { ok: true; json: () => Promise<unknown> } {
+/** A resolved /api/bills/search response for the given bills. */
+function searchResponse(bills: LegislativeBill[], truncated = false): { ok: true; json: () => Promise<unknown> } {
   return {
     ok: true,
-    json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched: 27, truncated: false }),
+    json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched: 27, truncated }),
   };
 }
 
@@ -403,5 +403,22 @@ describe("BillDirectory following a URL it did not write", (): void => {
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
 
     expect(screen.getByRole("button", { name: "Became Law" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("BillDirectory when the search was capped", (): void => {
+  afterEach((): void => {
+    vi.unstubAllGlobals();
+  });
+
+  it("says the results were capped, rather than implying they are all of them", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(previewBills, true)));
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    await user.type(screen.getByRole("searchbox", { name: "Search bill records" }), "broadband");
+
+    // A capped list that doesn't say so reads as "this is everything Congress has on it", which it is not.
+    expect(await screen.findByText(/Showing the most recent matches\./)).toBeInTheDocument();
   });
 });

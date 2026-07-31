@@ -740,3 +740,67 @@ describe("getCongressComposition", (): void => {
     expect(composition.source).toBe("preview");
   });
 });
+
+describe("getCongressComposition pagination edges", (): void => {
+  it("treats a first page carrying no members as nothing to draw", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    // A 200 with no `members` key: the request succeeded, so this is not an outage — there is simply nobody in it, and
+    // an empty chart falls back to the labeled placeholders rather than claiming the chamber is unstaffed.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ pagination: { count: 0 } })));
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    expect(composition.source).toBe("preview");
+  });
+
+  it("stops after one page when the payload carries no pagination count to page through", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ members: [apiMember({}), apiMember({ bioguideId: "S000001", chamber: "Senate" })] }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    // Without a count, the members in hand are the whole roster as far as this fetcher can tell.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(composition.source).toBe("live");
+    expect(chamberOf(composition, "house").members).toHaveLength(1);
+  });
+
+  it("draws the seats that did arrive when a later page brings back nothing", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+        const offset: string = new URL(String(input)).searchParams.get("offset") ?? "0";
+        if (offset === "0") {
+          return Promise.resolve(
+            jsonResponse({
+              members: Array.from({ length: 250 }, (_unused: unknown, index: number) =>
+                apiMember({
+                  bioguideId: `A-${index}`,
+                  // Both chambers seated on the first page, so the fallback that fires for an empty chamber cannot
+                  // mask what this case is actually about.
+                  chamber: index % 2 === 0 ? "House of Representatives" : "Senate",
+                }),
+              ),
+              pagination: { count: 400 },
+            }),
+          );
+        }
+        // A 200 with no `members` key rather than a failure — the page is real, it just carried nothing.
+        return Promise.resolve(jsonResponse({ pagination: { count: 400 } }));
+      }),
+    );
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    // A chart of most of the chamber still beats no chart at all; the missing seats simply aren't drawn.
+    expect(composition.source).toBe("live");
+    expect(chamberOf(composition, "house").members).toHaveLength(125);
+    expect(chamberOf(composition, "senate").members).toHaveLength(125);
+  });
+});

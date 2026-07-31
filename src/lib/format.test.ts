@@ -175,3 +175,13 @@ describe("compareIsoDatesDesc", (): void => {
     expect(ordered).toEqual(["2026-02-01", "2026-01-10", "2026-01-09", "2025-12-31"]);
   });
 });
+
+describe("toTitleCase with irregular hyphenation", (): void => {
+  it("leaves an empty hyphen segment alone rather than reaching for a character that isn't there", (): void => {
+    // Upstream place names are free text, so a doubled or trailing hyphen is a shape this actually meets. Splitting on
+    // "-" yields an empty segment there, and indexing into it would be reading position zero of an empty string.
+    expect(toTitleCase("wilkes--barre")).toBe("Wilkes--Barre");
+    expect(toTitleCase("-barre")).toBe("-Barre");
+    expect(toTitleCase("wilkes-")).toBe("Wilkes-");
+  });
+});

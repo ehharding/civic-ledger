@@ -55,4 +55,14 @@ describe("CongressSwitcher", (): void => {
 
     expect(pushMock).toHaveBeenCalledWith("/bills/119");
   });
+
+  it("does not navigate when the selection lands on the Congress already showing", async (): Promise<void> => {
+    render(<CongressSwitcher congresses={congresses} selected={118} />);
+
+    await user.selectOptions(screen.getByRole("combobox"), "118");
+
+    // On browsers where arrowing through a `<select>` fires `change` per option, navigating unconditionally would
+    // bounce a keyboard user through pages they never chose.
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

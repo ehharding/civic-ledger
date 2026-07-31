@@ -1,7 +1,7 @@
 /**
  * Covers MemberDetail's rendering contract: the identity heading, the service record, the honest handling of a
- * placeholder member (no biography link, labelled data), the truncation copy that keeps a capped list from reading as
- * a complete one, and the fact that the page reports service rather than scoring it.
+ * placeholder member (no biography link, labeled data), the truncation copy that keeps a capped list from reading as a
+ * complete one, and the fact that the page reports service rather than scoring it.
  */
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -169,5 +169,68 @@ describe("MemberDetail", (): void => {
 
     expect(screen.getByRole("img", { name: "Official portrait of Patrick J. Leahy" })).toBeInTheDocument();
     expect(screen.getByText(/Senate Historical Office/)).toBeInTheDocument();
+  });
+});
+
+describe("MemberDetail with a sparse record", (): void => {
+  it("renders a portrait with no credit line when the record carries none", (): void => {
+    renderMember({
+      profile: profile({ depiction: { imageUrl: "https://www.congress.gov/img/member/l000174.jpg" } }),
+    });
+
+    expect(screen.getByRole("img", { name: /Official portrait/ })).toBeInTheDocument();
+    // No `<figcaption>` at all, rather than an empty one that reads as a missing credit.
+    expect(document.querySelector(".member-portrait__credit")).toBeNull();
+  });
+
+  it("falls back to the chamber's name when a term names no member type", (): void => {
+    renderMember({
+      profile: profile({ terms: [{ chamber: "senate", congress: 117, startYear: 2021 }] }),
+    });
+
+    // The row names the chamber where it would otherwise name the office held.
+    expect(document.querySelector(".member-terms__chamber")).toHaveTextContent("Senate");
+  });
+
+  it("falls back to the chamber's name when a term names no congress", (): void => {
+    renderMember({
+      profile: profile({ terms: [{ chamber: "senate", memberType: "Senator", startYear: 2021 }] }),
+    });
+
+    // The detail column would otherwise read as an empty span beside the chamber.
+    expect(document.querySelector(".member-terms__detail")).toHaveTextContent("Senate");
+  });
+
+  it("omits the year span for a term with no years on file", (): void => {
+    renderMember({
+      profile: profile({ terms: [{ chamber: "senate", congress: 117, memberType: "Senator" }] }),
+    });
+
+    expect(screen.getByText("117th Congress")).toBeInTheDocument();
+  });
+
+  it("says so plainly when Congress.gov publishes no term history at all", (): void => {
+    renderMember({ profile: profile({ terms: [] }) });
+
+    expect(screen.getByText("Congress.gov publishes no term history for this member.")).toBeInTheDocument();
+  });
+
+  it("omits the seat and service lines when neither can be derived", (): void => {
+    renderMember({ profile: profile({ state: undefined, terms: [{ chamber: "senate" }] }) });
+
+    expect(screen.queryByText("Vermont")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Serving since/)).not.toBeInTheDocument();
+  });
+
+  it("lists leadership roles, naming the Congress only when the record carries one", (): void => {
+    renderMember({
+      profile: profile({
+        leadership: [{ type: "President pro tempore", congress: 117 }, { type: "Committee Chair" }],
+      }),
+    });
+
+    const roles: HTMLElement = screen.getByRole("list", { name: "Leadership roles" });
+    expect(within(roles).getByText(/President pro tempore · 117th Congress/)).toBeInTheDocument();
+    expect(within(roles).getByText("Committee Chair")).toBeInTheDocument();
   });
 });

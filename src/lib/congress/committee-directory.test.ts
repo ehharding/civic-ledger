@@ -437,3 +437,117 @@ describe("the preview committee fixtures", (): void => {
     expect(findPreviewCommitteeProfile("house", "preview-99")).toBeUndefined();
   });
 });
+
+describe("getCommitteeDirectory pagination", (): void => {
+  /**
+   * Stubs a paginated list endpoint. The first page reports `count` so the fetcher knows how many more to ask for;
+   * every later page is answered by `laterPage`, which individual cases use to break one of them.
+   */
+  function stubPagedList(first: unknown, laterPage: (offset: string | null) => Promise<Response>): void {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+        const offset: string | null = new URL(String(input)).searchParams.get("offset");
+        if (offset === "0") return Promise.resolve(jsonResponse(first));
+        return laterPage(offset);
+      }),
+    );
+  }
+
+  afterEach((): void => {
+    vi.unstubAllGlobals();
+  });
+
+  it("fetches the remaining pages when the first one says there are more", async (): Promise<void> => {
+    stubPagedList(
+      { committees: [liveCommittee()], pagination: { count: 300 } },
+      (): Promise<Response> =>
+        Promise.resolve(
+          jsonResponse({ committees: [liveCommittee({ systemCode: "hsii00", name: "Natural Resources Committee" })] }),
+        ),
+    );
+
+    const result: CommitteeDirectoryResult = await getCommitteeDirectory();
+
+    expect(result.source).toBe("live");
+    expect(result.committees.map((committee: CommitteeSummary): string => committee.systemCode).sort()).toEqual([
+      "hsag00",
+      "hsii00",
+    ]);
+  });
+
+  it("returns what did arrive when a later page fails, rather than dropping the whole directory", async (): Promise<void> => {
+    // A directory missing its tail is still a usable directory, and it is labeled live either way — only the *first*
+    // page failing is grounds for falling back.
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+    stubPagedList(
+      { committees: [liveCommittee()], pagination: { count: 300 } },
+      (): Promise<Response> => Promise.reject(new Error("upstream unavailable")),
+    );
+
+    const result: CommitteeDirectoryResult = await getCommitteeDirectory();
+
+    expect(result.source).toBe("live");
+    expect(result.committees).toHaveLength(1);
+  });
+
+  it("tolerates a later page that arrives carrying no committees at all", async (): Promise<void> => {
+    stubPagedList(
+      { committees: [liveCommittee()], pagination: { count: 300 } },
+      (): Promise<Response> => Promise.resolve(jsonResponse({})),
+    );
+
+    const result: CommitteeDirectoryResult = await getCommitteeDirectory();
+
+    expect(result.committees).toHaveLength(1);
+  });
+
+  it("asks for no further pages when the first one carries no count to page through", async (): Promise<void> => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ committees: [liveCommittee()] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result: CommitteeDirectoryResult = await getCommitteeDirectory();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.committees).toHaveLength(1);
+  });
+
+  it("falls back to preview when the first page arrives carrying nothing usable", async (): Promise<void> => {
+    // No `committees` key at all — an empty directory would be a claim that Congress has no committees.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ pagination: { count: 0 } })));
+
+    const result: CommitteeDirectoryResult = await getCommitteeDirectory();
+
+    expect(result.source).toBe("preview");
+  });
+});
+
+describe("getCommitteeProfile with an unusable live payload", (): void => {
+  afterEach((): void => {
+    vi.unstubAllGlobals();
+  });
+
+  it("treats a 200 carrying no committee as no such record", async (): Promise<void> => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({})));
+
+    const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
+
+    // Reported as absent and `live`, not as an outage: the request succeeded and the answer was "nothing here".
+    expect(result.profile).toBeUndefined();
+    expect(result.source).toBe("live");
+  });
+
+  it("treats a committee its history cannot name as no such record", async (): Promise<void> => {
+    // Present in the payload, but with no history entry carrying a name — and inventing one from the system code
+    // would be a guess printed as a fact.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ committee: { systemCode: "hsag00", history: [] } })),
+    );
+
+    const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
+
+    expect(result.profile).toBeUndefined();
+    expect(result.source).toBe("live");
+  });
+});

@@ -3,7 +3,7 @@
  * and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked for is
  * the view that renders, and that a preview list doesn't claim to be the committees of a real Congress.
  */
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -179,6 +179,35 @@ describe("CommitteeDirectory", (): void => {
     await user.click(screen.getByRole("button", { name: "Senate" }));
 
     expect(window.location.search).toBe("?chamber=senate");
+  });
+
+  it("follows the back button to the view that URL named", (): void => {
+    // A `popstate` restores a URL without re-rendering anything, so the directory has to re-read the address bar
+    // itself. Without this the back button would change the URL and leave the grid showing the previous view — the
+    // exact bug that makes a shareable, narrowable directory feel broken.
+    renderDirectory();
+
+    act((): void => {
+      window.history.replaceState(null, "", "/committees?chamber=senate&sort=name-desc");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(shownNames()).toEqual(["Appropriations Committee"]);
+    expect(screen.getByRole("button", { name: "Senate" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("restores the unfiltered view when the back button lands on a bare URL", (): void => {
+    renderDirectory({
+      initialQuery: { filters: { query: "", chamber: "joint", type: "all" }, sort: "name" },
+    });
+    expect(shownNames()).toEqual(["Joint Economic Committee"]);
+
+    act((): void => {
+      window.history.replaceState(null, "", "/committees");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    expect(shownNames()).toHaveLength(4);
   });
 
   /* A preview list is placeholder data, and the scope note has to say so rather than describing a real Congress. */

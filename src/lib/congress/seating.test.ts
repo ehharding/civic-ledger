@@ -199,3 +199,59 @@ describe("buildChamberSeating", (): void => {
     expect(buildChamberSeating([]).seats).toEqual([]);
   });
 });
+
+describe("single-arc and forced-arc geometry", (): void => {
+  it("centers a single arc between the inner and outer radius rather than dividing by zero", (): void => {
+    // The row-spacing formula divides by `rows - 1`, so one arc is the case that has to be special-cased. A chamber
+    // small enough to need only one is not hypothetical — a committee-sized diagram would land here.
+    const geometry: SeatingGeometry = computeSeatingGeometry(4, 1);
+
+    expect(geometry.rows).toBe(1);
+    expect(geometry.positions).toHaveLength(4);
+    for (const position of geometry.positions) {
+      expect(Number.isFinite(position.x)).toBe(true);
+      expect(Number.isFinite(position.y)).toBe(true);
+    }
+    expect(geometry.seatRadius).toBeGreaterThan(0);
+  });
+
+  it("keeps a single arc's seats inside the viewBox like any other", (): void => {
+    const geometry: SeatingGeometry = computeSeatingGeometry(12, 1);
+
+    for (const position of geometry.positions) {
+      expect(position.x - geometry.seatRadius).toBeGreaterThanOrEqual(0);
+      expect(position.x + geometry.seatRadius).toBeLessThanOrEqual(geometry.width);
+      expect(position.y - geometry.seatRadius).toBeGreaterThanOrEqual(0);
+      expect(position.y + geometry.seatRadius).toBeLessThanOrEqual(geometry.height);
+    }
+  });
+
+  it("omits members it cannot seat rather than drawing two people on one seat", (): void => {
+    // Only reachable by forcing an arc count too small to hold everyone, which is why the guard exists at all.
+    const roster: CongressMember[] = members({ democratic: 30, republican: 30 });
+    const seating: ChamberSeating = buildChamberSeating(roster, 1);
+
+    expect(seating.seats.length).toBeLessThanOrEqual(roster.length);
+    expect(seating.seats).toHaveLength(seating.geometry.positions.length);
+    // Whoever is drawn is drawn once, in their own position.
+    expect(new Set(seating.seats.map((seat: ChamberSeat): string => seat.key)).size).toBe(seating.seats.length);
+  });
+});
+
+describe("distributeSeatsAcrossRows with more arcs than seats", (): void => {
+  it("stops redistributing rather than emptying a donor arc to fill another", (): void => {
+    // The rebalancing loop hands a seat from the fullest arc to an empty one, but only while the donor has two to
+    // spare — otherwise it would be trading one gap for another forever.
+    const counts: number[] = distributeSeatsAcrossRows(2, [100, 200, 300, 400]);
+
+    expect(counts.reduce((sum: number, count: number): number => sum + count, 0)).toBe(2);
+    expect(counts).toHaveLength(4);
+    expect(Math.max(...counts)).toBeLessThanOrEqual(2);
+  });
+
+  it("still places every seat when arcs outnumber them heavily", (): void => {
+    const counts: number[] = distributeSeatsAcrossRows(1, [50, 100, 150, 200, 250]);
+
+    expect(counts.reduce((sum: number, count: number): number => sum + count, 0)).toBe(1);
+  });
+});
