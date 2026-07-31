@@ -11,9 +11,11 @@ export const dynamic = "force-static";
  * Static top-level routes. Their content changes rarely, so they carry a low change frequency.
  *
  * `/members` and `/committees` belong here even though the data behind them is live: the *routes* are fixed and
- * reachable without an API key, which is all a crawler needs. Individual member and committee pages still stay out —
- * see "Member Routes Stay Out of the Sitemap" in `docs/decisions.md`, whose reasoning applies unchanged to committees —
- * and each directory is the page that leads a crawler to all of them.
+ * reachable without an API key, which is all a crawler needs. Individual member, bill, and committee pages stay out:
+ * enumerating them requires a live Congress.gov request, which would make sitemap generation depend on an API key and a
+ * healthy upstream at build time — a new failure mode for a file whose whole job is to be cheaply and reliably
+ * generated. Each directory is the page that leads a crawler to all of them.
+ * @see docs/architecture.md, "Crawlability".
  */
 const STATIC_ROUTES: readonly string[] = [
   "",

@@ -32,7 +32,8 @@ import { compareText } from "@/lib/format";
  * Unlike bill search, none of this needs a request. The roster is bounded (a seated Congress is a little over 540
  * people), the server already sent every row to draw the grid, and Congress.gov offers no member-search parameter to
  * defer to anyway — so filtering happens entirely in the browser, instantly, with no `/api` route between a keystroke
- * and its result. @see docs/decisions.md, "The Member Directory Filters in the Browser".
+ * and its result.
+ * @see docs/architecture.md, "Bills Search on the Server; Members and Committees Filter in the Browser".
  *
  * Three things live here beyond the filters themselves, all for the same reason — they are rules, not rendering:
  *
@@ -42,7 +43,8 @@ import { compareText } from "@/lib/format";
  *   hand so a control can never offer a choice that returns nothing.
  * - **The URL spelling of a view** ({@link memberDirectoryQueryString} and the parsers beside it), which is shared
  *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to
- *   neither side. @see docs/decisions.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ *   neither side.
+ *   @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  *
  * What this file does *not* declare is the vocabulary every directory narrows itself with — the `ANY_FACET` sentinel,
  * the facet-option shape, the query-length cap, and the total-parser rule all live in `directory-filter.ts`, so the

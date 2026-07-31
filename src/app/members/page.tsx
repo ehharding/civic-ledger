@@ -18,8 +18,9 @@ import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/searc
  * Kept as the route segment's data-cache window, though reading `searchParams` now makes this route render on demand
  * rather than being prerendered as it was. That costs a server render per visit and *not* an upstream request: the
  * roster is fetched through the adapter's own five-minute cache (`REVALIDATE_SECONDS` in `http.ts`), which is shared
- * across every visitor and every narrowing of this page. The trade was deliberate — see "A Narrowed Directory Is a
- * Place, So It Has a URL" in `docs/decisions.md`.
+ * across every visitor and every narrowing of this page. The trade was deliberate: a shared link should arrive at what
+ * it says it points to on the first paint, rather than rendering the full roster and visibly narrowing after hydration.
+ * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 export const revalidate: number = 300;
 

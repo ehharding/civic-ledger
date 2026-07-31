@@ -3,9 +3,10 @@
  *
  * Three of them carry a documented rule worth pinning down:
  *
- * - `congressGovBillUrl` implements "The Official-Record Link Is Derived, Not Passed Through" (docs/decisions.md). It
- *   must never emit a confidently-wrong deep link, which is why an unrecognized type falls back to the site's home page
- *   rather than guessing a path segment.
+ * - `congressGovBillUrl` derives the public record URL from the bill's own identity rather than passing through the
+ *   API's self-referential `url` field (docs/data-policy.md, "The Official-Record Link Is Derived, Not Passed
+ *   Through"). It must never emit a confidently-wrong deep link, which is why an unrecognized type falls back to the
+ *   site's home page rather than guessing a path segment.
  * - `billIdentityKey` is the single answer to "is this the same bill?", so a live record and a route param naming the
  *   same bill have to produce the same key despite differing in case and in the type of `congress`.
  * - `compareBillsByRecency` has to stay total: a bill carrying no date at all must sort somewhere predictable rather

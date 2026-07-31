@@ -21,12 +21,16 @@ acknowledged and triaged as quickly as possible, typically within a few days.
 ## Scope
 
 Civic Ledger reads public legislative data from the [Congress.gov API](https://api.congress.gov/) and does not currently
-handle any user accounts, authentication, or personal data (see `docs/architecture.md` for what's planned versus built).
-In scope for reports:
+handle any user accounts, authentication, or personal data (see [docs/architecture.md](docs/architecture.md) for what's
+planned versus built, and its [Security Baseline](docs/architecture.md#security-baseline) for the guarantees this app
+intends to hold). In scope for reports:
 
 - Anything that could expose the server-only `CONGRESS_API_KEY` to a client
-- Injection, XSS, SSRF, or other issues in request handling (`/api/health`, `/api/bills`, `/api/bills/search`, bill
-  detail routes, member routes)
+- Injection, XSS, SSRF, or other issues in request handling (`/api/health`, `/api/bills`, `/api/bills/search`, and the
+  bill, member, and committee routes)
+- A bypass of the CRS summary sanitizer (`src/lib/congress/sanitize-summary.ts`) that gets markup to the browser
+- Anything that defeats the analytics query-string stripping described in
+  [docs/data-policy.md](docs/data-policy.md#analytics-records-the-page-not-the-reader)
 - Dependency vulnerabilities with a realistic exploit path in this app
 - CI/CD or deployment misconfigurations that could leak secrets
 
@@ -42,5 +46,5 @@ If you're contributing to this repository:
   gitignored — keep it that way.
 - If a real API key or credential is ever exposed (committed, pasted somewhere public, shared in a bug report, etc.),
   treat it as compromised: rotate it immediately at the source (e.g., regenerate the key at
-  [api.congress.gov](https://api.congress.gov/sign-up/)) rather than assuming it's fine because the exposure was
-  brief or informal.
+  [api.congress.gov](https://api.congress.gov/sign-up/)) rather than assuming it's fine because the exposure was brief
+  or informal.

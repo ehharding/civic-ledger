@@ -93,7 +93,7 @@ export function billDirectoryQueryString(query: string, stage: BillStageFilter):
  * Whether `bill` matches free-text `query`.
  *
  * This is the closest approximation of "search" this app can offer: Congress.gov's API has no full-text search endpoint
- * (see `docs/decisions.md`), so this filters bill metadata already fetched for other purposes rather than querying
+ * (see `docs/data-policy.md`), so this filters bill metadata already fetched for other purposes rather than querying
  * upstream by keyword. Shared by the server-side sweep (`getSearchResults`) and `BillDirectory`'s client-side fallback
  * for when that route isn't reachable, so both agree on what counts as a match rather than quietly disagreeing.
  *

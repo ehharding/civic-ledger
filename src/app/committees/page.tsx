@@ -14,7 +14,8 @@ import { type RouteSearchParams, resolveCommitteeDirectoryQuery } from "@/lib/se
  * The route segment's data-cache window. Reading `searchParams` makes this render on demand rather than at build time,
  * which costs a server render per visit and *not* an upstream request: the committee list is fetched through the
  * adapter's own five-minute cache, shared across every visitor and every narrowing of this page. Same trade as
- * `/members` — see "A Narrowed Directory Is a Place, So It Has a URL" in `docs/decisions.md`.
+ * `/members`: a shared link should arrive already narrowed on its first paint rather than flashing the full list.
+ * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 export const revalidate: number = 300;
 

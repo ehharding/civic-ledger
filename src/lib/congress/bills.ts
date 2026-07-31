@@ -360,7 +360,7 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
  * recent first, each with links to its Formatted Text / PDF / XML renderings on Congress.gov.
  *
  * These are links to the official record, not text this app fetches and re-hosts itself — consistent with the
- * "the official source stays the source of truth" stance in `docs/decisions.md`.
+ * "the source of truth stays upstream" stance in `docs/data-policy.md`.
  *
  * @param input - The bill's route params.
  * @returns Every text version on file, newest first. Always empty in preview mode — deliberately, since fixtures don't
@@ -411,9 +411,9 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
 /**
  * Searches for bills matching free-text `query` across every Congress this app supports browsing.
  *
- * Congress.gov's API has no full-text search endpoint (see `docs/decisions.md`) — its list endpoint can be filtered by
- * congress and bill type, but not by keyword. This approximates a broad search the only way the API allows: it sweeps
- * each supported Congress's most recently active bills (sorted by `updateDate`, up to the API's own per-request
+ * Congress.gov's API has no full-text search endpoint (see `docs/data-policy.md`) — its list endpoint can be filtered
+ * by congress and bill type, but not by keyword. This approximates a broad search the only way the API allows: it
+ * sweeps each supported Congress's most recently active bills (sorted by `updateDate`, up to the API's own per-request
  * ceiling) and matches `query` against their title, type, number, policy area, and latest-action text — the same fields
  * `BillCard` and the bill detail page already surface.
  *

@@ -73,7 +73,8 @@ type PageMetadataInput = {
  *
  * `og:type` is `"website"` throughout, deliberately. `"article"` is the tempting choice for a bill or member page, but
  * it implies an authored piece with a byline and a publication date, and these pages are neither: they are views onto
- * a public record this app didn't write. @see docs/decisions.md on keeping the official source the source of truth.
+ * a public record this app didn't write.
+ * @see docs/data-policy.md, "The Source of Truth Stays Upstream".
  *
  * @param input - @see PageMetadataInput
  * @returns Metadata ready to return from a `generateMetadata` or assign to a page's `metadata` export.

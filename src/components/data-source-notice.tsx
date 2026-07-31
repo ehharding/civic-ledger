@@ -25,7 +25,8 @@ export function DataSourceNotice({
   source: CongressSnapshot["source"];
   notice?: string;
   /**
-   * Rendered as "Updated 5 minutes ago" — see `docs/decisions.md` on keeping source freshness visible in the interface.
+   * Rendered as "Updated 5 minutes ago" — `docs/data-policy.md` requires source freshness to be visible in the
+   * interface rather than merely computed, and this is the field that keeps that promise.
    * Optional so callers without a timestamp handy still render correctly.
    */
   retrievedAt?: string;

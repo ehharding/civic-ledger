@@ -9,7 +9,7 @@ import type { ComponentProps, JSX } from "react";
  * nothing about the reader.
  *
  * Both are cookieless and store no cross-site identifier, which is why they are the analytics this project can carry
- * at all. `docs/decisions.md` states that no political-affiliation targeting or persuasion logic belongs in this
+ * at all. `docs/data-policy.md` states that no political-affiliation targeting or persuasion logic belongs in this
  * product, and that stance is worth nothing if the measurement layer quietly builds the profile the product refuses
  * to act on.
  * @see stripQuery for the one place that promise is actually enforced.

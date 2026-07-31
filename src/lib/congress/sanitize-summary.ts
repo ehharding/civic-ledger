@@ -92,11 +92,11 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
  * absolute `http(s)` link (so `javascript:` and other unsafe schemes never survive) and always gets
  * `target="_blank" rel="noreferrer"` added, matching how every other outbound link in this app behaves.
  *
- * This deliberately keeps the project dependency-free (see `docs/decisions.md`'s "Tooling Intentionally Stays Small")
- * rather than pulling in a full DOM-based sanitizer for a narrow, well-understood input shape. That tradeoff is worth
- * revisiting if this is ever pointed at markup from a less predictable source than Congress.gov — a hand-written
- * sanitizer is only as good as the bypasses someone has thought to test, and the tests beside this file are the
- * record of which ones have been.
+ * This deliberately keeps the project dependency-free (see `CONTRIBUTING.md`'s "Tooling Stays Small") rather than
+ * pulling in a full DOM-based sanitizer for a narrow, well-understood input shape. That tradeoff is worth revisiting
+ * if this is ever pointed at markup from a less predictable source than Congress.gov — a hand-written sanitizer is only
+ * as good as the bypasses someone has thought to test, and the tests beside this file are the record of which ones have
+ * been.
  *
  * @param html - The raw summary fragment as Congress.gov returned it.
  * @returns A fragment safe to render with `dangerouslySetInnerHTML`: allow-listed tags only, no attributes except a

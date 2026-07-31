@@ -24,7 +24,7 @@ type Principle = {
  *
  * These are the commitments the rest of the codebase is written to keep — the preview-data labeling, the outbound links
  * to Congress.gov, and the refusal to editorialize all trace back here. Stated publicly so they can be held against the
- * product rather than living only in `docs/decisions.md`.
+ * product rather than living only in `docs/data-policy.md`.
  */
 const principles: Principle[] = [
   {

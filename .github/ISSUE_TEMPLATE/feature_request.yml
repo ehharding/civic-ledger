@@ -5,8 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion! Take a look at `docs/architecture.md` and `docs/decisions.md` first — it might
-        already be planned, or there might be context on why something works the way it does.
+        Thanks for the suggestion! Take a look at `docs/roadmap.md` first — it might already be planned, or blocked on
+        something specific. `docs/data-policy.md` is worth a skim too: some things are deliberately absent rather than
+        missing, and it says which and why.
 
   - type: textarea
     id: problem

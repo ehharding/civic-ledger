@@ -22,7 +22,7 @@ import { type BillDirectoryQuery, DEFAULT_BILL_DIRECTORY_QUERY, parseBillDirecto
  * hand-edited, truncated by a chat client, or opened a year later against a roster that has since changed, and none of
  * those should produce anything worse than the unfiltered page.
  *
- * @see docs/decisions.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 
 /**

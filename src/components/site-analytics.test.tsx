@@ -2,7 +2,7 @@
  * Covers the one rule the analytics layer has to keep: a recorded URL names a page and nothing else.
  *
  * The cases below are not hypothetical URLs — each one is a view this app itself produces and writes into the address
- * bar, which is precisely why the stripping matters. `docs/decisions.md` says this product carries no
+ * bar, which is precisely why the stripping matters. `docs/data-policy.md` says this product carries no
  * political-affiliation targeting; an analytics feed carrying `?party=republican&state=Ohio` would be the raw material
  * for exactly that, arrived at by accident rather than by anyone's decision.
  */

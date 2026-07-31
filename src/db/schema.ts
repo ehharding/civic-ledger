@@ -4,7 +4,7 @@ import { index, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/p
  * The app's persistence schema.
  *
  * Scope is deliberately narrow: **user-owned data only.** Congressional records are not stored here and are not
- * mirrored — they stay attributable to Congress.gov, which remains their source of truth (see `docs/decisions.md`).
+ * mirrored — they stay attributable to Congress.gov, which remains their source of truth (see `docs/data-policy.md`).
  * What lives here is what Congress.gov has no opinion about: which person saved which bill.
  *
  * @see docs/architecture.md's "Persistence Plan" for the ingestion tables this intentionally defers.
