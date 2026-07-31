@@ -30,7 +30,7 @@ flowchart LR
 | `src/db`                                           | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
 | `src/hooks`                                        | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/lib/api-query.ts`                             | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/bill-route.ts`, `src/lib/member-route.ts` | In-app route construction                       | One definition per route shape; never build a route inline.       |
+| `src/lib/*-route.ts` (bill, member, committee)     | In-app route construction                       | One definition per route shape; never build a route inline.       |
 | `src/lib/format.ts`                                | Shared display and comparison rules             | One collator and one date order for the whole app.                |
 | `src/lib/glossary.ts`                              | Curated editorial learning content              | Cite sources once lessons become long-form.                       |
 | `src/lib/metadata.ts`                              | How a page names itself to crawlers and shares  | One call per page; compose share tags, never assume inheritance.  |
@@ -57,6 +57,10 @@ components, and tests import one stable path while the internals stay free to mo
 | `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.              |
 | `committee-filter.ts`    | That directory's narrowing, ordering, and URL rules. Pure and isomorphic.     |
 | `committee-profile.ts`   | One committee's record, its name history, and its subcommittees.              |
+| `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
+| `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
+| `stage.ts`               | The educational stage cue, inferred from action text. Never a legal status.   |
+| `sanitize-summary.ts`    | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
 | `client.ts`              | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:
@@ -103,6 +107,13 @@ whose record carries no Bioguide ID, since a directory row that opens nothing is
 entirely in the browser against `member-filter.ts`, which is pure and imports no server module — see "The Member
 Directory Filters in the Browser" in `docs/decisions.md`.
 
+The three directories are meant to be the same page in three subjects, and that sameness is held structurally rather
+than by convention, in three separate places: `directory-filter.ts` holds the vocabulary they narrow with (the
+`ANY_FACET` sentinel, the facet-option shape, the query-length cap, and the one total-parser rule every facet and sort
+param resolves through), `src/components/directory-controls.tsx` holds the controls they are assembled from, and
+`useDirectoryUrlSync` holds their URL behavior. What each directory keeps for itself is what a view *means* — its param
+names, its facets, its orders, its comparators — because that is the part that genuinely differs.
+
 All three directories mirror their current view into the address bar, so a search, a set of facets, or a chosen order
 can be linked and bookmarked (`/members?chamber=senate&sort=state`, `/bills?q=broadband&stage=law`,
 `/committees?type=standing`). Each one's URL spelling lives beside its rules rather than in its route —
@@ -145,7 +156,10 @@ history, notification delivery, or more than a few API-facing features.
 - **App:** Vercel or any Node-capable platform running Next.js 16.
 - **Database:** managed PostgreSQL (Neon is a natural fit) when user-owned persistence begins.
 - **Jobs:** Vercel Cron plus a durable queue/workflow provider only when syncs or notifications become multistep.
-- **Observability:** add structured logs, Sentry, and OpenTelemetry before public launch.
+- **Observability:** Vercel Web Analytics and Speed Insights ship in the root layout
+  (`src/components/site-analytics.tsx`), both cookieless and both stripped of query strings before anything is recorded
+  — see "Analytics Records the Page, Not the Reader" in `docs/decisions.md`. Neither runs outside a Vercel deployment,
+  and the static export omits them entirely. Add structured logs, Sentry, and OpenTelemetry before public launch.
 - **Secrets:** deployment environment variables only; never commit `.env.local`.
 
 ## Security and Accessibility Baseline
@@ -159,7 +173,10 @@ history, notification delivery, or more than a few API-facing features.
 - Upstream payloads are validated at runtime, not cast.
 - Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
   hold a server render open indefinitely.
-- No political-affiliation targeting or persuasion logic belongs in the product.
+- No political-affiliation targeting or persuasion logic belongs in the product, and the measurement layer is held to
+  the same rule rather than exempted from it: every directory writes its narrowing into the URL, so analytics strips the
+  query string before recording a page view. Otherwise "which party's members did this reader look at" would be
+  collected as a side effect of a feature rather than by anyone's decision. @see `stripQuery`.
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
   real links.
 - Every page begins with a skip link to the `<main>` landmark, which takes `tabIndex={-1}` so the jump actually moves

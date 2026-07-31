@@ -27,16 +27,24 @@ make the legislative process more legible without replacing the official record.
   against a roster that arrives whole, with no request per keystroke. (See [Data Policy](#data-policy) for what the list
   does and does not claim to cover.) Each facet names how many members are behind it before you choose it, and the
   jurisdiction list separates states from the territories and federal district whose seats carry no floor vote
-- Shareable views on both directories: `/members?chamber=senate&party=republican&sort=state` and
-  `/bills?q=broadband&stage=law` render already narrowed, and each page writes its own current view back to the address
-  bar as you narrow it, so any state of either directory can be linked or bookmarked (see "A Narrowed Directory Is a
-  Place, So It Has a URL" in `docs/decisions.md`)
-- Loading skeletons for both bill directory routes, the bill detail route, the member directory, and the member route
+- A browsable committee directory at `/committees`, searchable by name in either word order Congress.gov publishes,
+  filterable by chamber and committee type, and sortable by each. Every card opens a committee page
+  (`/committees/[chamber]/[systemCode]`) carrying that committee's recorded name history and its subcommittees —
+  which is what gives a bill's "Referred to the Committee on…" line somewhere to lead. Subcommittees are folded into
+  their parents rather than listed as peers (see [Data Policy](#data-policy))
+- Shareable views on all three directories: `/members?chamber=senate&party=republican&sort=state`,
+  `/bills?q=broadband&stage=law`, and `/committees?type=standing&sort=chamber` render already narrowed, and each page
+  writes its own current view back to the address bar as you narrow it, so any state of any directory can be linked or
+  bookmarked (see "A Narrowed Directory Is a Place, So It Has a URL" in `docs/decisions.md`)
+- Loading skeletons for every route that fetches: both bill directory routes and the bill detail route, the member
+  directory and the member route, and the committee directory and the committee route
 - Civic glossary and methodology routes, plus a first source-linked learning module on the five-stage bill lifecycle
   at `/learn/how-a-bill-becomes-law`
 - Server-only Congress.gov API adapter with boundary types, five-minute caching, JSON requests, and safe preview
   fallback
 - Initial Drizzle/Postgres schema for future saved bills
+- Cookieless Vercel Web Analytics and Speed Insights, with the query string stripped from every recorded URL so a
+  narrowed directory's `?party=`/`?state=`/`?q=` never enters the analytics feed (see [Data Policy](#data-policy))
 - Strict TypeScript, Biome, unit tests (client mapping/lookup logic included), Playwright smoke tests, GitHub Actions
   CI, Dependabot, and a health endpoint
 - Two verified deployment pipelines — see [Deployment](#deployment) below
@@ -119,6 +127,14 @@ pnpm exec playwright install chromium
   Congress..." in `docs/decisions.md` for why, and `getSearchResults` in `src/lib/congress/client.ts` for the
   implementation.
 
+- Analytics records which page was read, never who read it or what they searched for. Vercel Web Analytics and Speed
+  Insights are both cookieless and set no cross-site identifier, and `stripQuery` in
+  `src/components/site-analytics.tsx` removes the query string and fragment before either reports anything — so
+  `/members?party=republican&state=Ohio` is recorded as `/members`. That is deliberate rather than incidental: this
+  project's stance against political-affiliation targeting would be decorative if its own shareable-URL feature
+  assembled the raw material for it as a side effect. See "Analytics Records the Page, Not the Reader" in
+  `docs/decisions.md`. The static GitHub Pages demo ships neither collector.
+
 The Congress.gov API uses v3, pagination, and an hourly request quota; see the official
 [API repository](https://github.com/LibraryOfCongress/api.congress.gov/) before extending ingestion. The 2026 changelog
 also explicitly recommends setting the response format rather than relying on the default.
@@ -141,7 +157,10 @@ This is the real deployment target. It keeps `CONGRESS_API_KEY` server-side, and
 3. Set `CONGRESS_API_KEY` (and `DATABASE_URL`, once persistence lands) as encrypted environment variables **in the
    Vercel project settings**, not as GitHub secrets, so the key never appears in Action logs.
 4. Push to `main` for a production deploy; pull requests get a preview deployment with a URL comment.
-5. **Turn off Vercel's own Git-integration auto-deploy** (Vercel dashboard → Project Settings → Git → disable
+5. Turn on **Web Analytics** and **Speed Insights** in the Vercel project (Analytics and Speed Insights tabs). The
+   client code is already in place; until those are enabled the injected scripts have nothing to report to, which is
+   harmless. Nothing needs enabling for any other host — both components are simply absent there.
+6. **Turn off Vercel's own Git-integration auto-deploy** (Vercel dashboard → Project Settings → Git → disable
    automatic deployments for the connected branch). Vercel enables this by default when a repo is imported, and it
    builds independently of the Actions workflow above — left on, every push deploys twice from two separate pipelines,
    only one of which is gated on `pnpm check` passing first.
@@ -167,10 +186,17 @@ serve live data. Concretely, this build:
   offered when live data is active anyway, and search falls back to filtering whatever preview bills are already loaded
   on the page, client-side (`matchesQuery` in `src/lib/congress/search.ts`) — the same fallback the live app itself
   uses if `/api/bills/search` is ever unreachable, so this isn't a separate code path invented just for the static demo.
-- Degrades every directory deep link — both bill-directory routes' `?q=`/`?stage=`, and the member directory's
-  `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=` — to that page's default view, since a static export has no request URL
-  to read at build time. The controls all still work once the page loads, and both directories still write their view
-  back to the address bar; only pre-filling from the incoming link is lost.
+- Degrades every directory deep link — both bill-directory routes' `?q=`/`?stage=`, the member directory's
+  `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`, and the committee directory's `?q=`/`?chamber=`/`?type=`/`?sort=` — to
+  that page's default view, since a static export has no request URL to read at build time. The controls all still work
+  once the page loads, and all three directories still write their view back to the address bar; only pre-filling from
+  the incoming link is lost.
+- Never mounts the analytics or Speed Insights collectors, so neither script tag is emitted and no request is ever made
+  to `/_vercel/…` — a path only Vercel serves, which on GitHub Pages would resolve to this site's own 404 page on every
+  route. The gate is a server-side `STATIC_EXPORT` check, which means it holds at render time rather than at bundle
+  time: roughly 7 KB of never-executed collector code still rides along in the shared client chunk. That is a
+  deliberate trade of a small amount of dead weight in the *demo* build for one gate in one place — see "Analytics
+  Records the Page, Not the Reader" in `docs/decisions.md`.
 
 Use this only for a UI/UX preview or portfolio link — never represent it as the live product. Enable it by running the
 workflow (`workflow_dispatch`) or letting it run on pushes to `main`.
@@ -187,6 +213,7 @@ Read [docs/architecture.md](docs/architecture.md) for the component, data, and d
 2. Add sign-in and the `saved_bills` feature.
 3. Build additional source-linked learning modules for committees and voting (the bill-lifecycle module now lives at
    `/learn/how-a-bill-becomes-law`).
-4. Add committee membership and committee pages — the browsable member directory now lives at `/members`, so a
-   committee roster has both people to link to and a directory to link back into.
+4. Add committee membership, once there is a source for it. The committee directory and committee pages now live at
+   `/committees`, but Congress.gov publishes no roster — see "The Committee Page Has No Roster, and No Deep Link" in
+   `docs/decisions.md` for why one is not inferred. This unblocks only when a citable source exists.
 5. Add notifications only after freshness, provenance, and opt-in controls are solid.

@@ -47,10 +47,10 @@
   font-weight: 700;
 }
 
-/* The dropdown both directories dress their controls in. Stated here rather than once per component for the same reason
-   `.directory-search` and `.segmented-filter` live here: the Congress picker and the directory facets are deliberately
-   the same control, so they should stay the same control in one place. Only the widths differ, and each sets its own
-   below. */
+/* The dropdown every select in this app dresses itself in. Stated here rather than once per component for the same
+   reason `.directory-search` and `.segmented-filter` live here: the Congress picker and the directory facets are
+   deliberately the same control, so they should stay the same control in one place. Only the widths differ, and each
+   sets its own below. */
 .congress-switcher select,
 .directory-facet select {
   min-height: var(--control-height);
@@ -203,10 +203,10 @@
   color: var(--ink-faint);
 }
 
-/* The row of mutually exclusive filter pills both directories open with (SegmentedFilter). Named for its shape rather
-   than its contents: the bill directory fills it with legislative stages and the member directory with chambers, and
-   it was called `.stage-filters` while already doing both — a chamber pill wearing a class named after stages is the
-   kind of thing that sends someone looking for a bug that isn't there. */
+/* The row of mutually exclusive filter pills all three directories open with (SegmentedFilter). Named for its shape
+   rather than its contents: the bill directory fills it with legislative stages, and the member and committee
+   directories with chambers. It was called `.stage-filters` while already doing more than stages — a chamber pill
+   wearing a class named after stages is the kind of thing that sends someone looking for a bug that isn't there. */
 .segmented-filter {
   display: flex;
   align-items: center;

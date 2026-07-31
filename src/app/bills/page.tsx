@@ -12,6 +12,14 @@ import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
+/**
+ * The route segment's data-cache window, declared as on `/members` and `/committees` so all three directories state
+ * the same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
+ * visit and *not* an upstream request: the snapshot is fetched through the adapter's own five-minute cache
+ * (`REVALIDATE_SECONDS` in `http.ts`), shared across every visitor and every narrowing of this page.
+ */
+export const revalidate: number = 300;
+
 export const metadata: Metadata = pageMetadata({
   title: "Bills",
   description: "Browse and search bills and resolutions before Congress, by topic, citation, or legislative stage.",

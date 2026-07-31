@@ -1,4 +1,12 @@
 import {
+  ANY_FACET,
+  type FacetFilter,
+  type FacetOption,
+  parseEnumParam,
+  parseQueryFilter,
+  toQueryString,
+} from "@/lib/congress/directory-filter";
+import {
   type CongressChamber,
   compareMembersByName,
   congressChambers,
@@ -35,13 +43,14 @@ import { compareText } from "@/lib/format";
  * - **The URL spelling of a view** ({@link memberDirectoryQueryString} and the parsers beside it), which is shared
  *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to
  *   neither side. @see docs/decisions.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ *
+ * What this file does *not* declare is the vocabulary every directory narrows itself with — the `ANY_FACET` sentinel,
+ * the facet-option shape, the query-length cap, and the total-parser rule all live in `directory-filter.ts`, so the
+ * sameness this module shares with `committee-filter.ts` and `search.ts` is structural rather than asserted.
  */
 
-/** The wildcard value each facet filter uses for "don't narrow on this at all". */
-export const ANY_FACET = "all" as const;
-
-export type ChamberFilter = CongressChamber | typeof ANY_FACET;
-export type PartyFilter = PartyGroup | typeof ANY_FACET;
+export type ChamberFilter = FacetFilter<CongressChamber>;
+export type PartyFilter = FacetFilter<PartyGroup>;
 /** A represented jurisdiction by full name (e.g., `"Vermont"`), or {@link ANY_FACET}. */
 export type StateFilter = string;
 
@@ -200,21 +209,13 @@ export function sortMembers(entries: MemberDirectoryEntry[], sort: MemberSort): 
 /**
  * One selectable value in a facet control, with the number of members behind it.
  *
- * The count is the reason this isn't just a list of strings. A facet that says "Ohio (15)" tells a reader what a choice
- * will yield *before* they make it, which is the difference between a list you can plan a narrowing with and one you
- * have to probe by trial and error. It also makes the ordering of these lists self-explanatory, which matters most for
- * the party control — see {@link listMemberPartyOptions}.
+ * The shared {@link FacetOption}, re-exported under this directory's own name so the two sites that reach for it —
+ * `listMemberJurisdictions` and `listMemberPartyOptions` — read as member-scoped where they are used. @see FacetOption
+ * for why every facet option carries a count.
  *
  * @typeParam Value - The filter value this option sets.
  */
-export type MemberFacetOption<Value> = {
-  /** The value written to {@link MemberFilters}, and to the URL. */
-  value: Value;
-  /** How the option reads on screen. */
-  label: string;
-  /** How many members in the whole roster carry this value. */
-  count: number;
-};
+export type MemberFacetOption<Value> = FacetOption<Value>;
 
 /**
  * Which group a jurisdiction belongs to in the state control.
@@ -314,16 +315,6 @@ export const MEMBER_DIRECTORY_PARAMS = {
   sort: "sort",
 } as const;
 
-/**
- * Cap on the free-text query carried in the URL.
- *
- * Matches the bill search's own cap deliberately. This text is only ever matched against an already-loaded roster, so
- * the limit isn't protecting a request — it just keeps an unbounded string from riding through the URL and into the
- * page payload. Declared here rather than imported from `api-query.ts` so the browser bundle for this directory
- * doesn't pull in that module's schema validation along with it.
- */
-export const MAX_MEMBER_QUERY_LENGTH: number = 200;
-
 /** Everything the `/members` URL can express: what to show, and in what order. */
 export type MemberDirectoryQuery = {
   filters: MemberFilters;
@@ -344,9 +335,7 @@ export const DEFAULT_MEMBER_DIRECTORY_QUERY: MemberDirectoryQuery = {
  *   chambers" rather than to an error or an empty grid, the same contract `src/lib/api-query.ts` holds its params to.
  */
 export function parseChamberFilter(raw: string | null | undefined): ChamberFilter {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return congressChambers.find((chamber: CongressChamber): boolean => chamber === value) ?? ANY_FACET;
+  return parseEnumParam(raw, congressChambers, ANY_FACET);
 }
 
 /**
@@ -356,9 +345,7 @@ export function parseChamberFilter(raw: string | null | undefined): ChamberFilte
  * @returns The party group, or {@link ANY_FACET} for anything unrecognized.
  */
 export function parsePartyFilter(raw: string | null | undefined): PartyFilter {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return partyGroups.find((party: PartyGroup): boolean => party === value) ?? ANY_FACET;
+  return parseEnumParam(raw, partyGroups, ANY_FACET);
 }
 
 /**
@@ -368,9 +355,7 @@ export function parsePartyFilter(raw: string | null | undefined): PartyFilter {
  * @returns The requested order, or {@link DEFAULT_MEMBER_SORT} for anything unrecognized.
  */
 export function parseMemberSort(raw: string | null | undefined): MemberSort {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return memberSorts.find((sort: MemberSort): boolean => sort === value) ?? DEFAULT_MEMBER_SORT;
+  return parseEnumParam(raw, memberSorts, DEFAULT_MEMBER_SORT);
 }
 
 /**
@@ -420,7 +405,7 @@ export function parseMemberDirectoryQuery(
 ): MemberDirectoryQuery {
   return {
     filters: {
-      query: (params.get(MEMBER_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_MEMBER_QUERY_LENGTH),
+      query: parseQueryFilter(params.get(MEMBER_DIRECTORY_PARAMS.query)),
       chamber: parseChamberFilter(params.get(MEMBER_DIRECTORY_PARAMS.chamber)),
       party: parsePartyFilter(params.get(MEMBER_DIRECTORY_PARAMS.party)),
       state: parseJurisdictionFilter(params.get(MEMBER_DIRECTORY_PARAMS.state), knownJurisdictions),
@@ -449,6 +434,5 @@ export function memberDirectoryQueryString(query: MemberDirectoryQuery): string 
   if (query.filters.state !== ANY_FACET) params.set(MEMBER_DIRECTORY_PARAMS.state, query.filters.state);
   if (query.sort !== DEFAULT_MEMBER_SORT) params.set(MEMBER_DIRECTORY_PARAMS.sort, query.sort);
 
-  const serialized: string = params.toString();
-  return serialized.length > 0 ? `?${serialized}` : "";
+  return toQueryString(params);
 }

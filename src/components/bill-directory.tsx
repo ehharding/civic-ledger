@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { type JSX, useCallback, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
-import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
+import { DirectoryResultCount, DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
@@ -183,9 +183,7 @@ export function BillDirectory({
         />
       </div>
 
-      <p className="directory-result-count" aria-live="polite">
-        {resultCountLabel}
-      </p>
+      <DirectoryResultCount count={resultCountLabel} />
       {isSearchActive && searchScopeNote ? <p className="directory-search-note">{searchScopeNote}</p> : null}
 
       {displayedBills.length > 0 ? (

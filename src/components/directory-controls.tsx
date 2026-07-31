@@ -1,16 +1,22 @@
-import { Search, SlidersHorizontal } from "lucide-react";
-import type { ChangeEvent, JSX } from "react";
+import { ArrowDownUp, Search, SlidersHorizontal, X } from "lucide-react";
+import type { ChangeEvent, JSX, ReactNode } from "react";
+
+import { ANY_FACET, type FacetOption } from "@/lib/congress/directory-filter";
 
 /**
- * The control row both directories open with: a search field beside a segmented filter.
+ * Every control the three directories are assembled from: the search field and segmented filter they open with, the
+ * facet dropdowns and sort control beneath those, the "Clear Filters" action, and the result count that describes what
+ * survived.
  *
- * `BillDirectory` and `MemberDirectory` narrow completely different things — bills by legislative stage, members by
- * chamber — but they present that choice identically, and a reader who has used one directory should not have to
- * relearn the other. Keeping the two controls here is what makes that guarantee structural rather than a convention
- * someone has to remember to follow.
+ * `BillDirectory`, `MemberDirectory`, and `CommitteeDirectory` narrow completely different things — bills by
+ * legislative stage, members by chamber and party and state, committees by chamber and type — but they present those
+ * choices identically, and a reader who has used one directory should not have to relearn the next. Keeping the
+ * controls here is what makes that guarantee structural rather than a convention someone has to remember to follow.
+ * It is the same argument `directory.css` already makes for these controls' *styling*, and the same one
+ * `useDirectoryUrlSync` makes for their URL behavior, applied to the markup in between.
  *
- * Both are deliberately uncontrolled about their *meaning*: they render whatever options and labels they are handed
- * and report back what was picked. Neither knows what a stage or a chamber is.
+ * Every control here is deliberately uncontrolled about its *meaning*: it renders whatever options and labels it is
+ * handed and reports back what was picked. None of them knows what a stage, a chamber, or a committee type is.
  */
 
 /** Props for {@link DirectorySearch}. */
@@ -109,5 +115,193 @@ export function SegmentedFilter<T extends string>({
         ),
       )}
     </fieldset>
+  );
+}
+
+/** Props for {@link FacetOptions}. */
+type FacetOptionsProps<Value extends string> = {
+  /**
+   * The values to offer, already ordered and already counted.
+   * @see FacetOption
+   */
+  options: readonly FacetOption<Value>[];
+};
+
+/**
+ * A facet dropdown's `<option>` list, each entry carrying its count.
+ *
+ * The count in the label is not decoration — @see FacetOption for why every facet in this app names how many records
+ * sit behind a choice before a reader makes it.
+ *
+ * @param props - @see FacetOptionsProps
+ * @returns One `<option>` per value.
+ */
+export function FacetOptions<Value extends string>({ options }: FacetOptionsProps<Value>): JSX.Element {
+  return (
+    <>
+      {options.map(
+        (option: FacetOption<Value>): JSX.Element => (
+          <option key={option.value} value={option.value}>
+            {option.label} ({option.count})
+          </option>
+        ),
+      )}
+    </>
+  );
+}
+
+/** Props for {@link DirectoryFacet}. */
+type DirectoryFacetProps<Value extends string> = {
+  /** The select's `id`, which ties it to its label. Must be unique within the page. */
+  id: string;
+  /** The visible label above the control, e.g., `"Party"`. */
+  label: string;
+  /**
+   * How the "don't narrow on this" option reads, e.g., `"All Parties (541)"`. Spelled by the caller rather than
+   * composed here, since only the caller knows whether a total is meaningful for its facet — it is for a party, and
+   * isn't for a jurisdiction list whose groups are counted separately.
+   */
+  anyLabel: string;
+  /** The currently selected value. */
+  value: string;
+  /** Called with the newly selected value. */
+  onChange: (value: Value) => void;
+  /** The rest of the options, below the "any" one — usually {@link FacetOptions}, or `<optgroup>`s wrapping it. */
+  children: ReactNode;
+};
+
+/**
+ * One labeled facet dropdown, with {@link ANY_FACET} always offered first.
+ *
+ * The wildcard option is rendered here rather than left to each caller for the same reason the sentinel itself is
+ * declared once: "this facet can always be switched off, and switching it off is always the first choice" is a rule,
+ * and a rule stated in one place is one that cannot be forgotten in the fourth directory.
+ *
+ * @param props - @see DirectoryFacetProps
+ * @returns The labeled dropdown.
+ */
+export function DirectoryFacet<Value extends string>({
+  id,
+  label,
+  anyLabel,
+  value,
+  onChange,
+  children,
+}: DirectoryFacetProps<Value>): JSX.Element {
+  return (
+    <div className="directory-facet">
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        onChange={(event: ChangeEvent<HTMLSelectElement>): void => onChange(event.target.value as Value)}
+        value={value}
+      >
+        <option value={ANY_FACET}>{anyLabel}</option>
+        {children}
+      </select>
+    </div>
+  );
+}
+
+/** Props for {@link DirectorySort}. */
+type DirectorySortProps<Sort extends string> = {
+  /** The select's `id`, which ties it to its label. Must be unique within the page. */
+  id: string;
+  /** Every order this directory can be read in, in the order they should appear. */
+  options: readonly Sort[];
+  /** How each order reads on screen. */
+  labels: Readonly<Record<Sort, string>>;
+  /** The order currently applied. */
+  value: Sort;
+  /** Called with the newly chosen order. */
+  onChange: (sort: Sort) => void;
+};
+
+/**
+ * A directory's "Sort By" control.
+ *
+ * Reordering the grid in place is *not* the WCAG 3.2.2 (On Input) pattern the Congress picker has to advise about:
+ * nothing navigates, and the reader stays exactly where they were. It does still need announcing, which is why every
+ * caller names the chosen order in {@link DirectoryResultCount} — a live region — rather than leaving the change only
+ * visible in the grid.
+ *
+ * @param props - @see DirectorySortProps
+ * @returns The labeled sort dropdown.
+ */
+export function DirectorySort<Sort extends string>({
+  id,
+  options,
+  labels,
+  value,
+  onChange,
+}: DirectorySortProps<Sort>): JSX.Element {
+  return (
+    <div className="directory-facet directory-facet--sort">
+      <label htmlFor={id}>
+        <ArrowDownUp aria-hidden="true" size={13} /> Sort By
+      </label>
+      <select
+        id={id}
+        onChange={(event: ChangeEvent<HTMLSelectElement>): void => onChange(event.target.value as Sort)}
+        value={value}
+      >
+        {options.map(
+          (option: Sort): JSX.Element => (
+            <option key={option} value={option}>
+              {labels[option]}
+            </option>
+          ),
+        )}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * The action that returns a narrowed directory to showing everything.
+ *
+ * Rendered only when something is actually narrowed — every directory guards it with its own `hasActive…Filters` — so
+ * the control is never offered with nothing to do.
+ *
+ * @param onClear - Restores that directory's "no filters" state.
+ * @returns The clear button.
+ */
+export function ClearFiltersButton({ onClear }: { onClear: () => void }): JSX.Element {
+  return (
+    <button className="directory-facets__clear" onClick={onClear} type="button">
+      <X aria-hidden="true" size={14} /> Clear Filters
+    </button>
+  );
+}
+
+/** Props for {@link DirectoryResultCount}. */
+type DirectoryResultCountProps = {
+  /** How many records are showing, already worded by the caller (`"12 of 541 Members"`, `"3 Matches"`). */
+  count: string;
+  /**
+   * The chosen order, named only when it isn't the directory's default — so the common case stays a plain count rather
+   * than restating "alphabetical" on every page load. Omitted entirely by the bill directory, which has no sort
+   * control.
+   */
+  order?: string;
+};
+
+/**
+ * The line stating what is currently showing.
+ *
+ * A live region, which is what makes it do double duty: it reports the result of a narrowing to a reader who cannot
+ * see the grid change, and it is where a reordering gets announced, since reordering in place changes nothing else a
+ * screen reader would notice.
+ * @see DirectorySort.
+ *
+ * @param props - @see DirectoryResultCountProps
+ * @returns The count line.
+ */
+export function DirectoryResultCount({ count, order }: DirectoryResultCountProps): JSX.Element {
+  return (
+    <p className="directory-result-count" aria-live="polite">
+      <span>{count}</span>
+      {order ? <span className="directory-result-count__order"> · Sorted by {order}</span> : null}
+    </p>
   );
 }

@@ -1,7 +1,20 @@
+import {
+  ANY_FACET,
+  type FacetFilter,
+  parseEnumParam,
+  parseQueryFilter,
+  toQueryString,
+} from "@/lib/congress/directory-filter";
 import { BILL_TYPE_CODES, type BillStage, billStages, type LegislativeBill } from "@/lib/congress/types";
 
-/** The stage control's selection: one of the five legislative stages, or no narrowing at all. */
-export type BillStageFilter = BillStage | "all";
+/**
+ * The stage control's selection: one of the five legislative stages, or no narrowing at all.
+ *
+ * Spelled through the shared {@link FacetFilter} rather than as a bare `| "all"`, so this directory's "don't narrow"
+ * value is the same declared sentinel the member and committee directories use rather than a string literal that
+ * happens to match. @see ANY_FACET, and `directory-filter.ts` for the rest of the vocabulary all three share.
+ */
+export type BillStageFilter = FacetFilter<BillStage>;
 
 /**
  * The query-param names the bill directory reads and writes.
@@ -15,15 +28,6 @@ export const BILL_DIRECTORY_PARAMS = {
   stage: "stage",
 } as const;
 
-/**
- * Cap on the free-text query carried in the URL.
- *
- * Matches the two other directories' caps deliberately, and is declared here rather than imported from
- * `src/lib/api-query.ts` for the same reason `MAX_MEMBER_QUERY_LENGTH` is: this module is isomorphic, and pulling in
- * that one would drag its schema validation into the browser bundle behind it.
- */
-export const MAX_BILL_QUERY_LENGTH: number = 200;
-
 /** Everything the `/bills` URL can express: what to search for, and which stage to narrow to. */
 export type BillDirectoryQuery = {
   query: string;
@@ -31,19 +35,17 @@ export type BillDirectoryQuery = {
 };
 
 /** An unsearched, unnarrowed directory — what a bare `/bills` means. */
-export const DEFAULT_BILL_DIRECTORY_QUERY: BillDirectoryQuery = { query: "", stage: "all" };
+export const DEFAULT_BILL_DIRECTORY_QUERY: BillDirectoryQuery = { query: "", stage: ANY_FACET };
 
 /**
  * Parses the `stage` query param.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @returns The stage, or `"all"` for anything unrecognized — a stale or hand-edited URL degrades to the unfiltered
- *   listing rather than to an error or an empty grid.
+ * @returns The stage, or {@link ANY_FACET} for anything unrecognized — a stale or hand-edited URL degrades to the
+ *   unfiltered listing rather than to an error or an empty grid.
  */
 export function parseBillStageFilter(raw: string | null | undefined): BillStageFilter {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return billStages.find((stage: BillStage): boolean => stage === value) ?? "all";
+  return parseEnumParam(raw, billStages, ANY_FACET);
 }
 
 /**
@@ -62,7 +64,7 @@ export function parseBillStageFilter(raw: string | null | undefined): BillStageF
  */
 export function parseBillDirectoryQuery(params: URLSearchParams): BillDirectoryQuery {
   return {
-    query: (params.get(BILL_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_BILL_QUERY_LENGTH),
+    query: parseQueryFilter(params.get(BILL_DIRECTORY_PARAMS.query)),
     stage: parseBillStageFilter(params.get(BILL_DIRECTORY_PARAMS.stage)),
   };
 }
@@ -82,10 +84,9 @@ export function billDirectoryQueryString(query: string, stage: BillStageFilter):
   const trimmed: string = query.trim();
 
   if (trimmed.length > 0) params.set(BILL_DIRECTORY_PARAMS.query, trimmed);
-  if (stage !== "all") params.set(BILL_DIRECTORY_PARAMS.stage, stage);
+  if (stage !== ANY_FACET) params.set(BILL_DIRECTORY_PARAMS.stage, stage);
 
-  const serialized: string = params.toString();
-  return serialized.length > 0 ? `?${serialized}` : "";
+  return toQueryString(params);
 }
 
 /**

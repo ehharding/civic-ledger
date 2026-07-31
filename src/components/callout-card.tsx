@@ -50,11 +50,11 @@ type CalloutCardProps = {
 /**
  * The warm "read this next" panel that closes a page.
  *
- * Five routes end with one of these — both detail pages, both learn pages, and the home page — and each used to spell
- * out the same eleven lines of markup, differing only in their copy and their two icons. That is five places to keep a
- * decorative icon `aria-hidden`, five places for the `aria-labelledby` wiring to be right, and five places to update
- * when the shape changes. The home page's copy had already drifted: its icon was rendering a pixel larger than the
- * other four for no reason anyone chose.
+ * Six routes end with one of these — all three detail pages, both learn pages, and the home page — and each used to
+ * spell out the same eleven lines of markup, differing only in their copy and their two icons. That is one place per
+ * route to keep a decorative icon `aria-hidden`, one to get the `aria-labelledby` wiring right, and one to update when
+ * the shape changes. The home page's copy had already drifted before this existed: its icon was rendering a pixel
+ * larger than the rest for no reason anyone chose.
  *
  * The panel is deliberately *not* a link itself. Each one wraps a heading and a paragraph around a single call to
  * action, and a link containing a heading gives assistive technology a long, unwieldy accessible name for what is

@@ -16,6 +16,12 @@ import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
+/**
+ * The route segment's data-cache window, matching `/bills` and the two other directories.
+ * @see src/app/bills/page.tsx
+ */
+export const revalidate: number = 300;
+
 /** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable deep link. */
 type CongressBillsPageProps = {
   params: Promise<{ congress: string }>;

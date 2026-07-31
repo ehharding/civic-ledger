@@ -1,7 +1,8 @@
 import type { JSX } from "react";
 
 /**
- * The placeholder primitives the four `loading.tsx` routes are built from.
+ * The placeholder primitives every `loading.tsx` route is built from — seven of them now, across the bill, member, and
+ * committee halves of the app.
  *
  * Each of those routes mirrors the shape of the page it stands in for, so they can't share a single skeleton
  * *component* — but they were each hand-rolling the same two patterns, and both are easy to get subtly wrong in a way
@@ -24,9 +25,9 @@ type SkeletonGridProps = {
  * Marked `aria-hidden` as a whole: a screen reader has nothing to gain from a dozen empty boxes, and every route that
  * renders one of these pairs it with a {@link LoadingStatus} that says the same thing in one short sentence instead.
  *
- * The index-as-key suppression lives here rather than at each of the four call sites that used to carry its own copy.
- * It is sound for exactly the reason the name says: the array is a fixed length of identical, contentless blocks that
- * never reorders, so there is no identity for a key to preserve.
+ * The index-as-key suppression lives here rather than at every call site that would otherwise carry its own copy. It is
+ * sound for exactly the reason the name says: the array is a fixed length of identical, contentless blocks that never
+ * reorders, so there is no identity for a key to preserve.
  *
  * @param props - @see SkeletonGridProps
  * @returns The placeholder grid, hidden from assistive technology.

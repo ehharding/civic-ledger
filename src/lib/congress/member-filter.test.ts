@@ -4,9 +4,8 @@
  * hand rather than assumed.
  */
 import { describe, expect, it } from "vitest";
-
+import { ANY_FACET } from "@/lib/congress/directory-filter";
 import {
-  ANY_FACET,
   DEFAULT_MEMBER_DIRECTORY_QUERY,
   DEFAULT_MEMBER_SORT,
   filterMembers,

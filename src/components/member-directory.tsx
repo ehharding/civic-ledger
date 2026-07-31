@@ -1,13 +1,20 @@
 "use client";
 
-import { ArrowDownUp, X } from "lucide-react";
-import { type ChangeEvent, type JSX, useCallback, useMemo, useState } from "react";
+import { type JSX, useCallback, useMemo, useState } from "react";
 
-import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
+import {
+  ClearFiltersButton,
+  DirectoryFacet,
+  DirectoryResultCount,
+  DirectorySearch,
+  DirectorySort,
+  FacetOptions,
+  SegmentedFilter,
+} from "@/components/directory-controls";
 import { MemberCard } from "@/components/member-card";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
+import { ANY_FACET } from "@/lib/congress/directory-filter";
 import {
-  ANY_FACET,
   type ChamberFilter,
   DEFAULT_MEMBER_DIRECTORY_QUERY,
   DEFAULT_MEMBER_SORT,
@@ -65,6 +72,10 @@ type MemberDirectoryProps = {
 /**
  * Renders the jurisdiction control's options, grouped into states and territories.
  *
+ * The grouping is the only thing this adds over the plain {@link FacetOptions} the app's other two facets use, and it
+ * delegates the options themselves back to it — so a jurisdiction option is worded and counted identically to a party
+ * or a committee type rather than by a second copy of the same three lines.
+ *
  * @param options - Every jurisdiction in the roster, already ordered. @see listMemberJurisdictions
  * @returns One `<optgroup>` per group that has any members in it — an empty group is omitted rather than rendered as a
  *   heading with nothing under it, which is the ordinary case for a Senate-only filtered roster.
@@ -80,13 +91,7 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
 
         return (
           <optgroup key={group} label={jurisdictionGroupLabels[group]}>
-            {inGroup.map(
-              (option: JurisdictionOption): JSX.Element => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ),
-            )}
+            <FacetOptions options={inGroup} />
           </optgroup>
         );
       })}
@@ -200,75 +205,45 @@ export function MemberDirectory({
       </div>
 
       <div className="directory-facets">
-        <div className="directory-facet">
-          <label htmlFor="member-party-filter">Party</label>
-          <select
-            id="member-party-filter"
-            onChange={(event: ChangeEvent<HTMLSelectElement>): void =>
-              update({ party: event.target.value as PartyFilter })
-            }
-            value={filters.party}
-          >
-            <option value={ANY_FACET}>All Parties ({members.length})</option>
-            {parties.map(
-              (party: MemberFacetOption<PartyGroup>): JSX.Element => (
-                <option key={party.value} value={party.value}>
-                  {party.label} ({party.count})
-                </option>
-              ),
-            )}
-          </select>
-        </div>
+        <DirectoryFacet
+          anyLabel={`All Parties (${members.length})`}
+          id="member-party-filter"
+          label="Party"
+          onChange={(party: PartyFilter): void => update({ party })}
+          value={filters.party}
+        >
+          <FacetOptions options={parties} />
+        </DirectoryFacet>
 
-        <div className="directory-facet">
-          <label htmlFor="member-state-filter">State or Territory</label>
-          <select
-            id="member-state-filter"
-            onChange={(event: ChangeEvent<HTMLSelectElement>): void => update({ state: event.target.value })}
-            value={filters.state}
-          >
-            <option value={ANY_FACET}>All States and Territories</option>
-            <JurisdictionOptions options={jurisdictions} />
-          </select>
-        </div>
+        {/* The only facet in the app whose options are grouped, so it hands over `<optgroup>`s rather than the plain
+            `FacetOptions` list its two peers use. @see JurisdictionOptions. */}
+        <DirectoryFacet
+          anyLabel="All States and Territories"
+          id="member-state-filter"
+          label="State or Territory"
+          onChange={(state: string): void => update({ state })}
+          value={filters.state}
+        >
+          <JurisdictionOptions options={jurisdictions} />
+        </DirectoryFacet>
 
-        <div className="directory-facet directory-facet--sort">
-          {/* Reordering the grid in place is not the WCAG 3.2.2 "on input" pattern the Congress picker has to warn
-              about — nothing navigates, and the reader stays exactly where they were. The order is named in the
-              result-count line below, which is a live region, so the change is announced rather than only visible. */}
-          <label htmlFor="member-sort">
-            <ArrowDownUp aria-hidden="true" size={13} /> Sort By
-          </label>
-          <select
-            id="member-sort"
-            onChange={(event: ChangeEvent<HTMLSelectElement>): void => setSort(event.target.value as MemberSort)}
-            value={sort}
-          >
-            {memberSorts.map(
-              (option: MemberSort): JSX.Element => (
-                <option key={option} value={option}>
-                  {memberSortLabels[option]}
-                </option>
-              ),
-            )}
-          </select>
-        </div>
+        <DirectorySort
+          id="member-sort"
+          labels={memberSortLabels}
+          onChange={setSort}
+          options={memberSorts}
+          value={sort}
+        />
 
-        {isFiltered ? (
-          <button className="directory-facets__clear" onClick={(): void => setFilters(NO_MEMBER_FILTERS)} type="button">
-            <X aria-hidden="true" size={14} /> Clear Filters
-          </button>
-        ) : null}
+        {isFiltered ? <ClearFiltersButton onClear={(): void => setFilters(NO_MEMBER_FILTERS)} /> : null}
       </div>
 
-      <p className="directory-result-count" aria-live="polite">
-        <span>{countLabel}</span>
-        {/* Named only when it isn't the default, so the common case stays a plain count rather than restating
-            "alphabetical" on every page load. */}
-        {sort !== DEFAULT_MEMBER_SORT ? (
-          <span className="directory-result-count__order"> · Sorted by {memberSortLabels[sort]}</span>
-        ) : null}
-      </p>
+      {/* The order is named only when it isn't the default, so the common case stays a plain count rather than
+          restating "alphabetical" on every page load. */}
+      <DirectoryResultCount
+        count={countLabel}
+        order={sort === DEFAULT_MEMBER_SORT ? undefined : memberSortLabels[sort]}
+      />
       <p className="directory-search-note">{scopeNote}</p>
 
       {shown.length > 0 ? (

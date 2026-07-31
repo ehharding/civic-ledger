@@ -6,7 +6,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ANY_COMMITTEE_FACET,
   type CommitteeDirectoryQuery,
   type CommitteeFacetOption,
   type CommitteeFilters,
@@ -16,7 +15,6 @@ import {
   filterCommittees,
   hasActiveCommitteeFilters,
   listCommitteeTypeOptions,
-  MAX_COMMITTEE_QUERY_LENGTH,
   matchesCommitteeQuery,
   NO_COMMITTEE_FILTERS,
   parseCommitteeChamberFilter,
@@ -26,6 +24,7 @@ import {
   sortCommittees,
 } from "@/lib/congress/committee-filter";
 import type { CommitteeSummary, CommitteeType } from "@/lib/congress/committees";
+import { ANY_FACET, MAX_DIRECTORY_QUERY_LENGTH } from "@/lib/congress/directory-filter";
 
 function committee(overrides: Partial<CommitteeSummary> = {}): CommitteeSummary {
   return {
@@ -215,10 +214,10 @@ describe("the URL parsers", (): void => {
 
   /* Total parsers: a hand-edited, truncated, or year-old link opens the unfiltered page at worst. */
   it("degrades an absent or unrecognized value to a usable default", (): void => {
-    expect(parseCommitteeChamberFilter(null)).toBe(ANY_COMMITTEE_FACET);
-    expect(parseCommitteeChamberFilter("assembly")).toBe(ANY_COMMITTEE_FACET);
-    expect(parseCommitteeTypeFilter(undefined)).toBe(ANY_COMMITTEE_FACET);
-    expect(parseCommitteeTypeFilter("subcommittee")).toBe(ANY_COMMITTEE_FACET);
+    expect(parseCommitteeChamberFilter(null)).toBe(ANY_FACET);
+    expect(parseCommitteeChamberFilter("assembly")).toBe(ANY_FACET);
+    expect(parseCommitteeTypeFilter(undefined)).toBe(ANY_FACET);
+    expect(parseCommitteeTypeFilter("subcommittee")).toBe(ANY_FACET);
     expect(parseCommitteeSort("by-size")).toBe(DEFAULT_COMMITTEE_SORT);
   });
 });
@@ -240,10 +239,10 @@ describe("parseCommitteeDirectoryQuery", (): void => {
   });
 
   it("trims and caps the free-text query", (): void => {
-    const long: string = "a".repeat(MAX_COMMITTEE_QUERY_LENGTH + 50);
+    const long: string = "a".repeat(MAX_DIRECTORY_QUERY_LENGTH + 50);
     const view: CommitteeDirectoryQuery = parseCommitteeDirectoryQuery(new URLSearchParams(`q=${long}`));
 
-    expect(view.filters.query).toHaveLength(MAX_COMMITTEE_QUERY_LENGTH);
+    expect(view.filters.query).toHaveLength(MAX_DIRECTORY_QUERY_LENGTH);
     expect(parseCommitteeDirectoryQuery(new URLSearchParams("q=%20%20rules%20%20")).filters.query).toBe("rules");
   });
 });

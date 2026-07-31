@@ -8,6 +8,14 @@ import {
   committeeTypes,
   compareCommitteesByName,
 } from "@/lib/congress/committees";
+import {
+  ANY_FACET,
+  type FacetFilter,
+  type FacetOption,
+  parseEnumParam,
+  parseQueryFilter,
+  toQueryString,
+} from "@/lib/congress/directory-filter";
 
 /**
  * The committee directory's narrowing rules: free-text matching, the two facet filters, the orders the list can be
@@ -22,13 +30,13 @@ import {
  * recognize the second immediately: same wildcard sentinel, same facet-option shape, same total parsers, same
  * only-write-what-isn't-default serialization. Where this one is smaller — two facets rather than three — it is
  * because a committee has fewer facts worth filtering on, not because it took a different approach.
+ *
+ * All four of those shared things now come from `directory-filter.ts` rather than being declared again here, so that
+ * sameness is something the type system holds rather than something this paragraph promises.
  */
 
-/** The wildcard value each facet filter uses for "don't narrow on this at all". */
-export const ANY_COMMITTEE_FACET = "all" as const;
-
-export type CommitteeChamberFilter = CommitteeChamber | typeof ANY_COMMITTEE_FACET;
-export type CommitteeTypeFilter = CommitteeType | typeof ANY_COMMITTEE_FACET;
+export type CommitteeChamberFilter = FacetFilter<CommitteeChamber>;
+export type CommitteeTypeFilter = FacetFilter<CommitteeType>;
 
 /** The directory's complete narrowing state — everything the controls can express, in one value. */
 export type CommitteeFilters = {
@@ -41,8 +49,8 @@ export type CommitteeFilters = {
 /** No narrowing at all: the directory's initial state, and what "Clear Filters" restores. */
 export const NO_COMMITTEE_FILTERS: CommitteeFilters = {
   query: "",
-  chamber: ANY_COMMITTEE_FACET,
-  type: ANY_COMMITTEE_FACET,
+  chamber: ANY_FACET,
+  type: ANY_FACET,
 };
 
 /**
@@ -53,9 +61,7 @@ export const NO_COMMITTEE_FILTERS: CommitteeFilters = {
  *   whether a "Clear Filters" control has anything to do, so it can be offered only when it does.
  */
 export function hasActiveCommitteeFilters(filters: CommitteeFilters): boolean {
-  return (
-    filters.query.trim().length > 0 || filters.chamber !== ANY_COMMITTEE_FACET || filters.type !== ANY_COMMITTEE_FACET
-  );
+  return filters.query.trim().length > 0 || filters.chamber !== ANY_FACET || filters.type !== ANY_FACET;
 }
 
 /**
@@ -92,8 +98,8 @@ export function matchesCommitteeQuery(committee: CommitteeSummary, query: string
  */
 export function filterCommittees(committees: CommitteeSummary[], filters: CommitteeFilters): CommitteeSummary[] {
   return committees.filter((committee: CommitteeSummary): boolean => {
-    if (filters.chamber !== ANY_COMMITTEE_FACET && committee.chamber !== filters.chamber) return false;
-    if (filters.type !== ANY_COMMITTEE_FACET && committee.type !== filters.type) return false;
+    if (filters.chamber !== ANY_FACET && committee.chamber !== filters.chamber) return false;
+    if (filters.type !== ANY_FACET && committee.type !== filters.type) return false;
 
     return matchesCommitteeQuery(committee, filters.query);
   });
@@ -153,19 +159,12 @@ export function sortCommittees(committees: CommitteeSummary[], sort: CommitteeSo
 /**
  * One selectable value in a facet control, with the number of committees behind it.
  *
- * The count is the reason this isn't a bare list of strings, for the same reason it is on the member facets: an option
- * reading "Standing (21)" tells a reader what a choice will yield before they make it.
+ * The shared {@link FacetOption}, re-exported under this directory's own name so {@link listCommitteeTypeOptions}
+ * reads as committee-scoped where it is used. @see FacetOption for why every facet option carries a count.
  *
  * @typeParam Value - The filter value this option sets.
  */
-export type CommitteeFacetOption<Value> = {
-  /** The value written to {@link CommitteeFilters}, and to the URL. */
-  value: Value;
-  /** How the option reads on screen. */
-  label: string;
-  /** How many committees in the whole list carry this value. */
-  count: number;
-};
+export type CommitteeFacetOption<Value> = FacetOption<Value>;
 
 /**
  * The committee types present in a list, for the type filter's options.
@@ -207,15 +206,6 @@ export const COMMITTEE_DIRECTORY_PARAMS = {
   sort: "sort",
 } as const;
 
-/**
- * Cap on the free-text query carried in the URL.
- *
- * Matches the member directory's cap deliberately. This text is only ever matched against an already-loaded list, so
- * the limit isn't protecting a request — it keeps an unbounded string from riding through the URL and into the page
- * payload.
- */
-export const MAX_COMMITTEE_QUERY_LENGTH: number = 200;
-
 /** Everything the `/committees` URL can express: what to show, and in what order. */
 export type CommitteeDirectoryQuery = {
   filters: CommitteeFilters;
@@ -232,25 +222,21 @@ export const DEFAULT_COMMITTEE_DIRECTORY_QUERY: CommitteeDirectoryQuery = {
  * Parses the `chamber` param.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @returns The chamber, or {@link ANY_COMMITTEE_FACET} for anything unrecognized — a hand-edited or stale URL degrades
+ * @returns The chamber, or {@link ANY_FACET} for anything unrecognized — a hand-edited or stale URL degrades
  *   to "every chamber" rather than to an error or an empty grid.
  */
 export function parseCommitteeChamberFilter(raw: string | null | undefined): CommitteeChamberFilter {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return committeeChambers.find((chamber: CommitteeChamber): boolean => chamber === value) ?? ANY_COMMITTEE_FACET;
+  return parseEnumParam(raw, committeeChambers, ANY_FACET);
 }
 
 /**
  * Parses the `type` param.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @returns The committee type, or {@link ANY_COMMITTEE_FACET} for anything unrecognized.
+ * @returns The committee type, or {@link ANY_FACET} for anything unrecognized.
  */
 export function parseCommitteeTypeFilter(raw: string | null | undefined): CommitteeTypeFilter {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return committeeTypes.find((type: CommitteeType): boolean => type === value) ?? ANY_COMMITTEE_FACET;
+  return parseEnumParam(raw, committeeTypes, ANY_FACET);
 }
 
 /**
@@ -260,9 +246,7 @@ export function parseCommitteeTypeFilter(raw: string | null | undefined): Commit
  * @returns The requested order, or {@link DEFAULT_COMMITTEE_SORT} for anything unrecognized.
  */
 export function parseCommitteeSort(raw: string | null | undefined): CommitteeSort {
-  const value: string = (raw ?? "").trim().toLowerCase();
-
-  return committeeSorts.find((sort: CommitteeSort): boolean => sort === value) ?? DEFAULT_COMMITTEE_SORT;
+  return parseEnumParam(raw, committeeSorts, DEFAULT_COMMITTEE_SORT);
 }
 
 /**
@@ -281,7 +265,7 @@ export function parseCommitteeSort(raw: string | null | undefined): CommitteeSor
 export function parseCommitteeDirectoryQuery(params: URLSearchParams): CommitteeDirectoryQuery {
   return {
     filters: {
-      query: (params.get(COMMITTEE_DIRECTORY_PARAMS.query) ?? "").trim().slice(0, MAX_COMMITTEE_QUERY_LENGTH),
+      query: parseQueryFilter(params.get(COMMITTEE_DIRECTORY_PARAMS.query)),
       chamber: parseCommitteeChamberFilter(params.get(COMMITTEE_DIRECTORY_PARAMS.chamber)),
       type: parseCommitteeTypeFilter(params.get(COMMITTEE_DIRECTORY_PARAMS.type)),
     },
@@ -304,12 +288,11 @@ export function committeeDirectoryQueryString(query: CommitteeDirectoryQuery): s
   const trimmedQuery: string = query.filters.query.trim();
 
   if (trimmedQuery.length > 0) params.set(COMMITTEE_DIRECTORY_PARAMS.query, trimmedQuery);
-  if (query.filters.chamber !== ANY_COMMITTEE_FACET) {
+  if (query.filters.chamber !== ANY_FACET) {
     params.set(COMMITTEE_DIRECTORY_PARAMS.chamber, query.filters.chamber);
   }
-  if (query.filters.type !== ANY_COMMITTEE_FACET) params.set(COMMITTEE_DIRECTORY_PARAMS.type, query.filters.type);
+  if (query.filters.type !== ANY_FACET) params.set(COMMITTEE_DIRECTORY_PARAMS.type, query.filters.type);
   if (query.sort !== DEFAULT_COMMITTEE_SORT) params.set(COMMITTEE_DIRECTORY_PARAMS.sort, query.sort);
 
-  const serialized: string = params.toString();
-  return serialized.length > 0 ? `?${serialized}` : "";
+  return toQueryString(params);
 }

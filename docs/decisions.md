@@ -271,12 +271,12 @@ excluded from it, because party has a dedicated filter beside the box and matchi
 
 ## A Narrowed Directory Is a Place, So It Has a URL
 
-Both directories in this app can now be linked to in a particular state: `/bills?q=broadband&stage=law`,
-`/members?chamber=senate&party=republican&sort=state`. Neither could before, and the bill directory's half of that gap
-is the clearer illustration of why it mattered. `/bills` could already *receive* a `?q=` link — the site header's
-search form has always sent one — but nothing in the app ever *produced* one, so a reader who found something worth
-sharing had no way to hand it to anyone. A page that can be arrived at in a state it can't be left in is a page whose
-address bar is lying about where you are.
+Every directory in this app can now be linked to in a particular state: `/bills?q=broadband&stage=law`,
+`/members?chamber=senate&party=republican&sort=state`, `/committees?type=standing&sort=chamber`. None could before,
+and the bill directory's part of that gap is the clearest illustration of why it mattered. `/bills` could already
+*receive* a `?q=` link — the site header's search form has always sent one — but nothing in the app ever *produced* one,
+so a reader who found something worth sharing had no way to hand it to anyone. A page that can be arrived at in a state
+it can't be left in is a page whose address bar is lying about where you are.
 
 Two mechanical decisions follow from the member directory's existing "filters in the browser" stance, and they are the
 whole reason this is cheap:
@@ -577,3 +577,79 @@ had to explain the ordering. Both rules are now in one file, where the override 
 overrides and needs no explanation beyond that.
 
 One misnomer was fixed at the same time: the committee directory's own `<section>` carried `className="member-directory"`.
+
+## The Three Directories Share a Vocabulary, Not Just a Resemblance
+
+`search.ts`, `member-filter.ts`, and `committee-filter.ts` each opened with a paragraph asserting that the three
+directories are the same design in three subjects: same wildcard sentinel, same facet-option shape, same total parsers,
+same only-write-what-isn't-default serialization. Every one of those paragraphs was true, and every one of them was the
+*only* thing making it true.
+
+Concretely, what the three files actually held between them: three declarations of `"all"` under two different names
+(`ANY_FACET`, `ANY_COMMITTEE_FACET`, and a bare string literal in the bill directory), two byte-identical generic
+facet-option types, three separate `200`-character query caps each with a comment explaining that it matched the other
+two, and seven parsers whose bodies were the same four lines with a different union substituted in.
+
+That is the same shape as the problem "One Collator, One Date Order, for the Whole App" describes, and it deserves the
+same answer. `directory-filter.ts` states the shared vocabulary once — the sentinel, the facet-option type, the cap,
+the free-text parser, the enum parser every facet and sort param resolves through, and the query-string terminator —
+and the three modules import it. The sameness is now something the type system holds rather than something three
+paragraphs promise.
+
+Two things stayed deliberately unshared, and the line between them is the point:
+
+- **What a view means is each directory's own business.** Param names, facet unions, sort orders, and comparators all
+  stay put. A generic "filters" abstraction spanning one directory's three facets, another's two, and a third's one
+  would be a worse fit than three explicit declarations, and it would make each directory harder to read in order to
+  make them look alike.
+- **`src/lib/api-query.ts` keeps its own `MAX_QUERY_LENGTH`.** It bounds the same text where that text reaches a
+  *request* rather than a URL, and it is zod-backed and server-oriented — importing it from an isomorphic module would
+  pull schema validation into the browser bundle behind it, which is the exact thing the per-directory caps existed to
+  avoid. The dependency runs one way on purpose.
+
+The same argument applies one layer up, in the markup. `directory-controls.tsx` already held the search field and the
+segmented filter every directory opens with; the facet dropdown, the sort control, the "Clear Filters" action, and the
+result-count line were written twice, once in each of the two faceted directories. They are now stated once beside
+their siblings — which is the same move `directory.css` made when `.member-facet` became `.directory-facet`, and the
+same one `useDirectoryUrlSync` made for the URL reconciliation. Styling, behavior, and markup for a shared control
+surface now all live in one place each, rather than one, one, and two.
+
+## Analytics Records the Page, Not the Reader
+
+Civic Ledger carries Vercel Web Analytics and Speed Insights, mounted once in the root layout. Both were chosen on the
+same property: they are cookieless and store no cross-site identifier, so adding them does not turn a reader of public
+legislative records into a tracked subject. That is a low bar and it is not the interesting part of this decision.
+
+The interesting part is that this app's own best feature would have quietly defeated it. "A Narrowed Directory Is a
+Place, So It Has a URL" is why `/members?party=republican&state=Ohio` and `/bills?q=broadband` exist at all, and it is
+a genuinely good feature — but an unfiltered analytics feed of those URLs is a log of what each reader searched for and
+whose delegation they went looking at. This project's stated position is that no political-affiliation targeting or
+persuasion logic belongs in the product; a measurement layer that assembles the raw material for exactly that, as a
+side effect of a feature rather than by anyone's decision, would make that position decorative.
+
+So `stripQuery` in `src/components/site-analytics.tsx` cuts everything from the first `?` or `#` before either
+collector reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which
+answers "which parts of this are worth keeping" without answering "who is reading it". It is enforced in a `beforeSend`
+callback rather than in a dashboard setting, because a dashboard setting is a thing someone can flip and a callback is
+a thing that shows up in a diff. It has its own test for the same reason: a promise made in prose and kept by one
+uncovered line is a promise that survives until the next refactor.
+
+Two mechanical consequences worth naming:
+
+- **The component is a client component, and the gate that decides whether to render it is not.** `beforeSend` is a
+  function, and a function cannot cross the server/client boundary as a prop — so the collectors live in a `"use
+  client"` module, while the `STATIC_EXPORT` check that omits them entirely lives in the root layout, which is the only
+  side that can read a non-`NEXT_PUBLIC_` environment variable.
+- **The static GitHub Pages demo never mounts either one.** Both scripts load from `/_vercel/…`, a path only Vercel
+  serves, so on GitHub Pages they would resolve to that site's 404 page on every route. Skipping them there is not a
+  privacy concession; it is the same "a static export has no server behind it" fact that already removes the `/api`
+  routes.
+
+  Worth stating precisely, because the gate is weaker than it looks: `STATIC_EXPORT` is not `NEXT_PUBLIC_`-prefixed, so
+  the bundler cannot fold the check away — the condition is evaluated when the layout renders, not when the bundle is
+  built. Nothing is mounted, no script tag is emitted, and no request to `/_vercel/…` is ever made, which is the part
+  that matters. What does still happen is that roughly 7 KB of never-executed collector code rides along in the shared
+  client chunk of the demo build. Removing it would mean either a second `NEXT_PUBLIC_` flag mirroring the first or a
+  bundler alias in `next.config.ts`, both of which split one gate across two places to save a couple of kilobytes on
+  the deployment target that is explicitly a preview. The trade goes the other way, and this paragraph is the record of
+  it rather than a silence someone else has to rediscover.

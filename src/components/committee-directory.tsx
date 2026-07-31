@@ -1,13 +1,19 @@
 "use client";
 
-import { ArrowDownUp, X } from "lucide-react";
-import { type ChangeEvent, type JSX, useCallback, useMemo, useState } from "react";
+import { type JSX, useCallback, useMemo, useState } from "react";
 
 import { CommitteeCard } from "@/components/committee-card";
-import { DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
+import {
+  ClearFiltersButton,
+  DirectoryFacet,
+  DirectoryResultCount,
+  DirectorySearch,
+  DirectorySort,
+  FacetOptions,
+  SegmentedFilter,
+} from "@/components/directory-controls";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import {
-  ANY_COMMITTEE_FACET,
   type CommitteeChamberFilter,
   type CommitteeDirectoryQuery,
   type CommitteeFacetOption,
@@ -33,11 +39,12 @@ import {
   committeeChamberShortLabels,
   committeeChambers,
 } from "@/lib/congress/committees";
+import { ANY_FACET } from "@/lib/congress/directory-filter";
 import type { CongressSnapshot } from "@/lib/congress/types";
 import { formatOrdinal, pluralize } from "@/lib/format";
 
 /** The chamber control's options: all three chambers, preceded by the "no filter" choice. */
-const CHAMBER_OPTIONS: readonly CommitteeChamberFilter[] = [ANY_COMMITTEE_FACET, ...committeeChambers];
+const CHAMBER_OPTIONS: readonly CommitteeChamberFilter[] = [ANY_FACET, ...committeeChambers];
 
 /** Props for {@link CommitteeDirectory}. */
 type CommitteeDirectoryProps = {
@@ -131,7 +138,7 @@ export function CommitteeDirectory({
 
         <SegmentedFilter
           labelFor={(option: CommitteeChamberFilter): string =>
-            option === ANY_COMMITTEE_FACET ? "All Chambers" : committeeChamberShortLabels[option as CommitteeChamber]
+            option === ANY_FACET ? "All Chambers" : committeeChamberShortLabels[option as CommitteeChamber]
           }
           legend="Filter by chamber"
           onSelect={(chamber: CommitteeChamberFilter): void => update({ chamber })}
@@ -141,64 +148,31 @@ export function CommitteeDirectory({
       </div>
 
       <div className="directory-facets">
-        <div className="directory-facet">
-          <label htmlFor="committee-type-filter">Committee Type</label>
-          <select
-            id="committee-type-filter"
-            onChange={(event: ChangeEvent<HTMLSelectElement>): void =>
-              update({ type: event.target.value as CommitteeTypeFilter })
-            }
-            value={filters.type}
-          >
-            <option value={ANY_COMMITTEE_FACET}>All Types ({committees.length})</option>
-            {types.map(
-              (type: CommitteeFacetOption<CommitteeType>): JSX.Element => (
-                <option key={type.value} value={type.value}>
-                  {type.label} ({type.count})
-                </option>
-              ),
-            )}
-          </select>
-        </div>
+        <DirectoryFacet
+          anyLabel={`All Types (${committees.length})`}
+          id="committee-type-filter"
+          label="Committee Type"
+          onChange={(type: CommitteeTypeFilter): void => update({ type })}
+          value={filters.type}
+        >
+          <FacetOptions options={types} />
+        </DirectoryFacet>
 
-        <div className="directory-facet directory-facet--sort">
-          {/* Reordering the grid in place is not the WCAG 3.2.2 "on input" pattern — nothing navigates, and the order
-              is named in the result-count line below, which is a live region. @see MemberDirectory. */}
-          <label htmlFor="committee-sort">
-            <ArrowDownUp aria-hidden="true" size={13} /> Sort By
-          </label>
-          <select
-            id="committee-sort"
-            onChange={(event: ChangeEvent<HTMLSelectElement>): void => setSort(event.target.value as CommitteeSort)}
-            value={sort}
-          >
-            {committeeSorts.map(
-              (option: CommitteeSort): JSX.Element => (
-                <option key={option} value={option}>
-                  {committeeSortLabels[option]}
-                </option>
-              ),
-            )}
-          </select>
-        </div>
+        <DirectorySort
+          id="committee-sort"
+          labels={committeeSortLabels}
+          onChange={setSort}
+          options={committeeSorts}
+          value={sort}
+        />
 
-        {isFiltered ? (
-          <button
-            className="directory-facets__clear"
-            onClick={(): void => setFilters(NO_COMMITTEE_FILTERS)}
-            type="button"
-          >
-            <X aria-hidden="true" size={14} /> Clear Filters
-          </button>
-        ) : null}
+        {isFiltered ? <ClearFiltersButton onClear={(): void => setFilters(NO_COMMITTEE_FILTERS)} /> : null}
       </div>
 
-      <p className="directory-result-count" aria-live="polite">
-        <span>{countLabel}</span>
-        {sort !== DEFAULT_COMMITTEE_SORT ? (
-          <span className="directory-result-count__order"> · Sorted by {committeeSortLabels[sort]}</span>
-        ) : null}
-      </p>
+      <DirectoryResultCount
+        count={countLabel}
+        order={sort === DEFAULT_COMMITTEE_SORT ? undefined : committeeSortLabels[sort]}
+      />
       <p className="directory-search-note">{scopeNote}</p>
 
       {shown.length > 0 ? (
