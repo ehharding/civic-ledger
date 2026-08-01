@@ -2,9 +2,9 @@
  * Covers the bill adapter's degraded and edge paths.
  *
  * `client.test.ts` covers the shapes a healthy request produces — preview fallback, live mapping, 404 versus outage.
- * What is left, and what this file is for, are the paths that only appear when something is wrong at the *same time*
- * as something else: a route param that can't be normalized while a key is configured, an upstream 200 whose body
- * carries no record, a single Congress dropping out of a search sweep while the rest succeed.
+ * What is left, and what this file is for, are the paths that only appear when something is wrong at the *same time* as
+ * something else: a route param that can't be normalized while a key is configured, an upstream 200 whose body carries
+ * no record, a single Congress dropping out of a search sweep while the rest succeed.
  *
  * These matter more than their rarity suggests, because they are where the adapter's two invariants — nothing throws,
  * and provenance travels with the data — are easiest to break without any test noticing. A page that renders a bill
@@ -91,8 +91,8 @@ describe("getBillById", (): void => {
   });
 
   it("falls back through the snapshot to the preview fixtures when the lookup fails outright", async (): Promise<void> => {
-    // Both the direct lookup and the snapshot request fail, so the only thing left is the labeled fixture set — and
-    // the result must say `preview`, because that is what it is.
+    // Both the direct lookup and the snapshot request fail, so the only thing left is the labeled fixture set — and the
+    // result must say `preview`, because that is what it is.
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation((): void => {});
 

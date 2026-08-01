@@ -1,8 +1,8 @@
 /**
  * Covers CongressSeatingChart's interaction surface: one seat per member with a descriptive accessible name, the
- * chamber tabs, the hover/focus read-out, the roving tabindex that keeps the chart to a single tab stop, the links
- * from each seat to that member's page, and the preview-mode labeling that keeps placeholder seats from reading as
- * real membership.
+ * chamber tabs, the hover/focus read-out, the roving tabindex that keeps the chart to a single tab stop, the links from
+ * each seat to that member's page, and the preview-mode labeling that keeps placeholder seats from reading as real
+ * membership.
  */
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -60,9 +60,9 @@ function composition(overrides: Partial<CongressComposition> = {}): CongressComp
 /**
  * Every seat in the currently-shown chamber, in chart order.
  *
- * Queried by `data-seat-index` rather than by role, because a seat's element depends on its member: one with a
- * Bioguide ID is a link to their page, one without (every placeholder seat) is a `role="button"` circle. The attribute
- * is what both forms share, and what the component's own delegated handlers key on.
+ * Queried by `data-seat-index` rather than by role, because a seat's element depends on its member: one with a Bioguide
+ * ID is a link to their page, one without (every placeholder seat) is a `role="button"` circle. The attribute is what
+ * both forms share, and what the component's own delegated handlers key on.
  */
 function seats(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-seat-index]"));
@@ -288,8 +288,8 @@ describe("CongressSeatingChart's click and keyboard selection", (): void => {
   });
 
   it("locks the read-out with Enter on a seat that is not a link", (): void => {
-    // A seat whose member has a page is a real link, so activation belongs to the browser — intercepting it would
-    // break "Enter opens the link". A placeholder seat has nowhere to go, so Enter is what locks its read-out.
+    // A seat whose member has a page is a real link, so activation belongs to the browser — intercepting it would break
+    // "Enter opens the link". A placeholder seat has nowhere to go, so Enter is what locks its read-out.
     render(<CongressSeatingChart composition={placeholderComposition()} />);
 
     fireEvent.keyDown(seats()[0] as HTMLElement, { key: "Enter" });

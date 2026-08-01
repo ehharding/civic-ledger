@@ -49,8 +49,8 @@ export function SkeletonGrid({ count, className, blockClassName }: SkeletonGridP
  * The one thing a skeleton actually says out loud.
  *
  * `role="status"` rather than `aria-live="assertive"` deliberately: a page that is merely still loading is not worth
- * interrupting whatever is currently being read. Visually hidden because the placeholder blocks already convey the
- * same thing to anyone who can see them.
+ * interrupting whatever is currently being read. Visually hidden because the placeholder blocks already convey the same
+ * thing to anyone who can see them.
  *
  * @param children - The message, e.g., `"Loading Bills…"`.
  * @returns The screen-reader-only status message.

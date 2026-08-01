@@ -83,12 +83,11 @@
 
   /* The nav gets a row of its own below this width.
    *
-   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That worked at four
-   * destinations and stops working at five: squeezed into the column beside the wordmark, the links wrap into a
-   * ragged two- or three-line block hanging off the right edge, and every one added after that makes it worse. The
-   * fix that scales is to stop sharing the line — a full-width row left-aligned under the wordmark fits five labels
-   * on one line on any phone wider than about 340px, and wraps to a tidy left-aligned second line below that instead
-   * of a staircase.
+   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That worked at four destinations
+   * and stops working at five: squeezed into the column beside the wordmark, the links wrap into a ragged two- or
+   * three-line block hanging off the right edge, and every one added after that makes it worse. The fix that scales is
+   * to stop sharing the line — a full-width row left-aligned under the wordmark fits five labels on one line on any
+   * phone wider than about 340px, and wraps to a tidy left-aligned second line below that instead of a staircase.
    *
    * The cost is roughly 12px of a sticky header, which is the trade being made deliberately: the alternative is
    * shrinking the type again, and these labels are already at 0.78rem. */

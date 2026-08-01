@@ -140,8 +140,8 @@ describe("computeSeatingGeometry", (): void => {
   });
 
   it("sizes seats from the arcs that actually hold them when an arc comes back empty", (): void => {
-    // With more arcs than seats, the rebalancing loop gives up rather than emptying its only donor, so some arcs end
-    // up with nothing on them. Seat size is derived from the tightest *occupied* arc; an empty one has no spacing to
+    // With more arcs than seats, the rebalancing loop gives up rather than emptying its only donor, so some arcs end up
+    // with nothing on them. Seat size is derived from the tightest *occupied* arc; an empty one has no spacing to
     // contribute and must be skipped rather than divided by.
     const geometry: SeatingGeometry = computeSeatingGeometry(1, 3);
 

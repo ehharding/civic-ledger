@@ -60,9 +60,9 @@ describe("generateMetadata", (): void => {
   });
 
   it("names the chamber instead when no seat can be derived", async (): Promise<void> => {
-    // "…representing ." with nothing after it is worse than the plainer sentence, so a member whose jurisdiction is
-    // not on file is described by the body they sit in. No fixture is seatless, so this one goes through the live
-    // path with a record that carries no state.
+    // "…representing ." with nothing after it is worse than the plainer sentence, so a member whose jurisdiction is not
+    // on file is described by the body they sit in. No fixture is seatless, so this one goes through the live path with
+    // a record that carries no state.
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal(
       "fetch",

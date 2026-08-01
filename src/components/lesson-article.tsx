@@ -17,8 +17,8 @@ import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
  * makes adding a module an edit to one data file rather than a new page.
  *
  * The limits panel is not optional and takes the accent treatment deliberately. Every one of these lessons is a
- * simplification — that is the point of a lesson — and the panel is where each one says which simplification it made.
- * A reader who skims the steps and stops still passes it on the way to the sources.
+ * simplification — that is the point of a lesson — and the panel is where each one says which simplification it made. A
+ * reader who skims the steps and stops still passes it on the way to the sources.
  *
  * @param lesson - The module to render.
  * @returns The full lesson body, ready to drop inside a `SiteShell`.

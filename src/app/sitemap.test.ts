@@ -111,8 +111,10 @@ describe("sitemap", (): void => {
 
     expect(new Set(all).size).toBe(all.length);
     for (const url of all) {
-      expect(new URL(url).protocol, url).toBe("https:");
-      expect(url.startsWith(SITE_URL), url).toBe(true);
+      // Compare parsed origins rather than a string prefix. `https://civic-ledger.test.evil.example/` starts with
+      // `SITE_URL` but is a different host, so a prefix check would call a hijacked URL absolute and on-site; origin
+      // equality pins scheme, host, and port at once, which is exactly what "absolute and ours" means.
+      expect(new URL(url).origin, url).toBe(SITE_URL);
     }
   });
 });

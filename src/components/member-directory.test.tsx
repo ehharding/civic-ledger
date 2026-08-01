@@ -376,8 +376,8 @@ describe("MemberDirectory URL syncing", (): void => {
 
 /**
  * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
- * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the
- * half that used to be silently overwritten with whatever the reader had last narrowed to.
+ * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the half
+ * that used to be silently overwritten with whatever the reader had last narrowed to.
  */
 describe("MemberDirectory following a URL it did not write", (): void => {
   beforeEach((): void => {

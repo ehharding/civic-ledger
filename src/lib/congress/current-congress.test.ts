@@ -1,6 +1,6 @@
 /**
- * Covers getCurrentCongress's date-based computation: known Congress/year pairs, the January 3 transition
- * boundary (the one point in the cycle where the calendar year alone isn't enough), and the no-argument default.
+ * Covers getCurrentCongress's date-based computation: known Congress/year pairs, the January 3 transition boundary (the
+ * one point in the cycle where the calendar year alone isn't enough), and the no-argument default.
  */
 import { describe, expect, it } from "vitest";
 

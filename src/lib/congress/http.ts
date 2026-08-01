@@ -5,8 +5,8 @@ import { isBioguideId } from "@/lib/congress/members";
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/types";
 
 /**
- * The transport layer shared by every Congress.gov read in this app: key access, URL construction, caching policy,
- * one request helper, and the guards that keep route-derived values out of outbound URLs.
+ * The transport layer shared by every Congress.gov read in this app: key access, URL construction, caching policy, one
+ * request helper, and the guards that keep route-derived values out of outbound URLs.
  *
  * Nothing here knows what a bill or a member *is* — that's `mappers.ts`'s job. Keeping the two apart means the caching
  * story, the error taxonomy, and the "never interpolate an unvalidated path segment" rule each live in exactly one
@@ -24,9 +24,8 @@ export const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
 export const REVALIDATE_SECONDS: number = 300;
 
 /**
- * The most records Congress.gov will return from a single request, on any endpoint that paginates. Requested
- * explicitly wherever one round trip should cover as much as possible (summaries, text versions, member pages, the
- * search sweep).
+ * The most records Congress.gov will return from a single request, on any endpoint that paginates. Requested explicitly
+ * wherever one round trip should cover as much as possible (summaries, text versions, member pages, the search sweep).
  */
 export const MAX_API_PAGE_SIZE: number = 250;
 
@@ -35,9 +34,8 @@ export const MAX_API_PAGE_SIZE: number = 250;
  *
  * `fetch` has no timeout of its own: a connection that opens and then stalls hangs until the platform's own socket
  * timeout, which on a Node host is minutes and on some is never. That is the one upstream failure mode this adapter's
- * "nothing throws, everything degrades" design does *not* cover on its own — a request that never settles never
- * reaches the `catch` that would have turned it into `{ outcome: "failed" }`, so the page waits instead of falling
- * back.
+ * "nothing throws, everything degrades" design does *not* cover on its own — a request that never settles never reaches
+ * the `catch` that would have turned it into `{ outcome: "failed" }`, so the page waits instead of falling back.
  *
  * The cost of that is worst exactly where the app fans out widest. `getSearchResults` awaits one request per supported
  * Congress — a couple of dozen of them, in parallel — so without a bound, the slowest single connection sets the
@@ -67,8 +65,8 @@ export function getCongressApiKey(): string | undefined {
 /**
  * Builds a Congress.gov v3 request URL.
  *
- * @param path - Endpoint path beneath {@link CONGRESS_API_BASE}, with a leading slash (e.g., `/bill/119/hr/284`).
- *   Every dynamic segment must already have been validated — see {@link normalizeBillRouteParams}.
+ * @param path - Endpoint path beneath {@link CONGRESS_API_BASE}, with a leading slash (e.g., `/bill/119/hr/284`). Every
+ *   dynamic segment must already have been validated — see {@link normalizeBillRouteParams}.
  * @param apiKey - The server-only key, appended last so it reads as a trailing credential rather than a filter.
  * @param params - Endpoint-specific query params (`limit`, `offset`, `sort`, …).
  * @returns The fully-formed URL, including `format=json` (requested explicitly, per the API's own changelog
@@ -88,15 +86,15 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
  * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window, headers, and timeout.
  *
  * The abort signal is per-call rather than shared, since each request needs its own clock — and it is safe to pass
- * alongside `next.revalidate`: Next strips the signal when it re-requests a stale entry in the background, so a
- * timeout bounds the request a reader is actually waiting on without ever cancelling a revalidation.
+ * alongside `next.revalidate`: Next strips the signal when it re-requests a stale entry in the background, so a timeout
+ * bounds the request a reader is actually waiting on without ever cancelling a revalidation.
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags, so a future revalidation hook can invalidate a whole family of requests at once.
  * @returns The raw response. Rejects with a `TimeoutError` if the request outlasts {@link REQUEST_TIMEOUT_MS}, which
- *   {@link requestCongressJson} turns into an ordinary `{ outcome: "failed" }` like any other transport failure.
- *   Prefer that function, which also handles status codes and parsing; this is exported mainly for the rare caller
- *   that needs the response itself.
+ *   {@link requestCongressJson} turns into an ordinary `{ outcome: "failed" }` like any other transport failure. Prefer
+ *   that function, which also handles status codes and parsing; this is exported mainly for the rare caller that needs
+ *   the response itself.
  */
 export function fetchCongressGov(url: URL, tags: string[]): Promise<Response> {
   return fetch(url, {
@@ -214,9 +212,9 @@ export function committeeCacheTags(systemCode: string): string[] {
  * escaping means a malformed value can never reach Congress.gov at all.
  *
  * @param raw - The raw `systemCode` route param.
- * @returns The lower-cased code, or `null` when it isn't the letters-then-two-digits form Congress.gov issues. A
- *   `null` is not the same as "not found": the preview fixtures use codes that deliberately fail this guard and are
- *   resolved locally instead, never upstream. @see isCommitteeSystemCode
+ * @returns The lower-cased code, or `null` when it isn't the letters-then-two-digits form Congress.gov issues. A `null`
+ *   is not the same as "not found": the preview fixtures use codes that deliberately fail this guard and are resolved
+ *   locally instead, never upstream. @see isCommitteeSystemCode
  */
 export function normalizeSystemCode(raw: string): string | null {
   const value: string = raw.trim().toLowerCase();

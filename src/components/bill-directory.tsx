@@ -85,8 +85,7 @@ export function BillDirectory({
   /**
    * Takes the view a URL names as the current one.
    *
-   * Read through the same parser the route uses, so the browser and the server cannot disagree about what a link
-   * means.
+   * Read through the same parser the route uses, so the browser and the server cannot disagree about what a link means.
    * @see parseBillDirectoryQuery
    */
   const adoptUrl: (location: string) => void = useCallback((location: string): void => {
@@ -99,9 +98,9 @@ export function BillDirectory({
   /**
    * Mirrors the current search and stage into the address bar, and follows the URL when something else moves it.
    *
-   * This route could always *receive* a `?q=` link — the site header's search form sends one — but nothing produced
-   * one from the page itself, so a reader who found something here had no way to hand it to anyone else. Both halves
-   * now use the same spelling of that URL. @see billDirectoryQueryString
+   * This route could always *receive* a `?q=` link — the site header's search form sends one — but nothing produced one
+   * from the page itself, so a reader who found something here had no way to hand it to anyone else. Both halves now
+   * use the same spelling of that URL. @see billDirectoryQueryString
    *
    * Reconciling in both directions rather than only writing is what makes the header's own "Bills" link work from an
    * already-narrowed directory: a soft navigation to `/bills` changes the URL without remounting this component, so a

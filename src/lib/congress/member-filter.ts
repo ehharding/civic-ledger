@@ -42,8 +42,8 @@ import { compareText } from "@/lib/format";
  * - **Facet options** ({@link listMemberJurisdictions}, {@link listMemberPartyOptions}), derived from the roster in
  *   hand so a control can never offer a choice that returns nothing.
  * - **The URL spelling of a view** ({@link memberDirectoryQueryString} and the parsers beside it), which is shared
- *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to
- *   neither side.
+ *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to neither
+ *   side.
  *   @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  *
  * What this file does *not* declare is the vocabulary every directory narrows itself with — the `ANY_FACET` sentinel,

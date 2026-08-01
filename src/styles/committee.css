@@ -8,8 +8,8 @@
 
 /*
  * The one place a committee type is mapped to a color, on exactly the pattern party.css establishes and for the same
- * reason: two things tint by type (a card's chip and the hero's), and a mapping restated per consumer is a mapping
- * that goes half-updated the day a sixth type appears.
+ * reason: two things tint by type (a card's chip and the hero's), and a mapping restated per consumer is a mapping that
+ * goes half-updated the day a sixth type appears.
  *
  * These reuse the existing brand accents rather than introducing five new tokens. The distinction being drawn is much
  * softer than the party one — nobody needs to identify a select committee at a glance across a chart of 441 of them —

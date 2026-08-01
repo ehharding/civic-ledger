@@ -8,10 +8,10 @@ import type { ComponentProps, JSX } from "react";
  * Vercel Web Analytics and Speed Insights, wired to record *which pages* are read and how fast they render — and
  * nothing about the reader.
  *
- * Both are cookieless and store no cross-site identifier, which is why they are the analytics this project can carry
- * at all. `docs/data-policy.md` states that no political-affiliation targeting or persuasion logic belongs in this
- * product, and that stance is worth nothing if the measurement layer quietly builds the profile the product refuses
- * to act on.
+ * Both are cookieless and store no cross-site identifier, which is why they are the analytics this project can carry at
+ * all. `docs/data-policy.md` states that no political-affiliation targeting or persuasion logic belongs in this
+ * product, and that stance is worth nothing if the measurement layer quietly builds the profile the product refuses to
+ * act on.
  * @see stripQuery for the one place that promise is actually enforced.
  *
  * Neither collector reports anywhere but a Vercel deployment with the corresponding feature switched on: both load
@@ -24,12 +24,12 @@ import type { ComponentProps, JSX } from "react";
 /**
  * Drops the query string and fragment from a recorded URL, keeping the origin and path.
  *
- * This is the load-bearing line in this file. Every directory in this app mirrors its current view into the address
- * bar (`/bills?q=broadband`, `/members?party=republican&state=Ohio`), which is a feature — a narrowed directory is a
- * place, so it has a URL — but it means an unfiltered analytics feed would be a log of what each reader searched for
- * and which party's members they went looking at. That is precisely the dataset this project has said it will not
- * build, and the fact that it would be a *side effect* of a good feature rather than a decision anyone made is exactly
- * why it is stripped here rather than left to a dashboard setting someone could flip.
+ * This is the load-bearing line in this file. Every directory in this app mirrors its current view into the address bar
+ * (`/bills?q=broadband`, `/members?party=republican&state=Ohio`), which is a feature — a narrowed directory is a place,
+ * so it has a URL — but it means an unfiltered analytics feed would be a log of what each reader searched for and which
+ * party's members they went looking at. That is precisely the dataset this project has said it will not build, and the
+ * fact that it would be a *side effect* of a good feature rather than a decision anyone made is exactly why it is
+ * stripped here rather than left to a dashboard setting someone could flip.
  *
  * What survives is the page: `/bills`, `/members`, `/committees/house/hsag00`. That answers "which parts of this are
  * worth keeping" without answering "who is reading it".

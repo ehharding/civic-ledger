@@ -216,8 +216,8 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
  * a link to their entry in the Biographical Directory. Because a chart driven only by hover is unusable without a
  * mouse, every seat is also reachable from the keyboard: the chart takes a single tab stop and the arrow keys move
  * between seats from there (a roving tabindex, so nobody is forced through 441 tab stops to get past the chart). Each
- * seat additionally carries its full description as its accessible name, so the diagram reads as a list of
- * members to a screen reader rather than as an unlabeled picture.
+ * seat additionally carries its full description as its accessible name, so the diagram reads as a list of members to a
+ * screen reader rather than as an unlabeled picture.
  *
  * A seat whose member has a Bioguide ID is an SVG `<a>` linking to that member's own page, so opening it behaves like
  * any other link — new tab, middle click, copy address. A seat without one (every seat in preview mode, where the

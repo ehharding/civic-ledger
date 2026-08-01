@@ -122,9 +122,9 @@ and, unlike a name slug, never changes.
 
 `/v3/member/congress/{congress}` is paginated at the API's 250-record ceiling, so `getCongressComposition` (in
 `composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel. Chart
-geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about Congress.gov
-— see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and does not
-assert.
+geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about
+Congress.gov — see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and
+does not assert.
 
 Seats are distributed across arcs in proportion to each arc's radius using the largest-remainder method, which is what
 guarantees the drawn seats sum to exactly the membership. A round-and-hope split drifts by a seat or two, and in a
@@ -275,9 +275,9 @@ wrong from the control's point of view.
 
 `sitemap.ts` enumerates every supported Congress because that list is *computed* — `listCongresses` derives it from a
 fixed constitutional cadence with no I/O — which is what lets the file stay `force-static` and work in the static
-export. Every learning module is listed on the same test: `lessons` is a local array, so reading it costs the file
-none of the "cheap and reliable" property that keeps individual records out. The route enumerates itself from the same
-array in `generateStaticParams`, which is what makes a listed lesson URL and a prerendered lesson page the same set.
+export. Every learning module is listed on the same test: `lessons` is a local array, so reading it costs the file none
+of the "cheap and reliable" property that keeps individual records out. The route enumerates itself from the same array
+in `generateStaticParams`, which is what makes a listed lesson URL and a prerendered lesson page the same set.
 
 Individual member, bill, and committee pages stay out. They are bounded and individually useful, so they look like they
 belong; they don't, yet. Knowing who currently holds a seat requires a live Congress.gov request, which would make

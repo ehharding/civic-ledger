@@ -2,12 +2,12 @@
  * Covers the shared Open Graph card.
  *
  * The card is *constructed* here but deliberately not rasterized: `ImageResponse` hands its SVG to a native/WASM
- * rasterizer that isn't available under jsdom, and pulling one in would mean this suite maintained an image pipeline
- * to assert on pixels nobody reads. What is checkable — and what actually breaks — is everything around the drawing:
- * that the route declares the content type and size the `og:image` tags advertise, that those numbers come from the
- * same constant `pageMetadata` reads rather than a second copy, and that the card composes without Satori rejecting a
- * style it can't lay out. That last one is the real regression risk: Satori supports a subset of CSS, and a `display`
- * or `gap` it doesn't implement fails at build time, not at review time.
+ * rasterizer that isn't available under jsdom, and pulling one in would mean this suite maintained an image pipeline to
+ * assert on pixels nobody reads. What is checkable — and what actually breaks — is everything around the drawing: that
+ * the route declares the content type and size the `og:image` tags advertise, that those numbers come from the same
+ * constant `pageMetadata` reads rather than a second copy, and that the card composes without Satori rejecting a style
+ * it can't lay out. That last one is the real regression risk: Satori supports a subset of CSS, and a `display` or
+ * `gap` it doesn't implement fails at build time, not at review time.
  */
 import { describe, expect, it } from "vitest";
 
@@ -35,8 +35,8 @@ describe("opengraph-image", (): void => {
   });
 
   it("uses only layout Satori can resolve, so the card cannot fail a build", (): void => {
-    // Constructing the response is what runs the element tree through Satori's layout pass — an unsupported property
-    // or a missing `display: flex` on a node with children is rejected there, not at render time.
+    // Constructing the response is what runs the element tree through Satori's layout pass — an unsupported property or
+    // a missing `display: flex` on a node with children is rejected there, not at render time.
     expect((): Response => OpengraphImage()).not.toThrow();
   });
 });

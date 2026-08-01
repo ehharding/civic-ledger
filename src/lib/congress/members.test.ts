@@ -122,9 +122,9 @@ describe("partyTintClass", (): void => {
   /*
    * The point of the tint class is that party.css is the *only* place the five-way party-to-color mapping is written
    * down, which is only true while that file actually covers every group. A party added to `partyGroups` without its
-   * rule would render in the neutral fallback gray everywhere it appears — on a chamber seat, in the legend, and on
-   * the member's own page — which reads as a real (wrong) answer rather than as a missing one. Reading the stylesheet
-   * is the only way to catch that from a unit test, so this reads it.
+   * rule would render in the neutral fallback gray everywhere it appears — on a chamber seat, in the legend, and on the
+   * member's own page — which reads as a real (wrong) answer rather than as a missing one. Reading the stylesheet is
+   * the only way to catch that from a unit test, so this reads it.
    */
   it("has a rule in party.css for every party group", (): void => {
     const stylesheet: string = readFileSync(join(process.cwd(), "src/styles/party.css"), "utf8");

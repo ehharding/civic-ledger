@@ -144,10 +144,10 @@ export const previewBills: LegislativeBill[] = [
       text: "Passed Senate without amendment by voice vote.",
     },
     policyArea: "Environmental protection",
-    // A deliberate example of a bill that passed one chamber but never became law — the 116th Congress ended before
-    // the House took it up. Illustrates the same "passing one chamber isn't the same as becoming law" point the
-    // /learn/how-a-bill-becomes-law lesson makes, but on a real (if fictional) historical record instead of just in
-    // the abstract.
+    // A deliberate example of a bill that passed one chamber but never became law — the 116th Congress ended before the
+    // House took it up. Illustrates the same "passing one chamber isn't the same as becoming law" point the
+    // /learn/how-a-bill-becomes-law lesson makes, but on a real (if fictional) historical record instead of just in the
+    // abstract.
     stage: "chamber",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA", bioguideId: "PREVIEW-7" },
@@ -164,8 +164,8 @@ export const previewBills: LegislativeBill[] = [
 export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;
 
 /**
- * Fictional, illustrative summaries for the preview fixtures, keyed by `billIdentityKey`. Used only when no API key
- * is configured, so a bill's Summary section has something to show instead of an empty box — never presented as a real
+ * Fictional, illustrative summaries for the preview fixtures, keyed by `billIdentityKey`. Used only when no API key is
+ * configured, so a bill's Summary section has something to show instead of an empty box — never presented as a real
  * Congressional Research Service summary (the UI labels it explicitly; see the bill detail page).
  */
 export const previewSummaries: Record<string, string> = {
@@ -474,10 +474,10 @@ export function buildPreviewComposition(
 /**
  * Clearly labeled placeholder committees, so `/committees` renders without an API key.
  *
- * Held to the same policy as every other fixture in this file, with one extra care that is specific to committees.
- * A committee name is a *real-world institution's* name in a way a bill title isn't — "Committee on Agriculture"
- * names a body that exists — so these are deliberately built not to collide with one. Each is named for a subject no
- * standing committee of either chamber holds jurisdiction over, and each carries a system code that cannot pass
+ * Held to the same policy as every other fixture in this file, with one extra care that is specific to committees. A
+ * committee name is a *real-world institution's* name in a way a bill title isn't — "Committee on Agriculture" names a
+ * body that exists — so these are deliberately built not to collide with one. Each is named for a subject no standing
+ * committee of either chamber holds jurisdiction over, and each carries a system code that cannot pass
  * `isCommitteeSystemCode`, which is what stops a placeholder from ever being handed an official-record reference.
  *
  * The set spans all three chambers and four of the five committee types, so the directory's filters, sort, and empty
@@ -579,8 +579,8 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
 /**
  * The placeholder committees as directory rows.
  *
- * Derived from {@link previewCommitteeProfiles} rather than kept as a second hand-maintained list, so the directory
- * and the pages it links to can never disagree about which committees exist.
+ * Derived from {@link previewCommitteeProfiles} rather than kept as a second hand-maintained list, so the directory and
+ * the pages it links to can never disagree about which committees exist.
  *
  * @returns One row per placeholder committee, alphabetically.
  */
@@ -603,11 +603,11 @@ export function previewCommitteeDirectory(): CommitteeSummary[] {
  * Locates a preview committee by chamber and system code.
  *
  * Matched on both, not just the code, for the same reason the live lookup takes both: a committee's chamber is part of
- * its identity, and resolving `/committees/senate/preview-01` to a House committee would render a page that
- * contradicts the URL that reached it.
+ * its identity, and resolving `/committees/senate/preview-01` to a House committee would render a page that contradicts
+ * the URL that reached it.
  *
- * Subcommittees resolve too, promoted to profiles of their own: a parent's page links to each of them, and a link
- * that 404s in preview mode would make the fixtures look broken rather than placeholder.
+ * Subcommittees resolve too, promoted to profiles of their own: a parent's page links to each of them, and a link that
+ * 404s in preview mode would make the fixtures look broken rather than placeholder.
  *
  * @param chamber - The raw chamber route param, matched case-insensitively.
  * @param systemCode - The raw system code route param, matched case-insensitively.

@@ -52,10 +52,10 @@ export function billIdentityKey(input: { congress: number | string; type: string
  * The public site spells these out in full (`/bill/119th-congress/house-bill/284`) while the API uses short codes
  * (`hr`). Keyed by the upper-cased code, since that's the form `LegislativeBill.type` is normalized to.
  *
- * This map is the single definition of which type codes exist. {@link BILL_TYPE_CODES} and
- * {@link BILL_TYPE_PATH_SEGMENTS} are derived from it rather than restated, so a type Congress.gov adds is added here
- * once instead of in three places that can silently fall out of step — a citation the search box accepts but the URL
- * guard rejects is a bug that only shows up on one specific bill.
+ * This map is the single definition of which type codes exist. {@link BILL_TYPE_CODES} and {@link
+ * BILL_TYPE_PATH_SEGMENTS} are derived from it rather than restated, so a type Congress.gov adds is added here once
+ * instead of in three places that can silently fall out of step — a citation the search box accepts but the URL guard
+ * rejects is a bug that only shows up on one specific bill.
  */
 const CONGRESS_GOV_BILL_PATHS: Readonly<Record<string, string>> = {
   HR: "house-bill",
@@ -69,8 +69,8 @@ const CONGRESS_GOV_BILL_PATHS: Readonly<Record<string, string>> = {
 };
 
 /**
- * The eight bill/resolution type codes Congress.gov uses, upper-cased — the form `LegislativeBill.type` carries and
- * the form a parsed citation normalizes to. @see CONGRESS_GOV_BILL_PATHS, from which this is derived.
+ * The eight bill/resolution type codes Congress.gov uses, upper-cased — the form `LegislativeBill.type` carries and the
+ * form a parsed citation normalizes to. @see CONGRESS_GOV_BILL_PATHS, from which this is derived.
  */
 export const BILL_TYPE_CODES: ReadonlySet<string> = new Set<string>(Object.keys(CONGRESS_GOV_BILL_PATHS));
 
@@ -115,8 +115,8 @@ export type BillSponsor = {
 };
 
 /**
- * The app's stable internal bill shape.
- * Congress.gov API responses (list or detail) are mapped into this by client.ts before anything else touches them.
+ * The app's stable internal bill shape. Congress.gov API responses (list or detail) are mapped into this by client.ts
+ * before anything else touches them.
  */
 export type LegislativeBill = {
   congress: number;
@@ -177,8 +177,7 @@ export type BillTextFormat = {
 };
 
 /**
- * One stage-specific version of a bill's actual legislative text (e.g., "Introduced in House", "Engrossed in
- * House").
+ * One stage-specific version of a bill's actual legislative text (e.g., "Introduced in House", "Engrossed in House").
  */
 export type BillTextVersion = {
   type: string;

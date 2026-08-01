@@ -11,8 +11,8 @@ import { ANY_FACET, type FacetOption } from "@/lib/congress/directory-filter";
  * `BillDirectory`, `MemberDirectory`, and `CommitteeDirectory` narrow completely different things — bills by
  * legislative stage, members by chamber and party and state, committees by chamber and type — but they present those
  * choices identically, and a reader who has used one directory should not have to relearn the next. Keeping the
- * controls here is what makes that guarantee structural rather than a convention someone has to remember to follow.
- * It is the same argument `directory.css` already makes for these controls' *styling*, and the same one
+ * controls here is what makes that guarantee structural rather than a convention someone has to remember to follow. It
+ * is the same argument `directory.css` already makes for these controls' *styling*, and the same one
  * `useDirectoryUrlSync` makes for their URL behavior, applied to the markup in between.
  *
  * Every control here is deliberately uncontrolled about its *meaning*: it renders whatever options and labels it is
@@ -289,9 +289,9 @@ type DirectoryResultCountProps = {
 /**
  * The line stating what is currently showing.
  *
- * A live region, which is what makes it do double duty: it reports the result of a narrowing to a reader who cannot
- * see the grid change, and it is where a reordering gets announced, since reordering in place changes nothing else a
- * screen reader would notice.
+ * A live region, which is what makes it do double duty: it reports the result of a narrowing to a reader who cannot see
+ * the grid change, and it is where a reordering gets announced, since reordering in place changes nothing else a screen
+ * reader would notice.
  * @see DirectorySort.
  *
  * @param props - @see DirectoryResultCountProps

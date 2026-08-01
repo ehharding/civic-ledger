@@ -89,8 +89,8 @@ describe("lessonHref", (): void => {
   });
 
   it("round-trips: every route it builds resolves back to the lesson it was built from", (): void => {
-    // The sitemap, the hub index, and each lesson's own callout all go through this. A slug that builds a URL the
-    // route can't resolve is a listed page that 404s.
+    // The sitemap, the hub index, and each lesson's own callout all go through this. A slug that builds a URL the route
+    // can't resolve is a listed page that 404s.
     for (const lesson of lessons) {
       const slug: string = lessonHref(lesson.slug).replace("/learn/", "");
       expect(findLesson(slug)).toBe(lesson as Lesson);

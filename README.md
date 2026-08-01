@@ -93,8 +93,8 @@ Behind those routes:
   supported Congress's most recently active bills — and the result copy says so rather than implying an exhaustive
   query.
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
-  ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including,
-  in the voting module, that this app holds no roll-call data at all.
+  ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
+  the voting module, that this app holds no roll-call data at all.
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.
@@ -132,10 +132,10 @@ should never be represented as the live product. Full instructions and the stati
 [MIT](LICENSE).
 
 <!--
-  Badge definitions. Kept here rather than inline so the header stays readable and every line fits the 120-column
-  prose width. The three pipeline badges read live from GitHub Actions; the rest are static and are only accurate
-  because something in the repo enforces them — the coverage figure by the thresholds in `vitest.config.mts`, the
-  Node version by `.nvmrc` and `engines`.
+  Badge definitions. Kept here rather than inline so the header stays readable and every line fits the 120-column prose
+  width. The three pipeline badges read live from GitHub Actions; the rest are static and are only accurate because
+  something in the repo enforces them — the coverage figure by the thresholds in `vitest.config.mts`, the Node version
+  by `.nvmrc` and `engines`.
 -->
 
 [ci-badge]: https://img.shields.io/github/actions/workflow/status/ehharding/civic-ledger/ci.yml?branch=main&label=CI

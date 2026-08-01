@@ -19,9 +19,9 @@ export type GlossaryTerm = {
  * legislative process rather than the alphabet.
  *
  * Deliberately uncited, unlike the lessons in {@link lessons}. The line between the two is length, not rigor: a
- * one-line definition of "cosponsor" is vocabulary anyone can confirm in a sentence, while a five-step account of how
- * a chamber records a vote is a claim, and claims get sources. What this file owes instead is *coverage* — every term
- * a lesson leans on should be findable here, which is why the committee and voting modules brought eight entries with
+ * one-line definition of "cosponsor" is vocabulary anyone can confirm in a sentence, while a five-step account of how a
+ * chamber records a vote is a claim, and claims get sources. What this file owes instead is *coverage* — every term a
+ * lesson leans on should be findable here, which is why the committee and voting modules brought eight entries with
  * them.
  */
 export const glossary: GlossaryTerm[] = [

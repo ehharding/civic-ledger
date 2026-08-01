@@ -73,8 +73,8 @@ describe("MembersPage", (): void => {
   it("opens the full directory for a ?state= naming a place nobody in the roster represents", async (): Promise<void> => {
     await renderPage({ state: "Atlantis" });
 
-    // Not an empty grid claiming to be filtered: a shared link is exactly the kind of URL that gets opened a year
-    // later against a roster that has since changed.
+    // Not an empty grid claiming to be filtered: a shared link is exactly the kind of URL that gets opened a year later
+    // against a roster that has since changed.
     for (const member of previewMemberDirectory()) {
       expect(screen.getByText(member.name), member.bioguideId).toBeInTheDocument();
     }

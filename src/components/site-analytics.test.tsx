@@ -10,9 +10,9 @@ import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 /**
- * Both collectors are replaced with recorders. They render nothing and work entirely through injected scripts, so
- * there is no DOM to assert against — the only observable thing this component does is hand each collector a
- * `beforeSend`, and that callback is the whole point of the file.
+ * Both collectors are replaced with recorders. They render nothing and work entirely through injected scripts, so there
+ * is no DOM to assert against — the only observable thing this component does is hand each collector a `beforeSend`,
+ * and that callback is the whole point of the file.
  */
 const analyticsProps: { beforeSend?: (event: { url: string }) => { url: string } }[] = [];
 const speedProps: { beforeSend?: (event: { url: string }) => { url: string } }[] = [];

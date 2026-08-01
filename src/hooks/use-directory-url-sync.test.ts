@@ -52,8 +52,8 @@ function renderSync(initialProps: SyncProps): RenderHookResult<void, SyncProps> 
 beforeEach((): void => {
   // The address bar is shared state across a file's tests, so each one starts from a known, unnarrowed URL.
   setUrl(PATH);
-  // A single stable mock: the hook registers it as a `popstate` listener, so a fresh identity per render would
-  // silently re-register and mask a missing dependency.
+  // A single stable mock: the hook registers it as a `popstate` listener, so a fresh identity per render would silently
+  // re-register and mask a missing dependency.
   adopt = vi.fn();
   replaceState = vi.spyOn(window.history, "replaceState");
 });
@@ -74,8 +74,8 @@ describe("useDirectoryUrlSync", (): void => {
     });
 
     it("lets the server's resolved view win over the address bar", (): void => {
-      // The route already read this URL and resolved it into props, so props are the newer truth. Adopting the URL
-      // here would be redundant at best, and at worst would fight the render that just happened.
+      // The route already read this URL and resolved it into props, so props are the newer truth. Adopting the URL here
+      // would be redundant at best, and at worst would fight the render that just happened.
       setUrl(`${PATH}?party=democratic`);
 
       renderSync({ queryString: "?party=democratic&sort=state", requestedQueryString: "?party=democratic&sort=state" });
@@ -164,8 +164,8 @@ describe("useDirectoryUrlSync", (): void => {
   describe("when the URL moves underneath the view", (): void => {
     it("adopts a navigation to another view of the same route instead of overwriting it", (): void => {
       // This is the regression the hook was written for: the header's own "Bills"/"Members" link, followed from an
-      // already-narrowed directory. The component's state is stale, the router's URL is current, and writing the
-      // former over the latter is what made the link appear to do nothing.
+      // already-narrowed directory. The component's state is stale, the router's URL is current, and writing the former
+      // over the latter is what made the link appear to do nothing.
       setUrl(`${PATH}?party=democratic`);
       const { rerender } = renderSync({
         queryString: "?party=democratic",

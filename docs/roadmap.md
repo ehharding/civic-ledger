@@ -21,10 +21,10 @@ grows: congressional records are not stored there and are not mirrored.
 
 ## 3. A Fourth Learning Module
 
-The three this item originally asked for are built — the bill lifecycle, what a committee does, and how Congress votes
-— and they share one registry (`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that
-file rather than a new page. The condition attached here was met rather than dropped: a lesson cites its sources, and
-every module also prints what it leaves out. See
+The three this item originally asked for are built — the bill lifecycle, what a committee does, and how Congress votes —
+and they share one registry (`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that file
+rather than a new page. The condition attached here was met rather than dropped: a lesson cites its sources, and every
+module also prints what it leaves out. See
 [Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the standing rule and its
 enforcement point.
 

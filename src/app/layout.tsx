@@ -61,8 +61,8 @@ export const viewport: Viewport = {
  * Whether this build will be served by a platform that can answer for the analytics scripts.
  *
  * Vercel's collectors load from `/_vercel/insights` and `/_vercel/speed-insights`, paths that only a Vercel deployment
- * serves. The static GitHub Pages demo would ship two script tags that resolve to its own 404 page on every route —
- * so the gate lives here, in a server component, which is the only place `STATIC_EXPORT` can be read at all.
+ * serves. The static GitHub Pages demo would ship two script tags that resolve to its own 404 page on every route — so
+ * the gate lives here, in a server component, which is the only place `STATIC_EXPORT` can be read at all.
  * @see SiteAnalytics, and the "GitHub Pages" section of the README.
  */
 const isAnalyticsSupported: boolean = process.env.STATIC_EXPORT !== "true";

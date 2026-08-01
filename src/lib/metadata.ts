@@ -33,10 +33,10 @@ export const SITE_DESCRIPTION: string = "A source-conscious guide to the work of
 /**
  * The shared link-preview card, declared here rather than left to Next's file convention to attach on its own.
  *
- * That convention does attach it — but only to a segment that hasn't declared an `openGraph` of its own. `openGraph`
- * is replaced wholesale by a child segment rather than merged field by field, so the moment a page names itself
- * through {@link pageMetadata} it also drops the image the root layout had picked up. Restating it here is what keeps
- * every page's card *and* its title correct, instead of forcing a choice between them.
+ * That convention does attach it — but only to a segment that hasn't declared an `openGraph` of its own. `openGraph` is
+ * replaced wholesale by a child segment rather than merged field by field, so the moment a page names itself through
+ * {@link pageMetadata} it also drops the image the root layout had picked up. Restating it here is what keeps every
+ * page's card *and* its title correct, instead of forcing a choice between them.
  *
  * The dimensions are the ones every major platform crops toward; `src/app/opengraph-image.tsx` reads them from here so
  * the drawing and the tag describing it cannot disagree.
@@ -72,8 +72,8 @@ type PageMetadataInput = {
  * preview as a bare page title, with nothing saying which site it came from.
  *
  * `og:type` is `"website"` throughout, deliberately. `"article"` is the tempting choice for a bill or member page, but
- * it implies an authored piece with a byline and a publication date, and these pages are neither: they are views onto
- * a public record this app didn't write.
+ * it implies an authored piece with a byline and a publication date, and these pages are neither: they are views onto a
+ * public record this app didn't write.
  * @see docs/data-policy.md, "The Source of Truth Stays Upstream".
  *
  * @param input - @see PageMetadataInput

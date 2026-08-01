@@ -87,8 +87,8 @@ describe("GET /api/bills/search", (): void => {
   });
 
   it("reports preview provenance rather than hiding it", async (): Promise<void> => {
-    // A search that can't reach live data returns the labeled preview matches, and `source` is how the UI knows to
-    // say so. Dropping it here would let fictional records render as though they were the real record.
+    // A search that can't reach live data returns the labeled preview matches, and `source` is how the UI knows to say
+    // so. Dropping it here would let fictional records render as though they were the real record.
     getSearchResults.mockResolvedValue({ ...EMPTY_RESULT, source: "preview" } satisfies BillSearchResult);
 
     const { body } = await get("?q=broadband");

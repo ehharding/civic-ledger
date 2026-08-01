@@ -4,8 +4,8 @@
  * Each directory's own module tests its own parsers, and those tests still stand — what is pinned down here is the
  * shared rule underneath them, so a change to it is caught once by name rather than three times by symptom. The
  * totality property in particular is the one that a shared link depends on: a hand-edited, truncated, or year-old URL
- * has to open a usable page rather than an error, and that is a promise this file makes on behalf of every param in
- * the app.
+ * has to open a usable page rather than an error, and that is a promise this file makes on behalf of every param in the
+ * app.
  */
 import { describe, expect, it } from "vitest";
 

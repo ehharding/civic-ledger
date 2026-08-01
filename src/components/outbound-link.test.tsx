@@ -2,9 +2,9 @@
  * Covers the contract `OutboundLink` exists to make structural rather than remembered.
  *
  * Each assertion below stands for a way the hand-written version of this link used to be able to ship incomplete: a
- * missing `rel` leaking the referrer, a missing `target` losing the reader's place, or — the one most easily
- * forgotten, because nothing about it is visible — a missing hint, leaving a screen-reader user with no warning before
- * focus moves to a new tab.
+ * missing `rel` leaking the referrer, a missing `target` losing the reader's place, or — the one most easily forgotten,
+ * because nothing about it is visible — a missing hint, leaving a screen-reader user with no warning before focus moves
+ * to a new tab.
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

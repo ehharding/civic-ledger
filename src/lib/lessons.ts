@@ -20,8 +20,8 @@ import { type BillStage, billStageLabels, billStages } from "@/lib/congress/type
  * - **Every lesson states what it leaves out**, in its own `limits`, rendered on the page rather than left in a doc.
  *   These are simplifications by design; a simplification that doesn't say so is just an inaccuracy.
  * - **A lesson never claims this app shows something it doesn't.** The voting module is the sharp case: Civic Ledger
- *   holds no roll-call data at all, and the lesson says so in the same breath it explains what a recorded vote is,
- *   then sends the reader to the two chambers' own tallies.
+ *   holds no roll-call data at all, and the lesson says so in the same breath it explains what a recorded vote is, then
+ *   sends the reader to the two chambers' own tallies.
  *
  * Content lives here rather than in the route files on the rule `committees.ts` states for display wording: what a
  * reader is told should be somewhere it can be unit-tested, not somewhere reachable only by rendering a page.
@@ -44,8 +44,8 @@ export type LessonSource = {
 };
 
 /**
- * One step of a lesson: a heading, the explanation under it, and — when the step lines up with a stage of the
- * lifecycle the rest of the app already visualizes — the `BillJourney` stage it pins.
+ * One step of a lesson: a heading, the explanation under it, and — when the step lines up with a stage of the lifecycle
+ * the rest of the app already visualizes — the `BillJourney` stage it pins.
  *
  * `stage` is optional because only the first module is *about* those five stages. The other two use it once each, as a
  * "you are here" cue: the committee module pins `committee` on its opening step, and the voting module pins `chamber`
@@ -84,8 +84,8 @@ export type Lesson = {
   /** The line under the page's own heading. Says why the lesson is worth reading, where `summary` says what it is. */
   intro: string;
   /**
-   * What a step is called in this lesson's kickers — "Stage 3 of 5" in the lifecycle module, whose steps really are
-   * the stages `BillJourney` draws, and "Step 3 of 5" in the two that describe a process without a stepper.
+   * What a step is called in this lesson's kickers — "Stage 3 of 5" in the lifecycle module, whose steps really are the
+   * stages `BillJourney` draws, and "Step 3 of 5" in the two that describe a process without a stepper.
    */
   stepNoun: "Stage" | "Step";
   steps: LessonStep[];
@@ -146,8 +146,8 @@ const billLifecycleCopy: Record<BillStage, string> = {
 };
 
 /**
- * The lifecycle lesson's steps, derived from `billStages` so their order and headings cannot drift from the stepper
- * the reader meets on every bill page. @see billLifecycleCopy.
+ * The lifecycle lesson's steps, derived from `billStages` so their order and headings cannot drift from the stepper the
+ * reader meets on every bill page. @see billLifecycleCopy.
  */
 const billLifecycleSteps: LessonStep[] = billStages.map(
   (stage: BillStage): LessonStep => ({
@@ -393,8 +393,8 @@ export const lessons: readonly Lesson[] = [
  * Finds the lesson a `/learn/[slug]` request names.
  *
  * @param slug - The raw route param, which arrives from the URL bar and is therefore untrusted.
- * @returns The lesson, or `undefined` for anything the registry doesn't name — which the route turns into a 404
- *   rather than an empty page.
+ * @returns The lesson, or `undefined` for anything the registry doesn't name — which the route turns into a 404 rather
+ *   than an empty page.
  */
 export function findLesson(slug: string): Lesson | undefined {
   const value: string = slug.trim().toLowerCase();

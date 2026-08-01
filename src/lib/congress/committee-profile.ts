@@ -87,9 +87,9 @@ export async function getCommitteeProfile(rawChamber: string, rawSystemCode: str
     return { profile: profile ?? undefined, source: "live", retrievedAt };
   }
 
-  // A transient failure shouldn't be indistinguishable from "no such committee", which would render as a 404 and tell
-  // a reader something false about the record. Fall back to the labeled preview path instead, exactly as the member
-  // route does.
+  // A transient failure shouldn't be indistinguishable from "no such committee", which would render as a 404 and tell a
+  // reader something false about the record. Fall back to the labeled preview path instead, exactly as the member route
+  // does.
   return {
     profile: findPreviewCommitteeProfile(rawChamber, rawSystemCode),
     source: "preview",

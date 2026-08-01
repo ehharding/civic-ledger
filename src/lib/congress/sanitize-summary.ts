@@ -8,9 +8,9 @@ const ALLOWED_TAGS: Set<string> = new Set(["p", "strong", "b", "em", "i", "ul", 
  * Matches one HTML tag (opening, closing, or self-closing) so it can be inspected and rewritten in isolation.
  *
  * The separator before the attribute list is `[\s/]`, not `\s+`, because a tag can separate its name from its
- * attributes with a slash: `<svg/onload=alert(1)>` is a real element with a real event handler, and a pattern that
- * only recognized whitespace would not match it *at all* — which used to mean it bypassed the allow-list entirely and
- * was emitted verbatim.
+ * attributes with a slash: `<svg/onload=alert(1)>` is a real element with a real event handler, and a pattern that only
+ * recognized whitespace would not match it *at all* — which used to mean it bypassed the allow-list entirely and was
+ * emitted verbatim.
  */
 const TAG_PATTERN: RegExp = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:[\s/][^<>]*)?)>/g;
 
@@ -18,8 +18,8 @@ const TAG_PATTERN: RegExp = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:[\s/][^<>]*)?)>/g;
  * Matches an HTML comment, including an unterminated one at the end of the input.
  *
  * Comments are stripped before tags are inspected: `TAG_PATTERN` starts at a letter, so `<!-- … -->` would otherwise
- * pass through untouched and carry whatever it contains — including markup that only looks inert because it's
- * commented out — straight into the rendered fragment.
+ * pass through untouched and carry whatever it contains — including markup that only looks inert because it's commented
+ * out — straight into the rendered fragment.
  */
 const COMMENT_PATTERN: RegExp = /<!--[\s\S]*?(?:-->|$)/g;
 
@@ -82,10 +82,10 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
  * leftover `<i` and `mg src=x onerror=alert(1)>` fragments then closed up around each other into a live, executing
  * `<img onerror>`. Stripping a dangerous tag made a dangerous tag.
  *
- * So nothing passes through by default now. The input is walked once; text between recognized tags is escaped, and
- * only a recognized, allow-listed tag is re-emitted as markup. A `<` that begins no valid tag becomes `&lt;` and
- * renders as the visible character it is. There is no longer any path by which unmatched input reaches the browser as
- * markup, which is what closes the whole overlapping-tag class rather than the particular payloads that found it.
+ * So nothing passes through by default now. The input is walked once; text between recognized tags is escaped, and only
+ * a recognized, allow-listed tag is re-emitted as markup. A `<` that begins no valid tag becomes `&lt;` and renders as
+ * the visible character it is. There is no longer any path by which unmatched input reaches the browser as markup,
+ * which is what closes the whole overlapping-tag class rather than the particular payloads that found it.
  *
  * Every tag not on `ALLOWED_TAGS` is dropped (its own markup is removed, but any text between an opening and closing
  * pair is kept as plain text). Every attribute is dropped except `href` on `<a>`, which is kept only if it's an
@@ -93,9 +93,9 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
  * `target="_blank" rel="noreferrer"` added, matching how every other outbound link in this app behaves.
  *
  * This deliberately keeps the project dependency-free (see `CONTRIBUTING.md`'s "Tooling Stays Small") rather than
- * pulling in a full DOM-based sanitizer for a narrow, well-understood input shape. That tradeoff is worth revisiting
- * if this is ever pointed at markup from a less predictable source than Congress.gov — a hand-written sanitizer is only
- * as good as the bypasses someone has thought to test, and the tests beside this file are the record of which ones have
+ * pulling in a full DOM-based sanitizer for a narrow, well-understood input shape. That tradeoff is worth revisiting if
+ * this is ever pointed at markup from a less predictable source than Congress.gov — a hand-written sanitizer is only as
+ * good as the bypasses someone has thought to test, and the tests beside this file are the record of which ones have
  * been.
  *
  * @param html - The raw summary fragment as Congress.gov returned it.

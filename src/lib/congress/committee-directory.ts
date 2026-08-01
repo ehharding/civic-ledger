@@ -31,9 +31,9 @@ import { formatOrdinal } from "@/lib/format";
 /**
  * Hard ceiling on committee pages fetched for one Congress.
  *
- * A Congress has on the order of 250 committee records once subcommittees are counted, so two pages of
- * {@link MAX_API_PAGE_SIZE} covers it with room to spare. The cap exists for the same reason `MAX_MEMBER_PAGES` does:
- * a malformed `pagination.count` should not be able to turn one page render into an unbounded fetch loop.
+ * A Congress has on the order of 250 committee records once subcommittees are counted, so two pages of {@link
+ * MAX_API_PAGE_SIZE} covers it with room to spare. The cap exists for the same reason `MAX_MEMBER_PAGES` does: a
+ * malformed `pagination.count` should not be able to turn one page render into an unbounded fetch loop.
  */
 const MAX_COMMITTEE_PAGES: number = 3;
 
@@ -56,12 +56,12 @@ export type CommitteeDirectoryResult = {
  * to assert on directly rather than only through a stubbed fetch.
  *
  * Subcommittees are **dropped here, not hidden**. Congress.gov's list endpoint returns them as siblings of their
- * parents — the House Agriculture Committee and its six subcommittees arrive as seven peer records — and rendering
- * that flat would put "Livestock and Foreign Agriculture Subcommittee" in the same alphabetical run as the Judiciary
+ * parents — the House Agriculture Committee and its six subcommittees arrive as seven peer records — and rendering that
+ * flat would put "Livestock and Foreign Agriculture Subcommittee" in the same alphabetical run as the Judiciary
  * Committee, as though the two were comparable bodies. They are not: a subcommittee only means anything in relation to
  * its parent, which is exactly where this app shows it. Nothing becomes unreachable — every parent's page lists its
- * subcommittees, each linking to a page of its own — and each card carries the count, so the directory says how much
- * is one level down rather than silently flattening it away.
+ * subcommittees, each linking to a page of its own — and each card carries the count, so the directory says how much is
+ * one level down rather than silently flattening it away.
  *
  * @param committees - Raw committee records from the list endpoint.
  * @returns One row per parent committee, alphabetically. A record that can't be mapped (no code, no name, no
@@ -103,8 +103,8 @@ async function fetchCommitteePage(input: {
 /**
  * Fetches every committee of a Congress, across as many pages as it takes.
  *
- * Paginated exactly as the member roster is: the first page goes out alone to read `pagination.count`, then the rest
- * go out together rather than one after another.
+ * Paginated exactly as the member roster is: the first page goes out alone to read `pagination.count`, then the rest go
+ * out together rather than one after another.
  *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose committees to read.
@@ -140,10 +140,10 @@ async function fetchAllCommittees(apiKey: string, congress: number): Promise<Con
 /**
  * Fetches every committee of a Congress, as a single alphabetical directory.
  *
- * The whole list is handed to the browser at once and every subsequent search or filter runs there instantly — the
- * same approach the member directory takes, and for the same reason: the list is bounded, it is already in memory once
- * the fetch resolves, and Congress.gov offers no committee-search parameter to defer to. @see member-directory.ts,
- * which explains why the bill directory can't work this way.
+ * The whole list is handed to the browser at once and every subsequent search or filter runs there instantly — the same
+ * approach the member directory takes, and for the same reason: the list is bounded, it is already in memory once the
+ * fetch resolves, and Congress.gov offers no committee-search parameter to defer to. @see member-directory.ts, which
+ * explains why the bill directory can't work this way.
  *
  * @param congress - The Congress whose committees to read. Defaults to the one currently seated.
  * @returns The directory, always labeled live or preview. A missing key or a failed request yields the labeled

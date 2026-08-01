@@ -13,10 +13,10 @@ import { type Lesson, lessonNumber, lessons } from "@/lib/lessons";
  * shape for "here is the next thing"; it is the wrong shape for a set, because three stacked warm panels read as three
  * unrelated interruptions rather than as a sequence someone might work through in order.
  *
- * Each card carries two links to one destination, on `BillCard`'s pattern and for its reason: the heading because it
- * is what a person reads and reaches for, and the trailing call to action because a card whose only target is a
- * wrapped sentence is awkward to hit. The call to action names its lesson in an `aria-label` — three cards ending in a
- * bare "Start the Lesson" would give a screen-reader user a list of three indistinguishable destinations.
+ * Each card carries two links to one destination, on `BillCard`'s pattern and for its reason: the heading because it is
+ * what a person reads and reaches for, and the trailing call to action because a card whose only target is a wrapped
+ * sentence is awkward to hit. The call to action names its lesson in an `aria-label` — three cards ending in a bare
+ * "Start the Lesson" would give a screen-reader user a list of three indistinguishable destinations.
  *
  * It is an `<ol>` because the order is a claim: each module assumes the one above it, which is the same reason
  * `docs/roadmap.md` is numbered.

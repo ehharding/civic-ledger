@@ -85,8 +85,8 @@ export function CommitteeDirectory({
   const [filters, setFilters] = useState<CommitteeFilters>(initialQuery.filters);
   const [sort, setSort] = useState<CommitteeSort>(initialQuery.sort);
 
-  // Derived from the whole list rather than from the filtered result, so choosing a chamber doesn't empty the type
-  // list out from under the reader mid-narrowing.
+  // Derived from the whole list rather than from the filtered result, so choosing a chamber doesn't empty the type list
+  // out from under the reader mid-narrowing.
   const types: CommitteeFacetOption<CommitteeType>[] = useMemo(
     (): CommitteeFacetOption<CommitteeType>[] => listCommitteeTypeOptions(committees),
     [committees],

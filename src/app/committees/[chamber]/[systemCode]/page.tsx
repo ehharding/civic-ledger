@@ -18,8 +18,8 @@ type CommitteePageProps = {
  * Pre-renders the placeholder committees at build time.
  *
  * In the default server build this is only a performance win — every real committee still resolves live, on demand. In
- * a static export these are the *only* committee pages that can exist, since there's no server left at request time
- * and no key to look anything up with.
+ * a static export these are the *only* committee pages that can exist, since there's no server left at request time and
+ * no key to look anything up with.
  *
  * Subcommittees are included alongside their parents, because a parent's page links to each of them and a link that
  * 404s in the static demo would make the fixtures look broken rather than placeholder.

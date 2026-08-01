@@ -21,8 +21,8 @@ export const partyGroupLabels: Record<PartyGroup, string> = {
 };
 
 /**
- * The left-to-right order parties are seated in on the chart, matching the convention nearly every published
- * chamber diagram uses (Democratic caucus on the viewer's left, Republican on the right, everyone else between them).
+ * The left-to-right order parties are seated in on the chart, matching the convention nearly every published chamber
+ * diagram uses (Democratic caucus on the viewer's left, Republican on the right, everyone else between them).
  *
  * This is a *presentational* convention, not a record of where anyone actually sits — see the note on
  * `buildChamberSeating` in seating.ts, and the caption the chart renders alongside itself.
@@ -70,9 +70,9 @@ export function partyTintClass(party: PartyGroup): string {
  *
  * Prefix matching (rather than exact equality) is deliberate: the API's own documentation lists both "Democratic" and
  * "Democrat" across its member endpoints, describes "Independent Democrat" as a distinct value, and contains a
- * long-standing "Republication" typo in its element table. Matching on the stem absorbs all of those without needing
- * an exhaustive list of spellings. "Independent Democrat" is checked first so it groups as independent rather than
- * being swallowed by the democratic branch.
+ * long-standing "Republication" typo in its element table. Matching on the stem absorbs all of those without needing an
+ * exhaustive list of spellings. "Independent Democrat" is checked first so it groups as independent rather than being
+ * swallowed by the democratic branch.
  *
  * @param partyName - The upstream `partyName`, if any.
  * @returns The matching group, or `"other"` for anything unrecognized — never a thrown error, since a new party label
@@ -148,8 +148,8 @@ const NON_VOTING_HOUSE_JURISDICTIONS: ReadonlySet<string> = new Set<string>([
  * Whether a House seat representing `state` is one of the six non-voting seats.
  *
  * @param state - The represented state, territory, or district, by full name.
- * @returns `true` for the five territorial Delegates' jurisdictions and Puerto Rico. Only meaningful for House members
- *   — every Senate seat votes, so callers should not consult this for senators.
+ * @returns `true` for the five territorial Delegates' jurisdictions and Puerto Rico. Only meaningful for House
+ *   members — every Senate seat votes, so callers should not consult this for senators.
  */
 export function isNonVotingJurisdiction(state?: string): boolean {
   return NON_VOTING_HOUSE_JURISDICTIONS.has((state ?? "").trim().toLowerCase());
@@ -161,8 +161,8 @@ export function isNonVotingJurisdiction(state?: string): boolean {
  * This is the same kind of boundary normalization {@link normalizePartyName} performs, and it exists for a concrete
  * reason rather than a cosmetic one: the represented jurisdiction is the value the member directory's filter is keyed
  * on, so `"NEW YORK"` and `"New York"` arriving on different records would split one state into two options that each
- * return half the delegation. Casing it once, here, means the model holds one spelling and every downstream
- * consumer — the facet list, the filter comparison, the card, the seat description — agrees by construction.
+ * return half the delegation. Casing it once, here, means the model holds one spelling and every downstream consumer —
+ * the facet list, the filter comparison, the card, the seat description — agrees by construction.
  *
  * Applied only to full jurisdiction *names*. Two-letter postal codes (which is what a bill's sponsor record carries)
  * are deliberately left alone elsewhere; title-casing `"OH"` would produce `"Oh"`.
@@ -202,9 +202,9 @@ export type CongressMember = {
 /**
  * The party fields the display helpers below read.
  *
- * Declared structurally rather than as `CongressMember` so the same helpers serve both the compact list-level
- * {@link CongressMember} the chart draws and the fuller {@link MemberProfile} the member page renders — one definition
- * of how a party reads on screen, not two that can drift apart.
+ * Declared structurally rather than as `CongressMember` so the same helpers serve both the compact list-level {@link
+ * CongressMember} the chart draws and the fuller {@link MemberProfile} the member page renders — one definition of how
+ * a party reads on screen, not two that can drift apart.
  */
 export type MemberPartyFields = {
   party: PartyGroup;
@@ -371,8 +371,8 @@ export function isBioguideId(value: string | undefined): boolean {
  *
  * @param bioguideId - The member's Biographical Directory ID, e.g., `"L000174"`.
  * @returns The absolute URL of their official biography, or `undefined` when the ID isn't one the Biographical
- *   Directory could resolve — which is how a preview placeholder is prevented from linking out as though it were a
- *   real person.
+ *   Directory could resolve — which is how a preview placeholder is prevented from linking out as though it were a real
+ *   person.
  */
 export function bioguideUrl(bioguideId: string): string | undefined {
   if (!isBioguideId(bioguideId)) return undefined;
@@ -392,8 +392,8 @@ export type MemberLeadershipRole = {
  * One term a member has served.
  *
  * Only available from the *item*-level member endpoint — the list endpoint's term entries carry chamber and years but
- * no congress number and no `memberType`, which is why the chart derives what it can from the jurisdiction instead
- * (see {@link isNonVotingJurisdiction}).
+ * no congress number and no `memberType`, which is why the chart derives what it can from the jurisdiction instead (see
+ * {@link isNonVotingJurisdiction}).
  */
 export type MemberTerm = {
   chamber: CongressChamber;
@@ -456,8 +456,8 @@ export type MemberProfile = {
  * A third member shape, deliberately, sitting between the other two: {@link CongressMember} is what the chamber chart
  * draws (no chamber field — it's implied by the composition a member is grouped under — and no guaranteed ID, since a
  * placeholder seat has none), while {@link MemberProfile} is the whole item-level record and far more than a list row
- * needs. A directory row is the small set of facts a person scans and filters on, plus the two things a list of
- * *links* can't do without: a chamber to filter by and an ID to open.
+ * needs. A directory row is the small set of facts a person scans and filters on, plus the two things a list of *links*
+ * can't do without: a chamber to filter by and an ID to open.
  *
  * `bioguideId` is required here for that reason. A row nobody can open is dead weight in a directory whose entire
  * purpose is to reach a person's page, so a record without one is dropped at the boundary rather than rendered as an

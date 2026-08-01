@@ -8,13 +8,13 @@ import { pluralize } from "@/lib/format";
 /**
  * Compact committee summary card, used in the `/committees` directory grid.
  *
- * Built on the same rules as {@link MemberCard}: one link, on the name, rather than a title link plus a corner arrow.
- * A committee's name is the only thing here worth opening, and a second link to the same place would only give
- * assistive technology a duplicate to announce.
+ * Built on the same rules as {@link MemberCard}: one link, on the name, rather than a title link plus a corner arrow. A
+ * committee's name is the only thing here worth opening, and a second link to the same place would only give assistive
+ * technology a duplicate to announce.
  *
  * The subcommittee count is on the card rather than only on the committee's own page because it is the one fact that
- * explains why the directory is shorter than a reader might expect — the list holds parent committees, and this is
- * what says how much sits one level below each of them.
+ * explains why the directory is shorter than a reader might expect — the list holds parent committees, and this is what
+ * says how much sits one level below each of them.
  * @see buildCommitteeDirectory.
  *
  * @param committee - The committee to summarize.

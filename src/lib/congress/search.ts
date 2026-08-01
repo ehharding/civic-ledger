@@ -19,8 +19,8 @@ export type BillStageFilter = FacetFilter<BillStage>;
 /**
  * The query-param names the bill directory reads and writes.
  *
- * The counterpart to `MEMBER_DIRECTORY_PARAMS` in `member-filter.ts`, and here for the same reason: these names cross
- * a boundary — the server route parses them out of the request, the client component writes them back — and a typo on
+ * The counterpart to `MEMBER_DIRECTORY_PARAMS` in `member-filter.ts`, and here for the same reason: these names cross a
+ * boundary — the server route parses them out of the request, the client component writes them back — and a typo on
  * either side produces a link that looks right and restores nothing.
  */
 export const BILL_DIRECTORY_PARAMS = {
@@ -53,8 +53,8 @@ export function parseBillStageFilter(raw: string | null | undefined): BillStageF
  *
  * The exact counterpart to {@link billDirectoryQueryString}, and the peer of `parseMemberDirectoryQuery` and
  * `parseCommitteeDirectoryQuery`. Both sides of the boundary go through it — the route resolves the incoming request
- * with it, and the browser re-reads the address bar with it whenever the URL changes underneath the directory — so
- * the two readings cannot drift into disagreeing about what a link means.
+ * with it, and the browser re-reads the address bar with it whenever the URL changes underneath the directory — so the
+ * two readings cannot drift into disagreeing about what a link means.
  *
  * Total, like the parsers it delegates to: an absent or malformed param resolves to a usable default rather than to an
  * error, so a hand-edited or truncated link opens the unsearched page at worst.
@@ -126,8 +126,8 @@ export type ParsedBillCitation = {
  *
  * @param query - The raw search text. "HR 284", "H.R. 284", "hr284", and "119 hjres 66" all parse, since people write
  *   citations every one of those ways.
- * @returns The parsed citation, or `null` for anything that doesn't cleanly resolve to one of the eight
- *   bill/resolution types followed by a number — including ordinary keyword searches, which is the common case.
+ * @returns The parsed citation, or `null` for anything that doesn't cleanly resolve to one of the eight bill/resolution
+ *   types followed by a number — including ordinary keyword searches, which is the common case.
  */
 export function parseBillCitation(query: string): ParsedBillCitation | null {
   const trimmed: string = query.trim();

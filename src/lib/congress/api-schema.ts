@@ -18,7 +18,8 @@ import { type ZodCatch, type ZodNumber, type ZodOptional, type ZodString, z } fr
  *   than rejecting the whole record. Only a payload that isn't an object at all fails outright, which is the one case
  *   where there was never anything usable to salvage.
  *
- * @see mapCongressBill and its siblings in `mappers.ts`, which decide what a *usable* record is once the shape is known.
+ * @see mapCongressBill and its siblings in `mappers.ts`, which decide what a *usable* record is once the shape is
+ *   known.
  */
 
 /** An optional string that degrades to `undefined` rather than failing validation. */
@@ -41,8 +42,8 @@ export const congressApiSponsorSchema = z.looseObject({
  */
 export const congressApiBillSchema = z.looseObject({
   congress: optionalNumber,
-  // The list endpoint uses `type`/`number`; the single-bill detail endpoint uses `billType`/`billNumber`.
-  // Both are accepted so one mapper covers both.
+  // The list endpoint uses `type`/`number`; the single-bill detail endpoint uses `billType`/`billNumber`. Both are
+  // accepted so one mapper covers both.
   type: optionalString,
   billType: optionalString,
   number: z.union([z.string(), z.number()]).optional().catch(undefined),
@@ -103,11 +104,11 @@ export const congressApiTextResponseSchema = z.looseObject({
 /**
  * One term entry inside a *list*-level member record.
  *
- * List-level member records are a smaller shape than item-level ones: there's no `memberType`
- * ("Representative" / "Delegate" / "Senator") and no per-term `congress`, and `terms.item[]` carries only
- * chamber/startYear/endYear. That's why chamber is read from the last recognizable term rather than from a term matched
- * on congress number, and why non-voting House seats are derived from the represented jurisdiction (see
- * `isNonVotingJurisdiction`) — the alternative is one extra request per member, ~540 of them.
+ * List-level member records are a smaller shape than item-level ones: there's no `memberType` ("Representative" /
+ * "Delegate" / "Senator") and no per-term `congress`, and `terms.item[]` carries only chamber/startYear/endYear. That's
+ * why chamber is read from the last recognizable term rather than from a term matched on congress number, and why
+ * non-voting House seats are derived from the represented jurisdiction (see `isNonVotingJurisdiction`) — the
+ * alternative is one extra request per member, ~540 of them.
  */
 export const congressApiMemberTermSchema = z.looseObject({
   chamber: optionalString,
@@ -161,9 +162,9 @@ export const congressApiLeadershipSchema = z.looseObject({
 /**
  * Shape of `GET /v3/member/{bioguideId}` (the member *item* endpoint).
  *
- * Note the `terms` shape: the list endpoint nests them under `terms.item[]`, while this endpoint returns a bare
- * array. Both forms are accepted here rather than assumed, so a future upstream alignment in either direction can't
- * silently empty out a member's service history.
+ * Note the `terms` shape: the list endpoint nests them under `terms.item[]`, while this endpoint returns a bare array.
+ * Both forms are accepted here rather than assumed, so a future upstream alignment in either direction can't silently
+ * empty out a member's service history.
  *
  * `birthYear` is typed as a string because that is how the API returns it (`"1940"`), and coercing it here would only
  * move the parsing somewhere less obvious.

@@ -1,7 +1,7 @@
 /**
- * Covers CommitteeDirectory's interactive contract: that every control narrows or reorders the grid, that the count
- * and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked for is
- * the view that renders, and that a preview list doesn't claim to be the committees of a real Congress.
+ * Covers CommitteeDirectory's interactive contract: that every control narrows or reorders the grid, that the count and
+ * scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked for is the
+ * view that renders, and that a preview list doesn't claim to be the committees of a real Congress.
  */
 import { act, render, screen } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";

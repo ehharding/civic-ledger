@@ -8,9 +8,9 @@ import type { LegislativeBill } from "@/lib/congress/types";
 /**
  * How long to wait after the user stops typing before firing a search request, so each keystroke doesn't.
  *
- * Exported because the debounce window is part of this hook's observable contract rather than an implementation
- * detail: a caller's tests have to advance a clock by exactly this much to observe a request, and a second copy of the
- * number living in a test file is one that can quietly stop matching this one.
+ * Exported because the debounce window is part of this hook's observable contract rather than an implementation detail:
+ * a caller's tests have to advance a clock by exactly this much to observe a request, and a second copy of the number
+ * living in a test file is one that can quietly stop matching this one.
  */
 export const SEARCH_DEBOUNCE_MS: number = 300;
 

@@ -10,6 +10,7 @@
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/balanced-pool.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/cache-interceptor.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/cache.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/client-stats.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/client.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/connector.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/content-type.d.ts" />
@@ -25,6 +26,7 @@
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/global-origin.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/h2c-client.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/handlers.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/header.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/index.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/interceptors.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-agent.d.ts" />
@@ -33,13 +35,17 @@
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-errors.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-interceptor.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-pool.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/patch.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/pool-stats.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/pool.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/proxy-agent.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/readable.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/retry-agent.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/retry-handler.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/round-robin-pool.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/snapshot-agent.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/util.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/utility.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/websocket.d.ts" />
       </sourceFilesUrls>
     </properties>
@@ -52,6 +58,7 @@
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/balanced-pool.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/cache-interceptor.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/cache.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/client-stats.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/client.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/connector.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/content-type.d.ts" />
@@ -67,6 +74,7 @@
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/global-origin.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/h2c-client.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/handlers.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/header.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/index.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/interceptors.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-agent.d.ts" />
@@ -75,13 +83,17 @@
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-errors.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-interceptor.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/mock-pool.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/patch.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/pool-stats.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/pool.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/proxy-agent.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/readable.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/retry-agent.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/retry-handler.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/round-robin-pool.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/snapshot-agent.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/util.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/utility.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/websocket.d.ts" />
     </CLASSES>
     <JAVADOC />

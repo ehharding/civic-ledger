@@ -47,14 +47,15 @@ export default defineConfig({
       /**
        * All four at 100, so any regression fails CI rather than waiting to be noticed in a diff.
        *
-       * Route components — including the async server ones — are unit-tested directly: an async component is a
-       * function returning an element, so it can be awaited and rendered like any other. Playwright still owns the
-       * browser-level checks; these are the cheaper, more specific half.
+       * Route components — including the async server ones — are unit-tested directly: an async component is a function
+       * returning an element, so it can be awaited and rendered like any other. Playwright still owns the browser-level
+       * checks; these are the cheaper, more specific half.
        *
        * A round 100 is only honest because the handful of genuinely unreachable guards are excluded *at their own
-       * lines*, with `/* v8 ignore next *\/` and a one-line reason, rather than being absorbed into a slack threshold
-       * here. Those are cases no input can reach, because the type system or the value's own construction has already
-       * ruled them out:
+       * lines*, with a `/* v8 ignore start *\/` … `/* v8 ignore stop *\/` pair and a one-line reason, rather than being
+       * absorbed into a slack threshold here. The `start`/`stop` pair is the only spelling this provider honors
+       * reliably — see "Before Opening a Pull Request" in CONTRIBUTING.md for why `next` is the wrong tool. Those are
+       * cases no input can reach, because the type system or the value's own construction has already ruled them out:
        *
        * - `arr[i] ?? fallback` guards required by `noUncheckedIndexedAccess`, over indices a loop bound has already
        *   proven valid (`seating.ts`, `sanitize-summary.ts`).

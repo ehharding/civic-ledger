@@ -13,9 +13,9 @@ import { type BillDirectoryQuery, DEFAULT_BILL_DIRECTORY_QUERY, parseBillDirecto
 /**
  * Resolves each directory's shareable deep link from the request.
  *
- * All three directories in this app can be linked to in a particular state — a bill search, or a narrowed and
- * reordered roster of people or committees — and all three resolve that state here rather than in their own route, so
- * they can't drift apart on the one thing they genuinely share: how a query param is turned into a starting view.
+ * All three directories in this app can be linked to in a particular state — a bill search, or a narrowed and reordered
+ * roster of people or committees — and all three resolve that state here rather than in their own route, so they can't
+ * drift apart on the one thing they genuinely share: how a query param is turned into a starting view.
  *
  * Every parser these delegate to is total, in the same sense `src/lib/api-query.ts` describes: an absent, malformed, or
  * stale param resolves to a usable default rather than to an error. A shared link is exactly the kind of URL that gets
@@ -38,8 +38,8 @@ export type RouteSearchParams = Record<string, string | string[] | undefined>;
  *
  * @param params - The route's resolved search params.
  * @param name - The param to read.
- * @returns The value, the first of a repeated set, or `undefined` when absent. Taking the first is arbitrary but has
- *   to be *something*: a control that can hold one value has no way to honor two, and the alternative — rejecting the
+ * @returns The value, the first of a repeated set, or `undefined` when absent. Taking the first is arbitrary but has to
+ *   be *something*: a control that can hold one value has no way to honor two, and the alternative — rejecting the
  *   whole URL — turns a duplicated param into a broken page.
  */
 function readParam(params: RouteSearchParams, name: string): string | undefined {
@@ -71,8 +71,8 @@ function toSearchParams(params: RouteSearchParams): URLSearchParams {
 /**
  * Whether the running build can read a request URL at all.
  *
- * A static export has no server left at request time, so every deep link below degrades to the page's default view.
- * The page still works; it just can't be pre-filled from the URL. @see the GitHub Pages section of the README.
+ * A static export has no server left at request time, so every deep link below degrades to the page's default view. The
+ * page still works; it just can't be pre-filled from the URL. @see the GitHub Pages section of the README.
  */
 function canReadRequest(): boolean {
   return process.env.STATIC_EXPORT !== "true";

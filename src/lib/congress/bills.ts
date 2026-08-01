@@ -93,9 +93,9 @@ function previewBillsForCongress(congress: number): LegislativeBill[] {
  * surface bills from any Congress in the API's history depending on which records happened to update recently;
  * filtering by congress guarantees every bill returned actually belongs to the one requested.
  *
- * @param input - The API key, the Congress to read, the page window, and an optional Congress.gov sort hint
- *   (e.g., `"updateDate+desc"`). The sort is omitted for ordinary browsing and passed by the search sweep, so each
- *   Congress's fetched page favors its most recently active bills.
+ * @param input - The API key, the Congress to read, the page window, and an optional Congress.gov sort hint (e.g.,
+ *   `"updateDate+desc"`). The sort is omitted for ordinary browsing and passed by the search sweep, so each Congress's
+ *   fetched page favors its most recently active bills.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
  *   page render, an empty page for "Load More").
  */
@@ -223,8 +223,8 @@ export type BillLookupResult = {
  *
  * @param input - The bill's route params, straight from the URL.
  * @returns The lookup result. A `bill` of `undefined` means "no such record" and should render as a 404; it never means
- *   "something went wrong", because a transient failure falls back to a snapshot search and then to preview data
- *   before giving up.
+ *   "something went wrong", because a transient failure falls back to a snapshot search and then to preview data before
+ *   giving up.
  */
 export async function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
   const apiKey: string | undefined = getCongressApiKey();
@@ -359,8 +359,8 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
  * Fetches every official text version on file for a bill (e.g., "Introduced in House", "Engrossed in House"), most
  * recent first, each with links to its Formatted Text / PDF / XML renderings on Congress.gov.
  *
- * These are links to the official record, not text this app fetches and re-hosts itself — consistent with the
- * "the source of truth stays upstream" stance in `docs/data-policy.md`.
+ * These are links to the official record, not text this app fetches and re-hosts itself — consistent with the "the
+ * source of truth stays upstream" stance in `docs/data-policy.md`.
  *
  * @param input - The bill's route params.
  * @returns Every text version on file, newest first. Always empty in preview mode — deliberately, since fixtures don't
@@ -402,8 +402,8 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
   if (pinnedKey) {
     const aPinned: boolean = billIdentityKey(a) === pinnedKey;
     const bPinned: boolean = billIdentityKey(b) === pinnedKey;
-    // The `-1` arm never runs: the caller prepends the pinned bill, so V8's sort never presents it as `a`. Kept
-    // anyway so the comparator is correct on its own terms rather than only in the one order it is called in today.
+    // The `-1` arm never runs: the caller prepends the pinned bill, so V8's sort never presents it as `a`. Kept anyway
+    // so the comparator is correct on its own terms rather than only in the one order it is called in today.
     /* v8 ignore start */
     if (aPinned !== bPinned) return aPinned ? -1 : 1;
     /* v8 ignore stop */

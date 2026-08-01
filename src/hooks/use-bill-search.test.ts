@@ -5,8 +5,8 @@
  * response overwriting a fresher one, and search going dead where the route isn't reachable — and each of those is a
  * race, which is exactly the kind of thing that keeps working by accident until it doesn't. So each one gets a test
  * that fails if the guard is removed: the debounce is observed by advancing a clock, the supersede case resolves an
- * aborted request *after* its replacement has already answered, and the fallback path asserts both the narrowed
- * results and the `degraded` flag that makes the UI admit it.
+ * aborted request *after* its replacement has already answered, and the fallback path asserts both the narrowed results
+ * and the `degraded` flag that makes the UI admit it.
  *
  * Fake timers throughout, since the alternative is a suite that waits a real third of a second per search.
  */
@@ -253,9 +253,9 @@ describe("useBillSearch", (): void => {
     });
 
     it("ignores a superseded request that rejects, rather than treating the abort as an outage", async (): Promise<void> => {
-      // The other half of the supersede case: a real abort makes `fetch` *reject*, and without the guard that
-      // rejection would land in the fallback path and flip `degraded` on — telling the reader that broader search is
-      // unavailable at the exact moment it succeeded.
+      // The other half of the supersede case: a real abort makes `fetch` *reject*, and without the guard that rejection
+      // would land in the fallback path and flip `degraded` on — telling the reader that broader search is unavailable
+      // at the exact moment it succeeded.
       let rejectStale: ((reason: Error) => void) | undefined;
 
       const fetchMock = vi

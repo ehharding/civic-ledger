@@ -1,7 +1,7 @@
 /**
  * Covers the learn hub's module list: that every registered lesson appears, that both links on a card lead to the same
- * page, and — the part worth a test rather than a glance — that the three "Start the Lesson" controls are told apart
- * by their accessible names.
+ * page, and — the part worth a test rather than a glance — that the three "Start the Lesson" controls are told apart by
+ * their accessible names.
  */
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

@@ -14,9 +14,9 @@ type LessonRouteParams = { slug: string };
 /**
  * The learning modules, one route.
  *
- * A dynamic segment rather than a file per lesson because the lessons are already a list — `src/lib/lessons.ts` — and
- * a page file per entry would mean the same twelve lines of metadata-and-shell restated per module, which is exactly
- * the duplication `docs/roadmap.md` was about to invite by asking for two more. Adding a module is now an edit to the
+ * A dynamic segment rather than a file per lesson because the lessons are already a list — `src/lib/lessons.ts` — and a
+ * page file per entry would mean the same twelve lines of metadata-and-shell restated per module, which is exactly the
+ * duplication `docs/roadmap.md` was about to invite by asking for two more. Adding a module is now an edit to the
  * registry: this route, the hub's index, and `sitemap.ts` all read it.
  *
  * Every slug is known at build time, so this prerenders to the same static pages the hand-written route did, and

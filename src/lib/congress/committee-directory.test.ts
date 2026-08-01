@@ -378,10 +378,10 @@ describe("getCommitteeProfile", (): void => {
   });
 
   /*
-   * A transient failure rendering as a 404 would tell a reader something false about the record, so the fallback is
-   * the labeled preview path rather than "not found". No fixture carries a real-shaped code — that is deliberate, so a
-   * placeholder can never be presented as a real committee — so what a reader sees here is the route's 404. That is
-   * the same behavior `getMemberProfile` has had for a real Bioguide ID, and it is the notice, not the profile, that
+   * A transient failure rendering as a 404 would tell a reader something false about the record, so the fallback is the
+   * labeled preview path rather than "not found". No fixture carries a real-shaped code — that is deliberate, so a
+   * placeholder can never be presented as a real committee — so what a reader sees here is the route's 404. That is the
+   * same behavior `getMemberProfile` has had for a real Bioguide ID, and it is the notice, not the profile, that
    * distinguishes this branch from a genuine 404 for anything downstream that reads it.
    */
   it("falls back to the preview path on an upstream failure rather than reporting a 404", async (): Promise<void> => {
@@ -538,8 +538,8 @@ describe("getCommitteeProfile with an unusable live payload", (): void => {
   });
 
   it("treats a committee its history cannot name as no such record", async (): Promise<void> => {
-    // Present in the payload, but with no history entry carrying a name — and inventing one from the system code
-    // would be a guess printed as a fact.
+    // Present in the payload, but with no history entry carrying a name — and inventing one from the system code would
+    // be a guess printed as a fact.
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(jsonResponse({ committee: { systemCode: "hsag00", history: [] } })),

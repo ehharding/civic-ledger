@@ -1,7 +1,7 @@
 /**
  * Covers the committee directory's narrowing rules: what free-text search matches (and the two things it deliberately
- * doesn't), how the facets combine, that the type options are derived from the list in hand, and the round trip
- * between a view and the URL that names it.
+ * doesn't), how the facets combine, that the type options are derived from the list in hand, and the round trip between
+ * a view and the URL that names it.
  */
 import { describe, expect, it } from "vitest";
 

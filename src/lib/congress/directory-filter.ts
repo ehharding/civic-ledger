@@ -15,9 +15,10 @@
  * Pure and isomorphic, as its three consumers have to be — the browser imports all of them, and none may drag the
  * server-only adapter, or the API key it reads, into a client bundle behind it.
  *
- * What is deliberately *not* here: each directory's param names, its facet unions, its sort orders, and its comparators.
- * What a view means is that directory's own business, and a shared "filters" abstraction covering three different sets
- * of facets would be a worse fit than three explicit ones. Only the parts that are genuinely identical live here.
+ * What is deliberately *not* here: each directory's param names, its facet unions, its sort orders, and its
+ * comparators. What a view means is that directory's own business, and a shared "filters" abstraction covering three
+ * different sets of facets would be a worse fit than three explicit ones. Only the parts that are genuinely identical
+ * live here.
  */
 
 /**
@@ -39,8 +40,8 @@ export type FacetFilter<Value extends string> = Value | typeof ANY_FACET;
  * The count is the reason this isn't a bare list of strings. A facet reading "Ohio (15)" or "Standing (21)" tells a
  * reader what a choice will yield *before* they make it, which is the difference between a list you can plan a
  * narrowing with and one you have to probe by trial and error. It also makes these lists' ordering self-explanatory,
- * which matters most for the member directory's party control: "Democratic (213), Independent (2), Republican (220)"
- * is plainly the chamber diagram's left-to-right order, while the same three words alone are plainly nothing in
+ * which matters most for the member directory's party control: "Democratic (213), Independent (2), Republican (220)" is
+ * plainly the chamber diagram's left-to-right order, while the same three words alone are plainly nothing in
  * particular.
  *
  * @typeParam Value - The filter value this option sets.
@@ -58,11 +59,10 @@ export type FacetOption<Value> = {
  * Cap on the free-text query any directory carries in its URL.
  *
  * Matches {@link MAX_QUERY_LENGTH} in `src/lib/api-query.ts`, which bounds the same text where it reaches a *request*.
- * The two are stated separately on purpose and the direction of the dependency is the reason: that module is
- * zod-backed and server-oriented, and a client component importing this one must not pull schema validation into the
- * browser bundle behind it. Here the limit is protecting no request at all — every directory matches this text against
- * a list the server already sent — it only keeps an unbounded string from riding through the URL and into the page
- * payload.
+ * The two are stated separately on purpose and the direction of the dependency is the reason: that module is zod-backed
+ * and server-oriented, and a client component importing this one must not pull schema validation into the browser
+ * bundle behind it. Here the limit is protecting no request at all — every directory matches this text against a list
+ * the server already sent — it only keeps an unbounded string from riding through the URL and into the page payload.
  */
 export const MAX_DIRECTORY_QUERY_LENGTH: number = 200;
 
@@ -71,8 +71,8 @@ export const MAX_DIRECTORY_QUERY_LENGTH: number = 200;
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
  * @returns The trimmed query, truncated to {@link MAX_DIRECTORY_QUERY_LENGTH}. An absent or blank param yields an empty
- *   string, which every directory's matcher treats as matching everything — which is what makes clearing the search
- *   box mean "show me everything again".
+ *   string, which every directory's matcher treats as matching everything — which is what makes clearing the search box
+ *   mean "show me everything again".
  */
 export function parseQueryFilter(raw: string | null | undefined): string {
   return (raw ?? "").trim().slice(0, MAX_DIRECTORY_QUERY_LENGTH);
@@ -82,14 +82,15 @@ export function parseQueryFilter(raw: string | null | undefined): string {
  * Resolves a param against a closed set of values it is allowed to name.
  *
  * The single body behind every facet and sort parser in all three directories. Each of those keeps its own name, its
- * own documented return type, and its own tests — what they share is this rule, and it is worth stating once because
- * it is what makes all of them *total* in the sense `src/lib/api-query.ts` describes: an absent, malformed, or stale
- * param resolves to a usable default rather than to an error. A shared link is exactly the kind of URL that gets
- * hand-edited, truncated by a chat client, or opened a year later, and none of those should produce anything worse
- * than the unfiltered page.
+ * own documented return type, and its own tests — what they share is this rule, and it is worth stating once because it
+ * is what makes all of them *total* in the sense `src/lib/api-query.ts` describes: an absent, malformed, or stale param
+ * resolves to a usable default rather than to an error. A shared link is exactly the kind of URL that gets hand-edited,
+ * truncated by a chat client, or opened a year later, and none of those should produce anything worse than the
+ * unfiltered page.
  *
- * Matching is case-insensitive after trimming, so a hand-typed `?chamber=Senate` resolves the same as `?chamber=senate`
- * — the allowed values are all lower case, which is how they are written to the URL in the first place.
+ * Matching is case-insensitive after trimming, so a hand-typed `?chamber=Senate` resolves the same as
+ * `?chamber=senate` — the allowed values are all lower case, which is how they are written to the URL in the first
+ * place.
  *
  * @typeParam Value - The union of allowed values.
  * @typeParam Fallback - What an unrecognized param resolves to. Usually {@link ANY_FACET} for a facet, or the

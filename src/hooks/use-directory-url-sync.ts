@@ -59,10 +59,10 @@ export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }
    * state moved would never see it. The body is two string comparisons and returns immediately in the settled case,
    * which is almost every render.
    *
-   * Writes use `history.replaceState` rather than a router navigation, and this is load-bearing rather than incidental
-   * — a router navigation re-runs the route on the server, and doing that per keystroke would undo the entire point of
-   * a directory that filters in the browser. `replace` rather than `push` likewise: typing seven letters should not
-   * leave seven entries for the Back button to walk out of.
+   * Writes use `history.replaceState` rather than a router navigation, and this is load-bearing rather than
+   * incidental — a router navigation re-runs the route on the server, and doing that per keystroke would undo the
+   * entire point of a directory that filters in the browser. `replace` rather than `push` likewise: typing seven
+   * letters should not leave seven entries for the Back button to walk out of.
    *
    * Path and hash are read from `window.location` rather than rebuilt from a route constant, which keeps both the
    * static demo's `basePath` and the skip link's fragment intact without either being special-cased.

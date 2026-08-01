@@ -28,20 +28,21 @@ Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every d
 fixture or unit test for the upstream shape it supports.
 
 `pnpm test:coverage` shows what the suite actually reaches. Statements, branches, functions, and lines are all at 100%,
-and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data and
-declarative files are excluded outright — the preview fixtures and the Drizzle schema.
+and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data, test
+infrastructure, and declarative files are excluded outright — the preview fixtures, the shared helpers in `src/test/`,
+and the Drizzle schema.
 
 Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
 was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether
 the assertions beneath it are worth anything.
 
-The one case for reaching past a test is a guard no input can reach — an `arr[i] ?? fallback` over an index a loop
-bound has already proven valid, or a handler guarding against state its own render condition excludes. Testing those
-means fabricating a value the app cannot produce, which pins the guard rather than the behavior. Mark them at the line
-with a `/* v8 ignore start */` … `/* v8 ignore stop */` pair and a stated reason, so the exclusion is visible in the
-diff that adds it. If a branch is reachable at all, write the test instead — and note that `v8 ignore next` is the
-wrong tool here: this project's coverage provider only honors the hint when the comment *begins* with it, and it
-ignores the count in `next 2`.
+The one case for reaching past a test is a guard no input can reach — an `arr[i] ?? fallback` over an index a loop bound
+has already proven valid, or a handler guarding against state its own render condition excludes. Testing those means
+fabricating a value the app cannot produce, which pins the guard rather than the behavior. Mark them at the line with a
+`/* v8 ignore start */` … `/* v8 ignore stop */` pair and a stated reason, so the exclusion is visible in the diff that
+adds it. If a branch is reachable at all, write the test instead — and note that `v8 ignore next` is the wrong tool
+here: this project's coverage provider only honors the hint when the comment *begins* with it, and it ignores the count
+in `next 2`.
 
 Two kinds of code are worth testing directly even when a component test already drags them over the line:
 
@@ -78,8 +79,8 @@ strong signal it is a code comment. See [docs/README.md](docs/README.md) for the
 ## Tooling Stays Small
 
 TypeScript, Biome, Vitest, Playwright, Drizzle, and GitHub Actions cover correctness, browser behavior, database
-evolution, and CI without a pile of overlapping abstractions. Adding a dependency is a real decision here, not a default
-— a few current positions, so they don't have to be relitigated per pull request:
+evolution, and CI without a pile of overlapping abstractions. Adding a dependency is a real decision here, not a
+default — a few current positions, so they don't have to be relitigated per pull request:
 
 - **No Tailwind.** There is no Tailwind installation at all: no config, no PostCSS setup, just handwritten CSS split
   across `src/styles/` and imported from `globals.css`, built on custom-property design tokens throughout. Adding it now
@@ -98,11 +99,26 @@ evolution, and CI without a pile of overlapping abstractions. Adding a dependenc
 
 TypeScript 7 ships a native, Go-based compiler under the standard `typescript` package name, but it does not yet expose
 the JS compiler API that Next.js's build-time type-check calls into. Installing it as `typescript` currently makes
-`next build` misreport TypeScript as missing and crash
-([next.js#95400](https://github.com/vercel/next.js/issues/95400)).
+`next build` misreport TypeScript as missing and crash.
 
-`typescript` is pinned to `^6.0.3` — the last classic release — until Next.js adds native TS7 support, and
-`.github/dependabot.yml` is configured to ignore `>=7.0.0` bumps for the same reason. Revisit both together.
+`typescript` is pinned to `^6.0.3` — the last classic release — and `.github/dependabot.yml` is configured to ignore
+`>=7.0.0` bumps for the same reason. Revisit both together.
+
+**The gate is a file, not a bug report.** Next's `verify-typescript-setup` resolves `typescript/lib/typescript.js` to
+decide whether TypeScript is installed at all. The 6.x tarball ships that entry point and the 7.x tarball does not,
+which is the whole failure — so the check that actually settles this takes one command, and does not depend on anyone
+triaging an issue:
+
+```bash
+npm pack typescript@latest --dry-run --json | grep 'lib/typescript.js'
+```
+
+Empty output means the pin still stands. The pin lifts when that prints a path, or when Next.js stops resolving it —
+whichever happens first.
+
+[next.js#95400](https://github.com/vercel/next.js/issues/95400) is the upstream report and is worth reading for the
+detail, but note that it was **auto-closed for a missing reproduction link, not fixed**. Its closed state is not
+evidence the incompatibility is resolved; the command above is.
 
 ## Code Conventions
 

@@ -18,18 +18,18 @@ import {
 } from "@/lib/congress/directory-filter";
 
 /**
- * The committee directory's narrowing rules: free-text matching, the two facet filters, the orders the list can be
- * read in, and the URL spelling of a view.
+ * The committee directory's narrowing rules: free-text matching, the two facet filters, the orders the list can be read
+ * in, and the URL spelling of a view.
  *
  * Pure and isomorphic, exactly as `member-filter.ts` is, and for the same two reasons: the rules are the interesting
  * part and deserve tests that don't render a component, and the browser has to import them without dragging the
  * server-only adapter — and the API key it reads — in behind them.
  *
- * This is deliberately the *same* design as the member directory's rather than a new one. A reader who has narrowed
- * one directory should find the next one already familiar, and a maintainer who has read one of these modules should
+ * This is deliberately the *same* design as the member directory's rather than a new one. A reader who has narrowed one
+ * directory should find the next one already familiar, and a maintainer who has read one of these modules should
  * recognize the second immediately: same wildcard sentinel, same facet-option shape, same total parsers, same
- * only-write-what-isn't-default serialization. Where this one is smaller — two facets rather than three — it is
- * because a committee has fewer facts worth filtering on, not because it took a different approach.
+ * only-write-what-isn't-default serialization. Where this one is smaller — two facets rather than three — it is because
+ * a committee has fewer facts worth filtering on, not because it took a different approach.
  *
  * All four of those shared things now come from `directory-filter.ts` rather than being declared again here, so that
  * sameness is something the type system holds rather than something this paragraph promises.
@@ -68,13 +68,13 @@ export function hasActiveCommitteeFilters(filters: CommitteeFilters): boolean {
  * Whether `committee` matches free-text `query`.
  *
  * Matched against both spellings of the name — Congress.gov's own `"Agriculture Committee"` and the leading form
- * `"Committee on Agriculture"` that a bill's referral line uses — so a reader who types what they see on the card and
- * a reader who pastes a referral line off a bill page both find the same committee. @see committeeSearchTerms, which
+ * `"Committee on Agriculture"` that a bill's referral line uses — so a reader who types what they see on the card and a
+ * reader who pastes a referral line off a bill page both find the same committee. @see committeeSearchTerms, which
  * explains why that second form is matched but never displayed.
  *
- * Chamber and type are deliberately *not* searched: each has a dedicated control beside the box, and matching them
- * here would make typing "s" return every Senate and every Standing committee alongside everything whose name happens
- * to contain the letter.
+ * Chamber and type are deliberately *not* searched: each has a dedicated control beside the box, and matching them here
+ * would make typing "s" return every Senate and every Standing committee alongside everything whose name happens to
+ * contain the letter.
  *
  * @param committee - The row to test.
  * @param query - The raw search text. Matched case-insensitively; an empty or all-whitespace query matches everything,
@@ -140,8 +140,8 @@ const COMMITTEE_SORT_COMPARATORS: Record<CommitteeSort, (a: CommitteeSummary, b:
  * Orders the directory.
  *
  * Every comparator falls through to {@link compareCommitteesByName}, so grouping by chamber still lists each chamber
- * alphabetically rather than in whatever arbitrary order the group happened to arrive in. "Name (Z–A)" is the one
- * order not ultimately anchored on the ascending name.
+ * alphabetically rather than in whatever arbitrary order the group happened to arrive in. "Name (Z–A)" is the one order
+ * not ultimately anchored on the ascending name.
  *
  * @param committees - The rows to order. Left untouched; a new array is returned.
  * @param sort - The order to apply.
@@ -159,8 +159,8 @@ export function sortCommittees(committees: CommitteeSummary[], sort: CommitteeSo
 /**
  * One selectable value in a facet control, with the number of committees behind it.
  *
- * The shared {@link FacetOption}, re-exported under this directory's own name so {@link listCommitteeTypeOptions}
- * reads as committee-scoped where it is used. @see FacetOption for why every facet option carries a count.
+ * The shared {@link FacetOption}, re-exported under this directory's own name so {@link listCommitteeTypeOptions} reads
+ * as committee-scoped where it is used. @see FacetOption for why every facet option carries a count.
  *
  * @typeParam Value - The filter value this option sets.
  */
@@ -197,9 +197,9 @@ export function listCommitteeTypeOptions(committees: CommitteeSummary[]): Commit
 /**
  * The query-param names the directory reads and writes.
  *
- * Named once, here, because they are shared across a boundary that is easy to break silently: the route parses them
- * out of the request, and the client component writes them back as the reader narrows. A typo on either side produces
- * a link that looks right and restores nothing.
+ * Named once, here, because they are shared across a boundary that is easy to break silently: the route parses them out
+ * of the request, and the client component writes them back as the reader narrows. A typo on either side produces a
+ * link that looks right and restores nothing.
  */
 export const COMMITTEE_DIRECTORY_PARAMS = {
   query: "q",
@@ -224,8 +224,8 @@ export const DEFAULT_COMMITTEE_DIRECTORY_QUERY: CommitteeDirectoryQuery = {
  * Parses the `chamber` param.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @returns The chamber, or {@link ANY_FACET} for anything unrecognized — a hand-edited or stale URL degrades
- *   to "every chamber" rather than to an error or an empty grid.
+ * @returns The chamber, or {@link ANY_FACET} for anything unrecognized — a hand-edited or stale URL degrades to "every
+ *   chamber" rather than to an error or an empty grid.
  */
 export function parseCommitteeChamberFilter(raw: string | null | undefined): CommitteeChamberFilter {
   return parseEnumParam(raw, committeeChambers, ANY_FACET);
@@ -279,8 +279,8 @@ export function parseCommitteeDirectoryQuery(params: URLSearchParams): Committee
  * Serializes a directory view back into a query string.
  *
  * Only non-default values are written, so an unnarrowed directory has a clean `/committees` URL rather than one
- * carrying three params that all say "no". The parameter order is fixed rather than incidental, so the same view
- * always produces the same string — which is what makes these links comparable, cacheable, and stable in history.
+ * carrying three params that all say "no". The parameter order is fixed rather than incidental, so the same view always
+ * produces the same string — which is what makes these links comparable, cacheable, and stable in history.
  *
  * @param query - The view to serialize.
  * @returns The query string including its leading `?`, or an empty string when nothing is narrowed or reordered.

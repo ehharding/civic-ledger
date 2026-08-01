@@ -166,11 +166,11 @@ The `/learn` modules are the one place this app writes prose about how Congress 
 received. That makes them the one place it can be wrong in its own voice, so they carry two obligations no other surface
 does, both rendered on the page rather than kept in a doc:
 
-- **Every module ends with its sources**, each naming its publisher (`LessonSources`). The rule is primary sources only
-  — house.gov, senate.gov, clerk.house.gov, congress.gov, and the National Archives' transcription of the Constitution —
-  over https, no secondary explainers, nothing paywalled. A citation a reader cannot open is decoration. Enforced in
-  `src/lib/lessons.test.ts`, which checks the host, the scheme, the publisher, and that no lesson cites the same
-  document twice.
+- **Every module ends with its sources**, each naming its publisher (`LessonSources`). The rule is primary sources
+  only — house.gov, senate.gov, clerk.house.gov, congress.gov, and the National Archives' transcription of the
+  Constitution — over https, no secondary explainers, nothing paywalled. A citation a reader cannot open is decoration.
+  Enforced in `src/lib/lessons.test.ts`, which checks the host, the scheme, the publisher, and that no lesson cites the
+  same document twice.
 - **Every module states what it leaves out**, in its own `limits` list. Each of these lessons is a simplification — that
   is what a lesson is — and a simplification that doesn't say so is just an inaccuracy. The panel sits between the last
   step and the sources, so a reader who skims still passes it.

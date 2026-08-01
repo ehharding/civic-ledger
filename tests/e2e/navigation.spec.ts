@@ -176,9 +176,9 @@ test("the member directory filters in place and opens a member's page", async ({
   expect(memberName).toBeTruthy();
 
   // Filtering is entirely client-side, so narrowing writes the view into the address bar with history.replaceState
-  // rather than navigating. Asserting the query string is what distinguishes that from "nothing happened yet" — a
-  // bare /\/members$/ would be satisfied by the un-narrowed page this test starts on, and so would pass before the
-  // filter ever ran.
+  // rather than navigating. Asserting the query string is what distinguishes that from "nothing happened yet" — a bare
+  // /\/members$/ would be satisfied by the un-narrowed page this test starts on, and so would pass before the filter
+  // ever ran.
   const surname: string = (memberName ?? "").split(",")[0] ?? "";
   await page.getByRole("searchbox", { name: /Search members/ }).fill(surname);
 

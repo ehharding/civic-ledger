@@ -105,8 +105,8 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     },
     policyArea: bill.policyArea?.name,
     stage: inferBillStage(actionText),
-    // Deliberately *not* `bill.url`: that field is the record's own API endpoint, which serves JSON (and 403s without
-    // a key of the reader's own). @see congressGovBillUrl
+    // Deliberately *not* `bill.url`: that field is the record's own API endpoint, which serves JSON (and 403s without a
+    // key of the reader's own). @see congressGovBillUrl
     officialUrl: congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
     sponsor: sponsor?.fullName
       ? ({

@@ -3,10 +3,9 @@
  *
  * Two of those claims are load-bearing and were previously asserted nowhere:
  *
- * 1. A route-derived value can never reach Congress.gov malformed. `normalizeBillRouteParams` and
- *    `normalizeBioguideId` validate *shape* rather than escaping, so a bad segment is rejected outright instead of
- *    being sanitized and sent anyway. The traversal and smuggling cases below are the specific failures that rule
- *    exists to prevent.
+ * 1. A route-derived value can never reach Congress.gov malformed. `normalizeBillRouteParams` and `normalizeBioguideId`
+ *    validate *shape* rather than escaping, so a bad segment is rejected outright instead of being sanitized and sent
+ *    anyway. The traversal and smuggling cases below are the specific failures that rule exists to prevent.
  * 2. The server-only key is always the last word in an outbound URL — a caller cannot displace it by passing its own
  *    `api_key` param, however that param got into their hands.
  *

@@ -67,8 +67,8 @@ export async function generateMetadata({ params }: CongressBillsPageProps): Prom
 }
 
 /**
- * Bill directory for one specific Congress, reached from the switcher on `/bills` or by direct link
- * (e.g., `/bills/118`).
+ * Bill directory for one specific Congress, reached from the switcher on `/bills` or by direct link (e.g.,
+ * `/bills/118`).
  *
  * The current Congress resolves here too rather than redirecting to `/bills`, so every Congress the switcher lists
  * behaves identically and no entry is a special case.

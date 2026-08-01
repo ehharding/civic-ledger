@@ -1,8 +1,7 @@
 /**
  * Covers formatOrdinal's suffix rules (including the 11th/12th/13th exception to the usual st/nd/rd pattern), the
- * timezone pinning that keeps formatDate from rolling a date back a day, the two comparison rules every ordering in
- * the app shares, and the two small display helpers the rest of it leans on for counts and for casing upstream free
- * text.
+ * timezone pinning that keeps formatDate from rolling a date back a day, the two comparison rules every ordering in the
+ * app shares, and the two small display helpers the rest of it leans on for counts and for casing upstream free text.
  */
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -168,8 +167,8 @@ describe("compareIsoDatesDesc", (): void => {
   });
 
   it("orders across a year, month, and day boundary that string comparison could get wrong", (): void => {
-    // Zero-padding is what makes plain comparison correct here: "2026-01-09" < "2026-01-10" only because the day is
-    // two digits wide.
+    // Zero-padding is what makes plain comparison correct here: "2026-01-09" < "2026-01-10" only because the day is two
+    // digits wide.
     const ordered: string[] = ["2026-01-09", "2026-01-10", "2025-12-31", "2026-02-01"].sort(compareIsoDatesDesc);
 
     expect(ordered).toEqual(["2026-02-01", "2026-01-10", "2026-01-09", "2025-12-31"]);

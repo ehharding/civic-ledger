@@ -54,8 +54,8 @@ describe("resolveBillDirectoryQuery", (): void => {
   });
 
   it("takes the first of a repeated param", async (): Promise<void> => {
-    // Arbitrary, but it has to be *something*: a control that holds one value cannot honor two, and rejecting the
-    // whole URL would turn a duplicated param into a broken page.
+    // Arbitrary, but it has to be *something*: a control that holds one value cannot honor two, and rejecting the whole
+    // URL would turn a duplicated param into a broken page.
     await expect(resolveBillDirectoryQuery(route({ stage: ["law", "committee"] }))).resolves.toEqual({
       query: "",
       stage: "law",

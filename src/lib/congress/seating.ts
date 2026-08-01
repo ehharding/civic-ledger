@@ -258,8 +258,8 @@ export type ChamberSeating = {
  *
  * Both text comparisons go through the app's shared, locale-pinned collation rather than a bare `localeCompare`. That
  * matters more here than anywhere else in the app: this chart is laid out on the server and then laid out again in the
- * browser, so two runtimes disagreeing about where a name falls would move ~540 seats between the server's HTML and
- * the client's. @see compareText in format.ts.
+ * browser, so two runtimes disagreeing about where a name falls would move ~540 seats between the server's HTML and the
+ * client's. @see compareText in format.ts.
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.

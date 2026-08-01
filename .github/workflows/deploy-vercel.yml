@@ -1,14 +1,14 @@
 name: Deploy (Vercel)
 
 # Vercel is the recommended production target: Civic Ledger's Congress.gov API key must stay server-side, and the app
-# relies on dynamic route handlers, ISR (`revalidate`), and a future Postgres-backed auth layer — none of which a
-# static host like GitHub Pages can run. See docs/deployment.md for both pipelines and what each one can serve.
+# relies on dynamic route handlers, ISR (`revalidate`), and a future Postgres-backed auth layer — none of which a static
+# host like GitHub Pages can run. See docs/deployment.md for both pipelines and what each one can serve.
 #
 # Setup (one time):
 #   1. `pnpm dlx vercel link` locally to create/link the Vercel project.
 #   2. Add repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
-#   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the
-#      Vercel project settings — not as GitHub secrets — so the key never appears in Action logs.
+#   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the Vercel
+#      project settings — not as GitHub secrets — so the key never appears in Action logs.
 
 on:
   push:

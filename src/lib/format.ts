@@ -21,10 +21,10 @@ const textCollator: Intl.Collator = new Intl.Collator("en-US");
 /**
  * Orders two strings the way a reader of English expects.
  *
- * Collated rather than compared with `<`, so text carrying diacritics or apostrophes (Núñez, O'Halleran, Coeur
- * d'Alene) sorts where a reader expects rather than where its code points fall. Use this for anything a person reads
- * as a name or a place; ISO dates and other machine-formatted strings should be compared directly, since collation
- * costs more and buys nothing on ASCII digits.
+ * Collated rather than compared with `<`, so text carrying diacritics or apostrophes (Núñez, O'Halleran, Coeur d'Alene)
+ * sorts where a reader expects rather than where its code points fall. Use this for anything a person reads as a name
+ * or a place; ISO dates and other machine-formatted strings should be compared directly, since collation costs more and
+ * buys nothing on ASCII digits.
  *
  * @param a - One string to compare.
  * @param b - The other string to compare.
@@ -39,12 +39,12 @@ export function compareText(a: string, b: string): number {
  *
  * Compared directly rather than through {@link compareText} or a `Date`. Every date this app sorts on is either a bare
  * `YYYY-MM-DD` (bill actions, CRS summaries) or a full ISO 8601 timestamp (bill text versions, committee history), and
- * both forms are fixed-width, zero-padded, and most-significant-field-first — so plain string comparison already
- * *is* chronological order. Collating them would cost more and buy nothing on ASCII digits, and constructing a `Date`
- * per comparison would buy nothing at all.
+ * both forms are fixed-width, zero-padded, and most-significant-field-first — so plain string comparison already *is*
+ * chronological order. Collating them would cost more and buy nothing on ASCII digits, and constructing a `Date` per
+ * comparison would buy nothing at all.
  *
- * Three separate newest-first comparators used to spell this out by hand, each with its own slightly different
- * handling of a missing date. This is that rule stated once.
+ * Three separate newest-first comparators used to spell this out by hand, each with its own slightly different handling
+ * of a missing date. This is that rule stated once.
  *
  * @param a - One date to compare. An absent date should be passed as an empty string.
  * @param b - The other date to compare.

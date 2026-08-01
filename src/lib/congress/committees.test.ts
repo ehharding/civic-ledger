@@ -48,8 +48,8 @@ describe("describeCommittee", (): void => {
   });
 
   it("uses the noun phrase rather than the chip label", (): void => {
-    // The two genuinely differ: "Commission or Caucus" is the right chip, and "Commission or Caucus committee" is not
-    // a phrase anyone would write.
+    // The two genuinely differ: "Commission or Caucus" is the right chip, and "Commission or Caucus committee" is not a
+    // phrase anyone would write.
     expect(describeCommittee({ chamber: "house", type: "commission" })).toBe(
       "Commission or caucus of the House of Representatives.",
     );
@@ -105,8 +105,8 @@ describe("formatCommitteeHistoryYears", (): void => {
   });
 
   it("does not shift the year across a timezone", (): void => {
-    // The whole reason the year is read off the string. `new Date("1975-01-01T00:00:00Z").getFullYear()` is 1974 in
-    // any timezone west of UTC, and `"1994-12-31T23:00:00Z"` is 1995 in any timezone east of it — so a Date-based
+    // The whole reason the year is read off the string. `new Date("1975-01-01T00:00:00Z").getFullYear()` is 1974 in any
+    // timezone west of UTC, and `"1994-12-31T23:00:00Z"` is 1995 in any timezone east of it — so a Date-based
     // implementation passes in CI and misdates committees for half the world.
     expect(
       formatCommitteeHistoryYears(entry({ startDate: "1975-01-01T00:00:00Z", endDate: "1994-12-31T23:00:00Z" })),

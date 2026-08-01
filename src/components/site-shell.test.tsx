@@ -49,8 +49,8 @@ describe("SiteShell", (): void => {
       </SiteShell>,
     );
 
-    // Without this, some browsers scroll to the target but leave focus in the header — and the next Tab goes right
-    // back into the navigation the user just skipped.
+    // Without this, some browsers scroll to the target but leave focus in the header — and the next Tab goes right back
+    // into the navigation the user just skipped.
     expect(screen.getByRole("main")).toHaveAttribute("tabindex", "-1");
   });
 });

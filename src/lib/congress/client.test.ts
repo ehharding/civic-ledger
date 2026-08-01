@@ -1,7 +1,7 @@
 /**
- * Covers client.ts's three main paths: the no-key preview fallback, mapping live API responses
- * (list- and detail-endpoint field-name variants both need coverage — see mapCongressBill), and the
- * distinction between "not found" (404) and "temporarily unavailable" (any other failure).
+ * Covers client.ts's three main paths: the no-key preview fallback, mapping live API responses (list- and
+ * detail-endpoint field-name variants both need coverage — see mapCongressBill), and the distinction between "not
+ * found" (404) and "temporarily unavailable" (any other failure).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -782,8 +782,8 @@ describe("getCongressComposition pagination edges", (): void => {
               members: Array.from({ length: 250 }, (_unused: unknown, index: number) =>
                 apiMember({
                   bioguideId: `A-${index}`,
-                  // Both chambers seated on the first page, so the fallback that fires for an empty chamber cannot
-                  // mask what this case is actually about.
+                  // Both chambers seated on the first page, so the fallback that fires for an empty chamber cannot mask
+                  // what this case is actually about.
                   chamber: index % 2 === 0 ? "House of Representatives" : "Senate",
                 }),
               ),

@@ -59,8 +59,8 @@ describe("LessonPage", (): void => {
     render(await LessonPage({ params: Promise.resolve({ slug: firstLesson.slug }) }));
 
     for (const step of firstLesson.steps) {
-      // By role rather than by text: a step heading like "Introduced" is also a stage name in the `BillJourney`
-      // stepper the lesson embeds, so a bare text query matches two nodes.
+      // By role rather than by text: a step heading like "Introduced" is also a stage name in the `BillJourney` stepper
+      // the lesson embeds, so a bare text query matches two nodes.
       expect(screen.getByRole("heading", { name: step.heading }), step.id).toBeInTheDocument();
     }
     for (const source of firstLesson.sources) {

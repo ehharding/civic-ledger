@@ -137,8 +137,8 @@ describe("skeleton grid sizes", (): void => {
   it("draws the committee record's two panels rather than a repeating grid", (): void => {
     const { container } = render(<CommitteeLoading />);
 
-    // Two panels of different heights, not a row of identical cards — drawing them as a grid would settle into a
-    // layout the real page never takes.
+    // Two panels of different heights, not a row of identical cards — drawing them as a grid would settle into a layout
+    // the real page never takes.
     expect(container.querySelectorAll(".skeleton--panel")).toHaveLength(2);
   });
 });

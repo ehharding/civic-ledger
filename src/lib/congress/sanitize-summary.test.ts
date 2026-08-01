@@ -1,7 +1,7 @@
 /**
- * Covers sanitizeSummaryHtml's security-relevant behavior: allowed structural tags pass through untouched,
- * everything else is stripped (including any wrapping needed to neutralize script content), all attributes except
- * a validated `href` on `<a>` are dropped, and unsafe link schemes never survive.
+ * Covers sanitizeSummaryHtml's security-relevant behavior: allowed structural tags pass through untouched, everything
+ * else is stripped (including any wrapping needed to neutralize script content), all attributes except a validated
+ * `href` on `<a>` are dropped, and unsafe link schemes never survive.
  */
 import { describe, expect, it } from "vitest";
 

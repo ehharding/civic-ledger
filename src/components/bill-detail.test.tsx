@@ -107,8 +107,8 @@ describe("BillDetail", (): void => {
     render(<BillDetail bill={withBioguide} source="live" summaries={[]} textVersions={[]} />);
 
     const link = screen.getByRole("link", { name: /Rep. Test, Sample A./ });
-    // Inward, to this app's own page for the sponsor — which carries the official biography link onward. Staying
-    // in-app is what makes a sponsor's other legislation reachable in one step rather than none.
+    // Inward, to this app's own page for the sponsor — which carries the official biography link onward. Staying in-app
+    // is what makes a sponsor's other legislation reachable in one step rather than none.
     expect(link).toHaveAttribute("href", "/members/T000001");
     expect(link).not.toHaveAttribute("target");
   });
@@ -222,8 +222,8 @@ describe("BillDetail with a sparse record", (): void => {
   });
 
   it("keys earlier summaries by their action description when they share a version and carry no date", (): void => {
-    // Two summaries with the same version code and no dates would collide on a date-only key, and React would drop
-    // one of them silently.
+    // Two summaries with the same version code and no dates would collide on a date-only key, and React would drop one
+    // of them silently.
     render(
       <BillDetail
         bill={bill}

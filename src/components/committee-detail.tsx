@@ -42,9 +42,9 @@ type CommitteeStat = {
  * The counts Congress.gov publishes alongside a committee.
  *
  * Rendered as plain figures with no links, which is the honest treatment: the API reports how many bills were referred
- * to a committee and how many reports it published, but the URLs it pairs those counts with are its own JSON
- * endpoints, which serve a 403 to a reader with no key of their own. A number a reader can see and cannot open is still
- * a useful fact about the scale of a committee's work; a link that fails is not.
+ * to a committee and how many reports it published, but the URLs it pairs those counts with are its own JSON endpoints,
+ * which serve a 403 to a reader with no key of their own. A number a reader can see and cannot open is still a useful
+ * fact about the scale of a committee's work; a link that fails is not.
  *
  * @param profile - The committee whose counts to gather.
  * @returns Only the counts the record actually carries, in a fixed order. An absent count is omitted rather than

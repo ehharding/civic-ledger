@@ -13,14 +13,14 @@ type NavLink = {
  * Primary navigation, in the order the site is meant to be understood: the records first, then the people behind them,
  * then the rooms those records pass through, then how to read all three, then how they were gathered.
  *
- * "Committees" sits after "Members" rather than beside "Bills" because it is only legible once a reader knows who is
- * in one — the page itself is about bodies of people, and its whole purpose is to give the referral line on a bill
- * page somewhere to lead.
+ * "Committees" sits after "Members" rather than beside "Bills" because it is only legible once a reader knows who is in
+ * one — the page itself is about bodies of people, and its whole purpose is to give the referral line on a bill page
+ * somewhere to lead.
  *
  * Five is where this list stops fitting beside the wordmark on a phone, which is why the header gives the nav a row of
- * its own below 640px rather than continuing to squeeze it. @see the header block in src/styles/responsive.css. A
- * sixth destination would fit that row too; a seventh would want a different pattern entirely, and this comment is the
- * marker for whoever gets there.
+ * its own below 640px rather than continuing to squeeze it. @see the header block in src/styles/responsive.css. A sixth
+ * destination would fit that row too; a seventh would want a different pattern entirely, and this comment is the marker
+ * for whoever gets there.
  */
 const NAV_LINKS: readonly NavLink[] = [
   { label: "Bills", href: "/bills" as Route },

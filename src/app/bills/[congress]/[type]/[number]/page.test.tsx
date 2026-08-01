@@ -99,8 +99,8 @@ describe("BillPage", (): void => {
   });
 
   it("404s for a malformed route rather than sending the segment upstream", async (): Promise<void> => {
-    // Each of these fails `normalizeBillRouteParams` on a different rule: an unknown type code, a non-numeric
-    // congress, and a bill number that isn't digits. None can reach Congress.gov.
+    // Each of these fails `normalizeBillRouteParams` on a different rule: an unknown type code, a non-numeric congress,
+    // and a bill number that isn't digits. None can reach Congress.gov.
     const malformed: BillRouteParams[] = [
       { congress: "119", type: "notatype", number: "284" },
       { congress: "abc", type: "hr", number: "284" },
