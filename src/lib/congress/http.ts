@@ -83,19 +83,6 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
 }
 
 /**
- * Whether a request may be served from — and written to — Next's data cache.
- *
- * Every request a *reader* waits on is cached: that is what keeps repeated page loads and the search sweep inside the
- * API's hourly quota. The scheduled sync is the one caller that must not be, and the reason is specific rather than
- * stylistic. A sync's entire purpose is to observe what changed since it last looked; served a five-minute-old cached
- * page, it would faithfully record that nothing had, and the freshness timestamps it writes would be measuring the
- * cache rather than Congress.gov.
- *
- * @see fetchBillsUpdatedSince, the only uncached caller.
- */
-export type CachePolicy = "cached" | "fresh";
-
-/**
  * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window, headers, and timeout.
  *
  * The abort signal is per-call rather than shared, since each request needs its own clock — and it is safe to pass
@@ -104,15 +91,14 @@ export type CachePolicy = "cached" | "fresh";
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags, so a future revalidation hook can invalidate a whole family of requests at once.
- * @param policy - Whether this request participates in the data cache. @see CachePolicy.
  * @returns The raw response. Rejects with a `TimeoutError` if the request outlasts {@link REQUEST_TIMEOUT_MS}, which
  *   {@link requestCongressJson} turns into an ordinary `{ outcome: "failed" }` like any other transport failure. Prefer
  *   that function, which also handles status codes and parsing; this is exported mainly for the rare caller that needs
  *   the response itself.
  */
-export function fetchCongressGov(url: URL, tags: string[], policy: CachePolicy = "cached"): Promise<Response> {
+export function fetchCongressGov(url: URL, tags: string[]): Promise<Response> {
   return fetch(url, {
-    ...(policy === "cached" ? { next: { revalidate: REVALIDATE_SECONDS, tags } } : { cache: "no-store" }),
+    next: { revalidate: REVALIDATE_SECONDS, tags },
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -144,7 +130,6 @@ export type CongressRequestResult<Payload> =
  * @param tags - Next cache tags for the request.
  * @param schema - The Zod schema for this endpoint (see `api-schema.ts`).
  * @param context - Short label used in the server-side log line when something goes wrong (e.g., `"bill summaries"`).
- * @param policy - Whether this request participates in the data cache. @see CachePolicy.
  * @returns `{ outcome: "ok", data }` with the validated payload, `{ outcome: "not-found" }` for a 404, or
  *   `{ outcome: "failed" }` for anything else.
  */
@@ -153,10 +138,9 @@ export async function requestCongressJson<Payload>(
   tags: string[],
   schema: ZodType<Payload>,
   context: string,
-  policy: CachePolicy = "cached",
 ): Promise<CongressRequestResult<Payload>> {
   try {
-    const response: Response = await fetchCongressGov(url, tags, policy);
+    const response: Response = await fetchCongressGov(url, tags);
 
     if (response.status === 404) return { outcome: "not-found" };
     if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);

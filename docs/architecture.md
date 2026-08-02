@@ -31,10 +31,10 @@ flowchart LR
     C --> F[Clearly Marked Preview Fixtures]
     P --> U[UI Components]
     U --> O[Official Congress.gov Links]
-    C -.->|upstream unreachable| D[(PostgreSQL/Drizzle)]
-    J[Scheduled Sync] --> A
+    N --> D[(PostgreSQL/Drizzle)]
+    J[Scheduled Refresh Job] --> A
     J --> D
-    D --> S[sitemap.xml + /api/health]
+    D --> N
 ```
 
 Everything upstream is reached through one server-side adapter rather than from the browser. That is first a secrecy
@@ -46,9 +46,8 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | Layer                         | Responsibility                                  | Rule                                                              |
 |-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
 | `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live/stored provenance.                  |
-| `src/db`                      | Schema and connection access                    | Do not claim it is the source of truth for congressional records. |
-| `src/lib/ingest`              | The scheduled copy: writing it and reading it   | Never label a stored record `live`; degrade rather than throw.    |
+| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
+| `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
 | `src/hooks`                   | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/lib/api-query.ts`        | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
 | `src/lib/*-route.ts`          | In-app route construction                       | One definition per route shape; never build a route inline.       |
@@ -72,7 +71,6 @@ components, and tests import one stable path while the internals stay free to mo
 | `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
 | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
 | `composition.ts`         | Chamber membership, including the member list's pagination.                   |
-| `ingest-source.ts`       | The scheduled sync's reads: windowed, uncached, and with no fallback at all.  |
 | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
 | `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
 | `member-profile.ts`      | One member's own record, plus the legislation they sponsored and cosponsored. |
@@ -88,15 +86,10 @@ components, and tests import one stable path while the internals stay free to mo
 
 Two invariants hold across every exported read:
 
-1. **Nothing throws.** Upstream failure is an expected condition, not an exception — a page degrades to the ingested
-   copy and then to clearly labeled preview data, never to an error boundary.
-2. **Provenance travels with the data.** Anything that can come from live, stored, or preview data reports which it was,
-   on the same returned value, so no caller can render one while claiming another.
-
-`ingest-source.ts` is the one module those two invariants read differently for, and deliberately so: it is the *only*
-read that must not fall back. A sync that ingested a fallback would either write the copy back over itself or file
-preview fixtures under a live provenance, so its fetchers return `null` where a page-facing read would return a labeled
-substitute, and the caller records a failed run instead.
+1. **Nothing throws.** Upstream failure is an expected condition, not an exception — a page degrades to clearly labeled
+   preview data, never to an error boundary.
+2. **Provenance travels with the data.** Anything that can come from either live or preview data reports which it was,
+   on the same returned value, so no caller can render one while claiming the other.
 
 Payloads are validated at runtime rather than cast. Schemas are loose objects whose fields each `.catch(undefined)`, so
 an unexpected field type degrades that one field — which the mappers already handle — instead of discarding a whole
@@ -114,9 +107,7 @@ page. Only a payload that isn't an object at all is rejected outright.
    rendering. That bound matters most in the search sweep, which awaits one request per supported Congress at once.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
-4. If no key exists or the request fails, the app serves the ingested copy when it has one — labeled as stored, never as
-   live — and transparent preview data otherwise, instead of a broken dashboard. See
-   [Normalized Ingestion](#normalized-ingestion).
+4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
 5. A reader can always leave for the official record: from a bill page to its public Congress.gov record, and from any
    member's page to their entry in the Biographical Directory. Seats in the chamber diagram and sponsor lines on bill
    pages both link *inward* first, to that member's own page, which carries the outbound link onward.
@@ -288,79 +279,27 @@ export. Every learning module is listed on the same test: `lessons` is a local a
 of the "cheap and reliable" property that keeps individual records out. The route enumerates itself from the same array
 in `generateStaticParams`, which is what makes a listed lesson URL and a prerendered lesson page the same set.
 
-Individual member, bill, and committee pages used to stay out, and the objection was never that they don't deserve
-listing. It was that enumerating them required a live Congress.gov request, which would have made sitemap generation
-depend on an API key and a healthy upstream at build time — a meaningful new failure mode for a file whose entire job is
-to be cheaply and reliably generated.
+Individual member, bill, and committee pages stay out. They are bounded and individually useful, so they look like they
+belong; they don't, yet. Knowing who currently holds a seat requires a live Congress.gov request, which would make
+sitemap generation depend on an API key and a healthy upstream at build time — a meaningful new failure mode for a file
+whose entire job is to be cheaply and reliably generated. Each directory route *is* listed, needs no key to resolve, and
+is a single crawlable page that links to every record beneath it, which is what a crawler actually needed. Revisit this
+alongside the scheduled-ingestion path below, where a roster will already be on hand locally.
 
-**Ingestion removed the condition, so the exclusion lapsed with it.** `listStoredRecordPaths` reads records already on
-hand locally: no key, no upstream, no new failure mode. Where there is no database it returns nothing and the file is
-exactly the constant-derived list it always was, which is also what the static export gets. Two consequences follow:
+## Persistence Plan
 
-- The file is no longer `force-static`. It revalidates hourly, because a build-time snapshot would advertise whatever
-  had been ingested at deploy time and never mention anything since.
-- Records are capped per type, and what the cap drops is **logged** rather than silently omitted. A sitemap that stops
-  at a round number reads exactly like one that covered everything.
+PostgreSQL is deferred, not omitted. There is no value in requiring a database merely to render a public feed, so the
+draft includes only the tables needed for a future "saved bill" experience — the first surface for genuinely user-owned
+data, which is what Congress.gov has no opinion about. When a database is provisioned, add:
 
-## Normalized Ingestion
+- `congressional_records`: normalized upstream records with `source_updated_at`, `fetched_at`, raw-response hash, and
+  provider URL.
+- `record_events`: append-only action/timeline data.
+- `sync_runs`: data freshness, error, and quota observability.
+- `saved_bills`: already sketched for authenticated user collections.
 
-**A database is optional and always has been.** That is the constraint everything below is shaped by. The GitHub Pages
-demo has no server to hold one, a local checkout runs perfectly well without one, and the entire reading surface
-predates persistence. So `getDb()` returns `null` when `DATABASE_URL` is unset — the same shape `getCongressApiKey()`
-has, for the same reason — and every consumer handles that rather than importing a connection that throws at module
-load on the one target that can never have one.
-
-### The Tables
-
-| Table                   | Holds                                                           |
-|-------------------------|-----------------------------------------------------------------|
-| `congressional_records` | One normalized bill, member, or committee, with its provenance. |
-| `record_events`         | An append-only log of the actions this app has *observed*.      |
-| `sync_runs`             | One row per dataset per run, including the runs that failed.    |
-| `saved_bills`           | User-owned collections. Still waiting on auth; see the roadmap. |
-
-`congressional_records` is one generic table rather than one per subject, keyed on `(record_type, record_key)` — both
-Congress.gov's own identifiers, never anything this app invented. `payload` holds the app's *normalized* model, not the
-wire shape: storing the wire shape would mean every read re-ran the mappers and every mapper change silently
-reinterpreted history, while storing the model makes a stored record and a live one the same value by construction. It
-is still validated on the way out, because a row can be written by an older version of this app.
-
-The four provenance columns are the point of the table rather than bookkeeping on it. One departs from the original
-sketch: the hash covers the normalized payload rather than the raw response. A raw-response hash answers "did
-Congress.gov's bytes change", and those bytes carry fields this app never reads — so it would report a change, and cause
-a write, every time an unread field moved. Hashing what is actually stored answers the question the sync asks.
-
-### What a Run Does
-
-`POST /api/ingest`, driven by Vercel Cron, runs each dataset in turn: read the watermark, ask the dataset what changed,
-write what came back, record what happened. Three properties hold, and each has a failure mode that stays invisible for
-a long time — a dataset that fails must not cost the other two their refresh; a failure must be *written down*, since a
-sync that logs an error and writes no row reports perfect freshness until someone notices the data is a month old; and
-the watermark must advance only over records actually stored, or a failed window is stepped over permanently.
-
-**Only bills are incremental.** They are windowed on Congress.gov's own `updateDate`, which is what keeps a frequent
-sync cheap: after the first run a sweep reads only what moved. Members and committees are bounded lists — a little over
-540 people, on the order of 250 committee records — whose endpoints publish no per-record update timestamp to window on,
-so each run re-reads them at two requests apiece, which is less than the machinery to avoid it would cost.
-
-The sweep pages *ascending* by update date. Under `updateDate+desc` a record updated mid-sweep is inserted at the front,
-shifting every later offset by one and skipping whatever falls across the boundary; ascending puts new activity after
-the window being read, where the next run picks it up.
-
-### Reading It Back
-
-Every read in the adapter now degrades in one fixed order: **live, then stored, then labeled preview data.** That order
-is a product claim rather than an implementation detail — see
-[The Stored Copy Is a Copy](data-policy.md#the-stored-copy-is-a-copy) — and it is expressed in the type: `DataSource` is
-`"live" | "stored" | "preview"`, in exactly that sequence, so "the best available honest answer" is a property of the
-model instead of a convention each call site has to remember.
-
-The member directory inherits its fallback rather than implementing one. It reads the composition, so where the roster
-came from is where the directory came from — the same structural reason the diagram and the directory cannot disagree
-about who is serving now covers where the answer came from.
-
-One asymmetry is worth naming: a **404 never reaches the stored path.** A missing record is a *true answer*, and
-answering it from the copy would turn a correct "no such record" into a stale one. Only an outage falls through.
+Start with on-demand reads plus cache. Move to scheduled, incremental synchronization only after usage requires reliable
+history, notification delivery, or more than a few API-facing features.
 
 ## Security Baseline
 

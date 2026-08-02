@@ -6,7 +6,6 @@
       "!!**/.next",
       "!!**/coverage",
       "!!**/node_modules",
-      "!!**/out",
       "!!**/output",
       "!!**/playwright-report",
       "!!**/test-results"

@@ -33,8 +33,7 @@ GitHub Pages cannot hold a server-side API key or run route handlers, so it is t
    ```
 
 4. Add a **newly rotated** Congress.gov key to `CONGRESS_API_KEY` in `.env.local`. Without one, the app still runs — it
-   renders labeled preview data instead. `DATABASE_URL` and `CRON_SECRET` are optional and only enable the stored copy;
-   see [Persistence Is Optional](docs/deployment.md#persistence-is-optional).
+   renders labeled preview data instead.
 5. Start the app:
 
    ```bash
@@ -81,7 +80,6 @@ pnpm exec playwright install chromium
 | `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                           |
 | `/about`                                         | Methodology: how records are sourced, labeled, and linked back                    |
 | `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                            |
-| `/api/ingest`                                    | The scheduled sync, behind a cron secret — refuses to run without one            |
 
 Behind those routes:
 
@@ -97,19 +95,14 @@ Behind those routes:
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
   the voting module, that this app holds no roll-call data at all.
-- **A stored copy that says it is one.** A scheduled job keeps a normalized copy of the bills, members, and committees
-  this app shows. When Congress.gov is unreachable, a page serves those real records labeled as *stored* — with the time
-  the copy was last confirmed, not the time the page rendered — rather than falling straight to labeled fiction. Live is
-  always preferred, a missing record never answers from the copy, and the whole thing is optional: with no
-  `DATABASE_URL` the app behaves exactly as it did before.
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.
 - **Cookieless analytics with the query string stripped**, so a narrowed directory's `?party=`/`?state=`/`?q=` never
   enters the analytics feed.
-- **Strict TypeScript, Biome, unit tests, Playwright smoke tests, GitHub Actions CI, Dependabot**, and a health endpoint
-  that reports when each dataset last synced.
-- **A Drizzle/Postgres schema and migrations** for the ingested copy, plus the saved-bills tables still waiting on auth.
+- **Strict TypeScript, Biome, unit tests, Playwright smoke tests, GitHub Actions CI, Dependabot**, and a health
+  endpoint.
+- An initial Drizzle/Postgres schema for future saved bills.
 
 ## Documentation
 
@@ -128,11 +121,11 @@ to keep one of them.
 
 ## Deployment in One Paragraph
 
-Civic Ledger holds a secret, uses dynamic route handlers and ISR, and runs a scheduled ingestion job against Postgres.
-It needs a real Node server and **cannot** run on a purely static host in its normal configuration. Vercel (or any
-Node-capable platform) is the real target; a GitHub Pages workflow publishes a static, preview-data-only demo for UI
-review, which should never be represented as the live product. Full instructions and the static build's exact
-limitations are in [docs/deployment.md](docs/deployment.md).
+Civic Ledger holds a secret, uses dynamic route handlers and ISR, and has a Postgres schema waiting for auth. It needs a
+real Node server and **cannot** run on a purely static host in its normal configuration. Vercel (or any Node-capable
+platform) is the real target; a GitHub Pages workflow publishes a static, preview-data-only demo for UI review, which
+should never be represented as the live product. Full instructions and the static build's exact limitations are in
+[docs/deployment.md](docs/deployment.md).
 
 ## License
 

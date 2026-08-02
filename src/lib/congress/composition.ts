@@ -23,7 +23,6 @@ import {
   congressChambers,
 } from "@/lib/congress/members";
 import { formatOrdinal } from "@/lib/format";
-import { getStoredComposition } from "@/lib/ingest/stored";
 
 /**
  * Who currently holds each seat in each chamber of a Congress — the data behind the home page's chamber diagram.
@@ -134,60 +133,37 @@ function buildComposition(members: SeatedMember[]): ChamberComposition[] {
 }
 
 /**
- * Fetches both chambers' membership with no fallback of any kind.
- *
- * Split out from {@link getCongressComposition} so the scheduled sync can read the roster *live only*. A page wants a
- * labeled substitute when upstream is unreachable; a sync must not have one, or it would file placeholder seats — or
- * its own stored copy — under a live provenance. @see src/lib/congress/ingest-source.ts for the full reasoning.
- *
- * A chamber that comes back empty fails the whole fetch rather than yielding half a Congress: "the Senate has no
- * members" is never a true statement about a seated Congress, and anything built from it would assert one.
- *
- * @param apiKey - The server-only Congress.gov key.
- * @param congress - The Congress whose membership to read.
- * @returns Both chambers, or `null` when the roster could not be read completely.
- */
-export async function fetchLiveComposition(apiKey: string, congress: number): Promise<ChamberComposition[] | null> {
-  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress);
-  const chambers: ChamberComposition[] = buildComposition(mapUsable(raw ?? [], mapCongressMember));
-
-  return chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0) ? null : chambers;
-}
-
-/**
  * Fetches the membership of both chambers of a Congress — who currently holds each seat — for the home page's chamber
  * diagram.
  *
+ * A chamber that comes back empty is treated as a failure of the whole fetch rather than rendered as an empty half of
+ * Congress: "the Senate has no members" is never a true statement about a seated Congress, and a diagram showing it
+ * would read as one.
+ *
  * @param congress - The Congress whose membership to read. Defaults to the one currently seated.
- * @returns The composition, always labeled live, stored, or preview. A missing key or a failed request yields the last
- *   ingested roster when one is on hand and clearly labeled placeholder seats otherwise, never an empty or broken
- *   chart; this never throws.
+ * @returns The composition, always labeled live or preview. A missing key or a failed request yields clearly labeled
+ *   placeholder seats rather than an empty or broken chart; this never throws.
  */
 export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
   const apiKey: string | undefined = getCongressApiKey();
   const retrievedAt: string = new Date().toISOString();
 
   if (!apiKey) {
-    return (
-      (await getStoredComposition(congress)) ??
-      buildPreviewComposition(
-        congress,
-        retrievedAt,
-        "Placeholder seats are shown until a server-only Congress.gov API key is configured.",
-      )
+    return buildPreviewComposition(
+      congress,
+      retrievedAt,
+      "Placeholder seats are shown until a server-only Congress.gov API key is configured.",
     );
   }
 
-  const chambers: ChamberComposition[] | null = await fetchLiveComposition(apiKey, congress);
+  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress);
+  const chambers: ChamberComposition[] = buildComposition(mapUsable(raw ?? [], mapCongressMember));
 
-  if (!chambers) {
-    return (
-      (await getStoredComposition(congress)) ??
-      buildPreviewComposition(
-        congress,
-        retrievedAt,
-        "Live membership is temporarily unavailable, so placeholder seats are shown.",
-      )
+  if (chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0)) {
+    return buildPreviewComposition(
+      congress,
+      retrievedAt,
+      "Live membership is temporarily unavailable, so placeholder seats are shown.",
     );
   }
 

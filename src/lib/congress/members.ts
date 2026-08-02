@@ -1,4 +1,3 @@
-import type { DataSource } from "@/lib/congress/types";
 import { compareText, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
 
 /**
@@ -243,9 +242,9 @@ export type ChamberComposition = {
 export type CongressComposition = {
   congress: number;
   chambers: ChamberComposition[];
-  source: DataSource;
+  source: "live" | "preview";
   retrievedAt: string;
-  /** User-facing explanation shown when `source` is not `"live"`. @see DataSource. */
+  /** User-facing explanation shown when `source` is "preview" (no API key, or a transient upstream failure). */
   notice?: string;
 };
 

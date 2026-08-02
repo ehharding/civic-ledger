@@ -31,49 +31,6 @@ provenance — served raw JSON, or a 403 to anyone without a key of their own.
 already requires before it will map a record at all. An unrecognized bill type falls back to the Congress.gov home page
 rather than emitting a confidently wrong deep link.
 
-## The Stored Copy Is a Copy
-
-This app keeps its own normalized copy of the records it shows, refreshed on a schedule, and serves it when Congress.gov
-cannot be reached. That is a genuine addition to what the app asserts, so it comes with its own rules.
-
-**A stored record is labeled as one, in its own right.** `DataSource` has three values — `live`, `stored`, `preview` —
-and the disclosure banner has three headings, because a stored copy is the one value that can be misread in *either*
-direction. Skimmed as live it overstates how current the records are; skimmed as preview it understates that they are
-real. "Stored Congress.gov Records" is neither of its neighbors on purpose, and the component test asserts that it is
-neither rather than merely that it exists.
-
-**The freshness it prints is the copy's, not the request's.** A stored page reports when this app last *confirmed* the
-record against Congress.gov, read from the row's own `fetched_at`. Stamping the current time would claim the freshness
-of the request rather than of the data — which is the specific dishonesty a cached copy makes easy.
-
-That timestamp is only meaningful because a sync that finds nothing changed writes nothing: the upsert updates a row
-only when its payload hash differs. A `fetched_at` bumped by every no-op run would report that the scheduler is alive,
-which is not the question anyone is asking it.
-
-**The copy is never the source of truth, and the fallback order says so.** Live is always preferred, and every stored
-page still carries the same outbound link to the official record that a live one does. A 404 does not fall through to
-the copy either: a missing record is a *true answer*, and answering it from storage would turn a correct "no such
-record" into a stale one.
-
-**A row that no longer matches the model is dropped whole.** Upstream payloads degrade field by field, because
-discarding a page of records this app did not write and cannot fix would be worse. A stored payload is the opposite
-case — this app wrote it, against a model it owns — so a row that no longer validates was written by a *different*
-model, and guessing which of its fields still mean what they did is exactly how a copy stops being a copy of anything.
-It falls out of the stored set and the app takes its next fallback.
-
-### Observed Events Are Not a Legislative History
-
-`record_events` accumulates the actions this app has seen. The word "observed" is load-bearing and appears in the
-schema, the module, and here.
-
-Congress.gov's list endpoints publish one `latestAction` per record, so each sync can append at most the newest action
-it saw. A bill's *complete* action history lives behind the `/actions` sub-resource, and sweeping that for every bill is
-precisely the mirroring [Roadmap](roadmap.md) rules out. What accumulates is therefore a record of what changed while
-this app was watching — which is what a future notification needs, and is not a legislative history.
-
-Nothing renders it as one today. If anything ever does, it says what it is on the page, on the same rule that makes
-`/learn/how-congress-votes` state outright that this app holds no roll-call data.
-
 ## Preview Data Is Labeled Fiction
 
 The app runs with clearly marked preview records until `CONGRESS_API_KEY` is set, and falls back to them whenever an
@@ -273,10 +230,5 @@ five-minute cache rather than given a policy of their own:
   something needing its own throttling.
 - **The home page** fetches membership alongside the bill snapshot — one page-0 request to read `pagination.count`, then
   the remaining pages in parallel, issued concurrently with the bill fetch rather than after it. If the home page ever
-  needs a fourth independent dataset, that is the point to revisit whether it belongs in the scheduled-ingestion path in
-  [architecture.md](architecture.md#normalized-ingestion) instead of an on-demand read.
-- **The scheduled sync** is the one caller that deliberately *bypasses* the cache, and the only one that should. Its
-  whole purpose is to observe what changed since it last looked; served a five-minute-old page it would faithfully
-  record that nothing had, and the freshness timestamps it writes would be measuring the cache rather than Congress.gov.
-  Its cost is bounded instead by three explicit caps — records per run, pages per run, and how far back the window
-  reaches — and by running every six hours rather than continuously.
+  needs a fourth independent dataset, that is the point to revisit whether these belong in the scheduled-ingestion path
+  in [architecture.md](architecture.md#persistence-plan) instead of on-demand reads.

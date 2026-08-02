@@ -10,10 +10,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/health/route";
 
-type HealthBody = { status: string; service: string; timestamp: string; ingestion: unknown };
+type HealthBody = { status: string; service: string; timestamp: string };
 
 async function get(): Promise<{ status: number; body: HealthBody }> {
-  const response = await GET();
+  const response = GET();
   return { status: response.status, body: (await response.json()) as HealthBody };
 }
 
@@ -48,14 +48,5 @@ describe("GET /api/health", (): void => {
     } finally {
       vi.unstubAllGlobals();
     }
-  });
-
-  /* Freshness is reported, not required. With no DATABASE_URL there is nothing to report and the probe still answers
-     "ok" — the whole point of reading it through a helper that swallows failure. */
-  it("reports null ingestion freshness when no database is configured, and stays healthy", async (): Promise<void> => {
-    const { status, body } = await get();
-
-    expect(status).toBe(200);
-    expect(body.ingestion).toBeNull();
   });
 });

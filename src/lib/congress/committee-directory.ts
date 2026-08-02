@@ -15,9 +15,8 @@ import {
   requestCongressJson,
 } from "@/lib/congress/http";
 import { mapCongressCommittee, mapUsable } from "@/lib/congress/mappers";
-import type { DataSource } from "@/lib/congress/types";
+import type { CongressSnapshot } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
-import { getStoredCommitteeDirectory } from "@/lib/ingest/stored";
 
 /**
  * The committees of one Congress, as the browsable directory at `/committees` reads them.
@@ -44,9 +43,9 @@ export type CommitteeDirectoryResult = {
   congress: number;
   /** Every listable parent committee, alphabetically. @see buildCommitteeDirectory for what "parent" excludes. */
   committees: CommitteeSummary[];
-  source: DataSource;
+  source: CongressSnapshot["source"];
   retrievedAt: string;
-  /** User-facing explanation shown when `source` is not `"live"`. @see DataSource. */
+  /** User-facing explanation shown when `source` is "preview". */
   notice?: string;
 };
 
@@ -139,27 +138,6 @@ async function fetchAllCommittees(apiKey: string, congress: number): Promise<Con
 }
 
 /**
- * Fetches every committee of a Congress with no fallback of any kind.
- *
- * Split out from {@link getCommitteeDirectory} for the same reason `fetchLiveComposition` is split out of
- * `getCongressComposition`: the scheduled sync must read live or not at all, or it would store its own copy — or the
- * placeholder committees — back under a live provenance.
- *
- * An empty result counts as a failure rather than an empty directory: "this Congress has no committees" is never a true
- * statement about a Congress, and anything built from it would assert one.
- *
- * @param apiKey - The server-only Congress.gov key.
- * @param congress - The Congress whose committees to read.
- * @returns Every parent committee, or `null` when the list could not be read.
- */
-export async function fetchLiveCommittees(apiKey: string, congress: number): Promise<CommitteeSummary[] | null> {
-  const raw: CongressApiCommittee[] | null = await fetchAllCommittees(apiKey, congress);
-  const committees: CommitteeSummary[] = buildCommitteeDirectory(raw ?? []);
-
-  return committees.length === 0 ? null : committees;
-}
-
-/**
  * Fetches every committee of a Congress, as a single alphabetical directory.
  *
  * The whole list is handed to the browser at once and every subsequent search or filter runs there instantly — the same
@@ -168,8 +146,8 @@ export async function fetchLiveCommittees(apiKey: string, congress: number): Pro
  * explains why the bill directory can't work this way.
  *
  * @param congress - The Congress whose committees to read. Defaults to the one currently seated.
- * @returns The directory, always labeled live, stored, or preview. A missing key or a failed request yields the last
- *   ingested list when one is on hand and the labeled placeholder committees otherwise; this never throws.
+ * @returns The directory, always labeled live or preview. A missing key or a failed request yields the labeled
+ *   placeholder committees rather than an empty page; this never throws.
  */
 export async function getCommitteeDirectory(
   congress: number = getCurrentCongress(),
@@ -178,31 +156,30 @@ export async function getCommitteeDirectory(
   const retrievedAt: string = new Date().toISOString();
 
   if (!apiKey) {
-    return (
-      (await getStoredCommitteeDirectory(congress)) ?? {
-        congress,
-        committees: previewCommitteeDirectory(),
-        source: "preview",
-        retrievedAt,
-        notice:
-          "These are illustrative placeholder committees, not the committees of any real Congress. Configure a " +
-          "server-only Congress.gov API key to browse the real ones.",
-      }
-    );
+    return {
+      congress,
+      committees: previewCommitteeDirectory(),
+      source: "preview",
+      retrievedAt,
+      notice:
+        "These are illustrative placeholder committees, not the committees of any real Congress. Configure a " +
+        "server-only Congress.gov API key to browse the real ones.",
+    };
   }
 
-  const committees: CommitteeSummary[] | null = await fetchLiveCommittees(apiKey, congress);
+  const raw: CongressApiCommittee[] | null = await fetchAllCommittees(apiKey, congress);
+  const committees: CommitteeSummary[] = buildCommitteeDirectory(raw ?? []);
 
-  if (!committees) {
-    return (
-      (await getStoredCommitteeDirectory(congress)) ?? {
-        congress,
-        committees: previewCommitteeDirectory(),
-        source: "preview",
-        retrievedAt,
-        notice: "Live committee records are temporarily unavailable, so placeholder committees are shown.",
-      }
-    );
+  // An empty result is treated as a failed fetch rather than rendered as an empty directory: "this Congress has no
+  // committees" is never a true statement about a Congress, and a page showing it would read as one.
+  if (committees.length === 0) {
+    return {
+      congress,
+      committees: previewCommitteeDirectory(),
+      source: "preview",
+      retrievedAt,
+      notice: "Live committee records are temporarily unavailable, so placeholder committees are shown.",
+    };
   }
 
   return { congress, committees, source: "live", retrievedAt };
