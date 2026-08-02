@@ -50,9 +50,14 @@
   background: var(--burgundy);
 }
 
+/* Centered within its own grid column rather than left-aligned in it. The wordmark and the search box are within ~35px
+   of each other in width, so centering the nav between them reads as a balanced three-part header; flush-left left the
+   five links clumped against the wordmark with ~400px of dead space before the search box. Below 900px the nav is
+   `justify-self: end`, which shrinks it to its content and makes this line moot rather than fighting it. */
 .primary-nav {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 25px;
   color: var(--ink-soft);
   font-size: 0.88rem;

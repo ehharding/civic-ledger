@@ -3,6 +3,22 @@
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
+        <entry key="Claude Code Launch Preview">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="Claude Code Launch Preview" />
+              <option name="relativePathToSchema" value="https://www.schemastore.org/claude-code-launch.json" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value=".claude/launch.json" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
         <entry key="GitHub Issue Template configuration">
           <value>
             <SchemaInfo>

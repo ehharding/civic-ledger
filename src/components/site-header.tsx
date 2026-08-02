@@ -23,20 +23,31 @@ type NavLink = {
  * for whoever gets there.
  */
 const NAV_LINKS: readonly NavLink[] = [
-  { label: "Bills", href: "/bills" as Route },
-  { label: "Members", href: "/members" as Route },
-  { label: "Committees", href: "/committees" as Route },
-  { label: "Learn", href: "/learn" as Route },
-  { label: "Methodology", href: "/about" as Route },
+  { label: "Bills", href: "/bills" },
+  { label: "Members", href: "/members" },
+  { label: "Committees", href: "/committees" },
+  { label: "Learn", href: "/learn" },
+  { label: "Methodology", href: "/about" },
 ];
+
+/**
+ * Where the header's search form submits.
+ *
+ * `basePath` is applied by `next/link` and the router, but not to a raw `action` attribute — and this control is a
+ * plain form on purpose, so it is outside that rewriting and has to carry the prefix itself. Without this the GitHub
+ * Pages demo's search box posts to `/bills` at the domain root and 404s. `NEXT_PUBLIC_BASE_PATH` is inlined at build
+ * time from the same value `basePath` gets. @see next.config.ts
+ */
+const SEARCH_ACTION: string = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/bills`;
 
 /**
  * Global site header: wordmark, primary navigation, and search.
  *
- * The search control is a real `<form>` with `action="/bills"` rather than a JavaScript handler, so it works on a plain
- * page load, from any route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads
- * as its initial query. It carries `role="search"` so it is a landmark in its own right.
+ * The search control is a real `<form>` rather than a JavaScript handler, so it works on a plain page load, from any
+ * route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads as its initial
+ * query. It carries `role="search"` so it is a landmark in its own right.
  * @see resolveBillDirectoryQuery
+ * @see SEARCH_ACTION for why the target is built rather than written literally.
  *
  * @returns The site header.
  */
@@ -62,7 +73,7 @@ export function SiteHeader(): JSX.Element {
         {/* biome-ignore lint/a11y/useSemanticElements: the suggested <search> element would have to wrap this form
             rather than replace it, and it is still mapped inconsistently by assistive technology; form[role="search"]
             is the spelling that produces the landmark everywhere. */}
-        <form className="header-search" action="/bills" role="search">
+        <form className="header-search" action={SEARCH_ACTION} role="search">
           <label className="sr-only" htmlFor="global-search">
             Search bills
           </label>

@@ -3,17 +3,11 @@
    with its overrides in one place than scattered across a dozen files. */
 
 @media (max-width: 900px) {
+  /* The header tightens before it drops anything. Closing the columns up here buys the three-part layout another ~36px
+     of life, which is why the search doesn't go until 860px rather than at this breakpoint. @see the header block
+     below. */
   .site-header__inner {
-    grid-template-columns: auto 1fr;
     gap: 18px;
-  }
-
-  .primary-nav {
-    justify-self: end;
-  }
-
-  .header-search {
-    display: none;
   }
 
   .hero-grid,
@@ -74,6 +68,38 @@
   }
 }
 
+/* Where the header stops being three things on one line and becomes two.
+ *
+ * The number is measured, not rounded to something tidy. The three parts need 156px of wordmark, 402px of nav, and a
+ * 190px search box, plus the two 18px gaps set above — 784px of content inside a container that is the viewport less
+ * 48px. That runs out at a 832px viewport. Dropping the search at 860 leaves ~28px of slack at the tightest point,
+ * which is the margin a label rename or a font fallback needs; pinning this to the exact 832 would put the nav one
+ * metric change away from wrapping, and a nav that wraps in a 20px-wide band is a bug nobody reproduces on purpose.
+ *
+ * The search is what drops, rather than the nav shedding a destination, because it is the only part of the header that
+ * exists somewhere else: /bills carries its own search field, and the "Bills" link is right there in the row. The cost
+ * of losing it here is one extra tap, not a capability — which is not true of any nav destination.
+ *
+ * That reasoning is also why nothing replaces it further down. Below 640px the header stacks and there is obviously
+ * room for a search row, but a control added there could only link to /bills, which the "Bills" link one row up
+ * already does. A second route to the same page is chrome, not a feature, and it would cost real height in a sticky
+ * header on the smallest screens. Shrinking the search box to survive to 768px was the other option considered and
+ * rejected: reaching iPad portrait needs the box down near 150px and the nav gap down to ~14px, which buys one device
+ * width in exchange for a cramped header and a third set of tuned numbers. */
+@media (max-width: 860px) {
+  .site-header__inner {
+    grid-template-columns: auto 1fr;
+  }
+
+  .primary-nav {
+    justify-self: end;
+  }
+
+  .header-search {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .site-header__inner,
   .page-shell,
@@ -108,7 +134,7 @@
     height: 27px;
   }
 
-  /* Overrides the `justify-self: end` set at 900px, which would otherwise shrink this row to its content and keep it
+  /* Overrides the `justify-self: end` set at 860px, which would otherwise shrink this row to its content and keep it
      pinned right even now that it has a line to itself. */
   .primary-nav {
     flex-wrap: wrap;

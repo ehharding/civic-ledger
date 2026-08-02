@@ -1,6 +1,6 @@
 /** Covers SiteHeader's wordmark link, primary nav destinations, and the search form's action/name attributes. */
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SiteHeader } from "@/components/site-header";
 
@@ -39,5 +39,28 @@ describe("SiteHeader", (): void => {
 
     expect(form).toHaveAttribute("action", "/bills");
     expect(screen.getByRole("searchbox", { name: "Search bills" })).toHaveAttribute("name", "q");
+  });
+
+  describe("under a basePath", (): void => {
+    afterEach((): void => {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    });
+
+    /*
+     * The GitHub Pages demo is served from /<repo>, not a domain root. Next rewrites `next/link` hrefs for that, but it
+     * has no way to rewrite a raw `action` attribute — and this form is deliberately a plain form so it works with no
+     * JavaScript, which puts it outside the rewriting. A literal action="/bills" therefore 404s on the demo while
+     * looking correct everywhere else, which is exactly the kind of break nothing local would catch.
+     */
+    it("prefixes the search form's action so the static demo doesn't post to the domain root", async (): Promise<void> => {
+      vi.stubEnv("NEXT_PUBLIC_BASE_PATH", "/civic-ledger");
+      vi.resetModules();
+      const { SiteHeader: Prefixed } = await import("@/components/site-header");
+
+      const { container } = render(<Prefixed />);
+
+      expect(container.querySelector("form.header-search")).toHaveAttribute("action", "/civic-ledger/bills");
+    });
   });
 });
