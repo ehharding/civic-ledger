@@ -13,6 +13,10 @@ is the checklist.
   or a bill. Clarity and provenance are the product; persuasion is not.
 - Do not infer data the API does not publish. A plausible-looking fabrication is worse here than an absence, because a
   reader cannot tell them apart.
+- Never label a stored record `live`. The ingested copy is real data read at a stated earlier time, and it says so —
+  see [The Stored Copy Is a Copy](docs/data-policy.md#the-stored-copy-is-a-copy).
+- Keep the database optional. Every stored read degrades to "nothing on file" when `DATABASE_URL` is unset, and nothing
+  may import a connection that throws at module load.
 
 ## Before Opening a Pull Request
 
@@ -31,6 +35,13 @@ fixture or unit test for the upstream shape it supports.
 and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data, test
 infrastructure, and declarative files are excluded outright — the preview fixtures, the shared helpers in `src/test/`,
 and the Drizzle schema.
+
+**The database layer is tested without a database.** `src/test/proxy-database.ts` builds a real Drizzle handle over
+`drizzle-orm/pg-proxy` — a first-class driver that hands finished SQL and parameters to a callback instead of a socket —
+so `src/lib/ingest/store.test.ts` asserts the statements actually generated. That is worth more than mocking Drizzle's
+fluent interface would be: a mock keeps returning what it was told long after the query it stands for has stopped being
+valid SQL, which is the regression a store's tests exist to catch. It also caught a real one — an untyped `max()` whose
+return type was true only on the driver that happened to parse timestamps.
 
 Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
 was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether

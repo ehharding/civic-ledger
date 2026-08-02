@@ -44,6 +44,7 @@ import {
   type LegislativeBill,
 } from "@/lib/congress/types";
 import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
+import { getStoredBill, getStoredBillSnapshot } from "@/lib/ingest/stored";
 
 /**
  * Everything this app reads about *bills*: list snapshots, pagination, single-bill lookup, the CRS summary and official
@@ -65,6 +66,9 @@ const SEARCH_PAGE_LIMIT: number = MAX_API_PAGE_SIZE;
 
 /** Max bills returned from a single search, across every Congress swept together. */
 const MAX_SEARCH_RESULTS: number = 60;
+
+/** Why a single bill is being served from the ingested copy. @see DataSource for what the label promises. */
+const STORED_NOTICE: string = "Congress.gov could not be reached, so a record this app stored earlier is shown.";
 
 /**
  * Locates a matching fixture in `previewBills` by natural bill identifier.
@@ -131,9 +135,11 @@ async function fetchBillsPage(input: {
  * and the `/bills/[congress]` route, so both share one caching policy and one fallback story rather than drifting
  * apart.
  *
- * Falls back to the labeled preview fixtures whenever live data isn't available — no key configured, or the upstream
- * request failed or returned nothing. The preview fallback is itself scoped to the requested Congress, so a Congress
- * with no fixture data honestly reports an empty, labeled result rather than borrowing bills from elsewhere.
+ * Falls back in a fixed order whenever live data isn't available — no key configured, or the upstream request failed or
+ * returned nothing: the ingested copy first, then the labeled preview fixtures. Real records this app read an hour ago
+ * are a better answer than fiction, and a worse one than the record itself, which is exactly the ordering {@link
+ * DataSource} encodes. The preview fallback is itself scoped to the requested Congress, so a Congress with no fixture
+ * data honestly reports an empty, labeled result rather than borrowing bills from elsewhere.
  *
  * @param congress - The Congress to read (e.g., `119`).
  * @returns A snapshot that always states its own provenance. Read `source` rather than assuming success; this never
@@ -145,15 +151,17 @@ export async function getCongressSnapshotForCongress(congress: number): Promise<
   const previewForCongress: LegislativeBill[] = previewBillsForCongress(congress);
 
   if (!apiKey) {
-    return {
-      bills: previewForCongress,
-      source: "preview",
-      retrievedAt,
-      notice:
-        previewForCongress.length > 0
-          ? "Preview records are shown until a server-only Congress.gov API key is configured."
-          : `No preview records are available for the ${formatOrdinal(congress)} Congress. Configure a server-only Congress.gov API key to browse its live records.`,
-    };
+    return (
+      (await getStoredBillSnapshot(congress)) ?? {
+        bills: previewForCongress,
+        source: "preview",
+        retrievedAt,
+        notice:
+          previewForCongress.length > 0
+            ? "Preview records are shown until a server-only Congress.gov API key is configured."
+            : `No preview records are available for the ${formatOrdinal(congress)} Congress. Configure a server-only Congress.gov API key to browse its live records.`,
+      }
+    );
   }
 
   const bills: LegislativeBill[] | null = await fetchBillsPage({
@@ -164,12 +172,14 @@ export async function getCongressSnapshotForCongress(congress: number): Promise<
   });
 
   if (!bills || bills.length === 0) {
-    return {
-      bills: previewForCongress,
-      source: "preview",
-      retrievedAt,
-      notice: "Live records are temporarily unavailable, so preview records are shown.",
-    };
+    return (
+      (await getStoredBillSnapshot(congress)) ?? {
+        bills: previewForCongress,
+        source: "preview",
+        retrievedAt,
+        notice: "Live records are temporarily unavailable, so preview records are shown.",
+      }
+    );
   }
 
   return { bills, source: "live", retrievedAt };
@@ -231,6 +241,9 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
   const retrievedAt: string = new Date().toISOString();
 
   if (!apiKey) {
+    const stored: { bill: LegislativeBill; retrievedAt: string } | null = await getStoredBill(input);
+    if (stored) return { bill: stored.bill, source: "stored", retrievedAt: stored.retrievedAt, notice: STORED_NOTICE };
+
     return { bill: findPreviewBill(input), source: "preview", retrievedAt };
   }
 
@@ -254,8 +267,12 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
     return { bill: bill ?? undefined, source: "live", retrievedAt };
   }
 
-  // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
-  // preview data as a last resort.
+  // A transient failure shouldn't be indistinguishable from "not found". The stored copy is tried first because it can
+  // answer for *this* bill specifically, where the snapshot search below can only find it if it happens to be on the
+  // most recent page.
+  const stored: { bill: LegislativeBill; retrievedAt: string } | null = await getStoredBill(input);
+  if (stored) return { bill: stored.bill, source: "stored", retrievedAt: stored.retrievedAt, notice: STORED_NOTICE };
+
   const snapshot: CongressSnapshot = await getCongressSnapshot();
   const key: string = billIdentityKey(input);
   const bill: LegislativeBill | undefined =

@@ -8,7 +8,7 @@ import {
   compareMembersByName,
   type MemberDirectoryEntry,
 } from "@/lib/congress/members";
-import type { CongressSnapshot } from "@/lib/congress/types";
+import type { DataSource } from "@/lib/congress/types";
 
 /**
  * The roster behind the browsable member directory (`/members`).
@@ -30,9 +30,9 @@ export type MemberDirectoryResult = {
   congress: number;
   /** Every listable member, alphabetically by last-name-first name. */
   members: MemberDirectoryEntry[];
-  source: CongressSnapshot["source"];
+  source: DataSource;
   retrievedAt: string;
-  /** User-facing explanation shown when `source` is "preview". */
+  /** User-facing explanation shown when `source` is not `"live"`. @see DataSource. */
   notice?: string;
 };
 
@@ -77,9 +77,14 @@ export function buildMemberDirectory(composition: CongressComposition): MemberDi
  * the opposite of the bill directory's approach, and deliberately so: bills number in the hundreds of thousands and
  * have no upstream search endpoint, while members fit comfortably in one payload.
  *
+ * The stored fallback is inherited rather than implemented: this reads the composition, and the composition already
+ * tries live, then stored, then placeholders. So a directory built from an ingested roster reports `"stored"` because
+ * that is what it was built from — the same reason the two views cannot disagree about who is serving applies equally
+ * to where the answer came from.
+ *
  * @param congress - The Congress whose roster to read. Defaults to the one currently seated.
- * @returns The directory, always labeled live or preview. A missing key or a failed request yields the labeled
- *   placeholder members rather than an empty page; this never throws.
+ * @returns The directory, always labeled live, stored, or preview. A missing key with nothing on file yields the
+ *   labeled placeholder members rather than an empty page; this never throws.
  */
 export async function getMemberDirectory(congress: number = getCurrentCongress()): Promise<MemberDirectoryResult> {
   const composition: CongressComposition = await getCongressComposition(congress);
@@ -99,7 +104,8 @@ export async function getMemberDirectory(congress: number = getCurrentCongress()
   return {
     congress: composition.congress,
     members: buildMemberDirectory(composition),
-    source: "live",
+    source: composition.source,
     retrievedAt: composition.retrievedAt,
+    notice: composition.notice,
   };
 }

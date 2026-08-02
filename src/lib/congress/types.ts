@@ -186,14 +186,34 @@ export type BillTextVersion = {
 };
 
 /**
- * Result of a bill-list fetch: the bills themselves, plus whether they're live or preview data and when they were
- * retrieved.
+ * Where a rendered record came from — the app's central provenance claim, in one type.
+ *
+ * Three values rather than two, and the middle one is the interesting one:
+ *
+ * - **`live`** — read from Congress.gov on this request (or from Next's five-minute cache of it).
+ * - **`stored`** — read from this app's own ingested copy, because Congress.gov could not be reached. These are *real*
+ *   congressional records that this app read at a stated earlier time. That is a weaker claim than "current" and a much
+ *   stronger one than the fiction below it, which is exactly why it is its own value instead of being folded into
+ *   either neighbor.
+ * - **`preview`** — labeled fictional fixtures, shown when there is neither a key nor a stored copy.
+ *
+ * Adding `stored` in the middle is deliberate ordering: every fallback in the adapter tries these in exactly this
+ * sequence, so "the best available honest answer" is a property of the type rather than a convention each call site has
+ * to remember.
+ *
+ * @see docs/data-policy.md, "The Stored Copy Is a Copy".
  */
+export type DataSource = "live" | "stored" | "preview";
+
+/** Result of a bill-list fetch: the bills themselves, plus where they came from and when they were retrieved. */
 export type CongressSnapshot = {
   bills: LegislativeBill[];
-  source: "live" | "preview";
+  source: DataSource;
   retrievedAt: string;
-  /** User-facing explanation shown when `source` is "preview" (e.g., no API key, or a transient upstream failure). */
+  /**
+   * User-facing explanation shown when `source` is not `"live"` — why preview data is standing in, or why a stored copy
+   * is.
+   */
   notice?: string;
 };
 

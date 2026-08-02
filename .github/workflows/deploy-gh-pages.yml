@@ -34,11 +34,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # /api/bills can't be statically exported (it reads the request URL for pagination), and /api/health is
-      # force-dynamic so its timestamp reflects real request time on the primary deployment — neither has a purpose in a
-      # preview-only demo anyway.
+      # /api/bills can't be statically exported (it reads the request URL for pagination), /api/health is force-dynamic
+      # so its timestamp reflects real request time on the primary deployment, and /api/ingest reads a request header
+      # and writes to a database this build has neither of — none has a purpose in a preview-only demo anyway.
       - name: Remove Routes Incompatible With Static Export
-        run: rm -rf src/app/api/bills src/app/api/health
+        run: rm -rf src/app/api/bills src/app/api/health src/app/api/ingest
 
       - name: Build Static Export
         run: pnpm exec next build

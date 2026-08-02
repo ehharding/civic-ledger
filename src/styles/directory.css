@@ -36,6 +36,17 @@
   color: var(--amber-deep);
 }
 
+/* Stored records sit between the other two, and are tinted to read that way: navy is informational rather than the
+   green that means "current" or the amber that warns the content is fictional. These are real congressional records
+   read at a stated earlier time, so neither of the existing two accents tells the truth about them. */
+.source-notice--stored {
+  border-color: var(--navy);
+}
+
+.source-notice--stored svg {
+  color: var(--navy-deep);
+}
+
 .congress-switcher {
   display: flex;
   flex-wrap: wrap;
