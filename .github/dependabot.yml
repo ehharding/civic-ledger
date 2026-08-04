@@ -7,13 +7,6 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
-    ignore:
-      # TS7 is the native (Go-based) compiler and doesn't ship the JS API Next.js's build-time type-check relies on yet
-      # (see CONTRIBUTING.md, "TypeScript Stays on the 6.x (Classic) Line", which carries the one-command check that
-      # settles whether this still holds — the upstream issue was auto-closed for a missing repro, not fixed). Lift this
-      # alongside the `typescript` pin in package.json, never on its own.
-      - dependency-name: "typescript"
-        versions: [">=7.0.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

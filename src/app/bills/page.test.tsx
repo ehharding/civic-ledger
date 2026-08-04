@@ -23,6 +23,9 @@ vi.mock("next/navigation", async (importOriginal): Promise<typeof import("next/n
       back: noop,
       forward: noop,
       refresh: noop,
+      // Next reads this only as a React `key` to drop segment state across fresh navigations. Nothing here navigates,
+      // so a constant is the honest stand-in: it says "same segment throughout", which is what actually happens.
+      bfcacheId: "test-bfcache-id",
     }),
   };
 });

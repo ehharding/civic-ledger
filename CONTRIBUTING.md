@@ -95,31 +95,6 @@ default — a few current positions, so they don't have to be relitigated per pu
   already handles a subtle UTC rollback bug in Congress.gov's date-only strings correctly.
 - **No Storybook yet.** Add it when the component inventory justifies it.
 
-### TypeScript Stays on the 6.x (Classic) Line
-
-TypeScript 7 ships a native, Go-based compiler under the standard `typescript` package name, but it does not yet expose
-the JS compiler API that Next.js's build-time type-check calls into. Installing it as `typescript` currently makes
-`next build` misreport TypeScript as missing and crash.
-
-`typescript` is pinned to `^6.0.3` — the last classic release — and `.github/dependabot.yml` is configured to ignore
-`>=7.0.0` bumps for the same reason. Revisit both together.
-
-**The gate is a file, not a bug report.** Next's `verify-typescript-setup` resolves `typescript/lib/typescript.js` to
-decide whether TypeScript is installed at all. The 6.x tarball ships that entry point and the 7.x tarball does not,
-which is the whole failure — so the check that actually settles this takes one command, and does not depend on anyone
-triaging an issue:
-
-```bash
-npm pack typescript@latest --dry-run --json | grep 'lib/typescript.js'
-```
-
-Empty output means the pin still stands. The pin lifts when that prints a path, or when Next.js stops resolving it —
-whichever happens first.
-
-[next.js#95400](https://github.com/vercel/next.js/issues/95400) is the upstream report and is worth reading for the
-detail, but note that it was **auto-closed for a missing reproduction link, not fixed**. Its closed state is not
-evidence the incompatibility is resolved; the command above is.
-
 ## Code Conventions
 
 - Biome is the formatter and linter; `lineWidth` is 120 and applies to prose in Markdown too.
