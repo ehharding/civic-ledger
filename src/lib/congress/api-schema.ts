@@ -289,6 +289,101 @@ export const congressApiCommitteeDetailResponseSchema = z.looseObject({
   committee: congressApiCommitteeDetailSchema.optional().catch(undefined),
 });
 
+/**
+ * The record count every paginated Congress.gov collection reports.
+ *
+ * Read rather than inferred from the returned array's length, which only ever describes the page in hand. The committee
+ * sub-resource endpoints below are the first place this app pages *within* a record's own collection, so the total is
+ * what tells the page how many pages there are.
+ */
+const congressApiPaginationSchema = z.looseObject({ count: optionalNumber });
+
+/**
+ * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/bills`.
+ *
+ * Deliberately *not* {@link congressApiBillSchema}, which the member endpoints' legislation lists reuse. That schema
+ * describes a bill; this describes a *relationship between a bill and a committee*, and the two differ in both
+ * directions — there is no `title`, `sponsors`, `latestAction`, or `policyArea` here, and `relationshipType` appears on
+ * nothing else. Sharing a schema across the two would have meant a type promising a title that this endpoint never
+ * sends.
+ */
+export const congressApiCommitteeBillSchema = z.looseObject({
+  congress: optionalNumber,
+  type: optionalString,
+  number: z.union([z.string(), z.number()]).optional().catch(undefined),
+  /** e.g. `"Referred To"`, `"Reported By"`. */
+  relationshipType: optionalString,
+  actionDate: optionalString,
+  updateDate: optionalString,
+});
+
+/**
+ * Shape of `GET /v3/committee/{chamber}/{systemCode}/bills`.
+ *
+ * Note the hyphen: this endpoint nests its collection under `committee-bills`, which is why the key is quoted here and
+ * read through a bracket access rather than a dotted one. Its sibling endpoints (`/reports`, `/nominations`) return
+ * their arrays at the top level instead, so the three cannot share a response schema even though they share a purpose.
+ */
+export const congressApiCommitteeBillsResponseSchema = z.looseObject({
+  "committee-bills": z
+    .looseObject({
+      bills: z.array(congressApiCommitteeBillSchema).optional().catch(undefined),
+      count: optionalNumber,
+    })
+    .optional()
+    .catch(undefined),
+  pagination: congressApiPaginationSchema.optional().catch(undefined),
+});
+
+/**
+ * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/reports`.
+ *
+ * `updateDate` arrives in this endpoint's own spelling — `"2015-03-20 00:05:31+00:00"`, a space where every other
+ * endpoint in this API sends a `T`. Typed as a plain string and normalized in the mapper rather than parsed here, on
+ * the same rule the rest of this file follows: a schema describes what arrives, and deciding what a value *means* is
+ * the mappers' job.
+ */
+export const congressApiCommitteeReportSchema = z.looseObject({
+  citation: optionalString,
+  congress: optionalNumber,
+  chamber: optionalString,
+  /** The report-series code, e.g. `"HRPT"` — not a bill type. */
+  type: optionalString,
+  number: optionalNumber,
+  part: optionalNumber,
+  updateDate: optionalString,
+});
+
+/** Shape of `GET /v3/committee/{chamber}/{systemCode}/reports`. */
+export const congressApiCommitteeReportsResponseSchema = z.looseObject({
+  reports: z.array(congressApiCommitteeReportSchema).optional().catch(undefined),
+  pagination: congressApiPaginationSchema.optional().catch(undefined),
+});
+
+/**
+ * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/nominations`.
+ *
+ * The richest of the three sub-resources: `description` carries the full nomination text ("… of Ohio, to be United
+ * States Marshal for …") inline, so — unlike the bills list — a nomination row needs no second request to say what it
+ * is about.
+ */
+export const congressApiCommitteeNominationSchema = z.looseObject({
+  citation: optionalString,
+  congress: optionalNumber,
+  description: optionalString,
+  number: optionalNumber,
+  partNumber: optionalString,
+  receivedDate: optionalString,
+  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  updateDate: optionalString,
+});
+
+/** Shape of `GET /v3/committee/{chamber}/{systemCode}/nominations`. */
+export const congressApiCommitteeNominationsResponseSchema = z.looseObject({
+  nominations: z.array(congressApiCommitteeNominationSchema).optional().catch(undefined),
+  pagination: congressApiPaginationSchema.optional().catch(undefined),
+});
+
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;
 export type CongressApiBill = z.infer<typeof congressApiBillSchema>;
 export type CongressApiListResponse = z.infer<typeof congressApiListResponseSchema>;
@@ -313,3 +408,9 @@ export type CongressApiCommitteeListResponse = z.infer<typeof congressApiCommitt
 export type CongressApiCommitteeHistory = z.infer<typeof congressApiCommitteeHistorySchema>;
 export type CongressApiCommitteeDetail = z.infer<typeof congressApiCommitteeDetailSchema>;
 export type CongressApiCommitteeDetailResponse = z.infer<typeof congressApiCommitteeDetailResponseSchema>;
+export type CongressApiCommitteeBill = z.infer<typeof congressApiCommitteeBillSchema>;
+export type CongressApiCommitteeBillsResponse = z.infer<typeof congressApiCommitteeBillsResponseSchema>;
+export type CongressApiCommitteeReport = z.infer<typeof congressApiCommitteeReportSchema>;
+export type CongressApiCommitteeReportsResponse = z.infer<typeof congressApiCommitteeReportsResponseSchema>;
+export type CongressApiCommitteeNomination = z.infer<typeof congressApiCommitteeNominationSchema>;
+export type CongressApiCommitteeNominationsResponse = z.infer<typeof congressApiCommitteeNominationsResponseSchema>;

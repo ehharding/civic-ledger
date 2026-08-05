@@ -4,6 +4,11 @@ import {
   parseCommitteeDirectoryQuery,
 } from "@/lib/congress/committee-filter";
 import {
+  type CommitteeRecordsQuery,
+  DEFAULT_COMMITTEE_RECORDS_QUERY,
+  parseCommitteeRecordsQuery,
+} from "@/lib/congress/committee-records";
+import {
   DEFAULT_MEMBER_DIRECTORY_QUERY,
   type MemberDirectoryQuery,
   parseMemberDirectoryQuery,
@@ -129,4 +134,28 @@ export async function resolveCommitteeDirectoryQuery(
   if (!canReadRequest()) return DEFAULT_COMMITTEE_DIRECTORY_QUERY;
 
   return parseCommitteeDirectoryQuery(toSearchParams(await searchParams));
+}
+
+/**
+ * Resolves an individual committee page's record view from the request.
+ *
+ * The first deep link in this app that is not a directory's. The three above narrow a *list of records* down to the
+ * ones a reader wants; this one selects among the collections hanging off a *single* record — which bills were referred
+ * to this committee, which reports it published — and pages within them. What makes it the same kind of thing, and
+ * worth resolving in the same module, is the property that mattered about the others: a committee page showing the
+ * third page of its reports is a place, so it needs an address that brings someone back to it.
+ *
+ * The static-export behavior is deliberately the same as the directories': with no server at request time the page
+ * renders its default view, which for a committee is the first page of its referred bills.
+ *
+ * @param searchParams - The route's `searchParams` promise, passed straight through from the page component.
+ * @returns Which collection to show and how far into it. Not yet clamped to a page the collection actually has — that
+ *   needs the committee's own counts, which only exist once its record has resolved. @see clampCommitteeRecordsPage.
+ */
+export async function resolveCommitteeRecordsQuery(
+  searchParams: Promise<RouteSearchParams>,
+): Promise<CommitteeRecordsQuery> {
+  if (!canReadRequest()) return DEFAULT_COMMITTEE_RECORDS_QUERY;
+
+  return parseCommitteeRecordsQuery(toSearchParams(await searchParams));
 }

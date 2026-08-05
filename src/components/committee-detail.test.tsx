@@ -15,7 +15,19 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { CommitteeDetail } from "@/components/committee-detail";
+import type { CommitteeRecordsResult } from "@/lib/congress/committee-records";
 import type { CommitteeProfile } from "@/lib/congress/committees";
+
+/**
+ * An empty, successfully-fetched page of referrals — the records shape most of these cases don't care about.
+ *
+ * `total: undefined` rather than `0`, so the tabs fall back to the *committee's* own counts and these cases test what
+ * they mean to: that this component passes the profile's figures through. @see countFor, which prefers a fetched count
+ * over the profile's for whichever collection is on screen.
+ */
+function noRecords(): CommitteeRecordsResult {
+  return { records: { kind: "bills", items: [] }, page: 1, pageCount: 1, total: undefined, unavailable: false };
+}
 
 function profile(overrides: Partial<CommitteeProfile> = {}): CommitteeProfile {
   return {
@@ -40,8 +52,17 @@ function profile(overrides: Partial<CommitteeProfile> = {}): CommitteeProfile {
   };
 }
 
-function renderCommittee(overrides: Partial<CommitteeProfile> = {}, props: { source?: "live" | "preview" } = {}) {
-  return render(<CommitteeDetail profile={profile(overrides)} source={props.source ?? "live"} />);
+function renderCommittee(
+  overrides: Partial<CommitteeProfile> = {},
+  props: { source?: "live" | "preview"; records?: CommitteeRecordsResult } = {},
+) {
+  return render(
+    <CommitteeDetail
+      profile={profile(overrides)}
+      records={props.records ?? noRecords()}
+      source={props.source ?? "live"}
+    />,
+  );
 }
 
 describe("CommitteeDetail", (): void => {
@@ -111,35 +132,39 @@ describe("CommitteeDetail", (): void => {
     });
   });
 
-  describe("record counts", (): void => {
-    it("prints the counts the record carries, with thousands separated", (): void => {
+  describe("record collections", (): void => {
+    it("prints each collection's count, with thousands separated", (): void => {
       renderCommittee();
 
-      const stats: HTMLElement = screen.getByRole("region", { name: "What Has Come Through Here" });
-      expect(within(stats).getByText("Bills Referred")).toBeInTheDocument();
-      expect(within(stats).getByText("1,284")).toBeInTheDocument();
-      expect(within(stats).getByText("96")).toBeInTheDocument();
+      const records: HTMLElement = screen.getByRole("region", { name: "What Has Come Through Here" });
+      expect(within(records).getByText("Bills Referred")).toBeInTheDocument();
+      expect(within(records).getByText("1,284")).toBeInTheDocument();
+      expect(within(records).getByText("96")).toBeInTheDocument();
     });
 
-    it("omits an absent count rather than printing it as zero", (): void => {
+    it("says a count was not reported rather than printing it as zero", (): void => {
       // "Congress.gov didn't say" and "none" are different claims, and a zero would make the first read as the second.
       renderCommittee();
 
-      expect(screen.queryByText("Nominations Referred")).not.toBeInTheDocument();
+      const records: HTMLElement = screen.getByRole("region", { name: "What Has Come Through Here" });
+      expect(within(records).getByText("Nominations Referred")).toBeInTheDocument();
+      expect(within(records).getByText("Not reported")).toBeInTheDocument();
     });
 
     it("shows a real zero when the record actually reports one", (): void => {
       renderCommittee({ nominationCount: 0 });
 
-      const stats: HTMLElement = screen.getByRole("region", { name: "What Has Come Through Here" });
-      expect(within(stats).getByText("Nominations Referred")).toBeInTheDocument();
-      expect(within(stats).getByText("0")).toBeInTheDocument();
+      const records: HTMLElement = screen.getByRole("region", { name: "What Has Come Through Here" });
+      expect(within(records).getByText("0")).toBeInTheDocument();
+      expect(within(records).queryByText("Not reported")).not.toBeInTheDocument();
     });
 
-    it("drops the whole section when the record carries no counts at all", (): void => {
+    it("keeps the section even when the record carries no counts at all", (): void => {
+      // The counts are now headings over records the page can still fetch, so their absence no longer means there is
+      // nothing to show.
       renderCommittee({ billCount: undefined, reportCount: undefined, nominationCount: undefined });
 
-      expect(screen.queryByRole("region", { name: "What Has Come Through Here" })).not.toBeInTheDocument();
+      expect(screen.getByRole("region", { name: "What Has Come Through Here" })).toBeInTheDocument();
     });
 
     it("says a referral is not a verdict", (): void => {

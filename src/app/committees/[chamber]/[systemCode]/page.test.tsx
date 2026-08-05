@@ -128,6 +128,70 @@ describe("CommitteePage", (): void => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(firstCommittee.name);
   });
 
+  it("opens on the first page of referred bills for a bare URL", async (): Promise<void> => {
+    render(
+      await CommitteePage({
+        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+      }),
+    );
+
+    expect(screen.getByRole("link", { name: /Bills Referred/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("opens the collection its query param names", async (): Promise<void> => {
+    // The whole point of the param: a committee page showing its reports is a place, so it has an address that brings
+    // someone back to it.
+    render(
+      await CommitteePage({
+        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        searchParams: Promise.resolve({ records: "reports" }),
+      }),
+    );
+
+    expect(screen.getByRole("link", { name: /Reports Published/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText(/PREVIEW Rept\. 119-4/)).toBeInTheDocument();
+  });
+
+  it("holds a page past the end of a collection inside it", async (): Promise<void> => {
+    // A truncated or year-old shared link should land on a readable page rather than an empty one.
+    render(
+      await CommitteePage({
+        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        searchParams: Promise.resolve({ records: "reports", page: "900" }),
+      }),
+    );
+
+    expect(screen.getAllByText(/PREVIEW Rept\./).length).toBeGreaterThan(0);
+  });
+
+  it("degrades a stale collection param to the default view rather than failing", async (): Promise<void> => {
+    render(
+      await CommitteePage({
+        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        searchParams: Promise.resolve({ records: "roll-calls" }),
+      }),
+    );
+
+    expect(screen.getByRole("link", { name: /Bills Referred/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("reads the nominations count when that is the collection asked for", async (): Promise<void> => {
+    // The Senate placeholder is the only one with nominations, so this is also the case that proves the route reads a
+    // different count per collection rather than always the bill one.
+    const senate: CommitteeProfile = previewCommitteeProfiles.find(
+      (profile: CommitteeProfile): boolean => profile.nominationCount !== undefined,
+    ) as CommitteeProfile;
+
+    render(
+      await CommitteePage({
+        params: Promise.resolve({ chamber: senate.chamber, systemCode: senate.systemCode }),
+        searchParams: Promise.resolve({ records: "nominations" }),
+      }),
+    );
+
+    expect(screen.getByText(/PREVIEW PN0001/)).toBeInTheDocument();
+  });
+
   it("404s when a real code is paired with the wrong chamber", async (): Promise<void> => {
     const otherChamber: string = firstCommittee.chamber === "house" ? "senate" : "house";
 

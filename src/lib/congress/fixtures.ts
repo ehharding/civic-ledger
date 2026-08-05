@@ -1,4 +1,12 @@
 import {
+  type CommitteeBillReferral,
+  type CommitteeNomination,
+  type CommitteeRecordsQuery,
+  type CommitteeRecordsResult,
+  type CommitteeReport,
+  pageOfCommitteeRecords,
+} from "@/lib/congress/committee-records";
+import {
   type CommitteeProfile,
   type CommitteeSummary,
   compareCommitteesByName,
@@ -16,7 +24,7 @@ import {
   type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members";
-import { compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
+import { billIdentityKey, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Clearly labeled fixture records, so the application renders without an API key.
@@ -508,8 +516,11 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
       { systemCode: "preview-01a", name: "Preview Subcommittee on Bridges" },
       { systemCode: "preview-01b", name: "Preview Subcommittee on Water Systems" },
     ],
-    billCount: 128,
-    reportCount: 14,
+    // Every count here is the length of this committee's entry in `PREVIEW_COMMITTEE_RECORDS` rather than a rounder,
+    // more impressive-looking figure. The counts are printed as headings directly above the records they count, so a
+    // placeholder saying "128" over a list of five would be a fixture contradicting itself on screen.
+    billCount: 5,
+    reportCount: 3,
   },
   {
     systemCode: "preview-02",
@@ -527,9 +538,9 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
       },
     ],
     subcommittees: [],
-    billCount: 61,
-    reportCount: 9,
-    nominationCount: 4,
+    billCount: 3,
+    reportCount: 2,
+    nominationCount: 3,
   },
   {
     systemCode: "preview-03",
@@ -541,7 +552,7 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
     isCurrent: true,
     history: [{ name: "Preview Select Committee on Civic Data", startDate: "2023-01-03T00:00:00Z" }],
     subcommittees: [],
-    billCount: 7,
+    billCount: 2,
   },
   {
     systemCode: "preview-04",
@@ -553,7 +564,7 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
     isCurrent: true,
     history: [{ name: "Preview Joint Committee on Plain Language", startDate: "1991-01-03T00:00:00Z" }],
     subcommittees: [],
-    reportCount: 22,
+    reportCount: 4,
   },
   {
     systemCode: "preview-05",
@@ -572,9 +583,228 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
       },
     ],
     subcommittees: [],
-    reportCount: 3,
+    reportCount: 2,
   },
 ];
+
+/**
+ * Placeholder record collections, so a committee page's bills, reports, and nominations render without an API key.
+ *
+ * Keyed by the same system codes {@link previewCommitteeProfiles} uses, and sized to match each profile's declared
+ * counts exactly — those counts are printed as headings directly above these records, so a set that disagreed with its
+ * own count would be a fixture contradicting itself on screen.
+ *
+ * The referrals reuse {@link previewBills} rather than inventing measures of their own. That is the same rule the
+ * preview member legislation follows, and it buys the same thing: a placeholder committee's bill list links to pages
+ * that exist in preview mode, so following one is a working journey rather than a 404 that makes the fixtures look
+ * broken. One referral per committee deliberately carries **no** bill record, which is what makes the
+ * title-lookup-failed row reachable without a key.
+ *
+ * The reports and nominations are fictional in the strong sense: no real report citation or nomination number appears
+ * here. `PREVIEW` where a chamber's letter would go is what keeps `"PREVIEW Rept. 119-4"` from being mistaken for a
+ * citation anyone could look up.
+ */
+const PREVIEW_COMMITTEE_RECORDS: Record<string, CommitteeRecordSets> = {
+  "preview-01": {
+    bills: [
+      previewReferral("119-HR-284", "Referred To", "2026-07-14T00:00:00Z"),
+      previewReferral("119-HJRES-66", "Referred To", "2026-07-11T00:00:00Z"),
+      previewReferral("118-HR-1219", "Reported By", "2024-04-02T00:00:00Z"),
+      previewReferral("117-HR-5822", "Reported By", "2022-06-08T00:00:00Z"),
+      // No matching preview bill, so this row exercises the "the title lookup found nothing" state.
+      { congress: 119, type: "HR", number: "9042", relationship: "Referred To", actionDate: "2026-05-19T00:00:00Z" },
+    ],
+    reports: [
+      {
+        citation: "PREVIEW Rept. 119-4",
+        congress: 119,
+        type: "PREVIEW",
+        number: 4,
+        updateDate: "2026-06-02T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 118-77, Part 1",
+        congress: 118,
+        type: "PREVIEW",
+        number: 77,
+        part: 1,
+        updateDate: "2024-04-30T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 117-12",
+        congress: 117,
+        type: "PREVIEW",
+        number: 12,
+        updateDate: "2022-05-14T00:00:00Z",
+      },
+    ],
+    nominations: [],
+  },
+  "preview-02": {
+    bills: [
+      previewReferral("119-S-917", "Reported By", "2026-07-13T00:00:00Z"),
+      previewReferral("119-S-842", "Referred To", "2026-06-20T00:00:00Z"),
+      previewReferral("116-S-3084", "Referred To", "2020-01-08T00:00:00Z"),
+    ],
+    reports: [
+      {
+        citation: "PREVIEW Rept. 119-31",
+        congress: 119,
+        type: "PREVIEW",
+        number: 31,
+        updateDate: "2026-05-05T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 118-9",
+        congress: 118,
+        type: "PREVIEW",
+        number: 9,
+        updateDate: "2024-02-19T00:00:00Z",
+      },
+    ],
+    nominations: [
+      {
+        citation: "PREVIEW PN0001",
+        congress: 119,
+        description:
+          "A placeholder nominee, of a placeholder jurisdiction, to be a placeholder officer of the United States for a term of four years.",
+        receivedDate: "2026-06-04",
+        latestAction: {
+          date: "2026-06-04",
+          text: "Received in the Senate and referred to the Preview Committee on Records and Archives.",
+        },
+      },
+      {
+        citation: "PREVIEW PN0002",
+        congress: 119,
+        description:
+          "A second placeholder nominee, of a placeholder jurisdiction, to be a placeholder deputy officer of the United States.",
+        receivedDate: "2026-04-21",
+        latestAction: { date: "2026-05-30", text: "Placeholder committee action reported to the Senate." },
+      },
+      {
+        citation: "PREVIEW PN0003",
+        congress: 118,
+        description: "A third placeholder nominee, of a placeholder jurisdiction, to be a placeholder commissioner.",
+        receivedDate: "2024-09-02",
+      },
+    ],
+  },
+  "preview-03": {
+    bills: [
+      previewReferral("119-HR-284", "Referred To", "2026-07-15T00:00:00Z"),
+      previewReferral("118-HR-1219", "Referred To", "2024-03-11T00:00:00Z"),
+    ],
+    reports: [],
+    nominations: [],
+  },
+  "preview-04": {
+    bills: [],
+    reports: [
+      {
+        citation: "PREVIEW Rept. 119-2",
+        congress: 119,
+        type: "PREVIEW",
+        number: 2,
+        updateDate: "2026-03-17T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 118-40",
+        congress: 118,
+        type: "PREVIEW",
+        number: 40,
+        updateDate: "2024-07-22T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 117-88",
+        congress: 117,
+        type: "PREVIEW",
+        number: 88,
+        updateDate: "2022-09-13T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 116-5",
+        congress: 116,
+        type: "PREVIEW",
+        number: 5,
+        updateDate: "2020-01-30T00:00:00Z",
+      },
+    ],
+    nominations: [],
+  },
+  "preview-05": {
+    bills: [],
+    reports: [
+      {
+        citation: "PREVIEW Rept. 111-61",
+        congress: 111,
+        type: "PREVIEW",
+        number: 61,
+        updateDate: "2010-11-08T00:00:00Z",
+      },
+      {
+        citation: "PREVIEW Rept. 110-19",
+        congress: 110,
+        type: "PREVIEW",
+        number: 19,
+        updateDate: "2008-06-25T00:00:00Z",
+      },
+    ],
+    nominations: [],
+  },
+};
+
+/** One placeholder committee's three collections. */
+type CommitteeRecordSets = {
+  bills: CommitteeBillReferral[];
+  reports: CommitteeReport[];
+  nominations: CommitteeNomination[];
+};
+
+/**
+ * Builds a placeholder referral around one of the preview bills.
+ *
+ * @param key - The bill's `billIdentityKey`, e.g., `"119-HR-284"`.
+ * @param relationship - What the committee did with it.
+ * @param actionDate - When, as an ISO 8601 timestamp.
+ * @returns The referral, carrying the preview bill's own record so the row renders with a title. A key naming no
+ *   preview bill yields a referral with no bill, which is the same shape a failed live title lookup produces.
+ */
+function previewReferral(key: string, relationship: string, actionDate: string): CommitteeBillReferral {
+  const bill: LegislativeBill | undefined = previewBills.find(
+    (candidate: LegislativeBill): boolean => billIdentityKey(candidate) === key,
+  );
+  const [congress = "0", type = "HR", number = "0"]: string[] = key.split("-");
+
+  return { congress: Number(congress), type, number, relationship, actionDate, bill };
+}
+
+/**
+ * Resolves one page of a placeholder committee's records.
+ *
+ * Pages the fixture list with the same arithmetic the live path uses rather than always returning everything, so the
+ * pager's own behavior — a clamped page, a correct range line, a disabled edge — is exercisable without a key. A code
+ * naming no placeholder committee yields an empty page rather than nothing, since the caller has already decided a page
+ * is being rendered.
+ *
+ * @param systemCode - The raw system code route param, matched case-insensitively.
+ * @param query - Which collection to read and how far into it.
+ * @returns The page, shaped exactly as the live path's is.
+ */
+export function previewCommitteeRecords(systemCode: string, query: CommitteeRecordsQuery): CommitteeRecordsResult {
+  const sets: CommitteeRecordSets = PREVIEW_COMMITTEE_RECORDS[systemCode.trim().toLowerCase()] ?? {
+    bills: [],
+    reports: [],
+    nominations: [],
+  };
+
+  // Branched per kind rather than indexed once, so each call hands `pageOfCommitteeRecords` a `kind` that is still a
+  // literal — the same narrowing the live fetcher gets by returning from inside each of its own branches.
+  if (query.kind === "reports") return pageOfCommitteeRecords("reports", sets.reports, query.page);
+  if (query.kind === "nominations") return pageOfCommitteeRecords("nominations", sets.nominations, query.page);
+
+  return pageOfCommitteeRecords("bills", sets.bills, query.page);
+}
 
 /**
  * The placeholder committees as directory rows.

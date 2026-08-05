@@ -78,6 +78,8 @@ components, and tests import one stable path while the internals stay free to mo
 | `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.              |
 | `committee-filter.ts`    | That directory's narrowing, ordering, and URL rules. Pure and isomorphic.     |
 | `committee-profile.ts`   | One committee's record, its name history, and its subcommittees.              |
+| `committee-records.ts`   | The bills/reports/nominations model, paging, and URL rules. Pure; no I/O.     |
+| `committee-activity.ts`  | One page of one of those collections, plus the referred bills' titles.        |
 | `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
 | `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
 | `stage.ts`               | The educational stage cue, inferred from action text. Never a legal status.   |
@@ -160,6 +162,39 @@ The route param is narrowed by `normalizeBioguideId` before it is interpolated i
 shape, never escape" rule as `normalizeBillRouteParams`; an ID that fails the guard is resolved against the preview
 fixtures rather than sent upstream.
 
+### A Committee's Own Records
+
+An individual committee page reads more than the committee: `committee-activity.ts` fetches one page of one of the three
+collections Congress.gov counts alongside it (`/bills`, `/reports`, `/nominations`), selected and paged by the page's
+own query params. The pure half — the model, the paging arithmetic, and the URL spelling — is `committee-records.ts`,
+split from the fetcher on exactly the `committee-directory.ts`/`committee-filter.ts` line.
+
+Three things about this are worth knowing before changing it.
+
+**The three endpoints are three shapes, not one parameterized path.** `/bills` nests its array under a hyphenated
+`committee-bills` key and reports its count in two places; the other two return theirs at the top level. What the three
+fetchers *do* share is stated once: the paging arithmetic, the cache tags, and the rule that a 404 is an empty
+collection while a transport failure is not. That last distinction is why `CommitteeRecordsResult` carries
+`unavailable` — a committee with no reports and a committee whose reports could not be fetched both render zero rows,
+and reporting the first when the truth is the second would be a false claim about the congressional record.
+
+**The page is clamped before the request, not after.** A `?page=` is only meaningful against a collection whose length
+is known, so the committee's profile resolves first and its counts hold the requested page inside the collection that
+exists. That is the one reason the two reads are sequential rather than concurrent: the alternative is spending a round
+trip to discover that a link overshot.
+
+**This is the one read in the adapter that costs more than a bounded handful of requests, and it is a deliberate
+trade.** The committee-bills endpoint publishes a congress, a type, a number, a relationship, and a date, and *no
+title*. A list reading "H.R. 10000 · Referred To · July 30, 2026" says which measures a committee handled and nothing
+about what they were, which for a product whose stated purpose is legibility is close to no feature at all. So each page
+issues one bill lookup per row on screen — never per record in the collection, so a committee with ten thousand
+referrals costs what one with twelve does — concurrently, on the bill's own cache tags, which it shares with that bill's
+own page. A failed lookup costs the title and nothing else: the row still names the measure, still says what the
+committee did with it, and still links to it, because the link is built from the identifier rather than from the title.
+
+What the page deliberately does *not* claim about these collections is in
+[Data Policy](data-policy.md#a-committees-records-are-paged-in-congressgovs-order-not-in-time).
+
 ## The Three Directories
 
 `/bills`, `/members`, and `/committees` are meant to be the same page in three subjects. That sameness is held
@@ -207,7 +242,13 @@ write to, and a param name typed twice is a link that looks right and restores n
 *both* sides go through, so a route and a browser can never disagree about what a given link means.
 
 **The server half** is `src/lib/search-params.ts`: it reads the request and resolves a starting view, so a shared link
-renders already narrowed on its first paint rather than flashing the full list.
+renders already narrowed on its first paint rather than flashing the full list. It also resolves the one deep link that
+is *not* a directory's — an individual committee's record view (`?records=`/`?page=`). That selects among the
+collections hanging off a single record rather than narrowing a list of them, but it is the same kind of thing for the
+reason that mattered about the others: a committee page showing the third page of its reports is a place, so it needs an
+address that brings someone back to it. Its controls are plain links rather than `useDirectoryUrlSync`, because they
+navigate — the records behind each live on a different Congress.gov endpoint and are fetched on the server, so there is
+no client-side state for a URL to mirror.
 
 **The browser half** is `useDirectoryUrlSync`, which reconciles in *both* directions — writing the URL as the reader
 narrows, and following it when something else moves it, such as a soft navigation from the header's own nav link or a

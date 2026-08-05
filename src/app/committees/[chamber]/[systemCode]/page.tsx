@@ -4,15 +4,31 @@ import type { JSX } from "react";
 
 import { CommitteeDetail } from "@/components/committee-detail";
 import { committeeHref } from "@/lib/committee-route";
-import { type CommitteeProfileResult, getCommitteeProfile } from "@/lib/congress/client";
+import { type CommitteeProfileResult, getCommitteeProfile, getCommitteeRecords } from "@/lib/congress/client";
+import type {
+  CommitteeRecordKind,
+  CommitteeRecordsQuery,
+  CommitteeRecordsResult,
+} from "@/lib/congress/committee-records";
 import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees";
 import { previewCommitteeProfiles } from "@/lib/congress/fixtures";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { type RouteSearchParams, resolveCommitteeRecordsQuery } from "@/lib/search-params";
 
 /** Params for the individual committee route (`/committees/[chamber]/[systemCode]`). */
 type CommitteePageProps = {
   params: Promise<{ chamber: string; systemCode: string }>;
+  /**
+   * Which of the committee's record collections to show, and how far into it.
+   *
+   * Optional so `generateMetadata` and the tests can call the page with params alone — the records section is a view
+   * *within* the page rather than a different page, and a committee URL carrying no query is a complete one.
+   */
+  searchParams?: Promise<RouteSearchParams>;
 };
+
+/** An absent `searchParams`, as a resolved promise, so the default view needs no branch below. */
+const NO_SEARCH_PARAMS: Promise<RouteSearchParams> = Promise.resolve({});
 
 /**
  * Pre-renders the placeholder committees at build time.
@@ -67,11 +83,21 @@ export async function generateMetadata({ params }: CommitteePageProps): Promise<
  * look anything up. @see committeeHref, and `normalizeCommitteeChamberSegment` for the guard that keeps a malformed
  * segment from reaching Congress.gov.
  *
+ * The committee's own record and the record view its URL asks for are resolved together, then the records themselves
+ * are fetched second rather than alongside. That order is a dependency rather than a missed parallelization: a `?page=`
+ * is only meaningful against a collection whose length is known, and the committee's own counts are what make it
+ * possible to hold a requested page inside the collection *before* an offset goes upstream instead of after a wasted
+ * round trip has proven it overshot.
+ * @see clampCommitteeRecordsPage.
+ *
  * @param params - The committee's route params, straight from the URL and therefore untrusted.
+ * @param searchParams - The record view's query params, equally untrusted and equally parsed rather than read.
  * @returns The committee page, or the 404 page when the identifiers resolve to nothing.
  */
-export default async function CommitteePage({ params }: CommitteePageProps): Promise<JSX.Element> {
-  const { chamber, systemCode } = await params;
+export default async function CommitteePage({ params, searchParams }: CommitteePageProps): Promise<JSX.Element> {
+  const [{ chamber, systemCode }, query]: [{ chamber: string; systemCode: string }, CommitteeRecordsQuery] =
+    await Promise.all([params, resolveCommitteeRecordsQuery(searchParams ?? NO_SEARCH_PARAMS)]);
+
   const { profile, source, notice, retrievedAt }: CommitteeProfileResult = await getCommitteeProfile(
     chamber,
     systemCode,
@@ -79,5 +105,29 @@ export default async function CommitteePage({ params }: CommitteePageProps): Pro
 
   if (!profile) notFound();
 
-  return <CommitteeDetail notice={notice} profile={profile} retrievedAt={retrievedAt} source={source} />;
+  const records: CommitteeRecordsResult = await getCommitteeRecords(
+    chamber,
+    systemCode,
+    query,
+    committeeRecordTotal(profile, query.kind),
+  );
+
+  return (
+    <CommitteeDetail notice={notice} profile={profile} records={records} retrievedAt={retrievedAt} source={source} />
+  );
+}
+
+/**
+ * The committee's own count for one collection.
+ *
+ * @param profile - The committee whose counts to read.
+ * @param kind - Which collection.
+ * @returns The count, or `undefined` when Congress.gov reported none — which leaves the page unable to clamp a
+ *   requested page in advance, and so lets the response's own count settle it instead.
+ */
+function committeeRecordTotal(profile: CommitteeProfile, kind: CommitteeRecordKind): number | undefined {
+  if (kind === "bills") return profile.billCount;
+  if (kind === "reports") return profile.reportCount;
+
+  return profile.nominationCount;
 }

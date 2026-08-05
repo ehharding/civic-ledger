@@ -53,6 +53,19 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* "Nominations Referred" over a five-figure count does not fit a third of a phone's width, and `auto-fit` would keep
+     trying — its 180px minimum is still narrower than this content wants here. One per row instead. */
+  .committee-records__tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The pager's two ends and its position sit on one line at desktop width and crowd at phone width, where "Page 847
+     of 851" is the widest of the three. Centering the stack keeps the two controls symmetrical around it. */
+  .committee-records__pager {
+    justify-content: center;
+    text-align: center;
+  }
+
   .segmented-filter {
     justify-content: flex-start;
     flex-wrap: wrap;

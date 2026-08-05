@@ -70,16 +70,16 @@ pnpm exec playwright install chromium
 
 ## What Is Built
 
-| Route                                            | What it is                                                                        |
-|--------------------------------------------------|-----------------------------------------------------------------------------------|
-| `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member |
-| `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                  |
-| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, official text versions, and an educational journey cue     |
-| `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships               |
-| `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, and subcommittees                            |
-| `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                           |
-| `/about`                                         | Methodology: how records are sourced, labeled, and linked back                    |
-| `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                            |
+| Route                                            | What it is                                                                         |
+|--------------------------------------------------|------------------------------------------------------------------------------------|
+| `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member  |
+| `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                   |
+| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, official text versions, and an educational journey cue      |
+| `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships                |
+| `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, subcommittees, and the records referred to it |
+| `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                            |
+| `/about`                                         | Methodology: how records are sourced, labeled, and linked back                     |
+| `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                             |
 
 Behind those routes:
 
@@ -89,6 +89,12 @@ Behind those routes:
 - **Shareable views on all three directories.** `/members?chamber=senate&party=republican&sort=state`,
   `/bills?q=broadband&stage=law`, and `/committees?type=standing&sort=chamber` render already narrowed, and each page
   writes its own current view back to the address bar as you narrow it.
+- **A committee's actual records, not just its counts.** "Bills Referred: 10,205" is a heading over the referrals
+  themselves — each naming the measure, what the committee did with it ("Referred To", "Reported By"), when, and linking
+  to that bill's own page — alongside the reports it published and the nominations sent to it. Each collection and page
+  is its own link (`/committees/house/hsag00?records=reports&page=3`), and the copy says these are paged in
+  Congress.gov's own order rather than claiming either end is the most recent, because the API publishes them in no
+  documented order and ignores its own `sort` parameter.
 - **A search that states its own limits.** Congress.gov's bill endpoint has no keyword parameter, so search sweeps every
   supported Congress's most recently active bills — and the result copy says so rather than implying an exhaustive
   query.

@@ -3,10 +3,12 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { CalloutCard } from "@/components/callout-card";
+import { CommitteeRecordsSection } from "@/components/committee-records";
 import { DataSourceNotice } from "@/components/data-source-notice";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import { committeeHref } from "@/lib/committee-route";
+import type { CommitteeRecordsResult } from "@/lib/congress/committee-records";
 import {
   CONGRESS_GOV_COMMITTEES,
   type CommitteeHistoryEntry,
@@ -30,35 +32,16 @@ type CommitteeDetailProps = {
   notice?: string;
   /** When this committee's record was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
+  /**
+   * One page of one of the committee's record collections, already selected and fetched by the route.
+   *
+   * Resolved server-side rather than in the section that renders it, on the same rule every other detail component in
+   * this app follows: a component that fetches is a component that can't be rendered in a test, in a different context,
+   * or against a different source.
+   * @see CommitteeRecordsSection.
+   */
+  records: CommitteeRecordsResult;
 };
-
-/** One counted collection of records the committee has accumulated. */
-type CommitteeStat = {
-  label: string;
-  count: number;
-};
-
-/**
- * The counts Congress.gov publishes alongside a committee.
- *
- * Rendered as plain figures with no links, which is the honest treatment: the API reports how many bills were referred
- * to a committee and how many reports it published, but the URLs it pairs those counts with are its own JSON endpoints,
- * which serve a 403 to a reader with no key of their own. A number a reader can see and cannot open is still a useful
- * fact about the scale of a committee's work; a link that fails is not.
- *
- * @param profile - The committee whose counts to gather.
- * @returns Only the counts the record actually carries, in a fixed order. An absent count is omitted rather than
- *   printed as a zero, since "Congress.gov didn't say" and "none" are different claims.
- */
-function collectStats(profile: CommitteeProfile): CommitteeStat[] {
-  return [
-    { label: "Bills Referred", count: profile.billCount },
-    { label: "Reports Published", count: profile.reportCount },
-    { label: "Nominations Referred", count: profile.nominationCount },
-  ].flatMap((stat: { label: string; count?: number }): CommitteeStat[] =>
-    stat.count === undefined ? [] : [{ label: stat.label, count: stat.count }],
-  );
-}
 
 /**
  * One row of the committee's recorded history.
@@ -96,9 +79,8 @@ function HistoryRow({ entry }: { entry: CommitteeHistoryEntry }): JSX.Element {
  * @returns The hero, the type explainer and history panels, the subcommittee list, the record counts, and the closing
  *   context card.
  */
-export function CommitteeDetail({ profile, source, notice, retrievedAt }: CommitteeDetailProps): JSX.Element {
+export function CommitteeDetail({ profile, source, notice, retrievedAt, records }: CommitteeDetailProps): JSX.Element {
   const chamberLabel: string = committeeChamberLabels[profile.chamber];
-  const stats: CommitteeStat[] = collectStats(profile);
   const isRealCommittee: boolean = isCommitteeSystemCode(profile.systemCode);
 
   return (
@@ -183,30 +165,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt }: Commit
         </aside>
       </div>
 
-      {stats.length > 0 ? (
-        <section className="committee-stats" aria-labelledby="committee-stats-heading">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">In the Record</p>
-              <h2 id="committee-stats-heading">What Has Come Through Here</h2>
-            </div>
-          </div>
-          <p className="muted-copy">
-            Counted across this committee's whole existence, not the current Congress alone. A referral means a bill was
-            sent here to be considered — not that it was taken up, amended, or reported out.
-          </p>
-          <dl className="committee-stats__list">
-            {stats.map(
-              (stat: CommitteeStat): JSX.Element => (
-                <div className="committee-stats__item" key={stat.label}>
-                  <dt>{stat.label}</dt>
-                  <dd>{stat.count.toLocaleString("en-US")}</dd>
-                </div>
-              ),
-            )}
-          </dl>
-        </section>
-      ) : null}
+      <CommitteeRecordsSection profile={profile} result={records} />
 
       <section className="committee-subcommittees" aria-labelledby="committee-subcommittees-heading">
         <div className="section-heading">

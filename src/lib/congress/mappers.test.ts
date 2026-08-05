@@ -25,9 +25,12 @@ import type {
 import type { CommitteeProfile, CommitteeSummary } from "@/lib/congress/committees";
 import {
   asOriginChamber,
+  mapCommitteeBillReferral,
   mapCommitteeHistory,
+  mapCommitteeNomination,
   mapCommitteeProfile,
   mapCommitteeRef,
+  mapCommitteeReport,
   mapCongressBill,
   mapCongressCommittee,
   mapCongressMember,
@@ -559,6 +562,70 @@ describe("mapCommitteeProfile", (): void => {
     expect(profile?.subcommittees.map((sub): string => sub.name)).toEqual(["Bridges", "Water Systems"]);
     expect(profile?.subcommitteeCount).toBe(2);
     expect(orphan?.parent).toBeUndefined();
+  });
+});
+
+describe("the committee record mappers", (): void => {
+  it("keeps the two fields no bill endpoint publishes", (): void => {
+    // What the committee did with the measure and when: the whole reason a committee's bill list is worth reading
+    // rather than being a filtered view of /bills.
+    expect(
+      mapCommitteeBillReferral({
+        congress: 119,
+        type: "hr",
+        number: 10_000,
+        relationshipType: "Reported By",
+        actionDate: "2026-07-30T12:31:05Z",
+      }),
+    ).toEqual({
+      congress: 119,
+      type: "HR",
+      number: "10000",
+      relationship: "Reported By",
+      actionDate: "2026-07-30T12:31:05Z",
+    });
+  });
+
+  it("drops a referral missing any part of its identifier", (): void => {
+    // Unlike a bill from the bill endpoints, this record has no title to fall back on.
+    expect(mapCommitteeBillReferral({ type: "HR", number: "1" })).toBeNull();
+    expect(mapCommitteeBillReferral({ congress: 119, number: "1" })).toBeNull();
+    expect(mapCommitteeBillReferral({ congress: 119, type: "HR" })).toBeNull();
+  });
+
+  it("keeps a referral numbered zero, which is falsy but not absent", (): void => {
+    expect(mapCommitteeBillReferral({ congress: 119, type: "HR", number: 0 })).toMatchObject({ number: "0" });
+  });
+
+  it("normalizes the timestamp spelling only the reports endpoint uses", (): void => {
+    // A space where every other endpoint sends a `T`. Left alone, `formatDate` takes its bare-date branch and renders
+    // the unparsed original.
+    expect(mapCommitteeReport({ citation: "H. Rept. 109-710", updateDate: "2015-03-20 00:05:31+00:00" })).toMatchObject(
+      { updateDate: "2015-03-20T00:05:31+00:00" },
+    );
+  });
+
+  it("leaves an absent or blank timestamp undefined rather than manufacturing one", (): void => {
+    expect(mapCommitteeReport({ citation: "H. Rept. 119-1" })?.updateDate).toBeUndefined();
+    expect(mapCommitteeReport({ citation: "H. Rept. 119-1", updateDate: "   " })?.updateDate).toBeUndefined();
+  });
+
+  it("drops a report or nomination with no citation, which is all that names one", (): void => {
+    expect(mapCommitteeReport({ congress: 109, number: 710 })).toBeNull();
+    expect(mapCommitteeReport({ citation: "  " })).toBeNull();
+    expect(mapCommitteeNomination({ description: "Someone, of somewhere." })).toBeNull();
+    expect(mapCommitteeNomination({ citation: " " })).toBeNull();
+  });
+
+  it("carries a nomination's latest action only when it says something", (): void => {
+    // An object holding two undefineds renders as an empty line rather than as no line.
+    expect(mapCommitteeNomination({ citation: "PN1", latestAction: { actionDate: "2026-07-21" } })?.latestAction).toBe(
+      undefined,
+    );
+    expect(
+      mapCommitteeNomination({ citation: "PN1", latestAction: { actionDate: "2026-07-21", text: "Referred." } })
+        ?.latestAction,
+    ).toEqual({ date: "2026-07-21", text: "Referred." });
   });
 });
 

@@ -1,9 +1,12 @@
 import type {
   CongressApiBill,
   CongressApiCommittee,
+  CongressApiCommitteeBill,
   CongressApiCommitteeDetail,
   CongressApiCommitteeHistory,
+  CongressApiCommitteeNomination,
   CongressApiCommitteeRef,
+  CongressApiCommitteeReport,
   CongressApiLeadership,
   CongressApiMember,
   CongressApiMemberDetail,
@@ -13,6 +16,7 @@ import type {
   CongressApiTextFormat,
   CongressApiTextVersion,
 } from "@/lib/congress/api-schema";
+import type { CommitteeBillReferral, CommitteeNomination, CommitteeReport } from "@/lib/congress/committee-records";
 import {
   type CommitteeChamber,
   type CommitteeHistoryEntry,
@@ -404,6 +408,96 @@ export function mapCommitteeProfile(
     reportCount: committee.reports?.count,
     nominationCount: committee.nominations?.count,
   };
+}
+
+/**
+ * Maps one entry in a committee's bill list.
+ *
+ * @param referral - A validated entry from the committee-bills endpoint.
+ * @returns The mapped referral, or `null` when it names no congress, type, or number. Those three *are* the record
+ *   here: unlike a bill from the bill endpoints, this one carries no title to fall back on, so a referral missing any
+ *   part of its identifier names nothing at all and could neither be linked nor labeled.
+ */
+export function mapCommitteeBillReferral(referral: CongressApiCommitteeBill): CommitteeBillReferral | null {
+  const number: string | number | undefined = referral.number;
+
+  if (!referral.congress || !referral.type || number === undefined) return null;
+
+  return {
+    congress: referral.congress,
+    // Upper-cased here rather than at the view, so this reads and keys identically to a `LegislativeBill.type` — which
+    // matters because the two sit in the same row once the title lookup fills one in.
+    type: referral.type.trim().toUpperCase(),
+    number: String(number),
+    relationship: referral.relationshipType,
+    actionDate: referral.actionDate,
+  };
+}
+
+/**
+ * Maps one entry in a committee's report list.
+ *
+ * @param report - A validated entry from the committee-reports endpoint.
+ * @returns The mapped report, or `null` when it carries no citation. The citation is how a report is named everywhere
+ *   it is referred to — in a bill's history, in the *Congressional Record*, on Congress.gov's own page for it — so a
+ *   report without one is a row this app has no honest way to label.
+ */
+export function mapCommitteeReport(report: CongressApiCommitteeReport): CommitteeReport | null {
+  const citation: string = (report.citation ?? "").trim();
+  if (citation.length === 0) return null;
+
+  return {
+    citation,
+    congress: report.congress,
+    type: report.type,
+    number: report.number,
+    part: report.part,
+    updateDate: normalizeApiTimestamp(report.updateDate),
+  };
+}
+
+/**
+ * Maps one entry in a committee's nomination list.
+ *
+ * @param nomination - A validated entry from the committee-nominations endpoint.
+ * @returns The mapped nomination, or `null` when it carries no citation — the printed nomination number ("PN1201-7") is
+ *   this record's identifier for the same reason a report's citation is.
+ */
+export function mapCommitteeNomination(nomination: CongressApiCommitteeNomination): CommitteeNomination | null {
+  const citation: string = (nomination.citation ?? "").trim();
+  if (citation.length === 0) return null;
+
+  const action: { actionDate?: string; text?: string } | undefined = nomination.latestAction;
+
+  return {
+    citation,
+    congress: nomination.congress,
+    description: nomination.description,
+    receivedDate: nomination.receivedDate,
+    // Carried only when it says something: an object holding two `undefined`s renders as an empty line rather than as
+    // no line, and "the API reported no action" is a fact the page states in words instead.
+    latestAction: action?.text ? { date: action.actionDate, text: action.text } : undefined,
+  };
+}
+
+/**
+ * Normalizes a Congress.gov timestamp to the ISO 8601 spelling the rest of this app assumes.
+ *
+ * The committee-reports endpoint is the one place in this API that sends `"2015-03-20 00:05:31+00:00"` — a space where
+ * every other endpoint sends a `T`. That is not a cosmetic difference: `formatDate` splits on the presence of a `T` to
+ * decide whether it is holding a bare date or a datetime, so the space form takes the bare-date branch, has
+ * `"T12:00:00Z"` appended to a string that already carries a time, and renders as the unparsed original. One `replace`
+ * at the boundary is the whole fix, and it belongs here on the rule the rest of this module follows: normalization
+ * happens where the upstream shape is translated, never at the view.
+ *
+ * @param value - The upstream timestamp, if any.
+ * @returns The timestamp with its date and time joined by `T`, or `undefined` when there was none.
+ */
+function normalizeApiTimestamp(value: string | undefined): string | undefined {
+  const trimmed: string = (value ?? "").trim();
+  if (trimmed.length === 0) return undefined;
+
+  return trimmed.replace(" ", "T");
 }
 
 /**

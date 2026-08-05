@@ -160,6 +160,34 @@ publishes about one. A committee's jurisdiction is usually rewritten by renaming
 becoming "Committee on Education and the Workforce" and back again tracks which party held the chamber, not a clerical
 tidy-up), and that story is invisible from a current name alone.
 
+### A Committee's Records Are Paged in Congress.gov's Order, Not in Time
+
+The committee page reads three collections a committee accumulates — the bills referred to it, the reports it published,
+and the nominations sent to it — and each one is a deep link (`?records=reports&page=3`). Three claims about them are
+made carefully, and one is deliberately never made.
+
+**Never made: that any page is the most recent.** These collections are not published in a documented order. Sampling
+House Agriculture's 10,205 referrals across their whole range gives update timestamps of 2015, 2021, 2016, 2016, 2016,
+2019, 2026 — ascending overall and emphatically not monotonic. The same committee's reports run roughly oldest to
+newest, while the Senate Judiciary Committee's nominations run the other way. The endpoint accepts a `sort` parameter
+and ignores it. So the page walks the publisher's own sequence and says exactly that in the line above the list, rather
+than labeling either end. A list this app cannot order is one it does not claim to have ordered.
+
+**A referral is a referral, not an outcome.** Congress.gov publishes the relationship it recorded — "Referred To",
+"Reported By" — verbatim, and the page prints that word rather than paraphrasing it into a status. Most bills referred
+to a committee never leave it, and that is the ordinary case rather than a failure of one.
+
+**Where the two counts disagree, the pageable one wins.** Congress.gov reports a collection's size twice and the two do
+not always agree: House Agriculture's own record says 17,795 bills while its bills endpoint says 10,205 for the same
+collection. The figure printed above a list is the one that list actually has, because it is the one a reader can check
+by paging to the end. The committee's own figure stands only for collections that have not been fetched.
+
+**Reports and nominations get no outbound link, for the same reason committees don't.** Their congress.gov URLs look
+derivable from the record — `/congressional-report/{ordinal}-congress/{chamber}-report/{number}` — and cannot be
+verified from here, because congress.gov answers automated requests with a bot challenge. Each row prints the citation
+Congress.gov identifies the record by and stops there. Referred *bills* do link, but inward, to this app's own page for
+the measure, which carries the verified outbound link onward.
+
 ## Editorial Content Cites Its Sources
 
 The `/learn` modules are the one place this app writes prose about how Congress works rather than presenting a record it

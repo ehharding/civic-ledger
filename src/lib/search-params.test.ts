@@ -13,6 +13,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_COMMITTEE_DIRECTORY_QUERY } from "@/lib/congress/committee-filter";
+import { DEFAULT_COMMITTEE_RECORDS_QUERY } from "@/lib/congress/committee-records";
 import { ANY_FACET } from "@/lib/congress/directory-filter";
 import { DEFAULT_MEMBER_DIRECTORY_QUERY } from "@/lib/congress/member-filter";
 import { DEFAULT_BILL_DIRECTORY_QUERY } from "@/lib/congress/search";
@@ -20,6 +21,7 @@ import {
   type RouteSearchParams,
   resolveBillDirectoryQuery,
   resolveCommitteeDirectoryQuery,
+  resolveCommitteeRecordsQuery,
   resolveMemberDirectoryQuery,
 } from "@/lib/search-params";
 
@@ -141,6 +143,31 @@ describe("resolveCommitteeDirectoryQuery", (): void => {
   });
 });
 
+describe("resolveCommitteeRecordsQuery", (): void => {
+  it("reads which collection to show and how far into it", async (): Promise<void> => {
+    await expect(resolveCommitteeRecordsQuery(route({ records: "nominations", page: "6" }))).resolves.toEqual({
+      kind: "nominations",
+      page: 6,
+    });
+  });
+
+  it("returns the first page of referred bills for a bare committee URL", async (): Promise<void> => {
+    await expect(resolveCommitteeRecordsQuery(route({}))).resolves.toEqual(DEFAULT_COMMITTEE_RECORDS_QUERY);
+  });
+
+  it("degrades a stale or hand-edited param rather than failing the page", async (): Promise<void> => {
+    await expect(resolveCommitteeRecordsQuery(route({ records: "hearings", page: "-2" }))).resolves.toEqual(
+      DEFAULT_COMMITTEE_RECORDS_QUERY,
+    );
+  });
+
+  it("collapses a repeated param to its first value, as the directories do", async (): Promise<void> => {
+    await expect(resolveCommitteeRecordsQuery(route({ records: ["reports", "nominations"] }))).resolves.toMatchObject({
+      kind: "reports",
+    });
+  });
+});
+
 describe("in a static export", (): void => {
   // No server survives to request time, so there is no request to read. Every deep link degrades to the page's own
   // default view — the page still works, it just cannot be pre-filled from the URL, and the directory adopts the
@@ -156,6 +183,9 @@ describe("in a static export", (): void => {
     );
     await expect(resolveCommitteeDirectoryQuery(route({ type: "standing" }))).resolves.toEqual(
       DEFAULT_COMMITTEE_DIRECTORY_QUERY,
+    );
+    await expect(resolveCommitteeRecordsQuery(route({ records: "reports", page: "4" }))).resolves.toEqual(
+      DEFAULT_COMMITTEE_RECORDS_QUERY,
     );
   });
 

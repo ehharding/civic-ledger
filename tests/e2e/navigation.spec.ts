@@ -231,3 +231,23 @@ test("a committee page explains what its kind of committee is and lists its subc
   await expect(page).toHaveURL(/\/committees\/(house|senate|joint)\/[a-z0-9-]+$/);
   await expect(page.getByText(/Subcommittee of/)).toBeVisible();
 });
+
+test("a committee's record collections are real links that survive a reload", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  // The whole point of making these links rather than local state: the view has an address. Everything below would pass
+  // just as well against a click handler *except* the reload, which is the assertion that matters.
+  await page.goto("/committees");
+  await page.locator(".committee-card h3 a").first().click();
+
+  await expect(page.getByRole("region", { name: "What Has Come Through Here" })).toBeVisible();
+
+  await page.getByRole("link", { name: /Reports Published/ }).click();
+  await expect(page).toHaveURL(/\?records=reports$/);
+
+  const reportsTab: Locator = page.getByRole("link", { name: /Reports Published/ });
+  await expect(reportsTab).toHaveAttribute("aria-current", "page");
+
+  await page.reload();
+  await expect(page.getByRole("link", { name: /Reports Published/ })).toHaveAttribute("aria-current", "page");
+});

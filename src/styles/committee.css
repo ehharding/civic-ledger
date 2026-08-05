@@ -134,34 +134,58 @@
   font-size: 0.88em;
 }
 
-.committee-stats,
+.committee-records,
 .committee-subcommittees {
   margin-top: 48px;
 }
 
-.committee-stats .muted-copy,
+.committee-records .muted-copy,
 .committee-subcommittees .muted-copy {
   margin-top: 10px;
   max-width: 62ch;
 }
 
-/* A <dl> laid out as a row of figures. `auto-fit` rather than a fixed column count because the Senate's committees
-   carry three of these and the House's two, and a fixed grid would strand an empty third column on most pages. */
-.committee-stats__list {
+/* The three collection tabs. `auto-fit` rather than a fixed column count because these sit above content of very
+   different widths and a fixed grid strands a short third column on narrow viewports; the breakpoint override in
+   responsive.css collapses them to one per row.
+
+   Each is a link rather than a button — the records behind it are fetched on the server, so choosing one navigates —
+   and each carries its own count, on the same reasoning the directories' facet options do: a control that tells you
+   what it will yield before you press it is one you can plan with rather than probe. */
+.committee-records__tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
   margin-top: 20px;
+  list-style: none;
 }
 
-.committee-stats__item {
+.committee-records__tab {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--paper);
+  color: inherit;
+  text-decoration: none;
 }
 
-.committee-stats__item dt {
+.committee-records__tab:hover {
+  border-color: var(--ink-faint);
+}
+
+/* The current view. A doubled border rather than a fill, so the selected tab reads as selected from its weight rather
+   than from hue alone — the same rule every other state in this app follows, and the reason the inset ring is here
+   instead of a background tint that would carry the whole signal in color. `aria-current` is the selector because it
+   is already the attribute carrying the meaning; a parallel class would be a second answer to the same question. */
+.committee-records__tab[aria-current="page"] {
+  border-color: var(--navy);
+  box-shadow: inset 0 0 0 1px var(--navy);
+}
+
+.committee-records__tab-label {
   color: var(--ink-soft);
   font-size: 0.76rem;
   font-weight: 700;
@@ -169,12 +193,113 @@
   text-transform: uppercase;
 }
 
-.committee-stats__item dd {
-  margin-top: 6px;
+.committee-records__tab-count {
   color: var(--ink);
   font-family: var(--serif), serif;
   font-size: 1.7rem;
   line-height: 1.1;
+}
+
+.committee-records__about {
+  margin-top: 20px;
+  max-width: 68ch;
+}
+
+/* The range line ("Showing 13-24 of 10,205"). A live region, so paging announces where the reader landed rather than
+   only showing it — the same treatment the directories' result-count line gets for the same reason. */
+.committee-records__range {
+  margin-top: 16px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.committee-records__list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  list-style: none;
+}
+
+.committee-record {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.committee-record__topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.committee-record__id {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* The relationship ("Referred To", "Reported By"). The most consequential word in a referral row and the distinction
+   the page's closing callout is about, so it reads as a chip rather than as more of the meta line. */
+.committee-record__tag {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.committee-record__title {
+  margin: 0;
+  font-family: var(--serif), serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.committee-record__meta {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* Two links and a position rather than a numbered run: these collections reach five figures, and a full pagination
+   control would be either truncated with ellipses nobody can aim at or a thousand links in the page source. */
+.committee-records__pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.committee-records__pager-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* An edge of the range, rendered as text rather than as a disabled link — there is nothing to focus, because there is
+   nowhere to go. */
+.committee-records__pager-edge {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.committee-records__pager-position {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
 }
 
 /* Two columns of plain links rather than a grid of cards. A subcommittee list is a table of contents for the page's
