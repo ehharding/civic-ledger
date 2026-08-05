@@ -1,3 +1,9 @@
+# Weekly dependency updates, grouped so a quiet week arrives as a handful of pull requests rather than one per package.
+#
+# Grouping is by *what breaking it breaks*, which is the only division that changes how a pull request is reviewed
+# here. A dev-dependency bump that goes wrong fails `pnpm check` on the pull request itself; a runtime one can pass
+# every check and still change what a reader sees, so those are worth reading as a set of their own rather than being
+# folded in beside a Biome patch release.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -7,7 +13,16 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
+      # Everything the app actually ships. Ungrouped, these arrive as up to nine separate pull requests a week — enough
+      # noise that the one worth looking at closely stops standing out.
+      production-dependencies:
+        dependency-type: production
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # Every workflow pins its actions by major tag, so these are almost always the same routine bump applied to the
+      # three workflows at once.
+      github-actions:
+        patterns: ["*"]

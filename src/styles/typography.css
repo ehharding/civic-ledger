@@ -13,23 +13,21 @@
   text-transform: uppercase;
 }
 
-/* The large marketing-style display heading, shared by the home hero, PageHeader, and the empty/error states.
-   Everything all four agree on lives here; the two they don't agree on — the measure and the size — are set per-class
-   below. They used to be set here too and then overridden 45 lines later for .page-header h1, which left this block
-   claiming a size that heading never actually rendered at. */
+/* The large marketing-style display heading, shared by the home hero, PageHeader, and the empty state both miss pages
+   render. Everything all three agree on lives here; the two they don't agree on — the measure and the size — are set
+   per-class below. They used to be set here too and then overridden 45 lines later for .page-header h1, which left this
+   block claiming a size that heading never actually rendered at. */
 .hero-copy h1,
 .page-header h1,
-.empty-state h1,
-.error-page h1 {
+.empty-state h1 {
   margin-top: 16px;
   color: var(--navy-deep);
   line-height: 0.95;
 }
 
-/* The three that carry short, punchy copy this app authors itself, so one fluid clamp suits all of them. */
+/* The two that carry short, punchy copy this app authors itself, so one fluid clamp suits both of them. */
 .hero-copy h1,
-.empty-state h1,
-.error-page h1 {
+.empty-state h1 {
   max-width: 10ch;
   font-size: clamp(3.2rem, 7vw, 5.7rem);
 }

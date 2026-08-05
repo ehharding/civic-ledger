@@ -17,6 +17,9 @@ on:
 
 permissions:
   contents: read
+  # The "Comment Preview URL" step posts to the pull request's timeline, which the default read-only token cannot
+  # write to — without this the deploy succeeds and its final step fails with a 403 on every pull request.
+  pull-requests: write
 
 concurrency:
   group: deploy-vercel-${{ github.ref }}
@@ -26,6 +29,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    # A pull request opened from a fork cannot read `secrets.VERCEL_TOKEN` — GitHub withholds secrets from workflows
+    # triggered by untrusted code, which is the right call for a token that can deploy. Every step below would then
+    # fail on an authentication error, so an outside contributor's first pull request would open with a red X they
+    # have no way to fix. Skipping is the honest outcome: `ci.yml` still runs on those pull requests, and a preview
+    # deployment is something only a maintainer's own branch can produce.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -59,11 +68,17 @@ jobs:
       - name: Comment Preview URL
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v9
+        # The URL reaches the script through the environment rather than through `${{ }}` interpolation. Expressions
+        # are substituted into the script *as source text* before it runs, so a value carrying a backtick or a `${`
+        # would be executed rather than printed — reading it from `process.env` leaves it a string either way.
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
         with:
+          # Awaited so the step cannot finish before the request it fired has actually landed.
           script: |
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Preview Deployed: ${{ steps.deploy.outputs.url }}`,
+              body: `Preview Deployed: ${process.env.PREVIEW_URL}`,
             });

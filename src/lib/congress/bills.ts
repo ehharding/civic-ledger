@@ -256,7 +256,13 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
 
   // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
   // preview data as a last resort.
-  const snapshot: CongressSnapshot = await getCongressSnapshot();
+  //
+  // The snapshot is scoped to *this bill's* Congress rather than the current one. A snapshot of the 119th cannot
+  // contain a bill from the 117th no matter what it returns, so the general form of this fallback was doing real work
+  // only for a bill that happened to belong to the Congress sitting today — and, worse, was reporting that other
+  // Congress's `source`, `notice`, and `retrievedAt` as though they described the record being looked up. `route` has
+  // already been proven to be digits by `normalizeBillRouteParams`, so this parse cannot produce a `NaN`.
+  const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(Number(route.congress));
   const key: string = billIdentityKey(input);
   const bill: LegislativeBill | undefined =
     snapshot.bills.find((candidate: LegislativeBill): boolean => billIdentityKey(candidate) === key) ??

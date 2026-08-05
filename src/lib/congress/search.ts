@@ -107,9 +107,9 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
   const normalizedQuery: string = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
 
-  return [bill.title, bill.type, bill.number, bill.policyArea, bill.latestAction.text]
-    .filter(Boolean)
-    .some((value: string | undefined): boolean => Boolean(value?.toLowerCase().includes(normalizedQuery)));
+  return [bill.title, bill.type, bill.number, bill.policyArea, bill.latestAction.text].some(
+    (value: string | undefined): boolean => Boolean(value?.toLowerCase().includes(normalizedQuery)),
+  );
 }
 
 /** A search query recognized as naming one specific bill, rather than a free-text keyword search. */

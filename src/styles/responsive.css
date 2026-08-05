@@ -173,8 +173,7 @@
 
   .hero-copy h1,
   .page-header h1,
-  .empty-state h1,
-  .error-page h1 {
+  .empty-state h1 {
     font-size: clamp(2.9rem, 15vw, 4.2rem);
   }
 

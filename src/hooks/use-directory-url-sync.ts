@@ -1,3 +1,5 @@
+"use client";
+
 import { type RefObject, useEffect, useRef } from "react";
 
 /** Options for {@link useDirectoryUrlSync}. */
@@ -40,6 +42,10 @@ type DirectoryUrlSyncOptions = {
  * inside a render and need opposite responses — one should rewrite the URL, the other should rewrite the state. What
  * separates them is remembering what this hook last wrote. @see the effect below for the three cases that fall out of
  * that.
+ *
+ * Marked `"use client"` like `use-bill-search.ts`, though every caller is already a client component: this hook reads
+ * `window.location` and writes `history` in a bare effect, so a server component importing it would fail at runtime
+ * rather than at the boundary, and the directive is what turns that into the build-time error it should be.
  *
  * @param options - @see DirectoryUrlSyncOptions
  */

@@ -102,6 +102,26 @@ describe("getBillById", (): void => {
     expect(result.bill?.number).toBe("284");
   });
 
+  it("searches the bill's own Congress when falling back, not whichever one is sitting today", async (): Promise<void> => {
+    // The lookup fails, so the fallback fetches a bill list. It must ask for the 117th — the Congress in the URL —
+    // because a page of the current Congress's bills cannot contain a 117th-Congress bill however healthy it is.
+    const fetchMock = vi.fn().mockImplementation((url: URL): Promise<Response> => {
+      if (url.pathname.includes("/bill/117/hr/1")) return Promise.reject(new Error("network down"));
+      return Promise.resolve(jsonResponse({ bills: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+
+    await getBillById({ congress: "117", type: "hr", number: "1" });
+
+    const listRequests: string[] = fetchMock.mock.calls
+      .map((call: unknown[]): string => String(call[0]))
+      .filter((url: string): boolean => !url.includes("/hr/1"));
+
+    expect(listRequests).toHaveLength(1);
+    expect(new URL(String(listRequests[0])).pathname).toBe("/v3/bill/117");
+  });
+
   it("reports nothing found when a transient failure leaves no fixture to fall back to either", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation((): void => {});

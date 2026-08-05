@@ -1,26 +1,31 @@
-/* Full-page empty/error states: not-found.tsx and error.tsx. */
+/* The full-page miss states: not-found.tsx and error.tsx. Both now render the same `.empty-state` section inside the
+   shared site chrome, so they share one block rather than two that had already drifted — the error page's `> p` rule
+   excused the eyebrow from body-copy styling and the not-found page's did not, which quietly repainted that page's
+   eyebrow from burgundy to muted body grey. */
 
-.empty-state,
-.error-page {
+.empty-state {
   min-height: 50vh;
   display: grid;
   align-content: center;
   justify-items: start;
 }
 
-.empty-state > p,
-.error-page > p:not(.eyebrow) {
+/* `:not(.eyebrow)` because the eyebrow is a kicker rather than body copy, and this selector would otherwise outrank
+   `.eyebrow`'s own color. Same guard, for the same reason, as `.page-header > p:not(.eyebrow)` in typography.css. */
+.empty-state > p:not(.eyebrow) {
   max-width: 48ch;
   margin-top: 20px;
   color: var(--ink-soft);
 }
 
-.empty-state .button,
-.error-page .button {
+.empty-state .button {
   margin-top: 25px;
 }
 
-.error-page {
-  width: min(700px, calc(100% - 48px));
-  margin: 0 auto;
+/* A miss state can offer more than one way out — the error boundary offers a retry *and* a way back into the record.
+   Wrapping so a narrow viewport stacks them rather than shrinking both. */
+.empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
