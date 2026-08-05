@@ -8,10 +8,8 @@ playwright-report/
 test-results/
 
 # Local Secrets & Environment Overrides
+# `.env*` already covers `.env`, `.env.local`, and `.env.<mode>.local`; the checked-in template is the one exception.
 .env*
-.env
-.env.local
-.env.*.local
 !.env.example
 
 # Local Tooling

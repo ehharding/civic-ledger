@@ -1,13 +1,52 @@
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 /**
  * The placeholder primitives every `loading.tsx` route is built from — seven of them now, across the bill, member, and
  * committee halves of the app.
  *
  * Each of those routes mirrors the shape of the page it stands in for, so they can't share a single skeleton
- * *component* — but they were each hand-rolling the same two patterns, and both are easy to get subtly wrong in a way
- * nobody notices until someone uses a screen reader.
+ * *component* — but they were each hand-rolling the same handful of patterns, and the two accessibility-bearing ones
+ * are easy to get subtly wrong in a way nobody notices until someone uses a screen reader.
  */
+
+/**
+ * The eyebrow / title / lead-paragraph trio every page opens with, drawn as blank blocks.
+ *
+ * Blocks rather than a real `<h1>`: a route's loading UI receives no params, so it cannot know the title it is standing
+ * in for, and a placeholder heading would be announced and then replaced — worse than one arriving once. The whole
+ * group is `aria-hidden`, and each route pairs it with a {@link LoadingStatus} instead.
+ *
+ * @param children - Extra placeholder blocks that belong inside the same header group, e.g. the bill record's summary
+ *   panel. Most callers pass none.
+ * @returns The header placeholder, hidden from assistive technology.
+ */
+export function SkeletonPageHeader({ children }: { children?: ReactNode }): JSX.Element {
+  return (
+    <div className="skeleton-detail" aria-hidden="true">
+      <div className="skeleton skeleton--eyebrow" />
+      <div className="skeleton skeleton--title" />
+      <div className="skeleton skeleton--meta" />
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The search field and segmented filter row every directory opens with, drawn as blank blocks.
+ *
+ * Shared by all three directory skeletons because all three real directories open with the same pair — @see
+ * DirectorySearch and SegmentedFilter, which `directory-controls.tsx` shares for the same reason.
+ *
+ * @returns The control-row placeholder, hidden from assistive technology.
+ */
+export function SkeletonControls(): JSX.Element {
+  return (
+    <div className="skeleton-controls" aria-hidden="true">
+      <div className="skeleton skeleton--search" />
+      <div className="skeleton skeleton--filters" />
+    </div>
+  );
+}
 
 /** Props for {@link SkeletonGrid}. */
 type SkeletonGridProps = {

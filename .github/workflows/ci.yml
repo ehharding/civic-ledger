@@ -8,6 +8,13 @@ on:
 permissions:
   contents: read
 
+# One in-flight run per branch or pull request. Pushing a fixup while CI is still chewing on the previous commit should
+# replace that run, not queue behind it — the older commit's result is about to be irrelevant either way. `main` is
+# excluded from cancellation so every commit that lands keeps a result of its own.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   quality:
     runs-on: ubuntu-latest

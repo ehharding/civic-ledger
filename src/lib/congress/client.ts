@@ -26,7 +26,9 @@
  *
  * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an
  * exception), and anything that can come from either live or preview data reports which it was, on the returned value
- * itself.
+ * itself. That is also what keeps `http.ts` off this list — the key reader, the cache window, and the request helper
+ * are the transport those guarantees are built out of, not reads that hold them, and the modules above import them
+ * directly.
  *
  * @see docs/architecture.md for how this layer fits into the app as a whole.
  */
@@ -49,7 +51,6 @@ export {
 } from "@/lib/congress/committee-directory";
 export { type CommitteeProfileResult, getCommitteeProfile } from "@/lib/congress/committee-profile";
 export { getCongressComposition } from "@/lib/congress/composition";
-export { getCongressApiKey, REVALIDATE_SECONDS } from "@/lib/congress/http";
 export {
   buildMemberDirectory,
   getMemberDirectory,

@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
-import { LoadingStatus, SkeletonGrid } from "@/components/skeleton";
+import { LoadingStatus, SkeletonControls, SkeletonGrid } from "@/components/skeleton";
 
 /** Matches the first page the real directory renders, so the grid doesn't change length when content arrives. */
 const SKELETON_CARD_COUNT: number = 6;
@@ -31,10 +31,7 @@ export function BillDirectorySkeleton({
   return (
     <SiteShell>
       <PageHeader eyebrow={eyebrow} title={title} description={description} />
-      <div className="skeleton-controls" aria-hidden="true">
-        <div className="skeleton skeleton--search" />
-        <div className="skeleton skeleton--filters" />
-      </div>
+      <SkeletonControls />
       <SkeletonGrid blockClassName="skeleton skeleton--card" className="directory-grid" count={SKELETON_CARD_COUNT} />
       <LoadingStatus>Loading Bills…</LoadingStatus>
     </SiteShell>

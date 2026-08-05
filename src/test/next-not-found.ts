@@ -16,7 +16,7 @@ import { expect } from "vitest";
  * it is pinned here — if a Next upgrade changes it, one test helper fails loudly rather than every route's miss case
  * quietly passing for the wrong reason.
  */
-export const NEXT_NOT_FOUND_DIGEST: string = "NEXT_HTTP_ERROR_FALLBACK;404";
+const NEXT_NOT_FOUND_DIGEST: string = "NEXT_HTTP_ERROR_FALLBACK;404";
 
 /**
  * Asserts that rendering a route triggered `notFound()`.

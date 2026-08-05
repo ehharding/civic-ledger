@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 
 import { SiteShell } from "@/components/site-shell";
-import { LoadingStatus } from "@/components/skeleton";
+import { LoadingStatus, SkeletonPageHeader } from "@/components/skeleton";
 
 /**
  * Streamed by Next while a committee's record resolves.
@@ -16,11 +16,7 @@ import { LoadingStatus } from "@/components/skeleton";
 export default function CommitteeLoading(): JSX.Element {
   return (
     <SiteShell>
-      <div className="skeleton-detail" aria-hidden="true">
-        <div className="skeleton skeleton--eyebrow" />
-        <div className="skeleton skeleton--title" />
-        <div className="skeleton skeleton--meta" />
-      </div>
+      <SkeletonPageHeader />
       <div className="detail-grid" aria-hidden="true">
         <div className="skeleton skeleton--panel" />
         <div className="skeleton skeleton--panel" />

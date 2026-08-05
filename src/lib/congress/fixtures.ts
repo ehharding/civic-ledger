@@ -417,7 +417,7 @@ export function previewMemberLegislation(bioguideId: string | undefined): {
  * Congress that this fixture has no way to keep true, which is exactly the kind of accidental misinformation the
  * preview-data policy exists to prevent. The chart labels these seats as placeholders wherever they're shown.
  */
-export const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = {
+const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = {
   house: [
     { party: "democratic", count: 218 },
     { party: "republican", count: 217 },
@@ -439,7 +439,7 @@ export const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = 
  * @param chamber - Which chamber to populate.
  * @returns Placeholder members in the party proportions from {@link previewChamberPartySplits}.
  */
-export function previewChamberMembers(chamber: CongressChamber): CongressMember[] {
+function previewChamberMembers(chamber: CongressChamber): CongressMember[] {
   const members: CongressMember[] = [];
 
   for (const tally of previewChamberPartySplits[chamber]) {
