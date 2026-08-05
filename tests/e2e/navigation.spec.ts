@@ -251,3 +251,38 @@ test("a committee's record collections are real links that survive a reload", as
   await page.reload();
   await expect(page.getByRole("link", { name: /Reports Published/ })).toHaveAttribute("aria-current", "page");
 });
+
+test("a defined term in a lesson explains itself and leads to its glossary entry", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  // The three things a browser can check that jsdom cannot: the bubble is actually painted rather than merely marked
+  // open, it lands inside the viewport, and the word underneath it is a working link when nothing is hovering it.
+  await page.goto("/learn/what-committees-do");
+
+  const term: Locator = page.locator(".glossary-term__word", { hasText: /^markup$/ }).first();
+  const tip: Locator = page.locator(".glossary-term").filter({ has: term }).locator(".glossary-term__tip");
+
+  await expect(tip).toBeHidden();
+
+  await term.hover();
+  await expect(tip).toBeVisible();
+  await expect(tip).toContainText("The session where a committee goes through a bill and amends it.");
+
+  const box = await tip.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  if (box && viewport) {
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+  }
+
+  // Dismissible without moving the pointer or the focus, per WCAG 1.4.13.
+  await page.keyboard.press("Escape");
+  await expect(tip).toBeHidden();
+
+  await term.click();
+  await expect(page).toHaveURL(/\/learn#glossary-markup$/);
+  await expect(page.locator("#glossary-markup")).toBeInViewport();
+});

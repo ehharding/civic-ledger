@@ -16,6 +16,7 @@ import { billHref } from "@/lib/bill-route";
 import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
 import type { BillRouteParams, LegislativeBill } from "@/lib/congress/types";
 import { expectNotFound } from "@/test/next-not-found";
+import { readerText } from "@/test/reader-text";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
@@ -70,10 +71,14 @@ describe("generateMetadata", (): void => {
 
 describe("BillPage", (): void => {
   it("renders the bill record", async (): Promise<void> => {
-    render(await BillPage({ params: Promise.resolve(routeFor(firstPreviewBill)) }));
+    const { container } = render(await BillPage({ params: Promise.resolve(routeFor(firstPreviewBill)) }));
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(firstPreviewBill.title);
-    expect(screen.getByText(firstPreviewBill.latestAction.text as string)).toBeInTheDocument();
+    // The action line runs through `GlossaryProse`, so its defined words are split out and carry hidden definitions.
+    // Reading it back with those stripped is what keeps this an assertion about the sentence. @see reader-text.ts.
+    expect(readerText(container.querySelector(".latest-action-copy") as Element)).toBe(
+      firstPreviewBill.latestAction.text,
+    );
   });
 
   it("renders every preview bill, so no fixture links to a page that cannot resolve", async (): Promise<void> => {

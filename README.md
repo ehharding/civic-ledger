@@ -101,6 +101,11 @@ Behind those routes:
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
   the voting module, that this app holds no roll-call data at all.
+- **A glossary that comes to the reader.** Every word the glossary defines is annotated where it is actually used —
+  throughout the lessons, and in a bill's latest action, which is the one line on that page written in Congress's voice
+  rather than this app's. Hovering or focusing "cloture" or "markup" shows the definition in place; the word is also a
+  link to its full entry, so it works on a touch screen and with JavaScript off. The annotation never rewrites the text
+  it runs over, which is checked rather than intended.
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.

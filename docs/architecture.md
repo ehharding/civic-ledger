@@ -43,21 +43,21 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 
 ## Boundaries
 
-| Layer                         | Responsibility                                  | Rule                                                              |
-|-------------------------------|-------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`                     | Routes, metadata, route handlers                | Never expose the government API key.                              |
-| `src/components`              | Presentation and small user interactions        | Preserve visible preview/live provenance.                         |
-| `src/db`                      | User-owned data and future normalized snapshots | Do not claim it is the source of truth for congressional records. |
-| `src/hooks`                   | Client-side behavior extracted from views       | Depend only on isomorphic modules, never on the server adapter.   |
-| `src/lib/api-query.ts`        | Validation of this app's own query params       | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/*-route.ts`          | In-app route construction                       | One definition per route shape; never build a route inline.       |
-| `src/lib/format.ts`           | Shared display and comparison rules             | One collator and one date order for the whole app.                |
-| `src/lib/glossary.ts`         | Curated editorial vocabulary                    | Cover every term the lessons lean on.                             |
-| `src/lib/lessons.ts`          | Curated editorial learning content              | Cite primary sources; state what each lesson leaves out.          |
-| `src/lib/metadata.ts`         | How a page names itself to crawlers and shares  | One call per page; compose share tags, never assume inheritance.  |
-| `src/lib/search-params.ts`    | Resolving each directory's deep link            | Server-only; a stale link degrades to the default view.           |
-| `src/lib/congress`            | Fetch, normalize, cache, and classify API data  | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/congress/seating.ts` | Chart geometry only                             | Stay free of React and of any Congress.gov concern.               |
+| Layer                         | Responsibility                                        | Rule                                                              |
+|-------------------------------|-------------------------------------------------------|-------------------------------------------------------------------|
+| `src/app`                     | Routes, metadata, route handlers                      | Never expose the government API key.                              |
+| `src/components`              | Presentation and small user interactions              | Preserve visible preview/live provenance.                         |
+| `src/db`                      | User-owned data and future normalized snapshots       | Do not claim it is the source of truth for congressional records. |
+| `src/hooks`                   | Client-side behavior extracted from views             | Depend only on isomorphic modules, never on the server adapter.   |
+| `src/lib/api-query.ts`        | Validation of this app's own query params             | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/*-route.ts`          | In-app route construction                             | One definition per route shape; never build a route inline.       |
+| `src/lib/format.ts`           | Shared display and comparison rules                   | One collator and one date order for the whole app.                |
+| `src/lib/glossary.ts`         | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
+| `src/lib/lessons.ts`          | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |
+| `src/lib/metadata.ts`         | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
+| `src/lib/search-params.ts`    | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
+| `src/lib/congress`            | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
+| `src/lib/congress/seating.ts` | Chart geometry only                                   | Stay free of React and of any Congress.gov concern.               |
 
 ### Inside the Congress Adapter
 
@@ -281,6 +281,36 @@ a real `<form>` rather than a click handler: a link should arrive at what it say
 whatever is or isn't running. The upstream cost is unchanged either way, since the roster still comes through the shared
 five-minute cache; what changed is a server render per visit, not a Congress.gov request per visit.
 
+## The Glossary Comes to the Reader
+
+A glossary on its own page is a reference you have to already know you need. `annotateGlossaryTerms` inverts that: it
+scans a run of prose, finds the words the glossary defines, and hands back the text as alternating plain and annotated
+runs, which `GlossaryProse` renders. A defined word becomes a link to its own entry that shows the definition on hover
+and on focus. It is applied where jargon actually lands on a reader — every lesson's steps and limits, and a bill's
+latest action, which is the one line on that page written in Congress's voice rather than this app's.
+
+Four decisions are worth knowing before changing it.
+
+**The scan is pure, and its output reproduces its input.** It performs no I/O, imports no React, and concatenating every
+returned segment gives back the original string character for character — pinned as a test, because the alternative is a
+feature that quietly edits the congressional record in order to decorate it. @see
+[A Definition Is Attached to the Record](data-policy.md#a-definition-is-attached-to-the-record-never-merged-into-it).
+
+**Matching tolerates inflection but not derivation.** Terms are stored in title case and met lower-cased, pluralized,
+and possessive, so the pattern accepts those and renders whatever the source wrote. It deliberately stops there:
+"cosponsorship" is a different claim from "cosponsor", and a stemmer that reached it would attach a definition that
+doesn't describe it. Only the *first* mention of each term in a block is annotated, since a paragraph with six dotted
+underlines in it is harder to read than the jargon was.
+
+**Which terms a page ships is decided on the server.** `GlossaryProse` is a server component that renders a client one
+per match, so a page carries only the entries its own text uses, and prose containing no defined term crosses no client
+boundary at all.
+
+**The term is a link before it is a tooltip.** The bubble is an enhancement over an anchor to `/learn#glossary-<term>`,
+which is what makes the feature work on a touch screen, with JavaScript off, and for a reader who wants the whole entry.
+The far end of that link is `glossaryEntryId`, which the `/learn` page renders as each entry's `id` — one function owns
+both ends, so a link and its destination cannot be spelled differently.
+
 ## Shared Rules
 
 Two rules are consolidated in `src/lib/format.ts` because a rule that lives in one place is a rule that applies
@@ -388,6 +418,13 @@ history, notification delivery, or more than a few API-facing features.
   reordering the parties by size instead would have made the control disagree with a chart the reader had just looked
   at. States and territories are grouped rather than interleaved, split by `isNonVotingJurisdiction` — the same
   distinction the chamber diagram draws, which makes it a fact about the chamber rather than an editorial grouping.
+- **A definition on hover is also a definition on focus, and is dismissible.** The glossary terms in the app's prose
+  answer each clause of WCAG 1.4.13 (Content on Hover or Focus) at a named place in `GlossaryTermTip`: the trigger is a
+  real link, so focus opens the bubble as hover does; the pointer listeners sit on the wrapper that *contains* the
+  bubble, so moving into the definition doesn't dismiss it; Escape closes it, listened for on the document rather than
+  on the trigger, since a bubble opened by hovering has no focus inside it to hear a keypress; and nothing closes on a
+  timer. The bubble also stays mounted while hidden, because a screen reader resolves `aria-describedby` at the moment
+  focus lands — before a bubble mounted by a state update would exist.
 - Nothing is reachable by pointer alone. The chamber diagram in particular is fully keyboard-operable (one tab stop plus
   a roving tabindex across seats) and names every seat for assistive technology, so it reads as a list of members rather
   than an unlabeled picture. Party color is never the only carrier of meaning — each seat states its party in its

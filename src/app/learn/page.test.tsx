@@ -10,7 +10,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import LearnPage, { metadata } from "@/app/learn/page";
-import { type GlossaryTerm, glossary } from "@/lib/glossary";
+import { type GlossaryTerm, glossary, glossaryEntryId, glossaryHref } from "@/lib/glossary";
 import { type Lesson, lessons } from "@/lib/lessons";
 
 describe("LearnPage", (): void => {
@@ -38,6 +38,20 @@ describe("LearnPage", (): void => {
     for (const entry of glossary) {
       expect(screen.getByText(entry.term), entry.term).toBeInTheDocument();
       expect(screen.getByText(entry.detail), entry.term).toBeInTheDocument();
+    }
+  });
+
+  it("gives every glossary entry the id that the app's in-prose terms link to", (): void => {
+    // The far end of `glossaryHref`. Every defined word elsewhere in the app is an anchor into this page, so an entry
+    // without its id is a link that lands on the glossary and leaves a reader to find the term themselves.
+    const { container } = render(<LearnPage />);
+
+    for (const entry of glossary) {
+      const target: Element | null = container.querySelector(`#${glossaryEntryId(entry.term)}`);
+
+      expect(target, entry.term).not.toBeNull();
+      expect(target, entry.term).toHaveClass("glossary-entry");
+      expect(glossaryHref(entry.term), entry.term).toBe(`/learn#${glossaryEntryId(entry.term)}`);
     }
   });
 

@@ -6,7 +6,7 @@ import { CalloutCard } from "@/components/callout-card";
 import { LessonIndex } from "@/components/lesson-index";
 import { PageHeader } from "@/components/page-header";
 import { SiteShell } from "@/components/site-shell";
-import { type GlossaryTerm, glossary } from "@/lib/glossary";
+import { type GlossaryTerm, glossary, glossaryEntryId } from "@/lib/glossary";
 import { pageMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = pageMetadata({
@@ -58,7 +58,11 @@ export default function LearnPage(): JSX.Element {
           (entry: GlossaryTerm): JSX.Element => (
             // h3, not h2: the entries now sit under the "Glossary" section heading rather than directly under the page
             // title, and a heading that skips no level is the whole point of having one.
-            <article className="glossary-entry" key={entry.term}>
+            //
+            // The id is what makes an entry a destination. Every defined term in the app's own prose links here by
+            // fragment, so this is the far end of `glossaryHref` — derived from the term by the same function, since a
+            // link and its target written down separately are a link that eventually scrolls nowhere.
+            <article className="glossary-entry" id={glossaryEntryId(entry.term)} key={entry.term}>
               <p className="section-kicker">{entry.term}</p>
               <h3>{entry.plainEnglish}</h3>
               <p>{entry.detail}</p>

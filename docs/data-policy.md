@@ -212,6 +212,22 @@ The glossary (`src/lib/glossary.ts`) is deliberately exempt. The line is length 
 of "cosponsor" is vocabulary, and a five-step account of how a chamber records a vote is a claim. What the glossary owes
 instead is coverage of the terms the lessons lean on.
 
+### A Definition Is Attached to the Record, Never Merged Into It
+
+Glossary terms are annotated wherever they appear in the app's prose — including in a bill's latest action, which is a
+sentence Congress wrote rather than one this project did. That is the point (it is where a reader most often meets a
+word they don't have) and it is also the one place this feature could quietly break the rule the rest of this document
+is about, so the boundary is explicit:
+
+- **The record's own text is never altered.** `annotateGlossaryTerms` only splits a string into runs; concatenating them
+  back reproduces the input exactly, and `glossary.test.ts` pins that as an invariant rather than as an intention. No
+  word is corrected, expanded, or replaced with the glossary's spelling — "committees" stays "committees".
+- **The definition stays visibly Civic Ledger's.** It appears in its own panel, headed by the glossary's term, next to
+  the sentence rather than inside it. A reader is never shown this project's wording as though Congress had published
+  it, which is the same rule the preview fixtures and the CRS summary captions already hold.
+- **Every annotated term links to its full entry** on `/learn`, so the definition a reader was shown in passing is one
+  they can go read in full, in the place that says who wrote it.
+
 ## What This Product Will Not Do
 
 **No scoring.** Member pages report what Congress.gov publishes — service record, party, jurisdiction, and the

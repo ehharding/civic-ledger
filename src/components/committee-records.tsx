@@ -19,7 +19,7 @@ import {
   describeCommitteeRecordsPage,
 } from "@/lib/congress/committee-records";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees";
-import { formatDate, formatOrdinal } from "@/lib/format";
+import { formatCount, formatDate, formatOrdinal } from "@/lib/format";
 
 /**
  * The records an individual committee has accumulated: the bills referred to it, the reports it published, and the
@@ -116,7 +116,7 @@ function RecordsTab({
       <Link aria-current={isCurrent ? "page" : undefined} className="committee-records__tab" href={href}>
         <span className="committee-records__tab-label">{committeeRecordKindLabels[kind]}</span>
         <span className="committee-records__tab-count">
-          {count === undefined ? "Not reported" : count.toLocaleString("en-US")}
+          {count === undefined ? "Not reported" : formatCount(count)}
         </span>
       </Link>
     </li>
@@ -303,7 +303,7 @@ function RecordsPager({
       )}
 
       <p className="committee-records__pager-position">
-        Page {page.toLocaleString("en-US")} of {pageCount.toLocaleString("en-US")}
+        Page {formatCount(page)} of {formatCount(pageCount)}
       </p>
 
       {page < pageCount ? (

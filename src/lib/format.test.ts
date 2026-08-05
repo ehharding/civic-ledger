@@ -3,9 +3,17 @@
  * timezone pinning that keeps formatDate from rolling a date back a day, the two comparison rules every ordering in the
  * app shares, and the two small display helpers the rest of it leans on for counts and for casing upstream free text.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { compareIsoDatesDesc, compareText, formatDate, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
+import {
+  compareIsoDatesDesc,
+  compareText,
+  formatCount,
+  formatDate,
+  formatOrdinal,
+  pluralize,
+  toTitleCase,
+} from "@/lib/format";
 
 describe("formatOrdinal", (): void => {
   it("uses st/nd/rd for numbers ending in 1, 2, or 3", (): void => {
@@ -43,6 +51,8 @@ describe("formatDate", (): void => {
     } else {
       process.env.TZ = originalTz;
     }
+
+    vi.resetModules();
   });
 
   it("formats a bare YYYY-MM-DD date", (): void => {
@@ -57,18 +67,26 @@ describe("formatDate", (): void => {
     expect(formatDate("not-a-date")).toBe("not-a-date");
   });
 
-  it("renders the same calendar date regardless of the runtime's local timezone", (): void => {
+  it("renders the same calendar date regardless of the runtime's local timezone", async (): Promise<void> => {
     // Without pinning Intl.DateTimeFormat to UTC, this exact case renders one day off in either direction depending on
     // where the code runs — see the comment on formatDate. Covers both extremes: a timezone west of UTC (which would
     // roll a UTC-early-morning timestamp back a day) and one far enough east to roll a UTC-noon timestamp forward a
     // day.
-    process.env.TZ = "America/Chicago"; // UTC-6
-    expect(formatDate("2022-02-15T05:00:00Z")).toBe("February 15, 2022");
-    expect(formatDate("2026-07-14")).toBe("July 14, 2026");
+    //
+    // The module is re-imported under each timezone rather than the exported function being called twice, and that is
+    // load-bearing now that the formatter is built once at module scope: `Intl.DateTimeFormat` resolves its timezone
+    // when it is *constructed*, so setting `TZ` afterwards would leave an unpinned formatter still holding the zone
+    // the test process started in — and this test would pass while the bug it exists to catch was present. Rebuilding
+    // the module is what puts the construction back inside the case under test.
+    for (const timeZone of ["America/Chicago", "Pacific/Kiritimati"]) {
+      process.env.TZ = timeZone;
+      vi.resetModules();
 
-    process.env.TZ = "Pacific/Kiritimati"; // UTC+14
-    expect(formatDate("2022-02-15T05:00:00Z")).toBe("February 15, 2022");
-    expect(formatDate("2026-07-14")).toBe("July 14, 2026");
+      const { formatDate: underTimeZone } = await import("@/lib/format");
+
+      expect(underTimeZone("2022-02-15T05:00:00Z"), timeZone).toBe("February 15, 2022");
+      expect(underTimeZone("2026-07-14"), timeZone).toBe("July 14, 2026");
+    }
   });
 });
 
@@ -182,5 +200,19 @@ describe("toTitleCase with irregular hyphenation", (): void => {
     expect(toTitleCase("wilkes--barre")).toBe("Wilkes--Barre");
     expect(toTitleCase("-barre")).toBe("-Barre");
     expect(toTitleCase("wilkes-")).toBe("Wilkes-");
+  });
+});
+
+describe("formatCount", (): void => {
+  it("separates thousands, which is what makes a five-figure count readable at a glance", (): void => {
+    expect(formatCount(10205)).toBe("10,205");
+    expect(formatCount(1)).toBe("1");
+    expect(formatCount(0)).toBe("0");
+  });
+
+  it("stays on the app's own locale rather than the runtime's", (): void => {
+    // The same reasoning that pins `compareText`'s collator and `formatDate`'s timezone: a separator chosen by the
+    // machine the code happens to run on is a server render and a browser render that can disagree.
+    expect(formatCount(1234567)).toBe("1,234,567");
   });
 });

@@ -7,6 +7,7 @@ import {
   type JSX,
   type KeyboardEvent,
   type MouseEvent,
+  memo,
   type RefObject,
   useMemo,
   useRef,
@@ -113,6 +114,13 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
  * handlers reach it identically for both forms.
  * @see seatIndexFromEvent
  *
+ * **Memoized, which at this size is the difference between a chart that tracks the pointer and one that lags it.**
+ * Every hover, focus, and arrow keypress changes one number on the parent, and the parent draws 441 of these. Without a
+ * memo, a single mouse move across the chamber re-renders every seat — each one rebuilding its accessible name out of a
+ * member record and formatting three floats — to change the class on two of them. Every prop here is a primitive except
+ * `seat`, whose identity is stable because `buildChamberSeating` runs inside a `useMemo` keyed on the roster, so the
+ * default shallow comparison is exactly the right one.
+ *
  * @param seat - The seat to draw, carrying its member and resolved position.
  * @param chamber - The chamber it belongs to, which decides how the accessible name describes it.
  * @param radius - The chart's shared seat radius.
@@ -120,7 +128,7 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
  * @param isActive - Whether this seat holds the chart's single tab stop.
  * @returns The seat element.
  */
-function Seat({
+const Seat = memo(function Seat({
   seat,
   chamber,
   radius,
@@ -167,7 +175,7 @@ function Seat({
       tabIndex={isActive ? 0 : -1}
     />
   );
-}
+});
 
 /**
  * The read-out shown when a seat is hovered, focused, or locked by a click.

@@ -180,6 +180,24 @@ export function formatOrdinal(value: number): string {
 }
 
 /**
+ * The date formatter every displayed date in this app is rendered through.
+ *
+ * Hoisted to module scope on exactly the reasoning stated for {@link textCollator} above, and it pays off in the same
+ * kind of place: a committee's records page renders twenty dated rows, a member's page one per term plus one per bill
+ * card, and a bill's page one per text version. `new Intl.DateTimeFormat(…)` resolves a locale and builds a pattern
+ * every time it is called, which is the expensive part — `format` itself is cheap — so constructing one per date was
+ * paying that cost once per row for a formatter that never varies.
+ *
+ * @see formatDate for why `timeZone: "UTC"` is load-bearing rather than decorative.
+ */
+const dateFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/**
  * Formats an ISO date for display, e.g., "July 14, 2026".
  *
  * `timeZone: "UTC"` is deliberate, not decorative: `Intl.DateTimeFormat` renders in the *runtime's local timezone* by
@@ -198,10 +216,30 @@ export function formatDate(value: string): string {
 
   if (Number.isNaN(date.valueOf())) return value;
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
+  return dateFormatter.format(date);
+}
+
+/**
+ * The number formatter every count in this app is printed through.
+ *
+ * Constructed once for the same reason {@link textCollator} is, and it matters in the same place: a committee's records
+ * page prints a count per collection tab and two more in its pager, above a list whose every row already calls
+ * {@link formatDate}. `Intl` constructors are the expensive half of `Intl` — building a formatter costs far more than
+ * using one — and `toLocaleString` builds a fresh one on every single call.
+ */
+const countFormatter: Intl.NumberFormat = new Intl.NumberFormat("en-US");
+
+/**
+ * Formats a whole number with thousands separators, e.g., `10205` → `"10,205"`.
+ *
+ * Five-figure counts are ordinary here — a long-lived committee has tens of thousands of bills referred to it — and an
+ * unseparated "10205" is a number a reader has to count the digits of. Stated once rather than as a `toLocaleString`
+ * call per site, on the rule the rest of this module holds: a display decision that lives in one place is one that
+ * applies everywhere.
+ *
+ * @param value - The count to format.
+ * @returns The separated number.
+ */
+export function formatCount(value: number): string {
+  return countFormatter.format(value);
 }

@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { LessonArticle } from "@/components/lesson-article";
 import { type Lesson, type LessonStep, lessonNumber, lessons } from "@/lib/lessons";
+import { readerText } from "@/test/reader-text";
 
 describe("LessonArticle", (): void => {
   it.each(lessons.map((lesson: Lesson): [string, Lesson] => [lesson.slug, lesson]))(
@@ -54,7 +55,10 @@ describe("LessonArticle", (): void => {
 
     const firstStep: LessonStep = voting.steps[0] as LessonStep;
     const panel: HTMLElement = screen.getByRole("article", { name: firstStep.heading });
-    expect(within(panel).getByText(firstStep.copy)).toBeInTheDocument();
+    // Read through `readerText`: step copy runs through `GlossaryProse`, so a defined word in it is split across
+    // elements and carries its own hidden definition. What this pins is that the step's sentence arrives intact.
+    // @see reader-text.ts.
+    expect(readerText(panel)).toContain(firstStep.copy);
   });
 
   it("closes with the lesson's own onward callout", (): void => {

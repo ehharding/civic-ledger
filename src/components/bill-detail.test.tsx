@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { BillDetail } from "@/components/bill-detail";
 import { firstPreviewBill } from "@/lib/congress/fixtures";
 import type { BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import { readerText } from "@/test/reader-text";
 
 const bill: LegislativeBill = firstPreviewBill;
 
@@ -43,17 +44,22 @@ describe("BillDetail", (): void => {
       sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" },
       cosponsorCount: 5,
     };
-    render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
+    const { container } = render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("Sponsor: Rep. Test, Sample A. [D-ZZ-1]")).toBeInTheDocument();
-    expect(screen.getByText("5 Cosponsors")).toBeInTheDocument();
+    // Read through `readerText` because "Cosponsors" is a defined term and so carries its own hidden definition.
+    // @see reader-text.ts — the count and its noun are what this pins, not the markup around them.
+    expect(readerText(container.querySelector(".bill-detail-meta") as Element)).toContain("5 Cosponsors");
   });
 
   it("uses the singular form for exactly one cosponsor", (): void => {
     const withSponsor: LegislativeBill = { ...bill, cosponsorCount: 1 };
-    render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
+    const { container } = render(<BillDetail bill={withSponsor} source="live" summaries={[]} textVersions={[]} />);
 
-    expect(screen.getByText("1 Cosponsor")).toBeInTheDocument();
+    const meta: string = readerText(container.querySelector(".bill-detail-meta") as Element);
+
+    expect(meta).toContain("1 Cosponsor");
+    expect(meta).not.toContain("1 Cosponsors");
   });
 
   it("omits sponsor and cosponsor lines when neither is present", (): void => {

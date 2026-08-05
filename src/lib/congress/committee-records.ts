@@ -1,5 +1,6 @@
 import { parseEnumParam, toQueryString } from "@/lib/congress/directory-filter";
 import type { LegislativeBill } from "@/lib/congress/types";
+import { formatCount } from "@/lib/format";
 
 /**
  * The three collections Congress.gov counts alongside a committee — the bills referred to it, the reports it published,
@@ -431,7 +432,7 @@ export function describeCommitteeRecordsPage(options: {
   const last: number = first + shown - 1;
   const known: number = total ?? last;
 
-  if (known <= COMMITTEE_RECORDS_PAGE_SIZE) return `${shown.toLocaleString("en-US")} on file.`;
+  if (known <= COMMITTEE_RECORDS_PAGE_SIZE) return `${formatCount(shown)} on file.`;
 
-  return `Showing ${first.toLocaleString("en-US")}–${last.toLocaleString("en-US")} of ${known.toLocaleString("en-US")}, in the order Congress.gov publishes them.`;
+  return `Showing ${formatCount(first)}–${formatCount(last)} of ${formatCount(known)}, in the order Congress.gov publishes them.`;
 }

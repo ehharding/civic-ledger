@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
+import { GlossaryProse } from "@/components/glossary-prose";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import {
@@ -131,7 +132,7 @@ export function BillDetail({
           ) : null}
           {typeof bill.cosponsorCount === "number" ? (
             <span>
-              {bill.cosponsorCount} {pluralize(bill.cosponsorCount, "Cosponsor")}
+              {bill.cosponsorCount} <GlossaryProse text={pluralize(bill.cosponsorCount, "Cosponsor")} />
             </span>
           ) : null}
         </div>
@@ -153,7 +154,12 @@ export function BillDetail({
         <aside className="detail-panel detail-panel--accent" aria-labelledby="next-heading">
           <p className="section-kicker">Latest Action</p>
           <h2 id="next-heading">What Happened Most Recently</h2>
-          <p className="latest-action-copy">{bill.latestAction.text}</p>
+          {/* The one line on this page written in Congress's own voice rather than this app's — "Referred to the
+              Committee on…", "Passed Senate without amendment" — which makes it the place a reader is most likely to
+              hit a word they don't have. @see GlossaryProse. */}
+          <p className="latest-action-copy">
+            <GlossaryProse text={bill.latestAction.text} />
+          </p>
           {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
           <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
         </aside>

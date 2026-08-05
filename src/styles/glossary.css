@@ -1,0 +1,105 @@
+/* The in-prose glossary term and its hover/focus definition. @see GlossaryTermTip, which owns the behavior; this file
+   owns only what it looks like. */
+
+/* Inline, so a defined term sits in the sentence exactly where the word did, and `relative` only so the bubble has
+   something to position against. A multi-word term that happens to break across a line anchors its bubble to the first
+   fragment, which is where a reader's eye already is. */
+.glossary-term {
+  position: relative;
+}
+
+/* The term reads as prose that happens to be defined, not as a call to action. A dotted underline is the long-settled
+   convention for exactly that, and it is deliberately *not* the app's `.text-link` treatment: a burgundy bold link
+   every time the word "committee" appears would turn a lesson paragraph into a list of links. */
+.glossary-term__word {
+  color: inherit;
+  text-decoration: underline dotted currentcolor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.glossary-term__word:hover {
+  color: var(--navy);
+  text-decoration-style: solid;
+}
+
+/* `left` and `data-side` are both written by the component, which measures the bubble once each time it opens and
+   corrects it back inside the viewport — a correction CSS cannot express, since `position: absolute` resolves against
+   the word rather than against the window. @see fitTipToViewport. The values here are what it corrects *from*. */
+.glossary-term__tip {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  max-width: min(23rem, 74vw);
+  padding: 14px 16px;
+  border: 1px solid var(--line-dark);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%) translateY(3px);
+  /* Hidden rather than unmounted: `aria-describedby` resolves its text from the element whether or not it is showing,
+     which is what lets a screen reader announce the definition the instant the term takes focus. @see GlossaryTermTip.
+     `visibility` rather than `display` so the transition has something to animate. */
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms;
+  white-space: normal;
+}
+
+.glossary-term__tip[data-side="below"] {
+  top: calc(100% + 9px);
+  bottom: auto;
+  transform: translateX(-50%) translateY(-3px);
+}
+
+.glossary-term__tip[data-open="true"] {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.glossary-term__tip-name {
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.glossary-term__tip-plain {
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.glossary-term__tip-detail {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glossary-term__tip {
+    transition: none;
+  }
+}
+
+/* The glossary entries on /learn, which every in-prose term links to by fragment. The offset keeps a targeted entry
+   clear of the top of the viewport, and the accent marks which one the link was pointing at — arriving at a wall of
+   entries with no indication of which one you asked for is the whole failure this prevents. */
+.glossary-entry {
+  scroll-margin-top: 24px;
+}
+
+.glossary-entry:target {
+  border-color: var(--green);
+  background: var(--teal-surface);
+}
