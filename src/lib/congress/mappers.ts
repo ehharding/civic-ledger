@@ -1,6 +1,9 @@
 import type {
   CongressApiAction,
   CongressApiBill,
+  CongressApiBillCommittee,
+  CongressApiBillCommitteeActivity,
+  CongressApiBillSubcommittee,
   CongressApiCommittee,
   CongressApiCommitteeBill,
   CongressApiCommitteeDetail,
@@ -8,6 +11,7 @@ import type {
   CongressApiCommitteeNomination,
   CongressApiCommitteeRef,
   CongressApiCommitteeReport,
+  CongressApiLaw,
   CongressApiLeadership,
   CongressApiMember,
   CongressApiMemberDetail,
@@ -20,6 +24,9 @@ import type {
 } from "@/lib/congress/api-schema";
 import type { CommitteeBillReferral, CommitteeNomination, CommitteeReport } from "@/lib/congress/committee-records";
 import {
+  type BillCommittee,
+  type BillCommitteeActivity,
+  type BillSubcommittee,
   type CommitteeChamber,
   type CommitteeHistoryEntry,
   type CommitteeProfile,
@@ -48,6 +55,7 @@ import {
   type BillTextFormat,
   type BillTextVersion,
   congressGovBillUrl,
+  type EnactedLaw,
   type LegislativeBill,
   type RecordedVote,
 } from "@/lib/congress/types";
@@ -99,6 +107,8 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
 
   const actionText: string = bill.latestAction?.text ?? "No action text has been published yet.";
   const sponsor: CongressApiSponsor | undefined = bill.sponsors?.[0];
+  // A bill is enacted at most once; the array is how the endpoint spells an optional field, not a collection to page.
+  const enactedLaw: EnactedLaw | undefined = mapUsable(bill.laws, mapEnactedLaw)[0];
 
   return {
     congress: bill.congress,
@@ -112,7 +122,10 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
       text: actionText,
     },
     policyArea: bill.policyArea?.name,
-    stage: inferBillStage(actionText),
+    // A published law outranks a phrase match. `inferBillStage` reaches `"law"` by recognizing "became public law" in
+    // one line of prose, which is right whenever that sentence is the latest action and silent whenever a later one
+    // displaced it; `laws` is the record stating the outcome regardless of what the newest row happens to say.
+    stage: enactedLaw ? "law" : inferBillStage(actionText),
     // `legislationUrl` is the public congress.gov page, published by the item-level endpoint since August 2025;
     // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
     // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
@@ -127,7 +140,25 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
         } satisfies BillSponsor)
       : undefined,
     cosponsorCount: bill.cosponsors?.count,
+    enactedLaw,
   };
+}
+
+/**
+ * Maps the law a bill became.
+ *
+ * @param law - A validated entry from a detail-endpoint bill's `laws` array.
+ * @returns The mapped law, or `null` unless it carries both halves of the citation. "Public Law" with no number names
+ *   no specific law, and a bare "119-21" names nothing at all — and the stage this pins is one the action codes can
+ *   still establish on their own, so a half-record is dropped rather than propped up.
+ */
+export function mapEnactedLaw(law: CongressApiLaw): EnactedLaw | null {
+  const type: string = (law.type ?? "").trim();
+  const number: string = (law.number ?? "").trim();
+
+  if (type.length === 0 || number.length === 0) return null;
+
+  return { type, number };
 }
 
 /**
@@ -478,6 +509,79 @@ export function mapCommitteeProfile(
     reportCount: committee.reports?.count,
     nominationCount: committee.nominations?.count,
     websiteUrl: committee.committeeWebsiteUrl,
+  };
+}
+
+/**
+ * The activity name Congress.gov publishes when it has recorded that *something* happened and not what.
+ *
+ * These are common — a bill's committee record routinely carries two or three of them alongside one real activity.
+ * Printing "Unknown" beside a committee's name tells a reader nothing they could act on and reads as a gap in this app
+ * rather than in the record, so the row is dropped instead.
+ *
+ * Dropping it is not editing the record: nothing is renamed, reinterpreted, or attributed to the committee that the
+ * publisher didn't attribute. What is declined is the printing of a non-answer. The committee itself still appears,
+ * with whatever it *did* name, and with no activity line at all when it named none.
+ */
+const UNNAMED_COMMITTEE_ACTIVITY: string = "unknown";
+
+/**
+ * Maps one recorded committee activity.
+ *
+ * @param activity - A validated entry from a bill's committee record.
+ * @returns The mapped activity, or `null` when it names nothing — including the endpoint's literal `"Unknown"`.
+ *   @see UNNAMED_COMMITTEE_ACTIVITY
+ */
+export function mapBillCommitteeActivity(activity: CongressApiBillCommitteeActivity): BillCommitteeActivity | null {
+  const name: string = (activity.name ?? "").trim();
+
+  if (name.length === 0 || name.toLowerCase() === UNNAMED_COMMITTEE_ACTIVITY) return null;
+
+  return { name, date: activity.date };
+}
+
+/**
+ * Maps one subcommittee a bill reached.
+ *
+ * @param subcommittee - A validated entry from a committee's `subcommittees` array on a bill record.
+ * @returns The mapped subcommittee, or `null` without a code and a name — the same bar {@link mapCommitteeRef} holds,
+ *   and for the same reason: one that cannot be opened or labeled is not a row.
+ */
+export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): BillSubcommittee | null {
+  const systemCode: string = (subcommittee.systemCode ?? "").trim().toLowerCase();
+  const name: string = (subcommittee.name ?? "").trim();
+
+  if (systemCode.length === 0 || name.length === 0) return null;
+
+  return { systemCode, name, activities: mapUsable(subcommittee.activities, mapBillCommitteeActivity) };
+}
+
+/**
+ * Maps one committee a bill was before.
+ *
+ * @param committee - A validated entry from `GET /v3/bill/{congress}/{type}/{number}/committees`.
+ * @returns The mapped committee, or `null` without a code, a name, or a recognizable chamber. All three are
+ *   load-bearing rather than decorative: the code and the chamber together *are* the inward link, and this app's whole
+ *   reason for showing a referral is that a reader can follow it.
+ */
+export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommittee | null {
+  const systemCode: string = (committee.systemCode ?? "").trim().toLowerCase();
+  const name: string = (committee.name ?? "").trim();
+  const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
+
+  if (systemCode.length === 0 || name.length === 0 || !chamber) return null;
+
+  return {
+    systemCode,
+    name,
+    chamber,
+    type: normalizeCommitteeType(committee.type),
+    typeName: committee.type,
+    // Left in the publisher's order rather than sorted by date. The endpoint lists a committee's activities newest
+    // first, but its *committees* in referral order — primary committee first — and that ordering is meaningful, so
+    // neither level is re-sorted into an order this app would then be claiming to have established.
+    activities: mapUsable(committee.activities, mapBillCommitteeActivity),
+    subcommittees: mapUsable(committee.subcommittees, mapBillSubcommittee).sort(compareCommitteesByName),
   };
 }
 

@@ -156,13 +156,30 @@ export async function requestCongressJson<Payload>(
   }
 }
 
-/** The two cache tags shared by every request scoped to one specific bill (detail lookup, summaries, text versions). */
-export function billCacheTags(input: BillRouteParams): string[] {
-  return ["congress-bills", `bill-${input.congress}-${input.type}-${input.number}`];
-}
-
 /** Cache tag shared by every bill *list* request, regardless of which Congress or page it asks for. */
 export const BILL_LIST_CACHE_TAG: string = "congress-bills";
+
+/**
+ * The two cache tags shared by every request scoped to one specific bill (detail lookup, summaries, text, actions,
+ * committees).
+ *
+ * The identifier is normalized here rather than trusted from the caller, because the same bill reaches this function
+ * spelled several ways: a route param arrives lower-cased (`/bills/119/hr/284`), a parsed search citation arrives
+ * upper-cased (`parseBillCitation` returns `"HR"`), and the committee page's title lookups arrive already narrowed.
+ * Untouched, those produce `bill-119-hr-284` and `bill-119-HR-284` for one bill — which costs nothing today, since
+ * Next dedupes the underlying requests by URL, and would cost exactly the thing tags exist for the moment a
+ * revalidation hook tries to invalidate one bill and reaches only some of its records.
+ *
+ * @param input - The bill's identifier, in any of the casings the app produces.
+ * @returns The list tag and this bill's own tag, the latter in one canonical spelling.
+ */
+export function billCacheTags(input: BillRouteParams): string[] {
+  const congress: string = input.congress.trim();
+  const type: string = input.type.trim().toLowerCase();
+  const number: string = input.number.trim();
+
+  return [BILL_LIST_CACHE_TAG, `bill-${congress}-${type}-${number}`];
+}
 
 /** Cache tag shared by every member-list request. */
 export const MEMBER_LIST_CACHE_TAG: string = "congress-members";

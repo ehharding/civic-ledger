@@ -1,5 +1,3 @@
-import type { ZodType } from "zod";
-
 import {
   type CongressApiAction,
   type CongressApiActionsResponse,
@@ -14,6 +12,7 @@ import {
   congressApiSummariesResponseSchema,
   congressApiTextResponseSchema,
 } from "@/lib/congress/api-schema";
+import { fetchBillSubResource } from "@/lib/congress/bill-sub-resource";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills, previewSummaries } from "@/lib/congress/fixtures";
@@ -34,7 +33,6 @@ import {
   mapCongressSummary,
   mapCongressTextVersion,
   mapUsable,
-  sortByDateDesc,
 } from "@/lib/congress/mappers";
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/search";
@@ -270,59 +268,6 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
   // The snapshot's own retrievedAt reflects when that fallback data was actually fetched, which is more accurate here
   // than this function's own start time.
   return { bill, source: snapshot.source, notice: snapshot.notice, retrievedAt: snapshot.retrievedAt };
-}
-
-/**
- * Fetches one of a bill's sub-resources (`/summaries`, `/text`) and maps it into the app's model.
- *
- * The two sub-resources this app reads differ only in their path segment, their payload schema, the mapper applied to
- * each entry, and which field they sort on — so the request, the route-param guard, the page-size ceiling, the status
- * handling, and the "an absent record is an empty list, not an error" policy all live here once rather than being
- * restated per endpoint.
- *
- * @typeParam Payload - The validated response shape for this sub-resource.
- * @typeParam Raw - One unmapped entry from that payload.
- * @typeParam Entry - The app's mapped entry type.
- * @param input - The bill's route params.
- * @param config - The sub-resource's path suffix, schema, the collection to read off the payload, its entry mapper, and
- *   the date field to order by.
- * @returns The mapped entries, most recent first. Always an empty array when no key is configured, on a 404, or on
- *   failure — the caller renders that as "nothing published yet", which is also a real and common state for a newly
- *   introduced bill.
- */
-async function fetchBillSubResource<Payload, Raw, Entry>(
-  input: BillRouteParams,
-  config: {
-    path: "summaries" | "text" | "actions";
-    schema: ZodType<Payload>;
-    select: (payload: Payload) => Raw[] | undefined;
-    map: (entry: Raw) => Entry | null;
-    dateKey: keyof Entry;
-  },
-): Promise<Entry[]> {
-  const apiKey: string | undefined = getCongressApiKey();
-  if (!apiKey) return [];
-
-  const route: NormalizedBillRoute | null = normalizeBillRouteParams(input);
-  if (!route) return [];
-
-  // The max page size, requested explicitly so a single call covers the rare bill with more than the default 20.
-  const url: URL = buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}/${config.path}`, apiKey, {
-    limit: String(MAX_API_PAGE_SIZE),
-  });
-
-  const result: CongressRequestResult<Payload> = await requestCongressJson(
-    url,
-    billCacheTags(input),
-    config.schema,
-    `bill ${config.path} for ${route.type.toUpperCase()} ${route.number}`,
-  );
-
-  if (result.outcome !== "ok") return [];
-
-  const entries: Entry[] = mapUsable(config.select(result.data), config.map);
-
-  return sortByDateDesc(entries, config.dateKey);
 }
 
 /**

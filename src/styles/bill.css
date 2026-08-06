@@ -152,6 +152,24 @@
   white-space: nowrap;
 }
 
+/* The enacted-law citation, beside the stage chip on a bill's page. Wears the same chip geometry so the two read as one
+   row, and burgundy rather than teal because it is a different kind of statement: the stage cue is this app's reading
+   of where a bill stands, while this is Congress.gov's own record of what it became. Color is never the only
+   carrier — the chip's text is the full citation ("Public Law 119-21"), which says what it is on its own. */
+.law-label {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--burgundy) 40%, transparent);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: var(--burgundy-deep);
+  background: color-mix(in srgb, var(--burgundy) 8%, transparent);
+  font-size: 0.69rem;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .bill-card h3 {
   margin-top: 18px;
   color: var(--navy-deep);

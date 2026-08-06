@@ -8,9 +8,11 @@ import {
   type BillLookupResult,
   getBillActions,
   getBillById,
+  getBillCommittees,
   getBillSummaries,
   getBillTextVersions,
 } from "@/lib/congress/client";
+import type { BillCommittee } from "@/lib/congress/committees";
 import { previewBills } from "@/lib/congress/fixtures";
 import type { BillAction, BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
@@ -73,23 +75,25 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
  *
  * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number
  * works — not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, its official text
- * versions, and its action history are independent reads, so all four go out together.
+ * versions, its action history, and its committee referrals are independent reads, so all five go out together.
  *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;
-  const [{ bill, source, notice, retrievedAt }, summaries, textVersions, actions]: [
+  const [{ bill, source, notice, retrievedAt }, summaries, textVersions, actions, committees]: [
     BillLookupResult,
     BillSummary[],
     BillTextVersion[],
     BillAction[],
+    BillCommittee[],
   ] = await Promise.all([
     getBillById(route),
     getBillSummaries(route),
     getBillTextVersions(route),
     getBillActions(route),
+    getBillCommittees(route),
   ]);
 
   if (!bill) notFound();
@@ -103,6 +107,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
       summaries={summaries}
       textVersions={textVersions}
       actions={actions}
+      committees={committees}
     />
   );
 }

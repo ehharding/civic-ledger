@@ -260,6 +260,52 @@ export type CommitteeProfile = CommitteeSummary & {
 };
 
 /**
+ * One thing a committee did with a bill, as the bill's own committee record states it.
+ *
+ * The vocabulary is Congress.gov's, printed verbatim — "Referred To", "Reported By", "Markup By", "Hearings By" — on
+ * the same rule the committee page's referral rows already follow: a relationship the publisher recorded is not
+ * paraphrased into a status this app invented.
+ */
+export type BillCommitteeActivity = {
+  name: string;
+  /** ISO 8601 timestamp, as the API publishes it. */
+  date?: string;
+};
+
+/** A subcommittee a bill reached, as its parent committee's entry on that bill lists it. */
+export type BillSubcommittee = {
+  systemCode: string;
+  name: string;
+  activities: BillCommitteeActivity[];
+};
+
+/**
+ * One committee a bill was before, and what that committee did with it.
+ *
+ * The mirror image of {@link CommitteeBillReferral}, which the committee page reads from the other end — and much the
+ * cheaper direction. Answering "which committees held this bill" costs one request and arrives with names attached,
+ * where answering "which bills did this committee hold" costs one lookup per row to recover the titles the
+ * committee-bills endpoint omits.
+ *
+ * It is also the one shape in this app that carries a committee's chamber *and* its system code together on a record
+ * that isn't a committee record: the committee item endpoint states no chamber at all, so a bill's referral is what
+ * makes an inward link buildable without a second round trip.
+ */
+export type BillCommittee = {
+  systemCode: string;
+  /** As this endpoint publishes it — usually the `"Committee on Agriculture"` word order rather than the list's. */
+  name: string;
+  chamber: CommitteeChamber;
+  type: CommitteeType;
+  /** The verbatim upstream type label, kept for the same reason {@link CommitteeSummary} keeps one. */
+  typeName?: string;
+  /** What the committee did, in the order the record lists it. Empty when it recorded nothing this app can name. */
+  activities: BillCommitteeActivity[];
+  /** Subcommittees the bill reached beneath this committee, alphabetical. */
+  subcommittees: BillSubcommittee[];
+};
+
+/**
  * Congress.gov's own index of committees — where a reader is sent to verify a committee against the official record.
  *
  * Deliberately the index rather than a per-committee deep link, and this is a decision rather than an omission.

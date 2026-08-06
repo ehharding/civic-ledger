@@ -69,7 +69,9 @@ components, and tests import one stable path while the internals stay free to mo
 | `api-schema.ts`          | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
 | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards.   |
 | `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
+| `bill-sub-resource.ts`   | The one read shared by every collection hanging off a single bill.            |
 | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
+| `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.              |
 | `composition.ts`         | Chamber membership, including the member list's pagination.                   |
 | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
 | `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
@@ -82,7 +84,7 @@ components, and tests import one stable path while the internals stay free to mo
 | `committee-activity.ts`  | One page of one of those collections, plus the referred bills' titles.        |
 | `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
 | `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
-| `stage.ts`               | The stage cue: from action codes where fetched, from prose otherwise.         |
+| `stage.ts`               | The stage cue: from the record where it says, from codes or prose otherwise.  |
 | `sanitize-summary.ts`    | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
 | `client.ts`              | Public surface. Re-exports only.                                              |
 
@@ -123,8 +125,17 @@ and, unlike a name slug, never changes.
 ### Membership
 
 `/v3/member/congress/{congress}` is paginated at the API's 250-record ceiling, so `getCongressComposition` (in
-`composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel. Chart
-geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about
+`composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel.
+
+**`currentMember` is decided per Congress, not fixed.** For the Congress currently seated it is `true`, which makes the
+request "who holds a seat right now" — without it, a member who resigned mid-term and their replacement both come back
+and the chamber over-counts. For any earlier Congress the same value is straightforwardly wrong, and Congress.gov's own
+documentation makes the mirror-image recommendation. The 117th answers `currentMember=true` with the 377 of its members
+still serving today, against the 557 who actually served in it; a diagram drawn from the first would be missing a third
+of its seats while presenting itself as the whole body. Nothing in the app reads a past Congress's roster today, so this
+was a loaded parameter rather than a live bug — which is precisely the kind that ships the day someone adds the route.
+
+Chart geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about
 Congress.gov — see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and
 does not assert.
 
@@ -161,6 +172,32 @@ because the profile is the substance of it.
 The route param is narrowed by `normalizeBioguideId` before it is interpolated into any URL, on the same "validate the
 shape, never escape" rule as `normalizeBillRouteParams`; an ID that fails the guard is resolved against the preview
 fixtures rather than sent upstream.
+
+### A Bill's Committees, and Why That Direction Is the Cheap One
+
+`/bills/[congress]/[type]/[number]` reads `/v3/bill/{congress}/{type}/{number}/committees` alongside the bill itself,
+its summaries, its text versions, and its actions — five independent reads, issued together.
+
+This is the mirror image of the committee page's referral list below, and it is the far cheaper direction. Asking a
+*committee* which bills it handled costs one request for the referrals plus one bill lookup per row, because that
+endpoint publishes no titles. Asking a *bill* which committees held it costs one request, and the committees arrive
+already named, chambered, and coded.
+
+The system code is the whole point. That a bill was referred to the Committee on Energy and Commerce was already on the
+page twice — in the latest action's prose, and again in the action history — but a sentence carries no identifier, and
+without one a committee is a string rather than a destination. Parsing a committee's identity back out of a referral
+line would also be exactly the inference this project refuses elsewhere, when the API states the answer outright.
+
+Two things the mapper does are worth knowing before changing them.
+
+**The order is the publisher's.** Congress.gov returns a bill's committees with the committee of primary jurisdiction
+first, which is a fact carried entirely by position — a sort applied here would destroy it silently while still looking
+like a working feature. Subcommittees *are* sorted alphabetically, because their order within a parent carries nothing.
+
+**An activity named `"Unknown"` is dropped.** The endpoint publishes that literal string on a large share of rows, often
+two or three of them beside one real activity. Printing it tells a reader nothing and reads as a gap in this app rather
+than in the record. Nothing is renamed or reinterpreted; what is declined is the printing of a non-answer, and a
+committee that named none of its activities still appears, with no activity line at all.
 
 ### A Committee's Own Records
 

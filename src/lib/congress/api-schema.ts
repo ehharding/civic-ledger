@@ -37,6 +37,18 @@ export const congressApiSponsorSchema = z.looseObject({
 });
 
 /**
+ * One law a bill became, as the detail endpoint publishes it: `{ "type": "Public Law", "number": "119-21" }`.
+ *
+ * The API's own statement that a measure was enacted, and the only place the public law number appears at all. Read
+ * rather than inferred: every other route to "this became law" in this app is a classifier over prose or action codes,
+ * and a classifier can be wrong in a way a published field cannot. @see mapCongressBill, which prefers it.
+ */
+export const congressApiLawSchema = z.looseObject({
+  number: optionalString,
+  type: optionalString,
+});
+
+/**
  * Subset of a Congress.gov API bill object actually used by this app — both the list and detail endpoint shapes, since
  * `mapCongressBill` handles either.
  */
@@ -55,9 +67,10 @@ export const congressApiBillSchema = z.looseObject({
   url: optionalString,
   policyArea: z.looseObject({ name: optionalString }).optional().catch(undefined),
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
-  // Only populated on the detail endpoint — the list endpoint doesn't return any of these three.
+  // Only populated on the detail endpoint — the list endpoint doesn't return any of these four.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
   cosponsors: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  laws: z.array(congressApiLawSchema).optional().catch(undefined),
   /**
    * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
    *
@@ -150,6 +163,51 @@ export const congressApiActionSchema = z.looseObject({
 /** Shape of `GET /v3/bill/{congress}/{type}/{number}/actions`. */
 export const congressApiActionsResponseSchema = z.looseObject({
   actions: z.array(congressApiActionSchema).optional().catch(undefined),
+});
+
+/**
+ * One thing a committee did with a bill, as `GET /v3/bill/{congress}/{type}/{number}/committees` records it.
+ *
+ * `name` is the committee's own vocabulary — `"Referred To"`, `"Reported By"`, `"Markup By"`, `"Hearings By"` — and is
+ * the reason this endpoint is worth reading rather than parsing the same fact back out of the action prose. It is also,
+ * on a large share of rows, the literal string `"Unknown"`; @see mapBillCommitteeActivity for what becomes of those.
+ */
+export const congressApiBillCommitteeActivitySchema = z.looseObject({
+  name: optionalString,
+  date: optionalString,
+});
+
+/** One subcommittee a bill reached, nested inside its parent committee's entry. */
+export const congressApiBillSubcommitteeSchema = z.looseObject({
+  systemCode: optionalString,
+  name: optionalString,
+  activities: z.array(congressApiBillCommitteeActivitySchema).optional().catch(undefined),
+});
+
+/**
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/committees`.
+ *
+ * Deliberately *not* {@link congressApiCommitteeSchema}, on the same reasoning that keeps
+ * {@link congressApiCommitteeBillSchema} separate from {@link congressApiBillSchema}: this describes a *relationship
+ * between a bill and a committee*, not a committee. It carries `activities` and nested `subcommittees` that no
+ * committee record has, and none of the `parent`/`committeeTypeCode` fields a directory row is built from.
+ *
+ * Unlike the committee item endpoint, this one *does* state the chamber, which is what lets a bill page link straight
+ * to this app's own `/committees/{chamber}/{systemCode}` page without a second request to discover where the committee
+ * sits.
+ */
+export const congressApiBillCommitteeSchema = z.looseObject({
+  systemCode: optionalString,
+  name: optionalString,
+  chamber: optionalString,
+  type: optionalString,
+  activities: z.array(congressApiBillCommitteeActivitySchema).optional().catch(undefined),
+  subcommittees: z.array(congressApiBillSubcommitteeSchema).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/bill/{congress}/{type}/{number}/committees`. */
+export const congressApiBillCommitteesResponseSchema = z.looseObject({
+  committees: z.array(congressApiBillCommitteeSchema).optional().catch(undefined),
 });
 
 /**
@@ -444,6 +502,7 @@ export const congressApiCommitteeNominationsResponseSchema = z.looseObject({
 });
 
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;
+export type CongressApiLaw = z.infer<typeof congressApiLawSchema>;
 export type CongressApiBill = z.infer<typeof congressApiBillSchema>;
 export type CongressApiListResponse = z.infer<typeof congressApiListResponseSchema>;
 export type CongressApiDetailResponse = z.infer<typeof congressApiDetailResponseSchema>;
@@ -455,6 +514,10 @@ export type CongressApiTextResponse = z.infer<typeof congressApiTextResponseSche
 export type CongressApiRecordedVote = z.infer<typeof congressApiRecordedVoteSchema>;
 export type CongressApiAction = z.infer<typeof congressApiActionSchema>;
 export type CongressApiActionsResponse = z.infer<typeof congressApiActionsResponseSchema>;
+export type CongressApiBillCommitteeActivity = z.infer<typeof congressApiBillCommitteeActivitySchema>;
+export type CongressApiBillSubcommittee = z.infer<typeof congressApiBillSubcommitteeSchema>;
+export type CongressApiBillCommittee = z.infer<typeof congressApiBillCommitteeSchema>;
+export type CongressApiBillCommitteesResponse = z.infer<typeof congressApiBillCommitteesResponseSchema>;
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;
 export type CongressApiMemberListResponse = z.infer<typeof congressApiMemberListResponseSchema>;

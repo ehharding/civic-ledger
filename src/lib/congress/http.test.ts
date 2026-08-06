@@ -329,6 +329,15 @@ describe("cache tags", (): void => {
     expect(tags).toContain("bill-119-hr-284");
   });
 
+  it("spells one bill's tag one way, whichever casing the caller happens to hold", (): void => {
+    // A route param arrives lower-cased and a parsed search citation arrives upper-cased, and both reach this for the
+    // same bill. Left alone they produce two tags, and a revalidation of one would reach only half that bill's records.
+    expect(billCacheTags({ congress: "119", type: "HR", number: "284" })).toEqual(
+      billCacheTags({ congress: "119", type: "hr", number: "284" }),
+    );
+    expect(billCacheTags({ congress: " 119 ", type: " Hr ", number: " 284 " })).toContain("bill-119-hr-284");
+  });
+
   it("scopes a member's tags under the shared member-list tag", (): void => {
     const tags: string[] = memberCacheTags("L000174");
 

@@ -109,14 +109,28 @@ export function inferStageFromActions(actions: readonly BillAction[]): BillStage
 }
 
 /**
- * Settles on the stage to show for a bill, preferring published action codes over inferred prose.
+ * Settles on the stage to show for a bill, given everything known about it.
  *
- * @param fallback - The stage already derived from the bill's latest action text, used when the action history
- *   establishes nothing — including when it is empty, which is the normal state in preview mode and on any bill whose
- *   actions could not be fetched.
- * @param actions - The bill's action history, if it was fetched.
+ * Takes the *more advanced* of the two readings rather than letting the action history overwrite the record's own. That
+ * distinction used to be theoretical and is not any more. `mapCongressBill` now sets `"law"` from the detail endpoint's
+ * published `laws` field — the record stating an outcome outright — and this function's earlier form would have
+ * discarded that in favor of whatever the action codes happened to establish, so a page could print "Public Law 119-21"
+ * beside a stepper that stopped at *Passed a Chamber*. One page cannot say both.
+ *
+ * Nothing else regresses under the change, which is what makes it safe rather than merely convenient: {@link
+ * inferBillStage} only ever reaches for a stage it can name, and {@link inferStageFromActions} never returns anything
+ * below `"chamber"`, so neither reading can be the *lower* one by being wrong. The case the action history exists to
+ * fix still resolves the same way — prose says `"committee"` because the latest action names a referral, the codes say
+ * `"chamber"` because the bill passed one, and the more advanced of those is the true one.
+ *
+ * @param fallback - The stage carried on the bill record itself: published where the record names a law, and inferred
+ *   from the latest action's prose otherwise.
+ * @param actions - The bill's action history, if it was fetched. Empty in preview mode and whenever the fetch failed.
  * @returns The stage to render.
  */
 export function resolveBillStage(fallback: BillStage, actions: readonly BillAction[]): BillStage {
-  return inferStageFromActions(actions) ?? fallback;
+  const fromActions: BillStage | null = inferStageFromActions(actions);
+  if (fromActions === null) return fallback;
+
+  return billStages.indexOf(fromActions) > billStages.indexOf(fallback) ? fromActions : fallback;
 }

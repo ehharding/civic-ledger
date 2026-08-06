@@ -638,12 +638,31 @@ describe("getCongressComposition", (): void => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    await getCongressComposition(119);
+    const current: number = getCurrentCongress();
+    await getCongressComposition(current);
 
     const requested: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requested.pathname).toBe("/v3/member/congress/119");
+    expect(requested.pathname).toBe(`/v3/member/congress/${current}`);
     expect(requested.searchParams.get("currentMember")).toBe("true");
     expect(requested.searchParams.get("limit")).toBe("250");
+  });
+
+  it("asks for the whole historical roster of a Congress that has already risen", async (): Promise<void> => {
+    // The mirror image of the rule above, and Congress.gov's own recommendation. `currentMember=true` answers the 117th
+    // Congress with the 377 of its members still serving today, against 557 who actually served in it — a chamber
+    // diagram drawn from the first would be missing a third of its seats while presenting itself as the whole body.
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        members: [apiMember({}), apiMember({ chamber: "Senate" })],
+        pagination: { count: 2 },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCongressComposition(getCurrentCongress() - 1);
+
+    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get("currentMember")).toBe("false");
   });
 
   it("pages through a full Congress rather than stopping at the API's 250-record ceiling", async (): Promise<void> => {

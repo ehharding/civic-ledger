@@ -8,6 +8,8 @@ import { DataSourceNotice } from "@/components/data-source-notice";
 import { GlossaryProse } from "@/components/glossary-prose";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
+import { committeeHref } from "@/lib/committee-route";
+import type { BillCommittee, BillCommitteeActivity, BillSubcommittee } from "@/lib/congress/committees";
 import { collectRecordedVotes } from "@/lib/congress/mappers";
 import { resolveBillStage } from "@/lib/congress/stage";
 import {
@@ -17,6 +19,7 @@ import {
   type BillTextVersion,
   billStageLabels,
   type CongressSnapshot,
+  formatEnactedLaw,
   type LegislativeBill,
   type RecordedVote,
 } from "@/lib/congress/types";
@@ -39,7 +42,66 @@ type BillDetailProps = {
   textVersions: BillTextVersion[];
   /** The bill's full action history, most recent first. Empty in preview mode and whenever the fetch failed. */
   actions: BillAction[];
+  /** Every committee that held this bill, in Congress.gov's own order. Empty in preview mode and on failure. */
+  committees: BillCommittee[];
 };
+
+/**
+ * What a committee did with the bill, as one line.
+ *
+ * @param activities - The recorded activities, in the order the record lists them.
+ * @returns e.g., `"Referred To · Markup By · Reported By"`, or an empty string when the record named nothing this app
+ *   can print — which the caller renders as no line at all rather than as an empty one.
+ */
+function describeCommitteeActivity(activities: BillCommitteeActivity[]): string {
+  return activities.map((activity: BillCommitteeActivity): string => activity.name).join(" · ");
+}
+
+/**
+ * The committees a bill passed through, each linking to its own page here.
+ *
+ * This is the referral read as the record states it rather than as the prose implies it. The same fact is already on
+ * this page twice — in the latest action, and again in the action history — but only as a sentence, and a sentence
+ * carries no system code. The `/committees` sub-resource carries one, which is the whole difference between naming a
+ * committee and being able to open it.
+ *
+ * The link goes inward, on the same reasoning as the sponsor line above it: the committee's own page collects its name
+ * history, its subcommittees, and the rest of what it has handled — and it carries the outbound links onward.
+ *
+ * @param committees - The committees to list, in the publisher's order. Primary committee first, and not re-sorted.
+ * @returns The referral list.
+ */
+function CommitteeReferrals({ committees }: { committees: BillCommittee[] }): JSX.Element {
+  return (
+    <ul className="bill-committee-list">
+      {committees.map((committee: BillCommittee): JSX.Element => {
+        const activity: string = describeCommitteeActivity(committee.activities);
+
+        return (
+          <li key={`${committee.chamber}-${committee.systemCode}`}>
+            <Link className="text-link" href={committeeHref(committee.chamber, committee.systemCode)}>
+              {committee.name}
+            </Link>
+            {activity.length > 0 ? <p className="date-label">{activity}</p> : null}
+            {committee.subcommittees.length > 0 ? (
+              <ul className="bill-committee-list__subcommittees">
+                {committee.subcommittees.map(
+                  (subcommittee: BillSubcommittee): JSX.Element => (
+                    <li key={subcommittee.systemCode}>
+                      <Link className="text-link" href={committeeHref(committee.chamber, subcommittee.systemCode)}>
+                        {subcommittee.name}
+                      </Link>
+                    </li>
+                  ),
+                )}
+              </ul>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 /**
  * The roll-call votes taken on a bill, each linking to the chamber's own tally.
@@ -196,6 +258,7 @@ export function BillDetail({
   summaries,
   textVersions,
   actions,
+  committees,
 }: BillDetailProps): JSX.Element {
   const [summary, ...earlierSummaries]: BillSummary[] = summaries;
   const votes: RecordedVote[] = collectRecordedVotes(actions);
@@ -219,6 +282,10 @@ export function BillDetail({
         <h1 id="bill-title">{bill.title}</h1>
         <div className="bill-detail-meta">
           <span className="stage-label">{billStageLabels[stage]}</span>
+          {/* The citation Congress.gov publishes on the record itself, not one this app assembled from a stage. It is
+              the one thing on this page that settles what became of the bill outright, so it sits beside the stage
+              cue — which is explicitly an orientation aid — rather than somewhere further down. */}
+          {bill.enactedLaw ? <span className="law-label">{formatEnactedLaw(bill.enactedLaw)}</span> : null}
           {bill.policyArea ? <span>{bill.policyArea}</span> : null}
           <span>Origin: {bill.originChamber}</span>
           {bill.introducedDate ? <span>Introduced {formatDate(bill.introducedDate)}</span> : null}
@@ -270,6 +337,29 @@ export function BillDetail({
           {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
           <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
         </aside>
+      </div>
+
+      <div className="detail-grid detail-grid--single">
+        <section className="detail-panel" aria-labelledby="committees-heading">
+          <p className="section-kicker">Who Has Held It</p>
+          <h2 id="committees-heading">Committees of Referral</h2>
+          {committees.length > 0 ? (
+            <>
+              <p className="muted-copy">
+                Congress.gov records {committees.length} {pluralize(committees.length, "committee")} on this bill, in
+                its own order — the committee of primary jurisdiction first. Each links to its record here. Most bills
+                referred to a committee never leave it, so a referral says where a bill went, not how it fared.
+              </p>
+              <CommitteeReferrals committees={committees} />
+            </>
+          ) : (
+            <p className="muted-copy">
+              {source === "preview"
+                ? "Committees of referral appear here once live Congress.gov data is connected."
+                : "No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."}
+            </p>
+          )}
+        </section>
       </div>
 
       <div className="detail-grid">
@@ -382,7 +472,7 @@ export function BillDetail({
       </div>
 
       <CalloutCard
-        body="The summary above is written by the Congressional Research Service, not Civic Ledger — use the linked full text for anything definitive. Committee context and update alerts are next, without obscuring the original record."
+        body="The summary above is written by the Congressional Research Service, not Civic Ledger — use the linked full text for anything definitive. Update alerts are next, without obscuring the original record."
         heading="A Record Is a Starting Point, Not the Whole Story."
         headingId="reading-heading"
         href="/learn"

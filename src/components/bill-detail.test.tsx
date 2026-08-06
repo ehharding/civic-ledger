@@ -8,6 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { BillDetail } from "@/components/bill-detail";
+import type { BillCommittee } from "@/lib/congress/committees";
 import { firstPreviewBill } from "@/lib/congress/fixtures";
 import type { BillAction, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 import { readerText } from "@/test/reader-text";
@@ -45,7 +46,7 @@ describe("BillDetail", (): void => {
       cosponsorCount: 5,
     };
     const { container } = render(
-      <BillDetail actions={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail actions={[]} committees={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
     );
 
     expect(screen.getByText("Sponsor: Rep. Test, Sample A. [D-ZZ-1]")).toBeInTheDocument();
@@ -57,7 +58,7 @@ describe("BillDetail", (): void => {
   it("uses the singular form for exactly one cosponsor", (): void => {
     const withSponsor: LegislativeBill = { ...bill, cosponsorCount: 1 };
     const { container } = render(
-      <BillDetail actions={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail actions={[]} committees={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
     );
 
     const meta: string = readerText(container.querySelector(".bill-detail-meta") as Element);
@@ -68,34 +69,58 @@ describe("BillDetail", (): void => {
 
   it("omits sponsor and cosponsor lines when neither is present", (): void => {
     const withoutSponsor: LegislativeBill = { ...bill, sponsor: undefined, cosponsorCount: undefined };
-    render(<BillDetail actions={[]} bill={withoutSponsor} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={withoutSponsor} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     expect(screen.queryByText(/^Sponsor:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cosponsor/)).not.toBeInTheDocument();
   });
 
   it("renders the live summary's sanitized HTML with CRS attribution", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+    );
 
     expect(screen.getByText(/Congressional Research Service summary — Reported to House/)).toBeInTheDocument();
     expect(screen.getByText("the current thing")).toBeInTheDocument();
   });
 
   it("labels a preview summary as illustrative rather than crediting CRS", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="preview" summaries={[summaryA]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[summaryA]} textVersions={[]} />,
+    );
 
     expect(screen.getByText("Illustrative preview summary — not a real CRS summary.")).toBeInTheDocument();
     expect(screen.queryByText(/Congressional Research Service summary —/)).not.toBeInTheDocument();
   });
 
   it("notes there are more summaries on file when a bill has more than one", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[summaryB, summaryA]} textVersions={[]} />);
+    render(
+      <BillDetail
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[summaryB, summaryA]}
+        textVersions={[]}
+      />,
+    );
 
     expect(screen.getByText(/most recent of 2 summaries/)).toBeInTheDocument();
   });
 
   it("offers earlier summaries in a collapsed disclosure, without hiding the newest one", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[summaryB, summaryA]} textVersions={[]} />);
+    render(
+      <BillDetail
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[summaryB, summaryA]}
+        textVersions={[]}
+      />,
+    );
 
     // The most recent summary stays expanded; only the earlier ones are tucked behind the toggle.
     expect(screen.getByText("the current thing")).toBeInTheDocument();
@@ -104,7 +129,9 @@ describe("BillDetail", (): void => {
   });
 
   it("shows no disclosure when a bill has only one summary", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+    );
 
     expect(screen.queryByText(/Earlier Summar/)).not.toBeInTheDocument();
   });
@@ -114,7 +141,9 @@ describe("BillDetail", (): void => {
       ...bill,
       sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]", bioguideId: "T000001" },
     };
-    render(<BillDetail actions={[]} bill={withBioguide} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={withBioguide} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     const link = screen.getByRole("link", { name: /Rep. Test, Sample A./ });
     // Inward, to this app's own page for the sponsor — which carries the official biography link onward. Staying in-app
@@ -125,25 +154,29 @@ describe("BillDetail", (): void => {
 
   it("shows the sponsor as plain text when no Bioguide ID is on file", (): void => {
     const withoutBioguide: LegislativeBill = { ...bill, sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" } };
-    render(<BillDetail actions={[]} bill={withoutBioguide} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={withoutBioguide} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     expect(screen.queryByRole("link", { name: /Rep. Test, Sample A./ })).not.toBeInTheDocument();
   });
 
   it("shows the date the bill was introduced", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("Introduced July 8, 2026")).toBeInTheDocument();
   });
 
   it("doesn't show the multi-summary note when there's only one summary", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+    );
 
     expect(screen.queryByText(/most recent of/)).not.toBeInTheDocument();
   });
 
   it("shows a live-specific empty state when no summary has been published", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
 
     expect(
       screen.getByText("The Congressional Research Service hasn't published a summary for this bill yet."),
@@ -151,13 +184,15 @@ describe("BillDetail", (): void => {
   });
 
   it("shows a preview-specific empty state for the summary section", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("Summaries appear here once live Congress.gov data is connected.")).toBeInTheDocument();
   });
 
   it("lists each text version's formats as links to the official record", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[]} textVersions={[textVersion]} />);
+    render(
+      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[textVersion]} />,
+    );
 
     const formattedTextLink = screen.getByRole("link", { name: /Formatted Text/ });
     expect(formattedTextLink).toHaveAttribute("href", textVersion.formats[0]?.url);
@@ -166,13 +201,13 @@ describe("BillDetail", (): void => {
   });
 
   it("shows a live-specific empty state when no text version has been published", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("Congress.gov hasn't published bill text for this record yet.")).toBeInTheDocument();
   });
 
   it("shows a preview-specific empty state for the full-text section", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
 
     expect(
       screen.getByText("Full-text links appear here once live Congress.gov data is connected."),
@@ -194,7 +229,7 @@ describe("BillDetail with a sparse record", (): void => {
   };
 
   it("omits the policy area, introduced date, and action date when the record carries none", (): void => {
-    render(<BillDetail actions={[]} bill={bare} source="live" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bare} source="live" summaries={[]} textVersions={[]} />);
 
     // A sparse record is a normal record, not a broken one: the page renders without empty labels standing in for
     // fields Congress.gov has not published.
@@ -209,6 +244,7 @@ describe("BillDetail with a sparse record", (): void => {
     render(
       <BillDetail
         actions={[]}
+        committees={[]}
         bill={bill}
         source="live"
         summaries={[{ versionCode: "00", actionDesc: "Introduced in House", html: "<p>Body.</p>" }]}
@@ -223,6 +259,7 @@ describe("BillDetail with a sparse record", (): void => {
     render(
       <BillDetail
         actions={[]}
+        committees={[]}
         bill={bill}
         source="live"
         summaries={[]}
@@ -240,6 +277,7 @@ describe("BillDetail with a sparse record", (): void => {
     render(
       <BillDetail
         actions={[]}
+        committees={[]}
         bill={bill}
         source="live"
         summaries={[
@@ -258,6 +296,7 @@ describe("BillDetail with a sparse record", (): void => {
     render(
       <BillDetail
         actions={[]}
+        committees={[]}
         bill={bill}
         source="live"
         summaries={[]}
@@ -299,7 +338,14 @@ describe("BillDetail action history and recorded votes", (): void => {
 
   it("counts the actions and lists them all", (): void => {
     const { container } = render(
-      <BillDetail actions={[passage, referral]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        actions={[passage, referral]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText(/Congress.gov records 2 actions on this bill/)).toBeInTheDocument();
@@ -312,7 +358,9 @@ describe("BillDetail action history and recorded votes", (): void => {
   });
 
   it("uses the singular for a bill with exactly one action", (): void => {
-    render(<BillDetail actions={[referral]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[referral]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     expect(screen.getByText(/records 1 action on this bill/)).toBeInTheDocument();
     expect(screen.getByText("Read All 1 Action")).toBeInTheDocument();
@@ -320,7 +368,14 @@ describe("BillDetail action history and recorded votes", (): void => {
 
   it("links a recorded vote to the chamber's own tally rather than printing a count", (): void => {
     const { container } = render(
-      <BillDetail actions={[passage, referral]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        actions={[passage, referral]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText("House Roll Call 190 · January 23, 2025")).toBeInTheDocument();
@@ -346,13 +401,17 @@ describe("BillDetail action history and recorded votes", (): void => {
         },
       ],
     };
-    render(<BillDetail actions={[senate]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[senate]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     expect(screen.getByRole("link", { name: /Senate tally/ })).toBeInTheDocument();
   });
 
   it("explains a bill with no recorded vote instead of leaving the section blank", (): void => {
-    render(<BillDetail actions={[referral]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[referral]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     // A bill with no roll call is the ordinary case, not a gap in the data, and the copy has to say which.
     expect(screen.getByText(/No recorded vote appears in this bill/)).toBeInTheDocument();
@@ -365,7 +424,9 @@ describe("BillDetail action history and recorded votes", (): void => {
         { chamber: "House", congress: 119, rollNumber: 12, url: "https://clerk.house.gov/evs/2025/roll012.xml" },
       ],
     };
-    render(<BillDetail actions={[undated]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail actions={[undated]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+    );
 
     expect(screen.getByText("House Roll Call 12")).toBeInTheDocument();
   });
@@ -375,6 +436,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         actions={[{ text: "Introduced in House", recordedVotes: [] }]}
         bill={bill}
+        committees={[]}
         source="live"
         summaries={[]}
         textVersions={[]}
@@ -386,7 +448,7 @@ describe("BillDetail action history and recorded votes", (): void => {
   });
 
   it("says the history and votes are unavailable rather than absent when the fetch found nothing", (): void => {
-    render(<BillDetail actions={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
 
     expect(screen.getByText("No action history could be read for this bill.")).toBeInTheDocument();
     expect(document.querySelector(".summary-history")).not.toBeInTheDocument();
@@ -395,7 +457,7 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("makes no claim about votes or actions in preview mode", (): void => {
     // Preview fixtures fabricate no action record, and a fabricated roll call is the single worst thing this app
     // could invent — so both sections say they are waiting on live data rather than reporting "none".
-    render(<BillDetail actions={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
 
     expect(
       screen.getByText("Recorded votes appear here once live Congress.gov data is connected."),
@@ -414,15 +476,160 @@ describe("BillDetail action history and recorded votes", (): void => {
       stage: "committee",
       latestAction: { date: "2025-01-24", text: "Received in the Senate and referred to the Committee on Finance." },
     };
-    render(<BillDetail actions={[passage]} bill={passedThenReferred} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        actions={[passage]}
+        committees={[]}
+        bill={passedThenReferred}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(document.querySelector(".stage-label")).toHaveTextContent("Passed a Chamber");
   });
 
   it("keeps the bill's own stage when the action history establishes nothing", (): void => {
     const inCommittee: LegislativeBill = { ...bill, stage: "committee" };
-    render(<BillDetail actions={[referral]} bill={inCommittee} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        actions={[referral]}
+        committees={[]}
+        bill={inCommittee}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(document.querySelector(".stage-label")).toHaveTextContent("In Committee");
+  });
+
+  it("prints the public law citation the record publishes, beside the stage it establishes", (): void => {
+    const enacted: LegislativeBill = {
+      ...bill,
+      stage: "law",
+      enactedLaw: { type: "Public Law", number: "119-21" },
+    };
+    render(<BillDetail actions={[]} committees={[]} bill={enacted} source="live" summaries={[]} textVersions={[]} />);
+
+    expect(document.querySelector(".law-label")).toHaveTextContent("Public Law 119-21");
+    expect(document.querySelector(".stage-label")).toHaveTextContent("Became Law");
+  });
+
+  it("prints no law chip for a bill the record names none for", (): void => {
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+
+    expect(document.querySelector(".law-label")).not.toBeInTheDocument();
+  });
+
+  it("never contradicts a published law with a less advanced action history", (): void => {
+    // `passage` establishes "chamber". The record says the bill became law. One page cannot show both, and the record
+    // is the one that isn't a reading. @see resolveBillStage.
+    const enacted: LegislativeBill = { ...bill, stage: "law", enactedLaw: { type: "Public Law", number: "119-21" } };
+    render(
+      <BillDetail actions={[passage]} committees={[]} bill={enacted} source="live" summaries={[]} textVersions={[]} />,
+    );
+
+    expect(document.querySelector(".stage-label")).toHaveTextContent("Became Law");
+  });
+});
+
+describe("BillDetail committees of referral", (): void => {
+  const transportation: BillCommittee = {
+    systemCode: "hspw00",
+    name: "Transportation and Infrastructure Committee",
+    chamber: "house",
+    type: "standing",
+    activities: [{ name: "Referred To" }, { name: "Reported By" }],
+    subcommittees: [{ systemCode: "hspw05", name: "Aviation Subcommittee", activities: [{ name: "Referred to" }] }],
+  };
+
+  const agriculture: BillCommittee = {
+    systemCode: "hsag00",
+    name: "Agriculture Committee",
+    chamber: "house",
+    type: "standing",
+    activities: [],
+    subcommittees: [],
+  };
+
+  it("links each committee inward, to this app's own page for it", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[transportation, agriculture]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    // Inward rather than out to congress.gov, whose per-committee URL embeds a name slug the API never publishes.
+    expect(screen.getByRole("link", { name: "Transportation and Infrastructure Committee" })).toHaveAttribute(
+      "href",
+      "/committees/house/hspw00",
+    );
+    // A subcommittee is reached under its parent's chamber, which is the only chamber either of them sits in.
+    expect(screen.getByRole("link", { name: "Aviation Subcommittee" })).toHaveAttribute(
+      "href",
+      "/committees/house/hspw05",
+    );
+  });
+
+  it("prints the relationship Congress.gov recorded, verbatim", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[transportation]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    // Not paraphrased into a status: a referral says where a bill went, not how it fared.
+    expect(screen.getByText("Referred To · Reported By")).toBeInTheDocument();
+  });
+
+  it("omits the activity line entirely when the record named nothing printable", (): void => {
+    const { container } = render(
+      <BillDetail actions={[]} bill={bill} committees={[agriculture]} source="live" summaries={[]} textVersions={[]} />,
+    );
+
+    expect(container.querySelectorAll(".bill-committee-list .date-label")).toHaveLength(0);
+  });
+
+  it("keeps the publisher's order rather than sorting the committees by name", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[transportation, agriculture]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    const names: string[] = [...container.querySelectorAll(".bill-committee-list > li > a")].map(
+      (link: Element): string => link.textContent ?? "",
+    );
+
+    // Primary jurisdiction first. Alphabetical would put Agriculture there and assert something false.
+    expect(names).toEqual(["Transportation and Infrastructure Committee", "Agriculture Committee"]);
+  });
+
+  it("distinguishes a bill with no referral from a preview record that has none yet", (): void => {
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    expect(screen.getByText(/No committee referral appears on this bill/)).toBeInTheDocument();
+
+    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    expect(
+      screen.getByText(/Committees of referral appear here once live Congress.gov data is connected/),
+    ).toBeInTheDocument();
   });
 });

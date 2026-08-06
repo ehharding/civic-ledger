@@ -144,6 +144,37 @@ export type BillAction = {
   recordedVotes: RecordedVote[];
 };
 
+/**
+ * The law a bill became, exactly as Congress.gov states it on the bill's own record.
+ *
+ * This is the one fact on a bill that this app previously *only* reached by inference. Both stage classifiers — the
+ * prose one and the action-code one — answer "did this become law?" by recognizing something, and a recognizer that
+ * doesn't recognize is indistinguishable from a bill that didn't pass. The `laws` field is the record saying so
+ * outright, and it carries the citation ("Public Law 119-21") that neither classifier could have produced at all.
+ *
+ * Detail-endpoint only, like {@link BillSponsor} and the cosponsor count — the bill *list* endpoint omits it, which is
+ * why the prose classifier still earns its place on a directory card.
+ */
+export type EnactedLaw = {
+  /** `"Public Law"` or `"Private Law"`, verbatim. */
+  type: string;
+  /** The citation number, e.g., `"119-21"` — the Congress, then the measure's sequence within it. */
+  number: string;
+};
+
+/**
+ * How an enacted law reads on screen, e.g., `"Public Law 119-21"`.
+ *
+ * In the model rather than at the view on the rule the rest of this layer follows: the two halves of a citation are
+ * joined in exactly one place, so a page and a share card can't spell the same law differently.
+ *
+ * @param law - The law to name.
+ * @returns The full citation.
+ */
+export function formatEnactedLaw(law: EnactedLaw): string {
+  return `${law.type} ${law.number}`;
+}
+
 /** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
 export type BillSponsor = {
   fullName: string;
@@ -168,10 +199,17 @@ export type LegislativeBill = {
     text: string;
   };
   policyArea?: string;
+  /**
+   * Where the bill has got to. Established by {@link enactedLaw} where the record publishes one, and inferred from the
+   * latest action's prose otherwise. @see inferBillStage, and `resolveBillStage` for what the bill's own page does with
+   * this once the full action history is in hand.
+   */
   stage: BillStage;
   officialUrl: string;
   sponsor?: BillSponsor;
   cosponsorCount?: number;
+  /** Set only for an enacted measure, and only from the detail endpoint. @see EnactedLaw */
+  enactedLaw?: EnactedLaw;
 };
 
 /**

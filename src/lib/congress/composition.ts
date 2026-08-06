@@ -47,12 +47,17 @@ const MAX_MEMBER_PAGES: number = 4;
 /**
  * Fetches one page of the member list for a Congress.
  *
- * `currentMember=true` is what makes this "who holds a seat right now" rather than "everyone who served at any point in
- * this Congress" — without it, a member who resigned mid-term and the member who replaced them both come back, and the
- * chamber over-counts. (Congress.gov's own documentation makes the mirror-image recommendation for *past* Congresses,
- * where `currentMember=false` is what yields the complete historical roster.)
+ * `currentMember` is the parameter that decides *which question this is*, and the right answer depends on which
+ * Congress is being read — which is why it is passed in rather than fixed here.
  *
- * @param input - The API key, the Congress to read, and the page offset.
+ * For the Congress currently seated, `true` makes this "who holds a seat right now" rather than "everyone who served at
+ * any point in it": without it, a member who resigned mid-term and the member who replaced them both come back, and the
+ * chamber over-counts. For a *past* Congress the same value is straightforwardly wrong, and Congress.gov's own
+ * documentation makes the mirror-image recommendation. The 117th Congress answers `currentMember=true` with 377
+ * members — the subset of it still serving today — against 557 for the full historical roster. A chamber diagram drawn
+ * from the first would be missing a third of its seats while presenting itself as the whole body.
+ *
+ * @param input - The API key, the Congress to read, the page offset, and whether to ask only for sitting members.
  * @returns The validated page, or `null` on any failure — so the caller can decide whether a partial result is still
  *   worth rendering.
  */
@@ -60,11 +65,12 @@ async function fetchMemberPage(input: {
   apiKey: string;
   congress: number;
   offset: number;
+  currentOnly: boolean;
 }): Promise<CongressApiMemberListResponse | null> {
   const url: URL = buildCongressUrl(`/member/congress/${input.congress}`, input.apiKey, {
     limit: String(MAX_API_PAGE_SIZE),
     offset: String(input.offset),
-    currentMember: "true",
+    currentMember: String(input.currentOnly),
   });
 
   const result: CongressRequestResult<CongressApiMemberListResponse> = await requestCongressJson(
@@ -85,12 +91,22 @@ async function fetchMemberPage(input: {
  *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
+ * @param currentOnly - Whether to ask only for sitting members. @see fetchMemberPage for why this varies by Congress.
  * @returns Every member found, or `null` only when the *first* page fails. A later page failing yields the members that
  *   did arrive, since a chart of most of the chamber still beats no chart at all — the missing seats simply aren't
  *   drawn.
  */
-async function fetchAllMembers(apiKey: string, congress: number): Promise<CongressApiMember[] | null> {
-  const firstPage: CongressApiMemberListResponse | null = await fetchMemberPage({ apiKey, congress, offset: 0 });
+async function fetchAllMembers(
+  apiKey: string,
+  congress: number,
+  currentOnly: boolean,
+): Promise<CongressApiMember[] | null> {
+  const firstPage: CongressApiMemberListResponse | null = await fetchMemberPage({
+    apiKey,
+    congress,
+    offset: 0,
+    currentOnly,
+  });
   if (!firstPage) return null;
 
   const firstMembers: CongressApiMember[] = firstPage.members ?? [];
@@ -103,7 +119,7 @@ async function fetchAllMembers(apiKey: string, congress: number): Promise<Congre
     Array.from(
       { length: pageCount - 1 },
       (_unused: unknown, index: number): Promise<CongressApiMemberListResponse | null> =>
-        fetchMemberPage({ apiKey, congress, offset: (index + 1) * MAX_API_PAGE_SIZE }),
+        fetchMemberPage({ apiKey, congress, offset: (index + 1) * MAX_API_PAGE_SIZE, currentOnly }),
     ),
   );
 
@@ -140,13 +156,17 @@ function buildComposition(members: SeatedMember[]): ChamberComposition[] {
  * Congress: "the Senate has no members" is never a true statement about a seated Congress, and a diagram showing it
  * would read as one.
  *
- * @param congress - The Congress whose membership to read. Defaults to the one currently seated.
+ * @param congress - The Congress whose membership to read. Defaults to the one currently seated, and reading any other
+ *   one changes the question asked upstream — @see fetchMemberPage.
  * @returns The composition, always labeled live or preview. A missing key or a failed request yields clearly labeled
  *   placeholder seats rather than an empty or broken chart; this never throws.
  */
 export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
   const apiKey: string | undefined = getCongressApiKey();
   const retrievedAt: string = new Date().toISOString();
+  // "Who holds a seat" is only the right question about the Congress sitting now. For any earlier one the roster is
+  // closed, and the members who have since left it are part of it rather than absent from it.
+  const currentOnly: boolean = congress >= getCurrentCongress();
 
   if (!apiKey) {
     return buildPreviewComposition(
@@ -156,7 +176,7 @@ export async function getCongressComposition(congress: number = getCurrentCongre
     );
   }
 
-  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress);
+  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress, currentOnly);
   const chambers: ChamberComposition[] = buildComposition(mapUsable(raw ?? [], mapCongressMember));
 
   if (chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0)) {

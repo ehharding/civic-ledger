@@ -74,7 +74,7 @@ pnpm exec playwright install chromium
 |--------------------------------------------------|------------------------------------------------------------------------------------|
 | `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member  |
 | `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                   |
-| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, text versions, action history, recorded votes, journey cue  |
+| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, text, actions, votes, committees of referral, journey cue   |
 | `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships                |
 | `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, subcommittees, and the records referred to it |
 | `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                            |
@@ -103,11 +103,20 @@ Behind those routes:
   doesn't carry them and the chambers publish them themselves. Both chambers appear on the same footing: the votes are
   read from the bill's own actions, which is also the only route the Senate's have, since Congress.gov publishes a House
   vote endpoint and no Senate counterpart.
-- **A stage cue that reads the record rather than one sentence of it.** The bill page classifies from the Library of
+- **A bill's committees, read from the record and linked, not parsed out of a sentence.** Every committee that held the
+  bill, in Congress.gov's own order — primary jurisdiction first — each with the relationship it recorded ("Referred
+  To", "Reported By") and each linking to that committee's page here, subcommittees included. The referral was always
+  visible in the latest action's prose; what the committee sub-resource adds is the system code, which is the difference
+  between naming a committee and being able to open it.
+- **A stage cue that reads the record rather than one sentence of it.** Where a bill became law, the page says so from
+  the record's own `laws` field and prints the citation it carries ("Public Law 119-21") — a published fact rather than
+  a classifier's reading, and one no classifier could have produced. Otherwise it classifies from the Library of
   Congress's own action codes, not from the latest action's wording. That is the difference between correct and
   plausible: a House bill referred onward to a Senate committee reports the referral as its latest action, and reading
   only that walks the stepper backwards from "Passed a Chamber" to "In Committee". The four codes it trusts are the ones
-  that mean exactly one thing; floor activity is not treated as passage.
+  that mean exactly one thing; floor activity is not treated as passage. The three readings settle in one
+  direction — the most advanced wins — so a page can never print a public law number beside a stepper that stopped short
+  of it.
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
   the voting module, that a vote not taken on a bill is out of reach entirely.

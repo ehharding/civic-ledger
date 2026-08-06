@@ -100,4 +100,17 @@ describe("resolveBillStage", (): void => {
     expect(resolveBillStage("committee", [])).toBe("committee");
     expect(resolveBillStage("committee", [action({ actionCode: "H11100" })])).toBe("committee");
   });
+
+  it("never walks a bill backwards from the stage its own record established", (): void => {
+    // `mapCongressBill` sets "law" from the detail endpoint's published `laws` field, so this fallback is a fact rather
+    // than a reading. An action history that only reaches "chamber" must not overwrite it — a page cannot print
+    // "Public Law 119-21" beside a stepper that stops at *Passed a Chamber*.
+    expect(resolveBillStage("law", [action({ actionCode: "8000" })])).toBe("law");
+    expect(resolveBillStage("law", [action({ actionCode: "28000" })])).toBe("law");
+  });
+
+  it("still takes the action history's reading when it is the more advanced of the two", (): void => {
+    expect(resolveBillStage("introduced", [action({ actionCode: "36000" })])).toBe("law");
+    expect(resolveBillStage("chamber", [action({ actionCode: "28000" })])).toBe("president");
+  });
 });

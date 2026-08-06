@@ -59,9 +59,12 @@ That arrangement is the convention nearly every published chamber diagram uses, 
 sits: Congress.gov publishes no desk assignments, and neither chamber seats its members in a tidy party-ordered arc. The
 chart carries that caveat in its own caption rather than leaving a reader to assume otherwise.
 
-- Members come from `/v3/member/congress/{congress}` with `currentMember=true`, which makes the request "who holds a
-  seat right now" rather than "everyone who served at any point in this Congress." Without it, a member who resigned
-  mid-term and their replacement both come back and the chamber over-counts.
+- Members come from `/v3/member/congress/{congress}`. For the Congress currently seated the request carries
+  `currentMember=true`, which makes it "who holds a seat right now" rather than "everyone who served at any point in
+  this Congress" — without it, a member who resigned mid-term and their replacement both come back and the chamber
+  over-counts. For any *earlier* Congress the flag is `false`, which is Congress.gov's own recommendation and the only
+  honest reading: a Congress that has risen has a closed roster, and the members who have since left office are part of
+  it rather than absent from it. The 117th answers `currentMember=true` with 377 members against a true 557.
 - **Vacant seats are absent rather than drawn.** The API reports who holds a seat, not how many seats are authorized.
 - **The House's six non-voting seats are counted and labeled separately** — the five Delegates and Puerto Rico's
   Resident Commissioner. A diagram that renders all 441 identically quietly asserts something false about how the
@@ -78,6 +81,13 @@ duplicate what Congress.gov already serves well. The bill page instead shows the
 plain-English, exactly the framing this project wants — and links out to every official text version for anyone who
 wants the primary source.
 
+**An enacted law is read, never inferred.** The detail endpoint publishes `laws` on a bill that became one —
+`{ "type": "Public Law", "number": "119-21" }` — and that field settles two things nothing else could. It establishes
+the *Became Law* stage outright, rather than by a classifier recognizing a phrase or a code; and it carries the public
+law citation, which no classifier could have produced at all, since it appears nowhere else on the record this app
+reads. The citation is printed beside the stage cue, as text rather than as a link, on the same rule that governs
+committee reports below: congress.gov's URL for a public law is not published by the API and would have to be guessed.
+
 **The stage cue is educational, not legal.** It can orient a person; it cannot safely replace a legal-status reading,
 and the interface says so and keeps the official link prominent.
 
@@ -93,6 +103,21 @@ different stages for the same bill, and where they differ the page is the one th
 The code list is deliberately four entries long — passed House, passed Senate, presented, enacted. No attempt is made
 to classify the several hundred other codes the endpoint uses, and floor activity is specifically *not* treated as
 passage: a bill can accumulate dozens of debate and motion rows without passing anything.
+
+**These three readings settle in one direction only: the most advanced wins.** `resolveBillStage` takes the further of
+what the record established and what the codes establish, rather than letting the later read overwrite the earlier one.
+That is not a tiebreak dressed up as a rule — it is what keeps the page from contradicting itself. A bill whose `laws`
+field names a public law and whose fetched action codes only reach *Passed a Chamber* would otherwise print "Public Law
+119-21" beside a stepper that stopped one rung short. Nothing regresses under it, because neither classifier can be the
+*lower* reading by being wrong: the prose one only ever names a stage it recognizes, and the code one never returns
+anything below *Passed a Chamber*.
+
+**A bill names its committees, from the committee record rather than from the referral sentence.** The page lists every
+committee that held the bill, each linking inward to that committee's own page here, with the relationship Congress.gov
+recorded printed verbatim — "Referred To", "Reported By", "Markup By". The same fact was already visible in the latest
+action and the action history, as prose; what the `/committees` sub-resource adds is the system code, which is the
+difference between naming a committee and being able to open it. A referral is a referral and not an outcome, exactly
+as on the committee's own page: most bills referred to a committee never leave it.
 
 **Recorded votes are named, never tallied.** A bill's page lists each roll call taken on it — chamber, roll number,
 date — and links the chamber's own record. It prints no counts, no margins, and no member positions, because

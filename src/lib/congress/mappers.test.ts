@@ -27,6 +27,9 @@ import type { CommitteeProfile, CommitteeSummary } from "@/lib/congress/committe
 import {
   asOriginChamber,
   collectRecordedVotes,
+  mapBillCommittee,
+  mapBillCommitteeActivity,
+  mapBillSubcommittee,
   mapCommitteeBillReferral,
   mapCommitteeHistory,
   mapCommitteeNomination,
@@ -39,6 +42,7 @@ import {
   mapCongressMember,
   mapCongressSummary,
   mapCongressTextVersion,
+  mapEnactedLaw,
   mapLeadershipRole,
   mapMemberProfile,
   mapMemberTerm,
@@ -100,6 +104,39 @@ describe("mapCongressBill", (): void => {
 
     expect(bill?.type).toBe("S");
     expect(bill?.number).toBe("917");
+  });
+
+  it("carries the law a bill became, and lets it establish the stage outright", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({
+        laws: [{ type: "Public Law", number: "119-21" }],
+        // Deliberately a latest action that says nothing about enactment: the published `laws` field is what settles
+        // this, not a phrase the prose classifier happened to recognize.
+        latestAction: { actionDate: "2026-07-04", text: "Message on Senate action sent to the House." },
+      }),
+    );
+
+    expect(bill?.enactedLaw).toEqual({ type: "Public Law", number: "119-21" });
+    expect(bill?.stage).toBe("law");
+  });
+
+  it("falls back to the prose classifier for a bill the record names no law for", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({
+        laws: undefined,
+        latestAction: { actionDate: "2026-07-04", text: "Referred to the Committee on Rules." },
+      }),
+    );
+
+    expect(bill?.enactedLaw).toBeUndefined();
+    expect(bill?.stage).toBe("committee");
+  });
+
+  it("ignores a half-written law rather than pinning a stage on it", (): void => {
+    // "Public Law" with no number names no specific law, and a bare number names nothing at all. The action codes can
+    // still establish enactment on their own, so a partial record is dropped rather than propped up.
+    expect(mapCongressBill(apiBill({ laws: [{ type: "Public Law" }] }))?.enactedLaw).toBeUndefined();
+    expect(mapCongressBill(apiBill({ laws: [{ number: "119-21" }] }))?.enactedLaw).toBeUndefined();
   });
 
   it("returns null for a record missing anything the app depends on", (): void => {
@@ -549,6 +586,120 @@ describe("mapLeadershipRole", (): void => {
   it("returns null when it names no office, since a congress number alone says nothing", (): void => {
     expect(mapLeadershipRole({ congress: 119 })).toBeNull();
     expect(mapLeadershipRole({ type: "   ", congress: 119 })).toBeNull();
+  });
+});
+
+describe("mapEnactedLaw", (): void => {
+  it("keeps a law only when both halves of the citation are present", (): void => {
+    expect(mapEnactedLaw({ type: " Public Law ", number: " 119-21 " })).toEqual({
+      type: "Public Law",
+      number: "119-21",
+    });
+    expect(mapEnactedLaw({ type: "Public Law", number: "  " })).toBeNull();
+    expect(mapEnactedLaw({ type: undefined, number: "119-21" })).toBeNull();
+    expect(mapEnactedLaw({})).toBeNull();
+  });
+});
+
+describe("mapBillCommitteeActivity", (): void => {
+  it("keeps a named activity, with or without a date", (): void => {
+    expect(mapBillCommitteeActivity({ name: " Referred To ", date: "2025-01-03T16:00:35Z" })).toEqual({
+      name: "Referred To",
+      date: "2025-01-03T16:00:35Z",
+    });
+    expect(mapBillCommitteeActivity({ name: "Markup By" })).toEqual({ name: "Markup By", date: undefined });
+  });
+
+  it("drops the endpoint's own non-answer rather than printing it", (): void => {
+    // Congress.gov publishes a literal "Unknown" on a large share of these rows. Printing it reads as a gap in this
+    // app rather than in the record. @see UNNAMED_COMMITTEE_ACTIVITY.
+    expect(mapBillCommitteeActivity({ name: "Unknown" })).toBeNull();
+    expect(mapBillCommitteeActivity({ name: "unknown", date: "2025-05-22T10:48:46Z" })).toBeNull();
+    expect(mapBillCommitteeActivity({ name: "   " })).toBeNull();
+    expect(mapBillCommitteeActivity({})).toBeNull();
+  });
+});
+
+describe("mapBillSubcommittee", (): void => {
+  it("lower-cases the code and keeps whatever activities survived", (): void => {
+    expect(
+      mapBillSubcommittee({
+        systemCode: "HSPW12",
+        name: " Highways and Transit Subcommittee ",
+        activities: [{ name: "Referred to" }, { name: "Unknown" }],
+      }),
+    ).toEqual({
+      systemCode: "hspw12",
+      name: "Highways and Transit Subcommittee",
+      activities: [{ name: "Referred to", date: undefined }],
+    });
+  });
+
+  it("treats an absent activities array as an empty one", (): void => {
+    expect(mapBillSubcommittee({ systemCode: "hspw05", name: "Aviation Subcommittee" })?.activities).toEqual([]);
+  });
+
+  it("returns null without a code or a name, since neither a link nor a label could be built", (): void => {
+    expect(mapBillSubcommittee({ systemCode: "hspw12" })).toBeNull();
+    expect(mapBillSubcommittee({ name: "Aviation Subcommittee" })).toBeNull();
+    expect(mapBillSubcommittee({ systemCode: "  ", name: "  " })).toBeNull();
+  });
+});
+
+describe("mapBillCommittee", (): void => {
+  it("maps a complete referral, normalizing the code, chamber, and type", (): void => {
+    expect(
+      mapBillCommittee({
+        systemCode: "HSAG00",
+        name: " Agriculture Committee ",
+        chamber: "House",
+        type: "Standing",
+        activities: [{ name: "Referred To" }],
+        subcommittees: [{ systemCode: "hsag14", name: "Livestock Subcommittee" }],
+      }),
+    ).toEqual({
+      systemCode: "hsag00",
+      name: "Agriculture Committee",
+      chamber: "house",
+      type: "standing",
+      typeName: "Standing",
+      activities: [{ name: "Referred To", date: undefined }],
+      subcommittees: [{ systemCode: "hsag14", name: "Livestock Subcommittee", activities: [] }],
+    });
+  });
+
+  it("treats absent activities and subcommittees as empty rather than missing", (): void => {
+    const committee = mapBillCommittee({ systemCode: "ssju00", name: "Judiciary Committee", chamber: "Senate" });
+
+    expect(committee?.activities).toEqual([]);
+    expect(committee?.subcommittees).toEqual([]);
+    // No `type` on the record still resolves to a group, since the five-way narrowing has a residual bucket.
+    expect(committee?.type).toBe("other");
+    expect(committee?.typeName).toBeUndefined();
+  });
+
+  it("orders subcommittees alphabetically, where the publisher's order carries nothing", (): void => {
+    const committee = mapBillCommittee({
+      systemCode: "hspw00",
+      name: "Transportation and Infrastructure Committee",
+      chamber: "House",
+      subcommittees: [
+        { systemCode: "hspw12", name: "Highways and Transit Subcommittee" },
+        { systemCode: "hspw05", name: "Aviation Subcommittee" },
+      ],
+    });
+
+    expect(committee?.subcommittees.map((sub): string => sub.name)).toEqual([
+      "Aviation Subcommittee",
+      "Highways and Transit Subcommittee",
+    ]);
+  });
+
+  it("returns null when the referral could not be named, coded, or chambered", (): void => {
+    expect(mapBillCommittee({ name: "Agriculture Committee", chamber: "House" })).toBeNull();
+    expect(mapBillCommittee({ systemCode: "hsag00", chamber: "House" })).toBeNull();
+    // "NoChamber" is the API's own value for a record that is not a committee of either body.
+    expect(mapBillCommittee({ systemCode: "hsag00", name: "Agriculture Committee", chamber: "NoChamber" })).toBeNull();
   });
 });
 
