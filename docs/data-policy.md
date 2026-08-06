@@ -78,8 +78,33 @@ duplicate what Congress.gov already serves well. The bill page instead shows the
 plain-English, exactly the framing this project wants — and links out to every official text version for anyone who
 wants the primary source.
 
-**The stage cue is educational, not legal.** `inferBillStage` reads human-written action text. It can orient a person;
-it cannot safely replace a legal-status reading, and the interface says so and keeps the official link prominent.
+**The stage cue is educational, not legal.** It can orient a person; it cannot safely replace a legal-status reading,
+and the interface says so and keeps the official link prominent.
+
+Where it gets its answer differs by surface, and the difference is a correctness one rather than a cosmetic one. A
+directory card has only the bill's latest action, so `inferBillStage` reads that one line of prose. The bill's own page
+has fetched the full action history, so `inferStageFromActions` reads the Library of Congress's own action codes
+instead — and those disagree with the prose more often than they sound like they would. A House bill that passed the
+House and was then referred to a Senate committee reports "Received in the Senate and Read twice and referred to the
+Committee on …" as its latest action, which the prose classifier reads, correctly for the sentence and wrongly for the
+bill, as *In Committee*. The code for the passage is still in the history. So a card and the bill's page can show
+different stages for the same bill, and where they differ the page is the one that read more of the record.
+
+The code list is deliberately four entries long — passed House, passed Senate, presented, enacted. No attempt is made
+to classify the several hundred other codes the endpoint uses, and floor activity is specifically *not* treated as
+passage: a bill can accumulate dozens of debate and motion rows without passing anything.
+
+**Recorded votes are named, never tallied.** A bill's page lists each roll call taken on it — chamber, roll number,
+date — and links the chamber's own record. It prints no counts, no margins, and no member positions, because
+Congress.gov's bill record does not carry them and the chambers publish them themselves. The votes reach this app
+through the bill's own actions, which is also the only route the Senate's have: Congress.gov publishes a `/house-vote`
+resource and no Senate counterpart. Reading them through actions is what keeps both chambers on the same footing here
+rather than giving the House a richer page because its data happened to be easier to get.
+
+**A vote reference is dropped unless it can be both named and reached.** A row missing its chamber, roll number,
+congress, or URL is not rendered, because a roll call a reader cannot open is worse than one not listed. The same roll
+call attached to several actions — which is ordinary, since the chamber's floor log and the Library of Congress both
+record it — is listed once, since two rows would read as two votes on the same question.
 
 ## What Search Actually Covers
 
@@ -155,6 +180,12 @@ further the longer the name gets. A guessed slug that happens to be wrong produc
 lands on a 404, which is worse here than one extra click. The page links Congress.gov's committee index and prints the
 system code beside it, which is what actually identifies the committee at the destination.
 
+**What the page does link is the committee's own site**, because the API states that URL
+outright — `committeeWebsiteUrl` was added to the committee item endpoint in December 2025, and House Agriculture's
+record returns `https://agriculture.house.gov/` verbatim. That is the same rule as above rather than an exception to it:
+a published URL is linkable and a derived one is not. The link's own copy says the roster lives at that destination and
+not on this page, which is a more useful thing to tell a reader than silence about why the membership is missing.
+
 What the page carries instead is the committee's recorded name history — the most genuinely educational thing the API
 publishes about one. A committee's jurisdiction is usually rewritten by renaming it ("Committee on Education and Labor"
 becoming "Committee on Education and the Workforce" and back again tracks which party held the chamber, not a clerical
@@ -204,9 +235,10 @@ does, both rendered on the page rather than kept in a doc:
   step and the sources, so a reader who skims still passes it.
 
 A third rule follows from the rest of this document: **a lesson never implies this app shows something it doesn't.** The
-voting module is the sharp case. Civic Ledger holds no roll-call data at all, so the lesson says so in the same breath
-as it explains what a recorded vote is, and sends the reader to the two chambers' own tallies. Explaining a thing the
-interface cannot show is useful; explaining it in a way that leaves a reader hunting the interface for it is not.
+voting module is the sharp case, and its limits list was rewritten rather than left standing when the bill page started
+naming recorded votes — a lesson that under-claims is as wrong as one that over-claims, and a reader told the app holds
+nothing would not go looking for the thing it now holds. What the module says instead is the actual line: the votes are
+named and linked here, the arithmetic is at the chambers.
 
 The glossary (`src/lib/glossary.ts`) is deliberately exempt. The line is length rather than rigor: a one-line definition
 of "cosponsor" is vocabulary, and a five-step account of how a chamber records a vote is a claim. What the glossary owes

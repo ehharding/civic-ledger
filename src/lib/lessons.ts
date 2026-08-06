@@ -301,7 +301,8 @@ export const lessons: readonly Lesson[] = [
       "Quorums, voice votes, recorded votes, cloture, and the two-thirds threshold — why “passed” can mean several different arithmetics.",
     intro:
       "A tally looks like the most objective fact in the legislative process. What it is a majority of is the part " +
-      "that varies, and this app shows none of these numbers — so this lesson also says where to find them.",
+      "that varies, and this app shows none of these numbers — it names the votes and links the chambers' own " +
+      "records, so this lesson also says where to find them.",
     stepNoun: "Step",
     steps: [
       {
@@ -352,12 +353,13 @@ export const lessons: readonly Lesson[] = [
     ],
     limitsHeading: "What This App Does Not Show About a Vote",
     limits: [
-      "Roll-call tallies, and who voted which way. Civic Ledger holds no vote data at all — the sources below are " +
-        "the chambers' own records, and they are the answer to every question of this kind.",
-      "Whether a vote happened. A bill's latest action may mention one, and the “Passed a Chamber” cue is inferred " +
-        "from that wording — it does not distinguish a voice vote from a recorded one, or a wide margin from a close one.",
+      "Roll-call tallies, and who voted which way. A bill's page names each recorded vote taken on it and links the " +
+        "chamber's own record, but the arithmetic — the counts, the margins, the individual positions — stays there. " +
+        "The sources below are those records, and they are the answer to every question of this kind.",
+      "Any vote not taken on a bill. Procedural votes, votes on nominations, and votes on motions that never attach " +
+        "to a measure are not reachable from the records this app reads, because it reaches votes through bills.",
       "Why a bill stopped. A bill that failed cloture and a bill nobody scheduled look identical in the record this " +
-        "app reads: a latest action that stopped changing.",
+        "app reads: an action history that stopped growing.",
     ],
     sources: [
       {
@@ -381,8 +383,8 @@ export const lessons: readonly Lesson[] = [
     ],
     next: {
       kicker: "See What the Record Does Say",
-      heading: "A Bill's Latest Action Is Often the Only Trace of a Vote This App Carries.",
-      body: "Open a bill and read the action line beside the stepper — then follow the official-record link for the tally itself.",
+      heading: "A Bill's Own Page Names Every Recorded Vote Taken on It.",
+      body: "Open a bill and read its action history — then follow each roll call to the chamber's own tally for the numbers.",
       href: "/bills" as Route,
       linkLabel: "Explore Bills",
     },

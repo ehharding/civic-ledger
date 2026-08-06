@@ -250,6 +250,13 @@ export type CommitteeProfile = CommitteeSummary & {
   reportCount?: number;
   /** Senate committees only: nominations referred to it. */
   nominationCount?: number;
+  /**
+   * The committee's own website (e.g., `https://agriculture.house.gov/`), when Congress.gov publishes one.
+   *
+   * The one per-committee outbound link this page can make, and it is possible only because the API states it
+   * outright — @see CONGRESS_GOV_COMMITTEES for the congress.gov link that still cannot be built.
+   */
+  websiteUrl?: string;
 };
 
 /**
@@ -267,6 +274,9 @@ export type CommitteeProfile = CommitteeSummary & {
  * the committee on the destination. This is the same rule the preview fixtures follow for bills — @see
  * `CONGRESS_GOV_HOME` in types.ts — applied for a different reason: not "this record isn't real", but "this URL isn't
  * knowable from what the API gives us".
+ *
+ * That rule is about congress.gov specifically, and it is unchanged. What *is* now linkable is the committee's own
+ * site, because the API publishes that URL rather than leaving it to be guessed. @see CommitteeProfile.websiteUrl.
  */
 export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committees";
 

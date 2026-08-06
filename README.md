@@ -74,7 +74,7 @@ pnpm exec playwright install chromium
 |--------------------------------------------------|------------------------------------------------------------------------------------|
 | `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member  |
 | `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                   |
-| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, official text versions, and an educational journey cue      |
+| `/bills/[congress]/[type]/[number]`              | One bill: CRS summary, text versions, action history, recorded votes, journey cue  |
 | `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships                |
 | `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, subcommittees, and the records referred to it |
 | `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                            |
@@ -98,9 +98,19 @@ Behind those routes:
 - **A search that states its own limits.** Congress.gov's bill endpoint has no keyword parameter, so search sweeps every
   supported Congress's most recently active bills — and the result copy says so rather than implying an exhaustive
   query.
+- **A bill's votes, named but not tallied.** Each roll call taken on a bill is listed with its chamber, number, and date,
+  linking the chamber's own record — and no counts, margins, or member positions, because Congress.gov's bill record
+  doesn't carry them and the chambers publish them themselves. Both chambers appear on the same footing: the votes are
+  read from the bill's own actions, which is also the only route the Senate's have, since Congress.gov publishes a House
+  vote endpoint and no Senate counterpart.
+- **A stage cue that reads the record rather than one sentence of it.** The bill page classifies from the Library of
+  Congress's own action codes, not from the latest action's wording. That is the difference between correct and
+  plausible: a House bill referred onward to a Senate committee reports the referral as its latest action, and reading
+  only that walks the stepper backwards from "Passed a Chamber" to "In Committee". The four codes it trusts are the ones
+  that mean exactly one thing; floor activity is not treated as passage.
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
-  the voting module, that this app holds no roll-call data at all.
+  the voting module, that a vote not taken on a bill is out of reach entirely.
 - **A glossary that comes to the reader.** Every word the glossary defines is annotated where it is actually used —
   throughout the lessons, and in a bill's latest action, which is the one line on that page written in Congress's voice
   rather than this app's. Hovering or focusing "cloture" or "markup" shows the definition in place; the word is also a

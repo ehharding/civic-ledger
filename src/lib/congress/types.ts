@@ -106,6 +106,44 @@ export function congressGovBillUrl(bill: { congress: number | string; type: stri
   return `https://www.congress.gov/bill/${formatOrdinal(congress)}-congress/${typePath}/${bill.number}`;
 }
 
+/**
+ * A reference to one recorded (roll-call) vote taken on a bill.
+ *
+ * Deliberately a *reference* and not a tally. This app holds no vote counts and no member positions: what it carries is
+ * the chamber, the roll number, when it happened, and the link to the chamber's own record — enough for a reader to
+ * find the vote, which is the thing the official source answers better than any copy of it could.
+ * @see docs/data-policy.md.
+ */
+export type RecordedVote = {
+  chamber: "House" | "Senate";
+  /** The chamber's own sequential number for the vote within a session, e.g., `190`. */
+  rollNumber: number;
+  congress: number;
+  /** 1 or 2 — which of the Congress's two annual sessions the vote fell in. Absent on a few older records. */
+  sessionNumber?: number;
+  date?: string;
+  /** The chamber's official tally (clerk.house.gov or senate.gov), verbatim from Congress.gov. */
+  url: string;
+};
+
+/**
+ * One entry in a bill's action history.
+ *
+ * Every field except `text` is optional because the endpoint reports the same event from several source systems at
+ * once, and the rows differ in what they carry: only the Library of Congress rows have the standardized `actionCode`
+ * that {@link inferStageFromActions} reads, while the chamber floor systems carry the fuller prose.
+ */
+export type BillAction = {
+  date?: string;
+  text: string;
+  /** Congress.gov's own classification of the action — `"IntroReferral"`, `"Committee"`, `"Floor"`, `"BecameLaw"`, … */
+  type?: string;
+  /** The Library of Congress action code, when this row came from that system. @see inferStageFromActions */
+  actionCode?: string;
+  /** Roll-call votes this action records. Empty for the overwhelming majority of actions. */
+  recordedVotes: RecordedVote[];
+};
+
 /** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
 export type BillSponsor = {
   fullName: string;

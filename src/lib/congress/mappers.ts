@@ -1,4 +1,5 @@
 import type {
+  CongressApiAction,
   CongressApiBill,
   CongressApiCommittee,
   CongressApiCommitteeBill,
@@ -11,6 +12,7 @@ import type {
   CongressApiMember,
   CongressApiMemberDetail,
   CongressApiMemberDetailTerm,
+  CongressApiRecordedVote,
   CongressApiSponsor,
   CongressApiSummary,
   CongressApiTextFormat,
@@ -40,12 +42,14 @@ import {
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { inferBillStage } from "@/lib/congress/stage";
 import {
+  type BillAction,
   type BillSponsor,
   type BillSummary,
   type BillTextFormat,
   type BillTextVersion,
   congressGovBillUrl,
   type LegislativeBill,
+  type RecordedVote,
 } from "@/lib/congress/types";
 import { compareIsoDatesDesc } from "@/lib/format";
 
@@ -109,9 +113,11 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     },
     policyArea: bill.policyArea?.name,
     stage: inferBillStage(actionText),
-    // Deliberately *not* `bill.url`: that field is the record's own API endpoint, which serves JSON (and 403s without a
-    // key of the reader's own). @see congressGovBillUrl
-    officialUrl: congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
+    // `legislationUrl` is the public congress.gov page, published by the item-level endpoint since August 2025;
+    // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
+    // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
+    // 403s without a key of the reader's own). @see congressGovBillUrl
+    officialUrl: bill.legislationUrl ?? congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
     sponsor: sponsor?.fullName
       ? ({
           fullName: sponsor.fullName,
@@ -158,6 +164,70 @@ export function mapCongressTextVersion(version: CongressApiTextVersion): BillTex
   if (formats.length === 0) return null;
 
   return { type: version.type, date: version.date, formats };
+}
+
+/**
+ * Maps a raw recorded-vote reference from a bill action.
+ *
+ * @param vote - A validated `recordedVotes[]` entry.
+ * @returns The mapped reference, or `null` unless it carries everything needed to *name and reach* the vote — a
+ *   recognizable chamber, a roll number, a congress, and the chamber's own URL. A row missing any of those can't be
+ *   rendered as a link to a specific tally, and a roll call a reader can't open is worse than one not listed.
+ */
+export function mapRecordedVote(vote: CongressApiRecordedVote): RecordedVote | null {
+  const chamber: CongressChamber | null = normalizeChamberName(vote.chamber);
+  if (!chamber || typeof vote.rollNumber !== "number" || typeof vote.congress !== "number" || !vote.url) return null;
+
+  return {
+    chamber: chamber === "house" ? "House" : "Senate",
+    rollNumber: vote.rollNumber,
+    congress: vote.congress,
+    sessionNumber: vote.sessionNumber,
+    date: vote.date,
+    url: vote.url,
+  };
+}
+
+/**
+ * Maps a raw actions-endpoint entry into the app's {@link BillAction} shape.
+ *
+ * @param action - A validated entry from the actions endpoint.
+ * @returns The mapped action, or `null` when it has no text — an undated, untitled row is a bullet with nothing in it.
+ */
+export function mapCongressAction(action: CongressApiAction): BillAction | null {
+  const text: string | undefined = action.text?.trim();
+  if (!text) return null;
+
+  return {
+    date: action.actionDate,
+    text,
+    type: action.type,
+    actionCode: action.actionCode,
+    recordedVotes: mapUsable(action.recordedVotes, mapRecordedVote),
+  };
+}
+
+/**
+ * Collects every distinct roll-call vote referenced anywhere in a bill's action history.
+ *
+ * Deduplication is the point rather than a tidy-up. Congress.gov reports the same event from several source systems at
+ * once, so a single roll call arrives attached to two or three separate actions — HR 1 in the 119th Congress lists roll
+ * 190 twice, once from House floor actions and once from the Library of Congress. Listing it twice would read as two
+ * votes on the same question.
+ *
+ * @param actions - The bill's actions, in any order.
+ * @returns One entry per distinct vote, most recent first.
+ */
+export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVote[] {
+  const byIdentity: Map<string, RecordedVote> = new Map<string, RecordedVote>();
+
+  for (const action of actions) {
+    for (const vote of action.recordedVotes) {
+      byIdentity.set(`${vote.congress}-${vote.chamber}-${vote.sessionNumber ?? ""}-${vote.rollNumber}`, vote);
+    }
+  }
+
+  return sortByDateDesc([...byIdentity.values()], "date");
 }
 
 /**
@@ -407,6 +477,7 @@ export function mapCommitteeProfile(
     billCount: committee.bills?.count,
     reportCount: committee.reports?.count,
     nominationCount: committee.nominations?.count,
+    websiteUrl: committee.committeeWebsiteUrl,
   };
 }
 

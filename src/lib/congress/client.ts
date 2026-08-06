@@ -13,7 +13,8 @@
  * | `api-schema.ts`          | Runtime shapes for Congress.gov v3 payloads — the untrusted-input boundary. |
  * | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards. |
  * | `mappers.ts`             | Upstream shapes to this app's stable model. Pure; no I/O.                   |
- * | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text versions, search.       |
+ * | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.       |
+ * | `stage.ts`               | Where a bill has got to — from its action codes, or from its latest action. |
  * | `composition.ts`         | Chamber membership, including the member list's pagination.                 |
  * | `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.            |
  * | `committee-filter.ts`    | The committee directory's narrowing, ordering, and URL rules. Pure; no I/O. |
@@ -35,6 +36,7 @@
 export {
   type BillLookupResult,
   type BillSearchResult,
+  getBillActions,
   getBillById,
   getBillSummaries,
   getBillTextVersions,

@@ -55,9 +55,17 @@ export const congressApiBillSchema = z.looseObject({
   url: optionalString,
   policyArea: z.looseObject({ name: optionalString }).optional().catch(undefined),
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
-  // Only populated on the detail endpoint — the list endpoint doesn't return either field.
+  // Only populated on the detail endpoint — the list endpoint doesn't return any of these three.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
   cosponsors: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  /**
+   * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
+   *
+   * Added to the item-level endpoint in August 2025, which is after `congressGovBillUrl` was written to derive the same
+   * string from the bill's identity. The derivation is still needed — the list endpoint does not send this — so the two
+   * coexist, with the published value preferred wherever it arrives. @see mapCongressBill
+   */
+  legislationUrl: optionalString,
 });
 
 /** Shape of `GET /v3/bill/{congress}` (the list endpoint). */
@@ -99,6 +107,49 @@ export const congressApiTextVersionSchema = z.looseObject({
 /** Shape of `GET /v3/bill/{congress}/{type}/{number}/text`. */
 export const congressApiTextResponseSchema = z.looseObject({
   textVersions: z.array(congressApiTextVersionSchema).optional().catch(undefined),
+});
+
+/**
+ * One roll-call vote referenced by a bill action.
+ *
+ * This is the *only* place either chamber's recorded votes reach this app. Congress.gov publishes a dedicated
+ * `/house-vote` resource, but there is no `senate-vote` counterpart (the path 404s), so a bill's own action record is
+ * the one surface where a Senate roll call can be named at all. What arrives here is a reference — chamber, roll
+ * number, and a link to the chamber's own tally — never the tally itself.
+ */
+export const congressApiRecordedVoteSchema = z.looseObject({
+  chamber: optionalString,
+  congress: optionalNumber,
+  date: optionalString,
+  rollNumber: optionalNumber,
+  sessionNumber: optionalNumber,
+  url: optionalString,
+});
+
+/**
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/actions`.
+ *
+ * `actionCode` is typed as a string because the endpoint mixes numeric-looking codes (`"8000"`) with alphanumeric ones
+ * (`"H37300"`, `"Intro-H"`) in the same field, and quietly coercing the first kind to a number would break equality
+ * against the codes {@link inferStageFromActions} matches on.
+ *
+ * `sourceSystem` matters more than it looks: the same event is reported by several systems at once — the Library of
+ * Congress (code 9), House floor actions (code 2), and committee systems — so a bill's action list contains deliberate
+ * near-duplicates rather than a clean sequence. Only the Library of Congress rows carry the standardized codes.
+ */
+export const congressApiActionSchema = z.looseObject({
+  actionCode: optionalString,
+  actionDate: optionalString,
+  actionTime: optionalString,
+  text: optionalString,
+  type: optionalString,
+  sourceSystem: z.looseObject({ code: optionalNumber, name: optionalString }).optional().catch(undefined),
+  recordedVotes: z.array(congressApiRecordedVoteSchema).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/bill/{congress}/{type}/{number}/actions`. */
+export const congressApiActionsResponseSchema = z.looseObject({
+  actions: z.array(congressApiActionSchema).optional().catch(undefined),
 });
 
 /**
@@ -276,6 +327,14 @@ export const congressApiCommitteeDetailSchema = z.looseObject({
   systemCode: optionalString,
   type: optionalString,
   isCurrent: z.boolean().optional().catch(undefined),
+  /**
+   * The committee's own site (e.g., `https://agriculture.house.gov/`), added to this endpoint in December 2025.
+   *
+   * Read rather than derived, which is the whole reason it can be linked at all: congress.gov's own committee URLs
+   * embed a name slug this API has never published, and guessing one produces an authoritative-looking 404.
+   * @see docs/data-policy.md, "The Committee Page Has No Roster".
+   */
+  committeeWebsiteUrl: optionalString,
   history: z.array(congressApiCommitteeHistorySchema).optional().catch(undefined),
   parent: congressApiCommitteeRefSchema.optional().catch(undefined),
   subcommittees: z.array(congressApiCommitteeRefSchema).optional().catch(undefined),
@@ -393,6 +452,9 @@ export type CongressApiSummariesResponse = z.infer<typeof congressApiSummariesRe
 export type CongressApiTextFormat = z.infer<typeof congressApiTextFormatSchema>;
 export type CongressApiTextVersion = z.infer<typeof congressApiTextVersionSchema>;
 export type CongressApiTextResponse = z.infer<typeof congressApiTextResponseSchema>;
+export type CongressApiRecordedVote = z.infer<typeof congressApiRecordedVoteSchema>;
+export type CongressApiAction = z.infer<typeof congressApiActionSchema>;
+export type CongressApiActionsResponse = z.infer<typeof congressApiActionsResponseSchema>;
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;
 export type CongressApiMemberListResponse = z.infer<typeof congressApiMemberListResponseSchema>;

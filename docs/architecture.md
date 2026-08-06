@@ -69,7 +69,7 @@ components, and tests import one stable path while the internals stay free to mo
 | `api-schema.ts`          | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
 | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards.   |
 | `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
-| `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text versions, search.         |
+| `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
 | `composition.ts`         | Chamber membership, including the member list's pagination.                   |
 | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
 | `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
@@ -82,7 +82,7 @@ components, and tests import one stable path while the internals stay free to mo
 | `committee-activity.ts`  | One page of one of those collections, plus the referred bills' titles.        |
 | `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
 | `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
-| `stage.ts`               | The educational stage cue, inferred from action text. Never a legal status.   |
+| `stage.ts`               | The stage cue: from action codes where fetched, from prose otherwise.         |
 | `sanitize-summary.ts`    | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
 | `client.ts`              | Public surface. Re-exports only.                                              |
 

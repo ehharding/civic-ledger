@@ -225,6 +225,24 @@ describe("CommitteeDetail", (): void => {
       );
     });
 
+    it("links the committee's own site when Congress.gov publishes the URL", (): void => {
+      // Published rather than derived, which is the whole reason this link is allowed where a guessed congress.gov
+      // deep link is not — and the copy says the roster lives there because the API still does not carry one.
+      renderCommittee({ websiteUrl: "https://agriculture.house.gov/" });
+
+      expect(screen.getByRole("link", { name: /The Committee’s Own Site/ })).toHaveAttribute(
+        "href",
+        "https://agriculture.house.gov/",
+      );
+      expect(screen.getByText(/That roster is not in the API, so it is not on this page/)).toBeInTheDocument();
+    });
+
+    it("says nothing about a committee site when none is published", (): void => {
+      renderCommittee();
+
+      expect(screen.queryByRole("link", { name: /The Committee’s Own Site/ })).not.toBeInTheDocument();
+    });
+
     it("offers a placeholder committee no official link at all", (): void => {
       // A preview record's system code cannot be a real one, and linking out from it would imply an official record
       // that does not exist.

@@ -155,6 +155,17 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
                 on the official site.
               </p>
               <OutboundLink href={CONGRESS_GOV_COMMITTEES}>Committees on Congress.gov</OutboundLink>
+              {/* Published by Congress.gov rather than derived from the committee's name, which is the only reason this
+                  link can exist at all — the congress.gov link above stays an index for exactly that reason. */}
+              {profile.websiteUrl ? (
+                <>
+                  <p className="muted-copy">
+                    Congress.gov also publishes the committee’s own site, which is where its schedule, hearings, and
+                    membership are kept. That roster is not in the API, so it is not on this page.
+                  </p>
+                  <OutboundLink href={profile.websiteUrl}>The Committee’s Own Site</OutboundLink>
+                </>
+              ) : null}
             </>
           ) : (
             <p className="muted-copy">

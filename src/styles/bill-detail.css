@@ -203,3 +203,37 @@
   border-top: 1px dashed var(--line);
   padding-top: 16px;
 }
+
+.action-history__list {
+  margin-top: 14px;
+  padding-left: 20px;
+}
+
+.action-history__list > li + li {
+  margin-top: 14px;
+}
+
+.action-history__text {
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.recorded-vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.recorded-vote-list__roll {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.recorded-vote-list__roll + a {
+  margin-top: 6px;
+}

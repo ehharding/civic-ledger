@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type BillLookupResult,
   type BillSearchResult,
+  getBillActions,
   getBillById,
   getBillSummaries,
   getBillTextVersions,
@@ -22,7 +23,7 @@ import {
   getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import type { BillRouteParams, LegislativeBill } from "@/lib/congress/types";
+import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/types";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
@@ -130,8 +131,92 @@ describe("bill sub-resources", (): void => {
     for (const route of MALFORMED_ROUTES) {
       expect(await getBillSummaries(route), JSON.stringify(route)).toEqual([]);
       expect(await getBillTextVersions(route), JSON.stringify(route)).toEqual([]);
+      expect(await getBillActions(route), JSON.stringify(route)).toEqual([]);
     }
 
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("getBillActions", (): void => {
+  const route: BillRouteParams = { congress: "119", type: "hr", number: "144" };
+
+  it("maps an action history newest first, keeping the near-duplicate rows", async (): Promise<void> => {
+    // The same moment reported by two source systems is the endpoint's own shape, not noise — merging them would mean
+    // this app deciding which official log to believe.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          actions: [
+            { actionCode: "1000", actionDate: "2025-01-03", text: "Introduced in House", type: "IntroReferral" },
+            { actionCode: "8000", actionDate: "2025-01-23", text: "Passed/agreed to in House.", type: "Floor" },
+            { actionCode: "H37300", actionDate: "2025-01-23", text: "On motion to suspend the rules…", type: "Floor" },
+          ],
+        }),
+      ),
+    );
+
+    const actions: BillAction[] = await getBillActions(route);
+
+    expect(actions).toHaveLength(3);
+    expect(actions[0]?.date).toBe("2025-01-23");
+    expect(actions.at(-1)?.text).toBe("Introduced in House");
+  });
+
+  it("carries a recorded vote's reference through to the model", async (): Promise<void> => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          actions: [
+            {
+              actionDate: "2025-07-03",
+              text: "On motion that the House agree to the Senate amendment Agreed to by recorded vote.",
+              recordedVotes: [
+                {
+                  chamber: "House",
+                  congress: 119,
+                  rollNumber: 190,
+                  sessionNumber: 1,
+                  url: "https://clerk.house.gov/evs/2025/roll190.xml",
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const actions: BillAction[] = await getBillActions(route);
+
+    expect(actions[0]?.recordedVotes).toEqual([
+      {
+        chamber: "House",
+        congress: 119,
+        date: undefined,
+        rollNumber: 190,
+        sessionNumber: 1,
+        url: "https://clerk.house.gov/evs/2025/roll190.xml",
+      },
+    ]);
+  });
+
+  it("reports an empty history rather than an error when the request fails", async (): Promise<void> => {
+    // The page renders this as "no action history to show", which is the honest state of a bill whose actions could
+    // not be read — and, critically, the stepper then falls back to the prose classifier rather than to "introduced".
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    vi.spyOn(console, "error").mockImplementation((): void => {});
+
+    expect(await getBillActions(route)).toEqual([]);
+  });
+
+  it("returns nothing in preview mode, since fixtures fabricate no action record", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(await getBillActions(route)).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -1,11 +1,14 @@
 import type { ZodType } from "zod";
 
 import {
+  type CongressApiAction,
+  type CongressApiActionsResponse,
   type CongressApiBill,
   type CongressApiSummariesResponse,
   type CongressApiSummary,
   type CongressApiTextResponse,
   type CongressApiTextVersion,
+  congressApiActionsResponseSchema,
   congressApiDetailResponseSchema,
   congressApiListResponseSchema,
   congressApiSummariesResponseSchema,
@@ -26,6 +29,7 @@ import {
   requestCongressJson,
 } from "@/lib/congress/http";
 import {
+  mapCongressAction,
   mapCongressBill,
   mapCongressSummary,
   mapCongressTextVersion,
@@ -35,6 +39,7 @@ import {
 import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/search";
 import {
+  type BillAction,
   type BillRouteParams,
   type BillSummary,
   type BillTextVersion,
@@ -288,7 +293,7 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
 async function fetchBillSubResource<Payload, Raw, Entry>(
   input: BillRouteParams,
   config: {
-    path: "summaries" | "text";
+    path: "summaries" | "text" | "actions";
     schema: ZodType<Payload>;
     select: (payload: Payload) => Raw[] | undefined;
     map: (entry: Raw) => Entry | null;
@@ -352,6 +357,34 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
     select: (payload: CongressApiSummariesResponse): CongressApiSummary[] | undefined => payload.summaries,
     map: mapCongressSummary,
     dateKey: "actionDate",
+  });
+}
+
+/**
+ * Fetches a bill's full action history, most recent first.
+ *
+ * This is the record behind two things the bill page can otherwise only approximate. The stepper stops guessing a
+ * stage from one line of prose and reads the Library of Congress's own action codes instead (@see
+ * inferStageFromActions) — which matters most for a bill that has passed one chamber and been referred to a committee
+ * in the other, where the latest action names only the referral. And the roll-call votes taken on the bill are named
+ * here and nowhere else in this API for the Senate, since there is no `senate-vote` endpoint to ask.
+ *
+ * The list is deliberately not deduplicated. Congress.gov reports the same event from several source systems at once,
+ * and which system recorded an action is part of the record rather than noise — the near-duplicate rows say that the
+ * chamber's floor log and the Library of Congress both captured the same moment. Only the *votes* are deduplicated,
+ * where repetition would read as two separate roll calls. @see collectRecordedVotes.
+ *
+ * @param input - The bill's route params.
+ * @returns Every action on file, newest first. Always empty in preview mode, and on any failure — the page renders that
+ *   as "no action history to show", which is also the honest state of a bill whose actions could not be read.
+ */
+export async function getBillActions(input: BillRouteParams): Promise<BillAction[]> {
+  return fetchBillSubResource(input, {
+    path: "actions",
+    schema: congressApiActionsResponseSchema,
+    select: (payload: CongressApiActionsResponse): CongressApiAction[] | undefined => payload.actions,
+    map: mapCongressAction,
+    dateKey: "date",
   });
 }
 

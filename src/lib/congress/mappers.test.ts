@@ -21,16 +21,19 @@ import type {
   CongressApiCommitteeDetail,
   CongressApiMember,
   CongressApiMemberDetail,
+  CongressApiRecordedVote,
 } from "@/lib/congress/api-schema";
 import type { CommitteeProfile, CommitteeSummary } from "@/lib/congress/committees";
 import {
   asOriginChamber,
+  collectRecordedVotes,
   mapCommitteeBillReferral,
   mapCommitteeHistory,
   mapCommitteeNomination,
   mapCommitteeProfile,
   mapCommitteeRef,
   mapCommitteeReport,
+  mapCongressAction,
   mapCongressBill,
   mapCongressCommittee,
   mapCongressMember,
@@ -39,12 +42,13 @@ import {
   mapLeadershipRole,
   mapMemberProfile,
   mapMemberTerm,
+  mapRecordedVote,
   mapUsable,
   type SeatedMember,
   sortByDateDesc,
 } from "@/lib/congress/mappers";
 import type { MemberProfile } from "@/lib/congress/members";
-import type { BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import type { BillAction, BillSummary, BillTextVersion, LegislativeBill, RecordedVote } from "@/lib/congress/types";
 
 /** A complete list-endpoint bill, which individual cases then take fields away from. */
 function apiBill(overrides: Partial<CongressApiBill> = {}): CongressApiBill {
@@ -148,6 +152,156 @@ describe("mapCongressBill", (): void => {
     // `bill.url` serves JSON, and 403s without a key of the reader's own.
     expect(bill?.officialUrl).not.toContain("api.congress.gov");
     expect(bill?.officialUrl).toContain("congress.gov");
+  });
+
+  it("prefers the published public URL over deriving one", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({ legislationUrl: "https://www.congress.gov/bill/119th-congress/house-bill/284" }),
+    );
+
+    expect(bill?.officialUrl).toBe("https://www.congress.gov/bill/119th-congress/house-bill/284");
+  });
+
+  it("still derives the public URL for a list-endpoint record, which does not publish one", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(apiBill({ legislationUrl: undefined }));
+
+    expect(bill?.officialUrl).toBe("https://www.congress.gov/bill/119th-congress/house-bill/284");
+  });
+});
+
+describe("mapRecordedVote", (): void => {
+  /** A complete recorded-vote reference, as the actions endpoint sends one. */
+  function apiVote(overrides: Partial<CongressApiRecordedVote> = {}): CongressApiRecordedVote {
+    return {
+      chamber: "House",
+      congress: 119,
+      date: "2025-07-03T18:31:38Z",
+      rollNumber: 190,
+      sessionNumber: 1,
+      url: "https://clerk.house.gov/evs/2025/roll190.xml",
+      ...overrides,
+    };
+  }
+
+  it("maps a complete reference and normalizes the chamber to the app's spelling", (): void => {
+    expect(mapRecordedVote(apiVote())).toEqual({
+      chamber: "House",
+      congress: 119,
+      date: "2025-07-03T18:31:38Z",
+      rollNumber: 190,
+      sessionNumber: 1,
+      url: "https://clerk.house.gov/evs/2025/roll190.xml",
+    });
+  });
+
+  it("accepts the Senate's rows, which reach this app only through a bill's actions", (): void => {
+    // There is no `senate-vote` endpoint, so this is the only path a Senate roll call has into the product at all.
+    const vote: RecordedVote | null = mapRecordedVote(
+      apiVote({ chamber: "Senate", rollNumber: 329, url: "https://www.senate.gov/legislative/roll329.htm" }),
+    );
+
+    expect(vote?.chamber).toBe("Senate");
+    expect(vote?.rollNumber).toBe(329);
+  });
+
+  it("returns null unless the vote can be both named and reached", (): void => {
+    expect(mapRecordedVote(apiVote({ chamber: undefined }))).toBeNull();
+    expect(mapRecordedVote(apiVote({ chamber: "Joint Session" }))).toBeNull();
+    expect(mapRecordedVote(apiVote({ rollNumber: undefined }))).toBeNull();
+    expect(mapRecordedVote(apiVote({ congress: undefined }))).toBeNull();
+    expect(mapRecordedVote(apiVote({ url: undefined }))).toBeNull();
+  });
+
+  it("keeps a vote that is merely missing its session number", (): void => {
+    expect(mapRecordedVote(apiVote({ sessionNumber: undefined, date: undefined }))).not.toBeNull();
+  });
+});
+
+describe("mapCongressAction", (): void => {
+  it("maps a complete action, including the votes it records", (): void => {
+    const mapped: BillAction | null = mapCongressAction({
+      actionCode: "8000",
+      actionDate: "2025-07-03",
+      text: "Passed/agreed to in House.",
+      type: "Floor",
+      sourceSystem: { code: 9, name: "Library of Congress" },
+      recordedVotes: [
+        { chamber: "House", congress: 119, rollNumber: 190, sessionNumber: 1, url: "https://clerk.house.gov/a.xml" },
+      ],
+    });
+
+    expect(mapped).toMatchObject({ actionCode: "8000", date: "2025-07-03", type: "Floor" });
+    expect(mapped?.recordedVotes).toHaveLength(1);
+  });
+
+  it("returns null for an action with no text, which is a bullet with nothing in it", (): void => {
+    expect(mapCongressAction({ actionDate: "2025-07-03" })).toBeNull();
+    expect(mapCongressAction({ text: "   " })).toBeNull();
+  });
+
+  it("keeps an action that carries only its text", (): void => {
+    // The rows without a code are the majority, and dropping them would empty out most of the history.
+    const mapped: BillAction | null = mapCongressAction({ text: "Introduced in House" });
+
+    expect(mapped).toEqual({
+      date: undefined,
+      text: "Introduced in House",
+      type: undefined,
+      actionCode: undefined,
+      recordedVotes: [],
+    });
+  });
+
+  it("drops an unusable vote without dropping the action it hangs off", (): void => {
+    const mapped: BillAction | null = mapCongressAction({
+      text: "Passed/agreed to in House.",
+      recordedVotes: [{ chamber: "House" }],
+    });
+
+    expect(mapped).not.toBeNull();
+    expect(mapped?.recordedVotes).toEqual([]);
+  });
+});
+
+describe("collectRecordedVotes", (): void => {
+  /** One vote reference, spread across however many actions a caller wants to attach it to. */
+  const roll190: RecordedVote = {
+    chamber: "House",
+    congress: 119,
+    date: "2025-07-03T18:31:38Z",
+    rollNumber: 190,
+    sessionNumber: 1,
+    url: "https://clerk.house.gov/evs/2025/roll190.xml",
+  };
+
+  it("reports one vote once, however many actions reference it", (): void => {
+    // HR 1 in the 119th genuinely lists roll 190 twice — once from House floor actions, once from the Library of
+    // Congress. Printing it twice would read as two separate votes on the same question.
+    const votes: RecordedVote[] = collectRecordedVotes([
+      { text: "On motion that the House agree…", recordedVotes: [roll190] },
+      { text: "Resolving differences -- House actions…", recordedVotes: [roll190] },
+    ]);
+
+    expect(votes).toEqual([roll190]);
+  });
+
+  it("keeps distinct votes apart, including across chambers", (): void => {
+    const senateVote: RecordedVote = { ...roll190, chamber: "Senate", rollNumber: 329, date: "2025-07-01T12:00:00Z" };
+    const votes: RecordedVote[] = collectRecordedVotes([
+      { text: "House passage.", recordedVotes: [roll190] },
+      { text: "Senate passage.", recordedVotes: [senateVote] },
+    ]);
+
+    // Same roll number in different chambers, or different sessions, are different votes — so identity has to carry
+    // more than the number.
+    expect(votes).toHaveLength(2);
+    // Most recent first, like every other date-ordered list in this adapter.
+    expect(votes[0]).toEqual(roll190);
+  });
+
+  it("returns nothing for a history with no recorded votes, which is the ordinary case", (): void => {
+    expect(collectRecordedVotes([{ text: "Referred to the Committee on Finance.", recordedVotes: [] }])).toEqual([]);
+    expect(collectRecordedVotes([])).toEqual([]);
   });
 });
 
@@ -537,6 +691,19 @@ describe("mapCommitteeProfile", (): void => {
 
   it("treats an absent isCurrent flag as false, as the API only omits it for bodies no longer constituted", (): void => {
     expect(mapCommitteeProfile(apiCommitteeDetail({ isCurrent: undefined }), "hspw00", "house")?.isCurrent).toBe(false);
+  });
+
+  it("carries the committee's own site only when Congress.gov publishes one", (): void => {
+    // The one per-committee outbound link this app can make, and only because it is stated rather than derived — the
+    // congress.gov URL still cannot be built from anything in this payload.
+    const published: CommitteeProfile | null = mapCommitteeProfile(
+      apiCommitteeDetail({ committeeWebsiteUrl: "https://agriculture.house.gov/" }),
+      "hspw00",
+      "house",
+    );
+
+    expect(published?.websiteUrl).toBe("https://agriculture.house.gov/");
+    expect(mapCommitteeProfile(apiCommitteeDetail(), "hspw00", "house")?.websiteUrl).toBeUndefined();
   });
 
   it("carries a parent only when the reference is usable, and sorts subcommittees by name", (): void => {

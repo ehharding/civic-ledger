@@ -4,9 +4,15 @@ import type { JSX } from "react";
 
 import { BillDetail } from "@/components/bill-detail";
 import { billHref } from "@/lib/bill-route";
-import { type BillLookupResult, getBillById, getBillSummaries, getBillTextVersions } from "@/lib/congress/client";
+import {
+  type BillLookupResult,
+  getBillActions,
+  getBillById,
+  getBillSummaries,
+  getBillTextVersions,
+} from "@/lib/congress/client";
 import { previewBills } from "@/lib/congress/fixtures";
-import type { BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import type { BillAction, BillRouteParams, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
 import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 
@@ -65,20 +71,26 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 /**
  * Individual bill record route.
  *
- * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number works —
- * not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, and its official text
- * versions are independent reads, so all three go out together.
+ * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number
+ * works — not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, its official text
+ * versions, and its action history are independent reads, so all four go out together.
  *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;
-  const [{ bill, source, notice, retrievedAt }, summaries, textVersions]: [
+  const [{ bill, source, notice, retrievedAt }, summaries, textVersions, actions]: [
     BillLookupResult,
     BillSummary[],
     BillTextVersion[],
-  ] = await Promise.all([getBillById(route), getBillSummaries(route), getBillTextVersions(route)]);
+    BillAction[],
+  ] = await Promise.all([
+    getBillById(route),
+    getBillSummaries(route),
+    getBillTextVersions(route),
+    getBillActions(route),
+  ]);
 
   if (!bill) notFound();
 
@@ -90,6 +102,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
       retrievedAt={retrievedAt}
       summaries={summaries}
       textVersions={textVersions}
+      actions={actions}
     />
   );
 }

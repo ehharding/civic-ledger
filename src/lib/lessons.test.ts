@@ -109,9 +109,17 @@ describe("the committee and voting modules", (): void => {
     }
   });
 
-  it("says outright that this app holds no vote data", (): void => {
+  it("draws the vote line where it actually falls: the votes are named here, the arithmetic is not", (): void => {
+    // This used to pin the words "no vote data", which stopped being true once the bill page started naming recorded
+    // votes. A lesson that under-claims misleads exactly as much as one that over-claims — a reader told the app holds
+    // nothing will not go looking for what it holds — so what is pinned now is the real boundary.
     const voting: Lesson = lessons[2] as Lesson;
-    expect(voting.limits.join(" ")).toMatch(/no vote data/i);
+    const limits: string = voting.limits.join(" ");
+
+    expect(limits).toMatch(/tallies/i);
+    expect(limits).toMatch(/chamber's own record/i);
+    // The genuinely out-of-reach case, which is what a limits list is for.
+    expect(limits).toMatch(/not taken on a bill/i);
   });
 
   it("says outright that this app publishes no committee roster", (): void => {
