@@ -30,7 +30,9 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
+          # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 

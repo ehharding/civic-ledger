@@ -2,6 +2,7 @@ import { ArrowDownUp, Search, SlidersHorizontal, X } from "lucide-react";
 import type { ChangeEvent, JSX, ReactNode } from "react";
 
 import { ANY_FACET, type FacetOption } from "@/lib/congress/directory-filter";
+import { pluralize } from "@/lib/format";
 
 /**
  * Every control the three directories are assembled from: the search field and segmented filter they open with, the
@@ -304,4 +305,29 @@ export function DirectoryResultCount({ count, order }: DirectoryResultCountProps
       {order ? <span className="directory-result-count__order"> · Sorted by {order}</span> : null}
     </p>
   );
+}
+
+/**
+ * Words what a faceted directory is currently showing, for {@link DirectoryResultCount}.
+ *
+ * The rule, rather than the sentence: a narrowed list says how much of the whole it is ("12 of 541 Members"), and an
+ * unnarrowed one just says how much there is ("541 Members"). The denominator is what makes a narrowing legible — "12
+ * Members" alone reads the same whether it filtered out five hundred people or five — and dropping it once the filters
+ * are cleared is what keeps the ordinary case from reading as a fraction of itself.
+ *
+ * Both counts are pluralized against the *total* rather than against what survived, so a filter matching exactly one
+ * record still reads "1 of 541 Members" rather than "1 of 541 Member".
+ *
+ * @param shown - How many records survived the filters.
+ * @param total - How many there are in all.
+ * @param noun - The singular noun for a record, cased as it should appear (`"Member"`, `"Committee"`).
+ * @param isFiltered - Whether anything is actually narrowing the list. Passed in rather than inferred from
+ *   `shown !== total`, since a filter that happens to match everything is still a filter, and a count that silently
+ *   dropped its denominator would make clearing it look like it did nothing.
+ * @returns The count line, e.g., `"12 of 541 Members"`.
+ */
+export function directoryCountLabel(shown: number, total: number, noun: string, isFiltered: boolean): string {
+  const plural: string = pluralize(total, noun);
+
+  return isFiltered ? `${shown} of ${total} ${plural}` : `${total} ${plural}`;
 }

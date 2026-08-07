@@ -1,9 +1,12 @@
 import {
   ANY_FACET,
+  buildFacetOptions,
+  countFacetValues,
   type FacetFilter,
   type FacetOption,
   parseEnumParam,
   parseQueryFilter,
+  sortWithTiebreak,
   toQueryString,
 } from "@/lib/congress/directory-filter";
 import {
@@ -47,8 +50,10 @@ import { compareText } from "@/lib/format";
  *   @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  *
  * What this file does *not* declare is the vocabulary every directory narrows itself with — the `ANY_FACET` sentinel,
- * the facet-option shape, the query-length cap, and the total-parser rule all live in `directory-filter.ts`, so the
- * sameness this module shares with `committee-filter.ts` and `search.ts` is structural rather than asserted.
+ * the facet-option shape, the query-length cap, the total-parser rule, and the counting and ordering machinery the
+ * facet lists and sorts are built from all live in `directory-filter.ts`, so the sameness this module shares with
+ * `committee-filter.ts` and `search.ts` is structural rather than asserted. What stays here is what is genuinely about
+ * *members*: which facets exist, what they mean, and how two people compare.
  */
 
 export type ChamberFilter = FacetFilter<CongressChamber>;
@@ -192,20 +197,16 @@ const MEMBER_SORT_COMPARATORS: Record<MemberSort, (a: MemberDirectoryEntry, b: M
  * Orders the roster.
  *
  * Every comparator falls through to {@link compareMembersByName}, so a sort never leaves a group of ties in whatever
- * arbitrary order they happened to arrive in — grouping by party still lists each party alphabetically, and "Name
- * (Z–A)" is the only order that isn't ultimately anchored on the name.
+ * arbitrary order they happened to arrive in — grouping by party still lists each party alphabetically. "Name (Z–A)"
+ * needs no exemption from that fallback despite being the one order not anchored on the ascending name: names that tie
+ * descending tie ascending too, so the tiebreak has nothing left to say about them.
  *
  * @param entries - The rows to order. Left untouched; a new array is returned.
  * @param sort - The order to apply.
  * @returns A newly ordered array.
  */
 export function sortMembers(entries: MemberDirectoryEntry[], sort: MemberSort): MemberDirectoryEntry[] {
-  const compare: (a: MemberDirectoryEntry, b: MemberDirectoryEntry) => number = MEMBER_SORT_COMPARATORS[sort];
-
-  return [...entries].sort((a: MemberDirectoryEntry, b: MemberDirectoryEntry): number => {
-    const primary: number = compare(a, b);
-    return primary !== 0 || sort === "name-desc" ? primary : compareMembersByName(a, b);
-  });
+  return sortWithTiebreak(entries, MEMBER_SORT_COMPARATORS[sort], compareMembersByName);
 }
 
 /**
@@ -254,12 +255,12 @@ export const jurisdictionGroupLabels: Record<JurisdictionGroup, string> = {
  *   jurisdiction on file contribute nothing, since an unnamed place is not a place a reader can choose.
  */
 export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): JurisdictionOption[] {
-  const counts: Map<string, number> = new Map<string, number>();
-
-  for (const entry of entries) {
+  // The one facet in the app whose values are not a union the model declares, so it counts and then orders the values
+  // it found rather than filtering a declared order down. @see buildFacetOptions, which the other two facets use.
+  const counts: Map<string, number> = countFacetValues(entries, (entry: MemberDirectoryEntry): string | undefined => {
     const state: string = (entry.state ?? "").trim();
-    if (state.length > 0) counts.set(state, (counts.get(state) ?? 0) + 1);
-  }
+    return state.length > 0 ? state : undefined;
+  });
 
   return [...counts.entries()]
     .map(
@@ -287,21 +288,12 @@ export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): Jurisd
  *   rather than offered as an option that can only ever return nothing.
  */
 export function listMemberPartyOptions(entries: MemberDirectoryEntry[]): MemberFacetOption<PartyGroup>[] {
-  const counts: Map<PartyGroup, number> = new Map<PartyGroup, number>();
-
-  for (const entry of entries) counts.set(entry.party, (counts.get(entry.party) ?? 0) + 1);
-
-  return partySeatingOrder
-    .filter((party: PartyGroup): boolean => counts.has(party))
-    .map(
-      (party: PartyGroup): MemberFacetOption<PartyGroup> => ({
-        value: party,
-        label: partyGroupLabels[party],
-        /* v8 ignore start -- the `counts.has(party)` filter above has already proven this lookup succeeds. */
-        count: counts.get(party) ?? 0,
-        /* v8 ignore stop */
-      }),
-    );
+  return buildFacetOptions(
+    entries,
+    (entry: MemberDirectoryEntry): PartyGroup => entry.party,
+    partySeatingOrder,
+    (party: PartyGroup): string => partyGroupLabels[party],
+  );
 }
 
 /**

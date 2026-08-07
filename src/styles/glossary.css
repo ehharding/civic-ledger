@@ -92,14 +92,5 @@
   }
 }
 
-/* The glossary entries on /learn, which every in-prose term links to by fragment. The offset keeps a targeted entry
-   clear of the top of the viewport, and the accent marks which one the link was pointing at — arriving at a wall of
-   entries with no indication of which one you asked for is the whole failure this prevents. */
-.glossary-entry {
-  scroll-margin-top: 24px;
-}
-
-.glossary-entry:target {
-  border-color: var(--green);
-  background: var(--teal-surface);
-}
+/* The entries these tips link to live in learn.css, beside the rest of the /learn page they sit on — @see the
+   `.glossary-entry` block there for the deep-link behavior that answers this file's fragment links. */

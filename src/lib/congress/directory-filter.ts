@@ -10,7 +10,8 @@
  * A sameness that is asserted in prose is a sameness that drifts. This module is that shared vocabulary stated once,
  * for the same reason `compareText` in `format.ts` replaced two collators and four bare `localeCompare` calls: a rule
  * that lives in one place is a rule that applies everywhere, rather than one that applies wherever someone remembered
- * to reach for it.
+ * to reach for it. The same argument extends past parsing to the two things every faceted directory then *does* with a
+ * list: count its facets ({@link buildFacetOptions}) and order it ({@link sortWithTiebreak}).
  *
  * Pure and isomorphic, as its three consumers have to be — the browser imports all of them, and none may drag the
  * server-only adapter, or the API key it reads, into a client bundle behind it.
@@ -124,4 +125,100 @@ export function toQueryString(params: URLSearchParams): string {
   const serialized: string = params.toString();
 
   return serialized.length > 0 ? `?${serialized}` : "";
+}
+
+/**
+ * Tallies how many records carry each value of one facet.
+ *
+ * The counting loop behind every facet control in the app. It is three lines, and it was three lines in three
+ * places — the member directory's party and jurisdiction lists and the committee directory's type list — each of which
+ * then had to remember the same two things: that a `Map` lookup returns `undefined` before the first increment, and
+ * that a record carrying no value for the facet contributes to nothing rather than to a blank option.
+ *
+ * @typeParam Item - The kind of record being counted.
+ * @typeParam Value - The facet value each record carries.
+ * @param items - Every record in the directory, filtered or not. Callers pass the *whole* list, so choosing one facet
+ *   never empties another out from under the reader mid-narrowing.
+ * @param facetOf - Reads the facet value off a record, or returns `undefined` when the record carries none — an unnamed
+ *   place is not a place a reader can choose, so it is counted toward nothing.
+ * @returns One entry per value present, in first-seen order. Callers impose their own order. @see buildFacetOptions
+ */
+export function countFacetValues<Item, Value>(
+  items: readonly Item[],
+  facetOf: (item: Item) => Value | undefined,
+): Map<Value, number> {
+  const counts: Map<Value, number> = new Map<Value, number>();
+
+  for (const item of items) {
+    const value: Value | undefined = facetOf(item);
+    if (value !== undefined) counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+/**
+ * Builds a facet control's options from the records in hand, in an order the facet's own model declares.
+ *
+ * Two rules, both of which every facet in this app holds and each of which was previously restated per facet:
+ *
+ * - **Order comes from the model, not the data.** Parties read in the chamber diagram's left-to-right order and
+ *   committee types read from the most consequential kind to the least, because `order` says so — not because of how
+ *   many of each the roster happens to hold or how their labels happen to alphabetize.
+ * - **A value nobody holds is not offered.** Filtering `order` down to what is actually present is what keeps a control
+ *   from ever presenting a choice that can only return an empty grid.
+ *
+ * Reading the count off the map once, rather than testing membership and then looking it up, is why this has no
+ * unreachable `?? 0` to exempt from coverage — which the two hand-written copies of it both needed.
+ *
+ * @typeParam Item - The kind of record being counted.
+ * @typeParam Value - The facet value each record carries.
+ * @param items - Every record in the directory.
+ * @param facetOf - Reads the facet value off a record. @see countFacetValues
+ * @param order - Every value the facet can take, in the order the control should read.
+ * @param labelOf - How a value reads on screen.
+ * @returns One option per value actually present, in `order`, each carrying its count.
+ *   @see FacetOption for why the count is not decoration.
+ */
+export function buildFacetOptions<Item, Value>(
+  items: readonly Item[],
+  facetOf: (item: Item) => Value | undefined,
+  order: readonly Value[],
+  labelOf: (value: Value) => string,
+): FacetOption<Value>[] {
+  const counts: Map<Value, number> = countFacetValues(items, facetOf);
+  const options: FacetOption<Value>[] = [];
+
+  for (const value of order) {
+    const count: number | undefined = counts.get(value);
+    if (count !== undefined) options.push({ value, label: labelOf(value), count });
+  }
+
+  return options;
+}
+
+/**
+ * Orders a directory, falling back to a tiebreak wherever the chosen order says two records are equal.
+ *
+ * The shape both faceted directories sort with, and the reason it is worth stating once is the tiebreak rather than the
+ * sort: without it, grouping a roster by party lists each party in whatever arbitrary order the group happened to
+ * arrive in, which reads as unsorted to anyone who asked for a sort. With it, "by party" means "by party, then
+ * alphabetically" everywhere, rather than wherever someone remembered to add the second comparison.
+ *
+ * @typeParam Item - The kind of record being ordered.
+ * @param items - The records to order. Left untouched; a new array is returned.
+ * @param compare - The chosen order's comparator.
+ * @param tiebreak - How to order records the primary comparator calls equal. Usually the directory's alphabetical
+ *   comparator, which is why a directory's own "Name (A–Z)" order can pass a comparator that does nothing.
+ * @returns A newly ordered array.
+ */
+export function sortWithTiebreak<Item>(
+  items: readonly Item[],
+  compare: (a: Item, b: Item) => number,
+  tiebreak: (a: Item, b: Item) => number,
+): Item[] {
+  return [...items].sort((a: Item, b: Item): number => {
+    const primary: number = compare(a, b);
+    return primary !== 0 ? primary : tiebreak(a, b);
+  });
 }

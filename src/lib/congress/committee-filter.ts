@@ -10,10 +10,12 @@ import {
 } from "@/lib/congress/committees";
 import {
   ANY_FACET,
+  buildFacetOptions,
   type FacetFilter,
   type FacetOption,
   parseEnumParam,
   parseQueryFilter,
+  sortWithTiebreak,
   toQueryString,
 } from "@/lib/congress/directory-filter";
 
@@ -31,8 +33,10 @@ import {
  * only-write-what-isn't-default serialization. Where this one is smaller — two facets rather than three — it is because
  * a committee has fewer facts worth filtering on, not because it took a different approach.
  *
- * All four of those shared things now come from `directory-filter.ts` rather than being declared again here, so that
- * sameness is something the type system holds rather than something this paragraph promises.
+ * All of those shared things come from `directory-filter.ts` rather than being declared again here — the sentinel, the
+ * facet-option shape, the total parsers, the query-string tail, and the counting and ordering machinery the type facet
+ * and the sorts are built from — so that sameness is something the type system holds rather than something this
+ * paragraph promises. What stays here is what is genuinely about *committees*.
  */
 
 export type CommitteeChamberFilter = FacetFilter<CommitteeChamber>;
@@ -140,20 +144,15 @@ const COMMITTEE_SORT_COMPARATORS: Record<CommitteeSort, (a: CommitteeSummary, b:
  * Orders the directory.
  *
  * Every comparator falls through to {@link compareCommitteesByName}, so grouping by chamber still lists each chamber
- * alphabetically rather than in whatever arbitrary order the group happened to arrive in. "Name (Z–A)" is the one order
- * not ultimately anchored on the ascending name.
+ * alphabetically rather than in whatever arbitrary order the group happened to arrive in. "Name (Z–A)" needs no
+ * exemption from that fallback: names that tie descending tie ascending too.
  *
  * @param committees - The rows to order. Left untouched; a new array is returned.
  * @param sort - The order to apply.
  * @returns A newly ordered array.
  */
 export function sortCommittees(committees: CommitteeSummary[], sort: CommitteeSort): CommitteeSummary[] {
-  const compare: (a: CommitteeSummary, b: CommitteeSummary) => number = COMMITTEE_SORT_COMPARATORS[sort];
-
-  return [...committees].sort((a: CommitteeSummary, b: CommitteeSummary): number => {
-    const primary: number = compare(a, b);
-    return primary !== 0 || sort === "name-desc" ? primary : compareCommitteesByName(a, b);
-  });
+  return sortWithTiebreak(committees, COMMITTEE_SORT_COMPARATORS[sort], compareCommitteesByName);
 }
 
 /**
@@ -177,21 +176,12 @@ export type CommitteeFacetOption<Value> = FacetOption<Value>;
  * @returns Every type actually present, with its count.
  */
 export function listCommitteeTypeOptions(committees: CommitteeSummary[]): CommitteeFacetOption<CommitteeType>[] {
-  const counts: Map<CommitteeType, number> = new Map<CommitteeType, number>();
-
-  for (const committee of committees) counts.set(committee.type, (counts.get(committee.type) ?? 0) + 1);
-
-  return committeeTypes
-    .filter((type: CommitteeType): boolean => counts.has(type))
-    .map(
-      (type: CommitteeType): CommitteeFacetOption<CommitteeType> => ({
-        value: type,
-        label: committeeTypeLabels[type],
-        /* v8 ignore start -- the `counts.has(type)` filter above has already proven this lookup succeeds. */
-        count: counts.get(type) ?? 0,
-        /* v8 ignore stop */
-      }),
-    );
+  return buildFacetOptions(
+    committees,
+    (committee: CommitteeSummary): CommitteeType => committee.type,
+    committeeTypes,
+    (type: CommitteeType): string => committeeTypeLabels[type],
+  );
 }
 
 /**

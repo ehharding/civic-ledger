@@ -9,6 +9,7 @@ import {
   DirectoryResultCount,
   DirectorySearch,
   DirectorySort,
+  directoryCountLabel,
   FacetOptions,
   SegmentedFilter,
 } from "@/components/directory-controls";
@@ -41,7 +42,7 @@ import {
 } from "@/lib/congress/committees";
 import { ANY_FACET } from "@/lib/congress/directory-filter";
 import type { CongressSnapshot } from "@/lib/congress/types";
-import { formatOrdinal, pluralize } from "@/lib/format";
+import { formatOrdinal } from "@/lib/format";
 
 /** The chamber control's options: all three chambers, preceded by the "no filter" choice. */
 const CHAMBER_OPTIONS: readonly CommitteeChamberFilter[] = [ANY_FACET, ...committeeChambers];
@@ -111,9 +112,7 @@ export function CommitteeDirectory({
   useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   const isFiltered: boolean = hasActiveCommitteeFilters(filters);
-  const countLabel: string = isFiltered
-    ? `${shown.length} of ${committees.length} ${pluralize(committees.length, "Committee")}`
-    : `${committees.length} ${pluralize(committees.length, "Committee")}`;
+  const countLabel: string = directoryCountLabel(shown.length, committees.length, "Committee", isFiltered);
 
   const scopeNote: string =
     source === "live"

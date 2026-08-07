@@ -11,9 +11,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   ANY_FACET,
+  buildFacetOptions,
+  countFacetValues,
   MAX_DIRECTORY_QUERY_LENGTH,
   parseEnumParam,
   parseQueryFilter,
+  sortWithTiebreak,
   toQueryString,
 } from "@/lib/congress/directory-filter";
 
@@ -70,5 +73,92 @@ describe("toQueryString", (): void => {
     params.set("chamber", "senate");
 
     expect(toQueryString(params)).toBe("?q=ohio&chamber=senate");
+  });
+});
+
+describe("countFacetValues", (): void => {
+  const roster = [{ party: "d" }, { party: "r" }, { party: "d" }] as const;
+
+  it("tallies each value, so a facet can name how many records sit behind a choice", (): void => {
+    const counts: Map<string, number> = countFacetValues(roster, (entry: { party: string }): string => entry.party);
+
+    expect([...counts.entries()]).toEqual([
+      ["d", 2],
+      ["r", 1],
+    ]);
+  });
+
+  it("counts a record carrying no value toward nothing rather than toward a blank option", (): void => {
+    const counts: Map<string, number> = countFacetValues(
+      [{ state: "Ohio" }, { state: "" }, { state: "Ohio" }],
+      (entry: { state: string }): string | undefined => (entry.state.length > 0 ? entry.state : undefined),
+    );
+
+    expect([...counts.entries()]).toEqual([["Ohio", 2]]);
+  });
+
+  it("returns nothing for an empty list, rather than an option nobody can pick", (): void => {
+    expect(countFacetValues([], (value: string): string => value).size).toBe(0);
+  });
+});
+
+describe("buildFacetOptions", (): void => {
+  type Row = { type: "standing" | "select" | "joint" };
+  const rows: Row[] = [{ type: "select" }, { type: "standing" }, { type: "select" }];
+  const order = ["standing", "select", "joint"] as const;
+  const label = (value: Row["type"]): string => value.toUpperCase();
+
+  it("reads in the model's declared order rather than the data's or the alphabet's", (): void => {
+    // "select" outnumbers "standing" and sorts after it; neither fact moves it ahead of the declared order.
+    expect(buildFacetOptions(rows, (row: Row): Row["type"] => row.type, order, label)).toEqual([
+      { value: "standing", label: "STANDING", count: 1 },
+      { value: "select", label: "SELECT", count: 2 },
+    ]);
+  });
+
+  it("omits a value nobody holds, so a control can never offer a choice that returns an empty grid", (): void => {
+    const options = buildFacetOptions(rows, (row: Row): Row["type"] => row.type, order, label);
+
+    expect(options.map((option): string => option.value)).not.toContain("joint");
+  });
+
+  it("offers nothing at all for an empty list", (): void => {
+    expect(buildFacetOptions([], (row: Row): Row["type"] => row.type, order, label)).toEqual([]);
+  });
+});
+
+describe("sortWithTiebreak", (): void => {
+  type Row = { group: number; name: string };
+  const byGroup = (a: Row, b: Row): number => a.group - b.group;
+  const byName = (a: Row, b: Row): number => a.name.localeCompare(b.name);
+
+  it("orders by the chosen comparator first", (): void => {
+    const rows: Row[] = [
+      { group: 2, name: "a" },
+      { group: 1, name: "b" },
+    ];
+
+    expect(sortWithTiebreak(rows, byGroup, byName).map((row: Row): string => row.name)).toEqual(["b", "a"]);
+  });
+
+  it("breaks a tie rather than leaving a group in whatever order it arrived in", (): void => {
+    const rows: Row[] = [
+      { group: 1, name: "c" },
+      { group: 1, name: "a" },
+      { group: 1, name: "b" },
+    ];
+
+    expect(sortWithTiebreak(rows, byGroup, byName).map((row: Row): string => row.name)).toEqual(["a", "b", "c"]);
+  });
+
+  it("leaves the input untouched, since a directory re-sorts the same list on every keystroke", (): void => {
+    const rows: Row[] = [
+      { group: 2, name: "a" },
+      { group: 1, name: "b" },
+    ];
+    const sorted: Row[] = sortWithTiebreak(rows, byGroup, byName);
+
+    expect(rows[0]?.name).toBe("a");
+    expect(sorted).not.toBe(rows);
   });
 });

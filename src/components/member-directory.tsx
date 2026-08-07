@@ -8,6 +8,7 @@ import {
   DirectoryResultCount,
   DirectorySearch,
   DirectorySort,
+  directoryCountLabel,
   FacetOptions,
   SegmentedFilter,
 } from "@/components/directory-controls";
@@ -45,7 +46,7 @@ import {
   type PartyGroup,
 } from "@/lib/congress/members";
 import type { CongressSnapshot } from "@/lib/congress/types";
-import { formatOrdinal, pluralize } from "@/lib/format";
+import { formatOrdinal } from "@/lib/format";
 
 /** The chamber control's options: both chambers, preceded by the "no filter" choice. */
 const CHAMBER_OPTIONS: readonly ChamberFilter[] = [ANY_FACET, ...congressChambers];
@@ -168,9 +169,7 @@ export function MemberDirectory({
   useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   const isFiltered: boolean = hasActiveMemberFilters(filters);
-  const countLabel: string = isFiltered
-    ? `${shown.length} of ${members.length} ${pluralize(members.length, "Member")}`
-    : `${members.length} ${pluralize(members.length, "Member")}`;
+  const countLabel: string = directoryCountLabel(shown.length, members.length, "Member", isFiltered);
 
   const scopeNote: string =
     source === "live"

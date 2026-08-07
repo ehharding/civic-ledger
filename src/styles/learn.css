@@ -156,6 +156,20 @@
   font-size: 0.9rem;
 }
 
+/* Where every in-prose glossary term's fragment link lands. The offset keeps a targeted entry clear of the top of the
+   viewport, and the accent marks which one the link was pointing at — arriving at a wall of entries with no indication
+   of which one you asked for is the whole failure this prevents. Last of the `.glossary-entry` rules on purpose:
+   `:target` and `:nth-child(2n)` above have the same specificity, so source order is the only thing making the targeted
+   accent win over the alternating one. */
+.glossary-entry {
+  scroll-margin-top: 24px;
+}
+
+.glossary-entry:target {
+  border-color: var(--green);
+  background: var(--teal-surface);
+}
+
 .principle-list {
   display: grid;
   gap: 0;

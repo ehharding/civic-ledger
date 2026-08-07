@@ -9,6 +9,7 @@ import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { ANY_FACET } from "@/lib/congress/directory-filter";
 import {
   type BillDirectoryQuery,
   type BillStageFilter,
@@ -25,7 +26,7 @@ import {
 import { formatOrdinal, pluralize } from "@/lib/format";
 
 /** The stage control's options: every stage, preceded by the "no filter" choice. */
-const STAGE_FILTER_OPTIONS: readonly BillStageFilter[] = ["all", ...billStages];
+const STAGE_FILTER_OPTIONS: readonly BillStageFilter[] = [ANY_FACET, ...billStages];
 
 /** Props for {@link BillDirectory}. */
 type BillDirectoryProps = {
@@ -65,7 +66,7 @@ type BillDirectoryProps = {
 export function BillDirectory({
   bills,
   initialQuery,
-  initialStage = "all",
+  initialStage = ANY_FACET,
   canLoadMore,
   congress,
 }: BillDirectoryProps): JSX.Element {
@@ -142,7 +143,7 @@ export function BillDirectory({
 
   const sourceBills: LegislativeBill[] = isSearchActive ? (search.results ?? []) : allBills;
   const displayedBills: LegislativeBill[] =
-    stage === "all" ? sourceBills : sourceBills.filter((bill: LegislativeBill): boolean => bill.stage === stage);
+    stage === ANY_FACET ? sourceBills : sourceBills.filter((bill: LegislativeBill): boolean => bill.stage === stage);
 
   const isInitialSearchLoad: boolean = isSearchActive && search.isSearching && search.results === null;
   const resultCountLabel: string = isInitialSearchLoad
@@ -174,7 +175,7 @@ export function BillDirectory({
           value={query}
         />
         <SegmentedFilter
-          labelFor={(item: BillStageFilter): string => (item === "all" ? "All Stages" : billStageLabels[item])}
+          labelFor={(item: BillStageFilter): string => (item === ANY_FACET ? "All Stages" : billStageLabels[item])}
           legend="Filter by legislative stage"
           onSelect={setStage}
           options={STAGE_FILTER_OPTIONS}

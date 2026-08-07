@@ -26,12 +26,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    # The workflow-level `contents: read` above sets every other scope to none, which the final step needs one exception
+    # to: posting the preview URL back to the pull request is a write, and without this it fails with a 403 *after* a
+    # successful deploy — the most confusing place for a permissions error to surface. Granted per job rather than
+    # workflow-wide so the scope covers only the job that actually writes.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
+          # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
+          node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
