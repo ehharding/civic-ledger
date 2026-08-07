@@ -160,11 +160,20 @@ both were the point:
   change, and "the diagram shows 435 seats but the directory lists 434 people" is exactly the kind of quiet
   inconsistency that erodes trust in a source-provenance product.
 
-What the directory adds is reshaping: flattening both chambers into one alphabetical list, carrying `chamber` down onto
-each row (a flat list no longer has a grouping to imply it), and dropping any member whose record carries no Bioguide
-ID, since a directory row that opens nothing is dead weight. That last rule is what makes the preview path a genuinely
-separate branch — every placeholder seat is unattributed and ID-less, so a preview directory built from the composition
-would be empty. It is built from `previewMemberProfiles` instead.
+What the directory adds is reshaping: flattening both chambers into one alphabetical list, carrying `chamber` and the
+member's portrait down onto each row (a flat list no longer has a grouping to imply the first, and the second is what a
+reader actually scans by), and dropping any member whose record carries no Bioguide ID, since a directory row that opens
+nothing is dead weight. That last rule is what makes the preview path a genuinely separate branch — every placeholder
+seat is unattributed and ID-less, so a preview directory built from the composition would be empty. It is built from
+`previewMemberProfiles` instead.
+
+The portrait is the one field on `CongressMember` that the chamber diagram does not itself draw, and it is there because
+the *directory* built from the same composition does. It costs no extra request: `/v3/member/congress/{congress}`
+publishes `depiction` on every list entry, which is unusual — nearly everything else the individual member page shows
+(`memberType`, per-term `congress`, leadership, the legislation counts) is item-level only, which is why the roster
+derives what it can from the jurisdiction instead. What it does cost is payload, measured rather than assumed: ~64 KB of
+JSON across the 119th Congress's 537 rows, ~4 KB over the wire, because the URLs and credit lines are near-identical row
+to row. See [Data Policy](data-policy.md#what-each-directory-covers) for the attribution the image is conditional on.
 
 ### Individual Records
 

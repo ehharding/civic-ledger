@@ -107,7 +107,47 @@ describe("BillDetail", (): void => {
       />,
     );
 
-    expect(screen.getByText(/most recent of 2 summaries/)).toBeInTheDocument();
+    // The preview fixture publishes no counts, so the page states its own tally rather than crediting Congress.gov.
+    expect(screen.getByText(/This page shows 2 Congressional Research Service summaries/)).toBeInTheDocument();
+    expect(screen.getByText(/The one above is the most recent/)).toBeInTheDocument();
+  });
+
+  it("credits Congress.gov with a collection's size when the record published one", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        committees={[]}
+        bill={{ ...bill, collectionCounts: { summaries: 2 } }}
+        source="live"
+        summaries={[summaryB, summaryA]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Congress\.gov records 2 Congressional Research Service summaries on this bill\./),
+    ).toBeInTheDocument();
+  });
+
+  it("names both figures when fewer records are shown than the record publishes", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        committees={[]}
+        bill={{ ...bill, collectionCounts: { summaries: 5 } }}
+        source="live"
+        summaries={[summaryB, summaryA]}
+        textVersions={[]}
+      />,
+    );
+
+    // The gap is a fact about the record — a dropped row or a collection past this app's one-page fetch — so the page
+    // states it rather than quietly presenting its own shorter list as the whole of what Congress.gov holds.
+    expect(
+      screen.getByText(
+        /Congress\.gov records 5 Congressional Research Service summaries on this bill; this page shows 2\./,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("offers earlier summaries in a collapsed disclosure, without hiding the newest one", (): void => {
@@ -348,7 +388,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       />,
     );
 
-    expect(screen.getByText(/Congress.gov records 2 actions on this bill/)).toBeInTheDocument();
+    expect(screen.getByText(/This page shows 2 actions for this bill/)).toBeInTheDocument();
     expect(screen.getByText("Read All 2 Actions")).toBeInTheDocument();
     // Read through `readerText`: action text runs through `GlossaryProse`, so a defined term inside it carries its own
     // hidden definition and splits the sentence across elements. @see reader-text.ts.
@@ -359,11 +399,37 @@ describe("BillDetail action history and recorded votes", (): void => {
 
   it("uses the singular for a bill with exactly one action", (): void => {
     render(
-      <BillDetail actions={[referral]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        actions={[referral]}
+        committees={[]}
+        bill={{ ...bill, collectionCounts: { actions: 1 } }}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText(/records 1 action on this bill/)).toBeInTheDocument();
     expect(screen.getByText("Read All 1 Action")).toBeInTheDocument();
+  });
+
+  it("claims only the dedup for recorded votes, which carry no published count", (): void => {
+    render(
+      <BillDetail
+        actions={[passage, referral]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    // `collectRecordedVotes` collapses a roll call that two source systems each attached to their own action, so the
+    // upstream record really does hold more references than this figure — which is why the sentence is about this
+    // bill's actions rather than about what Congress.gov records.
+    expect(screen.getByText(/actions reference 1 distinct recorded vote\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Congress\.gov records 1 recorded vote/)).not.toBeInTheDocument();
   });
 
   it("links a recorded vote to the chamber's own tally rather than printing a count", (): void => {

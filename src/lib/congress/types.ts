@@ -1,4 +1,4 @@
-import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
+import { compareIsoDatesDesc, formatOrdinal, pluralize } from "@/lib/format";
 
 /**
  * The five stages of `BillJourney`'s educational progress cue, in order.
@@ -175,6 +175,66 @@ export function formatEnactedLaw(law: EnactedLaw): string {
   return `${law.type} ${law.number}`;
 }
 
+/**
+ * Congress.gov's own counts for the four collections hanging off a bill.
+ *
+ * Read rather than inferred from the arrays this app fetched, on the rule that governs `laws` and `legislationUrl`
+ * alike: a figure the publisher states is not the same kind of thing as a figure this app arrived at, and a sentence
+ * beginning "Congress.gov records…" is only true of the first. The two agree on nearly every bill, which is exactly why
+ * the difference is worth carrying — a claim that is usually right is the kind that goes wrong unnoticed.
+ *
+ * They can diverge in two ways, and the page's wording covers both without needing to know which happened: a row the
+ * mapper declined (an action with no text is not a row) drops the shown figure by one, and a collection longer than the
+ * single 250-record page this app requests drops it by more.
+ *
+ * Detail-endpoint only, like {@link BillSponsor} and {@link EnactedLaw} — a directory card counts nothing, so the list
+ * endpoint's silence here costs nothing. @see describeBillCollection for how a section states the pair.
+ */
+export type BillCollectionCounts = {
+  actions?: number;
+  committees?: number;
+  summaries?: number;
+  textVersions?: number;
+};
+
+/**
+ * States how many records a bill's collection holds, attributing the figure to whoever actually produced it.
+ *
+ * The distinction this exists to keep is a small one to write and an easy one to lose: "Congress.gov records 59
+ * actions" is a claim about the congressional record, and "this page shows 59 actions" is a claim about this page.
+ * Before the counts above were read, the bill page made the first sentence out of the second's number.
+ *
+ * In the model rather than at the view, on the rule the rest of this layer follows — what a reader is told is display
+ * wording, so it belongs somewhere a unit test can reach without rendering a page.
+ *
+ * @param options - How many records are on screen, how many the publisher counted (absent on a preview or failed
+ *   read), the singular noun for the thing being counted, and its plural where an `s` won't do.
+ * @returns The sentence. Where the two figures agree the count is attributed to Congress.gov and the page's own tally
+ *   goes unmentioned; where they differ both are named, since the gap is itself a fact about the record; and where
+ *   Congress.gov published no count the sentence claims only what this page is showing. An empty string for a
+ *   collection with nothing in it and nothing published, which the caller renders as its own "none on file" line.
+ */
+export function describeBillCollection(options: {
+  shown: number;
+  published?: number;
+  noun: string;
+  pluralNoun?: string;
+}): string {
+  const { shown, published, noun, pluralNoun } = options;
+
+  if (published === undefined) {
+    if (shown === 0) return "";
+    return `This page shows ${shown} ${pluralize(shown, noun, pluralNoun)} for this bill.`;
+  }
+
+  const recorded: string = `Congress.gov records ${published} ${pluralize(published, noun, pluralNoun)} on this bill`;
+
+  // Phrased as two clauses with two subjects rather than "…; 58 of them are shown", which both reads as a subordinate
+  // detail and forces the verb to agree with a number that can be 1. Naming this page in its own clause is the whole
+  // distinction the function exists to draw, so it gets its own subject.
+  return shown === published ? `${recorded}.` : `${recorded}; this page shows ${shown}.`;
+}
+
 /** A bill's primary sponsor. Only present on detail-endpoint lookups — the list endpoint doesn't include it. */
 export type BillSponsor = {
   fullName: string;
@@ -210,6 +270,14 @@ export type LegislativeBill = {
   cosponsorCount?: number;
   /** Set only for an enacted measure, and only from the detail endpoint. @see EnactedLaw */
   enactedLaw?: EnactedLaw;
+  /**
+   * Congress.gov's own sizes for the collections the bill page fetches separately.
+   *
+   * Absent whenever the record came from the list endpoint, from a preview fixture, or from a detail response that
+   * published no counts at all — in every one of those cases the page states what it is showing instead of attributing
+   * a figure to a publisher that did not supply one. @see BillCollectionCounts
+   */
+  collectionCounts?: BillCollectionCounts;
 };
 
 /**

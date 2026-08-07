@@ -101,6 +101,21 @@ describe("buildMemberDirectory", (): void => {
     );
   });
 
+  it("carries the portrait down onto each row, which is the whole reason the composition holds one", (): void => {
+    const result: MemberDirectoryEntry[] = buildMemberDirectory(
+      composition([
+        {
+          bioguideId: "B000001",
+          name: "Bennett, Marcus T.",
+          party: "democratic",
+          depiction: { imageUrl: "https://www.congress.gov/img/member/b000001_200.jpg" },
+        },
+      ]),
+    );
+
+    expect(result[0]?.depiction?.imageUrl).toBe("https://www.congress.gov/img/member/b000001_200.jpg");
+  });
+
   it("drops a member with no Bioguide ID, since the row could not be opened", (): void => {
     const result: MemberDirectoryEntry[] = buildMemberDirectory(
       composition([
@@ -152,6 +167,18 @@ describe("getMemberDirectory without an API key", (): void => {
     const known: Set<string> = new Set(previewMemberProfiles.map((profile): string => profile.bioguideId));
 
     expect(result.members.every((entry: MemberDirectoryEntry): boolean => known.has(entry.bioguideId))).toBe(true);
+  });
+
+  it("gives no placeholder a portrait, so a fiction never wears a real person's face", async (): Promise<void> => {
+    // The sharpest form of the preview-data rule: a placeholder with a photograph is the single most convincing way
+    // this app's fiction could be taken for the record, far more so than a plausible name or a fabricated deep link.
+    // Held here rather than only in the fixtures, so adding a portrait to one would fail a test that says why.
+    // @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
+    delete process.env.CONGRESS_API_KEY;
+
+    const result: MemberDirectoryResult = await getMemberDirectory();
+
+    expect(result.members.every((entry: MemberDirectoryEntry): boolean => entry.depiction === undefined)).toBe(true);
   });
 
   it("orders the placeholder roster alphabetically, like the live one", async (): Promise<void> => {

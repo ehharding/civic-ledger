@@ -162,6 +162,44 @@
   background: var(--paper);
 }
 
+/* A fixed box rather than an intrinsic one, and that is the whole reason the portrait can be lazy-loaded without the
+   grid jumping: every card reserves the same space whether its image has arrived, is still loading, or was never
+   published for that member. Without it, several hundred images resolving as the reader scrolls would reflow the list
+   under them. */
+.member-card__portrait {
+  margin: 0 0 2px;
+}
+
+.member-card__portrait-image {
+  display: block;
+  width: 88px;
+  height: 110px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  /* Congress.gov's portraits are not one aspect ratio. Cropping to the top keeps a face in frame on a taller original
+     rather than centering on a chest. */
+  object-fit: cover;
+  object-position: top;
+}
+
+/* Deliberately visible rather than screen-reader-only: showing the image is conditional on showing the credit. Sized
+   down hard, since in a grid this is a footnote repeated on every card rather than a line anyone reads twice.
+
+   Runs to the card's width rather than the portrait's. Constrained to 88px it wrapped "Official U.S. Senate Photo" onto
+   three ragged lines and made cards in the same row differ in height by whatever their credit happened to say — which
+   is a layout driven by upstream copy. */
+.member-card__portrait-credit {
+  margin-top: 5px;
+  color: var(--ink-faint);
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.member-card__portrait-credit a {
+  text-decoration: underline;
+}
+
 /* Tinted by the .party-tint--* class this element also carries. @see src/styles/party.css. Smaller and tighter-tracked
    than .member-party — a card packs this in beside the name, where the profile page gives it a line of its own. */
 .member-card__party {

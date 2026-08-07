@@ -67,10 +67,27 @@ export const congressApiBillSchema = z.looseObject({
   url: optionalString,
   policyArea: z.looseObject({ name: optionalString }).optional().catch(undefined),
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
-  // Only populated on the detail endpoint — the list endpoint doesn't return any of these four.
+  // Only populated on the detail endpoint — the list endpoint doesn't return any of these.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
   cosponsors: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   laws: z.array(congressApiLawSchema).optional().catch(undefined),
+  /**
+   * The four collections this app fetches separately, each described here as `{ count, url }`.
+   *
+   * Only the counts are read. The `url` is the collection's own *API* endpoint and is skipped for exactly the reason
+   * `bill.url` is — it serves JSON, and 403s without a key of the reader's own — while the path this app requests is
+   * built from the bill's already-validated identity instead. @see fetchBillSubResource
+   *
+   * The counts matter because they are the publisher's own answer to "how many of these are there", and until they
+   * were read the bill page could only offer its own tally of the rows it managed to fetch and map. Those agree almost
+   * always and not quite always: a row the mapper drops, or a collection longer than the one 250-record page this app
+   * requests, makes the two diverge — and the sentence stating the number attributed it to Congress.gov either way.
+   * @see BillCollectionCounts
+   */
+  actions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  committees: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  summaries: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  textVersions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   /**
    * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
    *
@@ -225,13 +242,36 @@ export const congressApiMemberTermSchema = z.looseObject({
   endYear: optionalNumber,
 });
 
-/** Shape of one entry in `GET /v3/member/congress/{congress}` (the member *list* endpoint). */
+/**
+ * A member's official portrait and the credit line the API's terms require alongside it.
+ *
+ * Shared by the list and item endpoints, which publish the same two fields — and that is worth stating plainly, because
+ * it is the one place the list record is *not* the poorer of the two. Almost everything else the member page shows
+ * (`memberType`, per-term `congress`, leadership, the legislation counts) is item-level only; the portrait is not, so a
+ * roster can show faces without the one-request-per-member that rule usually implies.
+ *
+ * `attribution` is separately optional from `imageUrl` rather than bundled with it, because the API genuinely ships
+ * portraits without one — three of the 500 members sampled in August 2026 (list *and* item alike, so it is a fact about
+ * those records rather than about an endpoint). Anything rendering the image has to handle a missing credit.
+ */
+export const congressApiDepictionSchema = z.looseObject({
+  imageUrl: optionalString,
+  /** An HTML fragment, sometimes carrying a link to the holding archive — sanitize before rendering. */
+  attribution: optionalString,
+});
+
+/**
+ * Shape of one entry in `GET /v3/member/congress/{congress}` (the member *list* endpoint).
+ *
+ * @see congressApiDepictionSchema for why `depiction` is read here and not only on the item record.
+ */
 export const congressApiMemberSchema = z.looseObject({
   bioguideId: optionalString,
   name: optionalString,
   partyName: optionalString,
   state: optionalString,
   district: optionalNumber,
+  depiction: congressApiDepictionSchema.optional().catch(undefined),
   terms: z
     .looseObject({ item: z.array(congressApiMemberTermSchema).optional().catch(undefined) })
     .optional()
@@ -293,7 +333,7 @@ export const congressApiMemberDetailSchema = z.looseObject({
   birthYear: optionalString,
   currentMember: z.boolean().optional().catch(undefined),
   officialWebsiteUrl: optionalString,
-  depiction: z.looseObject({ imageUrl: optionalString, attribution: optionalString }).optional().catch(undefined),
+  depiction: congressApiDepictionSchema.optional().catch(undefined),
   leadership: z.array(congressApiLeadershipSchema).optional().catch(undefined),
   sponsoredLegislation: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   cosponsoredLegislation: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
@@ -518,6 +558,7 @@ export type CongressApiBillCommitteeActivity = z.infer<typeof congressApiBillCom
 export type CongressApiBillSubcommittee = z.infer<typeof congressApiBillSubcommitteeSchema>;
 export type CongressApiBillCommittee = z.infer<typeof congressApiBillCommitteeSchema>;
 export type CongressApiBillCommitteesResponse = z.infer<typeof congressApiBillCommitteesResponseSchema>;
+export type CongressApiDepiction = z.infer<typeof congressApiDepictionSchema>;
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;
 export type CongressApiMemberListResponse = z.infer<typeof congressApiMemberListResponseSchema>;

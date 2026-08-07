@@ -139,6 +139,36 @@ describe("mapCongressBill", (): void => {
     expect(mapCongressBill(apiBill({ laws: [{ number: "119-21" }] }))?.enactedLaw).toBeUndefined();
   });
 
+  it("carries the publisher's own sizes for the collections hanging off a bill", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({
+        actions: { count: 59 },
+        committees: { count: 1 },
+        summaries: { count: 5 },
+        textVersions: { count: 6 },
+      }),
+    );
+
+    expect(bill?.collectionCounts).toEqual({ actions: 59, committees: 1, summaries: 5, textVersions: 6 });
+  });
+
+  it("carries a partial set of counts rather than requiring all four", (): void => {
+    // A bill can be published with some of these and not others, and the one figure that did arrive is still the
+    // publisher's answer for its own collection.
+    expect(mapCongressBill(apiBill({ actions: { count: 3 } }))?.collectionCounts).toEqual({
+      actions: 3,
+      committees: undefined,
+      summaries: undefined,
+      textVersions: undefined,
+    });
+  });
+
+  it("leaves the counts absent entirely for a record that published none", (): void => {
+    // Which is every bill from the *list* endpoint. `undefined` and "four undefined counts" mean different things to
+    // the bill page — "never asked" versus "asked and told nothing" — so they must not collapse into one another.
+    expect(mapCongressBill(apiBill())?.collectionCounts).toBeUndefined();
+  });
+
   it("returns null for a record missing anything the app depends on", (): void => {
     expect(mapCongressBill(apiBill({ congress: undefined }))).toBeNull();
     expect(mapCongressBill(apiBill({ title: undefined }))).toBeNull();
@@ -412,6 +442,32 @@ describe("mapCongressMember", (): void => {
     } as CongressApiMember);
 
     expect(seated?.chamber).toBe("house");
+  });
+
+  it("carries the portrait the list endpoint publishes, sanitizing its credit like the item record's", (): void => {
+    // The one field where the list record is not the poorer of the two, which is what lets `/members` show faces
+    // without one extra request per member. Sanitized through the same `mapMemberDepiction` the profile uses.
+    const seated: SeatedMember | null = mapCongressMember({
+      name: "Alvarez, Priya R.",
+      terms: { item: [{ chamber: "Senate" }] },
+      depiction: {
+        imageUrl: "https://www.congress.gov/img/member/a000001_200.jpg",
+        attribution: '<a href="https://www.senate.gov/art">Courtesy U.S. Senate</a><script>alert(1)</script>',
+      },
+    } as CongressApiMember);
+
+    expect(seated?.member.depiction?.imageUrl).toBe("https://www.congress.gov/img/member/a000001_200.jpg");
+    expect(seated?.member.depiction?.attribution).toContain("Courtesy U.S. Senate");
+    expect(seated?.member.depiction?.attribution).not.toContain("<script>");
+  });
+
+  it("leaves the portrait absent for a record publishing none", (): void => {
+    const seated: SeatedMember | null = mapCongressMember({
+      name: "Bennett, Marcus T.",
+      terms: { item: [{ chamber: "House of Representatives" }] },
+    } as CongressApiMember);
+
+    expect(seated?.member.depiction).toBeUndefined();
   });
 
   it("returns null with no name, or with no recognizable chamber at all", (): void => {

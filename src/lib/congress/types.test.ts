@@ -29,6 +29,7 @@ import {
   CONGRESS_GOV_HOME,
   compareBillsByRecency,
   congressGovBillUrl,
+  describeBillCollection,
   type LegislativeBill,
 } from "@/lib/congress/types";
 
@@ -166,5 +167,56 @@ describe("billStageLabels", (): void => {
     for (const stage of billStages) {
       expect(billStageLabels[stage as BillStage]).toBeTruthy();
     }
+  });
+});
+
+/**
+ * The whole point of this function is *who the sentence credits*, so every case is asserted on the wording rather than
+ * on a count: a figure Congress.gov published is a claim about the congressional record, and a figure this app arrived
+ * at by counting what it fetched is a claim about this page. The two used to be printed in the same sentence.
+ */
+describe("describeBillCollection", (): void => {
+  it("credits Congress.gov when its published count matches what is shown", (): void => {
+    expect(describeBillCollection({ shown: 59, published: 59, noun: "action" })).toBe(
+      "Congress.gov records 59 actions on this bill.",
+    );
+  });
+
+  it("names both figures when they disagree, rather than silently printing the shorter one", (): void => {
+    expect(describeBillCollection({ shown: 58, published: 59, noun: "action" })).toBe(
+      "Congress.gov records 59 actions on this bill; this page shows 58.",
+    );
+  });
+
+  it("claims only what this page shows when no count was published", (): void => {
+    // Every bill from the list endpoint, every preview fixture, and every failed detail read lands here. None of them
+    // may produce a sentence beginning "Congress.gov records".
+    expect(describeBillCollection({ shown: 2, noun: "action" })).toBe("This page shows 2 actions for this bill.");
+  });
+
+  it("says nothing at all when there is nothing shown and nothing published", (): void => {
+    // The caller renders its own "none on file" line for this, which distinguishes a preview from a live empty record.
+    expect(describeBillCollection({ shown: 0, noun: "action" })).toBe("");
+  });
+
+  it("pluralizes on the figure it is actually printing", (): void => {
+    expect(describeBillCollection({ shown: 1, published: 1, noun: "committee" })).toBe(
+      "Congress.gov records 1 committee on this bill.",
+    );
+    // The published figure drives the noun even when the shown one is 1, since that is the number beside it.
+    expect(describeBillCollection({ shown: 1, published: 5, noun: "committee" })).toBe(
+      "Congress.gov records 5 committees on this bill; this page shows 1.",
+    );
+  });
+
+  it("takes an explicit plural for a noun an `s` would mangle", (): void => {
+    expect(
+      describeBillCollection({
+        shown: 3,
+        published: 3,
+        noun: "Congressional Research Service summary",
+        pluralNoun: "Congressional Research Service summaries",
+      }),
+    ).toBe("Congress.gov records 3 Congressional Research Service summaries on this bill.");
   });
 });

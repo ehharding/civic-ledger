@@ -177,13 +177,44 @@ export function normalizeJurisdiction(state?: string): string | undefined {
 }
 
 /**
+ * A member's official portrait, with the credit line Congress.gov's terms require wherever it is shown.
+ *
+ * One type for both the list-level and item-level records, because the API publishes the same two fields on each — so a
+ * directory card and a member's own page cannot end up disagreeing about what a portrait is or what has to appear
+ * beside it.
+ *
+ * **`attribution` is optional and that is not a formality.** A small number of records genuinely carry an image with no
+ * credit (three of the 500 members sampled in August 2026), so every renderer has to cope with its absence rather than
+ * assume a caption is always available.
+ */
+export type MemberDepiction = {
+  imageUrl: string;
+  /**
+   * Credit line for the portrait. A sanitized HTML fragment (see `sanitizeSummaryHtml`) — Congress.gov returns it as
+   * prose that sometimes links the holding archive — so it is safe to render directly.
+   */
+  attribution?: string;
+};
+
+/**
  * One seated member of Congress, normalized from the Congress.gov member list endpoint.
  *
  * Everything except `name` and `party` is optional because the list endpoint genuinely omits fields (`district` is
  * Senate-irrelevant; `bioguideId` is absent from the preview placeholders), and because this shape is serialized into
- * the page payload for every seat in the chamber — it deliberately carries only what the chart actually displays rather
- * than the full upstream record. Chamber isn't a field here: it's implied by the `ChamberComposition` a member is
- * grouped under.
+ * the page payload once per seat — it deliberately carries only what the surfaces built from a composition actually
+ * display, rather than the full upstream record. Chamber isn't a field here: it's implied by the `ChamberComposition`
+ * a member is grouped under.
+ *
+ * Those surfaces are the chamber diagram and the member directory, and `depiction` is the one field only *one* of them
+ * uses. `/members` renders it; the diagram draws dots and never reads it, but is built from the same composition and so
+ * serializes it anyway. That cost was measured rather than assumed before being accepted: across the 119th Congress in
+ * August 2026 the portraits and credit lines are ~64 KB of JSON and ~4 KB over the wire, because they are
+ * near-identical row to row and compress accordingly.
+ *
+ * Splitting the shape to spare the home page those 4 KB would cost the property architecture.md calls out as the whole
+ * point of the shared read — that the two views cannot disagree about who is serving — and would trade it for less than
+ * a single portrait's worth of bytes. The alternative to carrying it here is not "a smaller payload"; it is one request
+ * per member, ~540 of them, which is the rule the rest of the list-level record already lives by.
  */
 export type CongressMember = {
   /** Biographical Directory ID (e.g., "L000174") — the stable key for linking out to an official biography. */
@@ -197,6 +228,14 @@ export type CongressMember = {
   state?: string;
   /** House only. `0` means the state, territory, or district has a single at-large seat. */
   district?: number;
+  /**
+   * Their official portrait, when Congress.gov publishes one.
+   *
+   * Never set on a preview placeholder, and that is a policy rather than a gap in the fixtures: a placeholder seat is
+   * deliberately unattributed, and giving one a real person's face is the single most convincing way preview content
+   * could be taken for the record. @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
+   */
+  depiction?: MemberDepiction;
 };
 
 /**
@@ -428,16 +467,8 @@ export type MemberProfile = {
   chamber: CongressChamber;
   /** Whether they currently hold a seat. A former member's page is a valid, useful page — just not a current one. */
   currentMember: boolean;
-  /** Their official portrait, when Congress.gov publishes one. */
-  depiction?: {
-    imageUrl: string;
-    /**
-     * Credit line for the portrait, required by the API's terms whenever it's shown. A sanitized HTML fragment (see
-     * `sanitizeSummaryHtml`) — Congress.gov returns it as a link to the holding archive — so it's safe to render
-     * directly.
-     */
-    attribution?: string;
-  };
+  /** Their official portrait, when Congress.gov publishes one. @see MemberDepiction */
+  depiction?: MemberDepiction;
   /** Their own house.gov / senate.gov site, when the record carries one. */
   officialWebsiteUrl?: string;
   /** Every term on file, most recent first. */
@@ -473,6 +504,14 @@ export type MemberDirectoryEntry = {
   state?: string;
   district?: number;
   chamber: CongressChamber;
+  /**
+   * Their official portrait, when Congress.gov publishes one.
+   *
+   * The one field here that isn't a fact a reader *filters* on — it is the fact they scan by. A directory of people
+   * that cannot show a face is the one directory in this app whose subject the reader might already recognize on sight,
+   * and the list endpoint publishes the image, so showing it costs nothing upstream. @see MemberDepiction
+   */
+  depiction?: MemberDepiction;
 };
 
 /**

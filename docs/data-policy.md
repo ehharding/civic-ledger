@@ -62,6 +62,10 @@ upstream read fails. Preview content is fictional and is never presented as live
   unmistakable: the IDs (`PREVIEW-1`…) deliberately fail `isBioguideId`, so a placeholder is never sent upstream *and*
   can never produce a link to a real person's biography; and placeholder members carry no official website, since a
   fabricated deep link is the easiest way for preview content to be taken for the record.
+- **No placeholder has a face.** Since the member directory started showing portraits, this is the sharpest form of the
+  rule above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a
+  photograph is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from
+  every fixture and `member-directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
 
 ## What the Chamber Diagram Claims
 
@@ -98,6 +102,26 @@ the *Became Law* stage outright, rather than by a classifier recognizing a phras
 law citation, which no classifier could have produced at all, since it appears nowhere else on the record this app
 reads. The citation is printed beside the stage cue, as text rather than as a link, on the same rule that governs
 committee reports below: congress.gov's URL for a public law is not published by the API and would have to be guessed.
+
+**A collection's size is read, and the sentence says whose figure it is.** The detail record describes each of the four
+collections the bill page fetches separately — actions, committees, summaries, text versions — as `{ count, url }`, and
+the count is Congress.gov's own answer to how many there are. Until it was read, the page counted the rows it had
+fetched and mapped, and then printed that number in a sentence beginning "Congress.gov records…". Those two figures
+agree on nearly every bill, which is exactly what made the claim worth fixing: a statement that is usually true is the
+kind that goes wrong without anyone noticing.
+
+They can diverge in two ways. A row this app declines is one it cannot render honestly — an action with no text is not
+a row — and a collection longer than the single 250-record page this app requests is cut off at that page. Where the
+two figures differ, `describeBillCollection` names both ("Congress.gov records 59 actions on this bill; this page shows
+58") rather than presenting the shorter list as the whole of what the record holds. Where Congress.gov published no
+count at all — every bill from the *list* endpoint, every preview fixture, every failed read — the sentence claims only
+what the page is showing and credits nobody.
+
+**Recorded votes are the one collection with no count to read**, and their sentence is worded accordingly. The figure
+there is this app's in a stronger sense than a fetched array's length: `collectRecordedVotes` collapses a roll call that
+the chamber's floor log and the Library of Congress each attached to their own action, so the upstream record genuinely
+holds more references than the page reports. It says "this bill's actions reference N distinct recorded votes", which
+claims the deduplication instead of attributing it to Congress.gov.
 
 **The stage cue is educational, not legal.** It can orient a person; it cannot safely replace a legal-status reading,
 and the interface says so and keeps the official link prominent.
@@ -172,6 +196,15 @@ diagram uses — so it is a roster of *now*, not of everyone who served during a
 rather than listed. A member whose upstream record carries no Bioguide ID is dropped rather than shown as a card that
 opens nothing. Without a key it lists the same seven placeholder people the preview bills name, and says so instead of
 claiming they hold seats — some are marked as former members.
+
+**Each card carries the member's official portrait, and the credit line that has to travel with it.** The list endpoint
+publishes `depiction` — this is the one field where a list record is not the poorer of the two, since almost everything
+else the member page shows is item-level only — so a roster of faces costs no extra upstream requests at all, just one
+string per row (~64 KB of JSON for the full 119th Congress, ~4 KB compressed). The credit is rendered on every card
+rather than dropped for space or hidden from sighted readers, because showing the image is conditional on showing it:
+the API's terms require the attribution wherever the portrait appears. A small number of records publish an image with
+no credit; those keep the image, since discarding a real portrait over a field the publisher left empty would be losing
+something the API did supply.
 
 **Committees (`/committees`)** lists parent committees and folds subcommittees into them. Congress.gov's
 `/v3/committee/{congress}` endpoint returns subcommittees as *peers* of their parents: House Agriculture and its six

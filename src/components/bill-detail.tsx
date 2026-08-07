@@ -20,6 +20,7 @@ import {
   type BillTextVersion,
   billStageLabels,
   type CongressSnapshot,
+  describeBillCollection,
   formatEnactedLaw,
   type LegislativeBill,
   type RecordedVote,
@@ -134,8 +135,13 @@ function RecordedVotes({ votes }: { votes: RecordedVote[] }): JSX.Element {
 
   return (
     <>
+      {/* Deliberately not phrased as "Congress.gov records N votes", the way the sections around it now can be. There
+          is no published count to read here, and the number is this app's own in a stronger sense than a fetched
+          array's length: `collectRecordedVotes` deduplicates a roll call that the chamber's floor log and the Library
+          of Congress both attached to their own action, so Congress.gov's record genuinely contains more references
+          than this says. The sentence claims the dedup rather than attributing it upstream. */}
       <p className="muted-copy">
-        Congress.gov records {votes.length} recorded {pluralize(votes.length, "vote")} on this bill. The tallies
+        This bill’s actions reference {votes.length} distinct recorded {pluralize(votes.length, "vote")}. The tallies
         themselves — the counts, and who voted which way — live in each chamber’s own record, linked below.
       </p>
       <ul className="recorded-vote-list">
@@ -347,9 +353,14 @@ export function BillDetail({
           {committees.length > 0 ? (
             <>
               <p className="muted-copy">
-                Congress.gov records {committees.length} {pluralize(committees.length, "committee")} on this bill, in
-                its own order — the committee of primary jurisdiction first. Each links to its record here. Most bills
-                referred to a committee never leave it, so a referral says where a bill went, not how it fared.
+                {describeBillCollection({
+                  shown: committees.length,
+                  published: bill.collectionCounts?.committees,
+                  noun: "committee",
+                })}{" "}
+                They are listed in Congress.gov’s own order — the committee of primary jurisdiction first. Each links to
+                its record here. Most bills referred to a committee never leave it, so a referral says where a bill
+                went, not how it fared.
               </p>
               <CommitteeReferrals committees={committees} />
             </>
@@ -369,9 +380,13 @@ export function BillDetail({
           <h2 id="actions-heading">What Congress Actually Did</h2>
           {actions.length > 0 ? (
             <p className="muted-copy">
-              Congress.gov records {actions.length} {pluralize(actions.length, "action")} on this bill. The same moment
-              is often logged twice, by the chamber’s floor record and by the Library of Congress — both are kept here
-              rather than merged.
+              {describeBillCollection({
+                shown: actions.length,
+                published: bill.collectionCounts?.actions,
+                noun: "action",
+              })}{" "}
+              The same moment is often logged twice, by the chamber’s floor record and by the Library of Congress — both
+              are kept here rather than merged.
             </p>
           ) : (
             <p className="muted-copy">
@@ -405,8 +420,13 @@ export function BillDetail({
               {earlierSummaries.length > 0 ? (
                 <>
                   <p className="muted-copy">
-                    This is the most recent of {summaries.length} summaries the Congressional Research Service has
-                    published for this bill; earlier ones may describe an earlier version of the text.
+                    {describeBillCollection({
+                      shown: summaries.length,
+                      published: bill.collectionCounts?.summaries,
+                      noun: "Congressional Research Service summary",
+                      pluralNoun: "Congressional Research Service summaries",
+                    })}{" "}
+                    The one above is the most recent; earlier ones may describe an earlier version of the text.
                   </p>
                   {/* Kept collapsed rather than dropped: an earlier summary isn't stale, it's an accurate description
                       of a real earlier version of the bill, and comparing the two is one of the clearest ways to see
@@ -443,27 +463,42 @@ export function BillDetail({
           <p className="section-kicker">Primary Source</p>
           <h2 id="fulltext-heading">Read the Full Text</h2>
           {textVersions.length > 0 ? (
-            <ul className="text-version-list">
-              {textVersions.map(
-                (version: BillTextVersion, index: number): JSX.Element => (
-                  <li key={`${version.type}-${version.date ?? index}`}>
-                    <p className="text-version-list__type">
-                      {version.type}
-                      {version.date ? ` · ${formatDate(version.date)}` : ""}
-                    </p>
-                    <div className="text-version-list__formats">
-                      {version.formats.map(
-                        (format: BillTextFormat): JSX.Element => (
-                          <OutboundLink key={format.url} href={format.url} iconSize={13}>
-                            {format.type}
-                          </OutboundLink>
-                        ),
-                      )}
-                    </div>
-                  </li>
-                ),
-              )}
-            </ul>
+            <>
+              {/* This section had no count line at all before the published figures were read, which is why one is
+                  added here rather than reworded. It is also the collection where a gap between the two numbers is
+                  most expected: `mapCongressTextVersion` drops a version carrying no linkable rendering, since a
+                  heading with nothing behind it is not a row, and saying both figures is what keeps that drop from
+                  reading as the record being shorter than it is. */}
+              <p className="muted-copy">
+                {describeBillCollection({
+                  shown: textVersions.length,
+                  published: bill.collectionCounts?.textVersions,
+                  noun: "text version",
+                })}{" "}
+                Each links to Congress.gov’s own documents rather than to text re-hosted here.
+              </p>
+              <ul className="text-version-list">
+                {textVersions.map(
+                  (version: BillTextVersion, index: number): JSX.Element => (
+                    <li key={`${version.type}-${version.date ?? index}`}>
+                      <p className="text-version-list__type">
+                        {version.type}
+                        {version.date ? ` · ${formatDate(version.date)}` : ""}
+                      </p>
+                      <div className="text-version-list__formats">
+                        {version.formats.map(
+                          (format: BillTextFormat): JSX.Element => (
+                            <OutboundLink key={format.url} href={format.url} iconSize={13}>
+                              {format.type}
+                            </OutboundLink>
+                          ),
+                        )}
+                      </div>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </>
           ) : (
             <p className="muted-copy">
               {source === "preview"

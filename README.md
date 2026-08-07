@@ -86,6 +86,11 @@ Behind those routes:
 - **A chamber diagram that is honest about being a schematic.** One seat per sitting member, colored by party, with
   hover and keyboard read-out of who holds each seat and a link to their page. Congress.gov publishes no desk
   assignments, and the chart says so.
+- **A member directory with faces on it, at no upstream cost.** The member list endpoint publishes each member's
+  official portrait — unusually, since nearly everything else the individual member page shows is item-level only — so
+  every card carries one, alongside the credit line the API's terms require wherever the image appears. Preview
+  placeholders deliberately have none: a fabricated deep link is the easiest way for fiction to be taken for the record,
+  and a photograph is easier still.
 - **Shareable views on all three directories.** `/members?chamber=senate&party=republican&sort=state`,
   `/bills?q=broadband&stage=law`, and `/committees?type=standing&sort=chamber` render already narrowed, and each page
   writes its own current view back to the address bar as you narrow it.
@@ -117,6 +122,11 @@ Behind those routes:
   that mean exactly one thing; floor activity is not treated as passage. The three readings settle in one
   direction — the most advanced wins — so a page can never print a public law number beside a stepper that stopped short
   of it.
+- **Counts that say whose count they are.** A bill's record publishes how many actions, committees, summaries, and text
+  versions Congress.gov holds for it, so the page prints that figure and credits it. Where this app shows fewer — a row
+  it could not render, or a collection past the one page it fetches — it names both numbers instead of presenting its
+  own shorter list as the whole record. Where nothing was published, it says what the page is showing and credits
+  nobody.
 - **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
   the voting module, that a vote not taken on a bill is out of reach entirely.

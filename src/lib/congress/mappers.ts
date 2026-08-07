@@ -11,6 +11,7 @@ import type {
   CongressApiCommitteeNomination,
   CongressApiCommitteeRef,
   CongressApiCommitteeReport,
+  CongressApiDepiction,
   CongressApiLaw,
   CongressApiLeadership,
   CongressApiMember,
@@ -41,6 +42,7 @@ import {
 import {
   type CongressChamber,
   type CongressMember,
+  type MemberDepiction,
   type MemberLeadershipRole,
   type MemberProfile,
   type MemberTerm,
@@ -52,6 +54,7 @@ import { sanitizeSummaryHtml } from "@/lib/congress/sanitize-summary";
 import { inferBillStage } from "@/lib/congress/stage";
 import {
   type BillAction,
+  type BillCollectionCounts,
   type BillSponsor,
   type BillSummary,
   type BillTextFormat,
@@ -143,7 +146,29 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
       : undefined,
     cosponsorCount: bill.cosponsors?.count,
     enactedLaw,
+    collectionCounts: mapBillCollectionCounts(bill),
   };
+}
+
+/**
+ * Reads the publisher's own sizes for the four collections hanging off a bill.
+ *
+ * @param bill - A validated bill object from either endpoint.
+ * @returns The counts, or `undefined` when the record published none — which is every bill from the *list* endpoint,
+ *   and is deliberately not the same as an object holding four `undefined`s. A caller that has one of these knows
+ *   Congress.gov answered the question; a caller that has `undefined` knows it was never asked, and the bill page says
+ *   different things in the two cases. Same rule as {@link mapCommitteeNomination}'s `latestAction`: a value is carried
+ *   only when it says something.
+ */
+function mapBillCollectionCounts(bill: CongressApiBill): BillCollectionCounts | undefined {
+  const counts: BillCollectionCounts = {
+    actions: bill.actions?.count,
+    committees: bill.committees?.count,
+    summaries: bill.summaries?.count,
+    textVersions: bill.textVersions?.count,
+  };
+
+  return Object.values(counts).some((count: number | undefined): boolean => count !== undefined) ? counts : undefined;
 }
 
 /**
@@ -300,7 +325,36 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
       partyName: member.partyName,
       state: normalizeJurisdiction(member.state),
       district: member.district,
+      depiction: mapMemberDepiction(member.depiction),
     },
+  };
+}
+
+/**
+ * Maps a member's portrait and the credit line that has to travel with it.
+ *
+ * One function for both member endpoints, which publish the same two fields — so the sanitizing happens once and a
+ * directory card and a member's own page cannot end up treating a credit line differently.
+ *
+ * The attribution is sanitized here rather than at render time, on the rule the CRS summaries already follow: no
+ * unsanitized markup ever exists inside this app's own model, so no renderer has to remember to be careful. It is a
+ * fragment rather than plain text because Congress.gov writes some credits as a link to the holding archive.
+ *
+ * @param depiction - The validated `depiction` object, if the record carried one.
+ * @returns The portrait, or `undefined` without an image URL — a credit line with no picture beneath it is not a
+ *   portrait, and a record that publishes only an attribution has nothing to show. A portrait whose *credit* is missing
+ *   is kept, because the API genuinely publishes those and dropping the image would be discarding a real record over a
+ *   field the publisher chose not to fill in.
+ */
+export function mapMemberDepiction(depiction: CongressApiDepiction | undefined): MemberDepiction | undefined {
+  const imageUrl: string = (depiction?.imageUrl ?? "").trim();
+  if (imageUrl.length === 0) return undefined;
+
+  const attribution: string = (depiction?.attribution ?? "").trim();
+
+  return {
+    imageUrl,
+    attribution: attribution.length > 0 ? sanitizeSummaryHtml(attribution) : undefined,
   };
 }
 
@@ -354,7 +408,6 @@ export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: st
 
   // The API reports the party only as a history; the most recent entry is the one that describes them now.
   const partyName: string | undefined = member.partyName ?? member.partyHistory?.at(-1)?.partyName;
-  const imageUrl: string | undefined = member.depiction?.imageUrl;
 
   return {
     bioguideId: (member.bioguideId ?? bioguideId).trim().toUpperCase(),
@@ -367,15 +420,7 @@ export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: st
     chamber: latestTerm.chamber,
     // Absent means "the API didn't say", which for a member record it only does for former members.
     currentMember: member.currentMember ?? false,
-    depiction: imageUrl
-      ? {
-          imageUrl,
-          // Congress.gov returns the credit line as an HTML fragment containing a link to the holding archive.
-          // Sanitized here rather than at render time, so — exactly as with CRS summaries — no unsanitized markup ever
-          // exists inside the app's own model.
-          attribution: member.depiction?.attribution ? sanitizeSummaryHtml(member.depiction.attribution) : undefined,
-        }
-      : undefined,
+    depiction: mapMemberDepiction(member.depiction),
     officialWebsiteUrl: member.officialWebsiteUrl,
     terms,
     leadership: mapUsable(member.leadership, mapLeadershipRole),

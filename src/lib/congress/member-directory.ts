@@ -61,6 +61,7 @@ export function buildMemberDirectory(composition: CongressComposition): MemberDi
                 state: member.state,
                 district: member.district,
                 chamber: chamber.chamber,
+                depiction: member.depiction,
               },
             ]
           : [],
