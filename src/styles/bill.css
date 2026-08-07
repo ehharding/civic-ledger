@@ -5,7 +5,6 @@
   display: flex;
   justify-content: space-between;
   gap: 0;
-  padding: 0;
   margin: 28px 0 0;
   list-style: none;
 }

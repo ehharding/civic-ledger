@@ -80,7 +80,6 @@
 }
 
 .member-leadership {
-  padding: 0;
   margin: 16px 0 0;
   list-style: none;
   display: flex;
@@ -98,7 +97,6 @@
 }
 
 .member-terms {
-  padding: 0;
   margin: 16px 0 0;
   list-style: none;
 }

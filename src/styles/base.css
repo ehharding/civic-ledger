@@ -62,6 +62,24 @@ h3 {
   letter-spacing: -0.025em;
 }
 
+/* Lists are laid out here, not indented by the browser.
+
+   Nearly every `<ul>` and `<ol>` in this app is a semantic grouping rendered as a grid or a flex row — the committee
+   record cards, the collection tabs, the seating legend, the bill journey — and for those the user-agent's
+   `padding-inline-start: 40px` is not an indent, it is a phantom left margin that pushes the whole group off the column
+   its own heading and prose sit on. It reads as content leaning right, because the right edge stays put while the left
+   does not. Components were zeroing it one at a time, which meant the ones that forgot (the committee page's tabs and
+   record list, the bill page's earlier-summaries list) were misaligned until someone noticed.
+
+   Zeroing it sitewide makes indentation opt-in, which is the correct default when three lists want a marker and
+   fifteen want a grid. The three that do want one — `.summary-body ul/ol`, `.lesson-limits ul`, and
+   `.action-history__list` — already set their own `padding-left`, so a marker still has room to sit in. */
+ul,
+ol {
+  padding: 0;
+  margin: 0;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
