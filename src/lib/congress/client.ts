@@ -13,7 +13,7 @@
  * | `api-schema.ts`          | Runtime shapes for Congress.gov v3 payloads — the untrusted-input boundary. |
  * | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards. |
  * | `mappers.ts`             | Upstream shapes to this app's stable model. Pure; no I/O.                   |
- * | `bill-sub-resource.ts`   | The one read shared by every collection hanging off a single bill.          |
+ * | `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                 |
  * | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.       |
  * | `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.            |
  * | `stage.ts`               | Where a bill has got to — from its record, its codes, or its latest action. |
@@ -30,8 +30,8 @@
  * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an
  * exception), and anything that can come from either live or preview data reports which it was, on the returned value
  * itself. That is also what keeps `http.ts` and `bill-sub-resource.ts` off this list — the key reader, the cache
- * window, and the two request helpers are the transport those guarantees are built out of, not reads that hold them,
- * and the modules above import them directly.
+ * window, and the request helpers are the transport those guarantees are built out of, not reads that hold them, and
+ * the modules above import them directly.
  *
  * @see docs/architecture.md for how this layer fits into the app as a whole.
  */

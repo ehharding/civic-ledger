@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 
+import { type CongressApiDetailResponse, congressApiDetailResponseSchema } from "@/lib/congress/api-schema";
 import {
   billCacheTags,
   buildCongressUrl,
@@ -14,16 +15,45 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/mappers";
 import type { BillRouteParams } from "@/lib/congress/types";
 
 /**
- * The one read shared by every collection hanging off a single bill — `/summaries`, `/text`, `/actions`, `/committees`.
+ * The two reads shared by every module that reaches for a *single bill*: the bill's own record, and any of the
+ * collections hanging off it — `/summaries`, `/text`, `/actions`, `/committees`.
  *
- * These four differ in their path segment, their payload schema, the collection to read off it, the mapper applied to
- * each entry, and whether they are ordered by date. Everything they have in common is stated here once: the key check,
- * the route-param guard, the page-size ceiling, the cache tags, and the rule that an absent record is an empty list
- * rather than an error.
+ * Those four collections differ in their path segment, their payload schema, the collection to read off it, the mapper
+ * applied to each entry, and whether they are ordered by date. Everything they have in common is stated here once: the
+ * key check, the route-param guard, the page-size ceiling, the cache tags, and the rule that an absent record is an
+ * empty list rather than an error.
  *
- * It lives in its own module rather than inside `bills.ts` because `bill-committees.ts` needs it too, and a module
- * whose exports are otherwise all public reads is the wrong place to keep an internal helper two modules share.
+ * It lives in its own module rather than inside `bills.ts` because `bill-committees.ts` and `committee-activity.ts`
+ * need it too, and a module whose exports are otherwise all public reads is the wrong place to keep an internal helper
+ * three modules share.
  */
+
+/**
+ * Requests one bill's own record from the detail endpoint.
+ *
+ * Two callers reach a single bill by identifier and they want opposite things from a failure — `getBillById` falls back
+ * to a snapshot search and then to the preview fixtures, while the committee page's title lookup simply goes without a
+ * title — so this deliberately hands back the raw {@link CongressRequestResult} rather than a bill. What it does own is
+ * everything the two must agree on: the endpoint's path spelling, its schema, and the cache tags that let a title
+ * lookup and the bill's own page share one cached response instead of paying for it twice.
+ *
+ * @param route - The bill's identifier, already proven safe to interpolate. @see normalizeBillRouteParams
+ * @param apiKey - The server-only Congress.gov key.
+ * @param context - Short label for the server-side log line, naming which of the two reads this was.
+ * @returns The request's outcome, unmapped. Never throws.
+ */
+export function requestBillDetail(
+  route: NormalizedBillRoute,
+  apiKey: string,
+  context: string,
+): Promise<CongressRequestResult<CongressApiDetailResponse>> {
+  return requestCongressJson(
+    buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}`, apiKey),
+    billCacheTags(route),
+    congressApiDetailResponseSchema,
+    context,
+  );
+}
 
 /**
  * Fetches one of a bill's sub-resources and maps it into the app's model.

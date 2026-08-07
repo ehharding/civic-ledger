@@ -69,9 +69,11 @@ components, and tests import one stable path while the internals stay free to mo
 | `api-schema.ts`          | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
 | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards.   |
 | `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
-| `bill-sub-resource.ts`   | The one read shared by every collection hanging off a single bill.            |
+| `types.ts`               | The bill model: identity, stages, official URLs, display helpers. Pure.       |
+| `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                   |
 | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
 | `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.              |
+| `members.ts`             | The member model: parties, chambers, seats, shapes, display helpers. Pure.    |
 | `composition.ts`         | Chamber membership, including the member list's pagination.                   |
 | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
 | `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
@@ -85,7 +87,10 @@ components, and tests import one stable path while the internals stay free to mo
 | `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
 | `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
 | `stage.ts`               | The stage cue: from the record where it says, from codes or prose otherwise.  |
+| `congress-history.ts`    | Which Congresses this app covers, and when each sat. Computed, not fetched.   |
+| `current-congress.ts`    | Which Congress is seated now, from the constitutional cadence. No I/O.        |
 | `sanitize-summary.ts`    | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
+| `fixtures.ts`            | The labeled preview records every read falls back to. Fiction, marked as it.  |
 | `client.ts`              | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:

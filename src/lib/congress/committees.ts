@@ -171,17 +171,26 @@ export function isCommitteeSystemCode(value: string | undefined): boolean {
   return SYSTEM_CODE_PATTERN.test((value ?? "").trim().toLowerCase());
 }
 
-/** A committee's parent, when it is a subcommittee. Just enough to name it and link to it. */
-export type CommitteeParent = {
+/**
+ * A committee named from inside another committee's record — a `parent` on a subcommittee, or an entry in a parent's
+ * `subcommittees` array. Just enough to name it and link to it.
+ *
+ * One shape rather than two, mirroring {@link congressApiCommitteeRefSchema} and the single `mapCommitteeRef` that maps
+ * both spellings. A separate `CommitteeParent` used to sit beside this declaring the identical two fields, which meant
+ * one relationship modeled twice and two places to edit if a third field ever earns its way in.
+ */
+export type CommitteeRef = {
   systemCode: string;
   name: string;
 };
 
-/** A subcommittee, as its parent's record lists it. */
-export type Subcommittee = {
-  systemCode: string;
-  name: string;
-};
+/**
+ * A subcommittee, as its parent's record lists it.
+ *
+ * A reading name for {@link CommitteeRef} rather than a shape of its own: what a committee reference *is* does not
+ * change with the direction it is read from, but "subcommittee" is the word the pages listing them actually use.
+ */
+export type Subcommittee = CommitteeRef;
 
 /**
  * One row of the browsable committee directory (`/committees`).
@@ -200,7 +209,7 @@ export type CommitteeSummary = {
   /** The verbatim upstream type label, kept so a nuance the five-way grouping flattens isn't lost. */
   typeName?: string;
   /** Set only when this record is itself a subcommittee. @see buildCommitteeDirectory for why those are folded away. */
-  parent?: CommitteeParent;
+  parent?: CommitteeRef;
   /** How many subcommittees this committee has, as the list record reports them. */
   subcommitteeCount: number;
 };

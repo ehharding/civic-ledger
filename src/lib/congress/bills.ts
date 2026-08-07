@@ -1,24 +1,23 @@
 import {
   type CongressApiAction,
   type CongressApiActionsResponse,
-  type CongressApiBill,
+  type CongressApiDetailResponse,
+  type CongressApiListResponse,
   type CongressApiSummariesResponse,
   type CongressApiSummary,
   type CongressApiTextResponse,
   type CongressApiTextVersion,
   congressApiActionsResponseSchema,
-  congressApiDetailResponseSchema,
   congressApiListResponseSchema,
   congressApiSummariesResponseSchema,
   congressApiTextResponseSchema,
 } from "@/lib/congress/api-schema";
-import { fetchBillSubResource } from "@/lib/congress/bill-sub-resource";
+import { fetchBillSubResource, requestBillDetail } from "@/lib/congress/bill-sub-resource";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills, previewSummaries } from "@/lib/congress/fixtures";
 import {
   BILL_LIST_CACHE_TAG,
-  billCacheTags,
   buildCongressUrl,
   type CongressRequestResult,
   getCongressApiKey,
@@ -115,7 +114,7 @@ async function fetchBillsPage(input: {
     ...(input.sort ? { sort: input.sort } : {}),
   });
 
-  const result: CongressRequestResult<{ bills?: CongressApiBill[] }> = await requestCongressJson(
+  const result: CongressRequestResult<CongressApiListResponse> = await requestCongressJson(
     url,
     [BILL_LIST_CACHE_TAG],
     congressApiListResponseSchema,
@@ -242,11 +241,9 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
     return { bill: undefined, source: "live", retrievedAt };
   }
 
-  const url: URL = buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}`, apiKey);
-  const result: CongressRequestResult<{ bill?: CongressApiBill }> = await requestCongressJson(
-    url,
-    billCacheTags(input),
-    congressApiDetailResponseSchema,
+  const result: CongressRequestResult<CongressApiDetailResponse> = await requestBillDetail(
+    route,
+    apiKey,
     `bill lookup for ${route.type.toUpperCase()} ${route.number}`,
   );
 

@@ -7,8 +7,8 @@ import {
   congressApiCommitteeBillsResponseSchema,
   congressApiCommitteeNominationsResponseSchema,
   congressApiCommitteeReportsResponseSchema,
-  congressApiDetailResponseSchema,
 } from "@/lib/congress/api-schema";
+import { requestBillDetail } from "@/lib/congress/bill-sub-resource";
 import {
   COMMITTEE_RECORDS_PAGE_SIZE,
   type CommitteeBillReferral,
@@ -23,7 +23,6 @@ import {
 import type { CommitteeChamber } from "@/lib/congress/committees";
 import { previewCommitteeRecords } from "@/lib/congress/fixtures";
 import {
-  billCacheTags,
   buildCongressUrl,
   type CongressRequestResult,
   committeeCacheTags,
@@ -258,10 +257,9 @@ async function lookUpBill(referral: CommitteeBillReferral, apiKey: string): Prom
   });
   if (route === null) return undefined;
 
-  const result: CongressRequestResult<CongressApiDetailResponse> = await requestCongressJson(
-    buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}`, apiKey),
-    billCacheTags(route),
-    congressApiDetailResponseSchema,
+  const result: CongressRequestResult<CongressApiDetailResponse> = await requestBillDetail(
+    route,
+    apiKey,
     `referred bill ${route.congress}-${route.type}-${route.number}`,
   );
 

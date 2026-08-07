@@ -16,6 +16,7 @@ import type {
   CongressApiMember,
   CongressApiMemberDetail,
   CongressApiMemberDetailTerm,
+  CongressApiMemberTerm,
   CongressApiRecordedVote,
   CongressApiSponsor,
   CongressApiSummary,
@@ -30,6 +31,7 @@ import {
   type CommitteeChamber,
   type CommitteeHistoryEntry,
   type CommitteeProfile,
+  type CommitteeRef,
   type CommitteeSummary,
   compareCommitteesByName,
   normalizeCommitteeChamber,
@@ -278,8 +280,13 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
   const name: string | undefined = member.name?.trim();
   if (!name) return null;
 
+  // Annotated for the same reason `mapMemberProfile` annotates its own: the list endpoint's term entries are a
+  // genuinely smaller shape than the item endpoint's, and naming which of the two is in hand is what stops a future
+  // edit from reaching for the `congress` or `memberType` only the richer one carries.
+  const terms: CongressApiMemberTerm[] = member.terms?.item ?? [];
+
   let chamber: CongressChamber | null = null;
-  for (const term of member.terms?.item ?? []) {
+  for (const term of terms) {
     chamber = normalizeChamberName(term.chamber) ?? chamber;
   }
   if (!chamber) return null;
@@ -398,7 +405,7 @@ export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadership
  * @returns The mapped reference, or `null` when it carries no code or no name. A subcommittee with no code cannot be
  *   opened and one with no name cannot be labeled, and either way there is nothing to put in a list.
  */
-export function mapCommitteeRef(ref: CongressApiCommitteeRef): Subcommittee | null {
+export function mapCommitteeRef(ref: CongressApiCommitteeRef): CommitteeRef | null {
   const systemCode: string = (ref.systemCode ?? "").trim().toLowerCase();
   const name: string = (ref.name ?? "").trim();
 
@@ -422,7 +429,7 @@ export function mapCongressCommittee(committee: CongressApiCommittee): Committee
   if (systemCode.length === 0 || name.length === 0 || !chamber) return null;
 
   const typeName: string | undefined = committee.committeeTypeCode ?? committee.type;
-  const parent: Subcommittee | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
+  const parent: CommitteeRef | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
 
   return {
     systemCode,
@@ -488,7 +495,7 @@ export function mapCommitteeProfile(
   const current: CommitteeHistoryEntry | undefined = history[0];
   if (!current) return null;
 
-  const parent: Subcommittee | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
+  const parent: CommitteeRef | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
   const subcommittees: Subcommittee[] = mapUsable(committee.subcommittees, mapCommitteeRef).sort(
     compareCommitteesByName,
   );

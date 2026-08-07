@@ -102,7 +102,7 @@ export const committeeRecordKindClauses: Record<CommitteeRecordKind, string> = {
  * *what this committee did with the measure* and *when*, which is the whole reason a committee's bill list is worth
  * reading rather than being a filtered view of `/bills`.
  *
- * `bill` is the missing half, filled in by a second lookup where one succeeds. @see fetchReferredBills for why it is
+ * `bill` is the missing half, filled in by a second lookup where one succeeds. @see withBillTitles for why it is
  * optional rather than required: a row that names a measure and links to it is still a usable row when the title lookup
  * fails, and dropping it would silently shorten a list whose length is stated right above it.
  */
@@ -258,7 +258,7 @@ export function pageOfCommitteeRecords<Kind extends CommitteeRecordKind>(
  * The same twelve as `DEFAULT_PAGE_SIZE` and `MEMBER_LEGISLATION_LIMIT`, and shared with them in spirit rather than in
  * code: this is also the number of upstream lookups a bills page issues to fill in its titles, so it is a request
  * budget as well as a reading length.
- * @see fetchReferredBills.
+ * @see withBillTitles.
  */
 export const COMMITTEE_RECORDS_PAGE_SIZE: number = 12;
 

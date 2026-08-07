@@ -19,17 +19,28 @@ computed rather than received says so.**
 - Source freshness is visible rather than merely computed: every snapshot carries a `retrievedAt` timestamp, and
   `DataSourceNotice` renders it ("Updated 5 minutes ago") on the pages built from it.
 
-### The Official-Record Link Is Derived, Not Passed Through
+### The Official-Record Link Is Published Where It Can Be, Derived Where It Can't
 
 Congress.gov's `url` field on a bill record is a *self-referential API* link
 (`https://api.congress.gov/v3/bill/119/hr/284?format=json`), not the public page a reader wants. Passing it through
 meant the bill page's "Open the Official Record" link — the single most important link in an app whose whole premise is
-provenance — served raw JSON, or a 403 to anyone without a key of their own.
+provenance — served raw JSON, or a 403 to anyone without a key of their own. It is the one field on a bill this app
+deliberately never reads.
 
-`congressGovBillUrl` (`src/lib/congress/types.ts`) derives the public URL
-(`https://www.congress.gov/bill/119th-congress/house-bill/284`) from the bill's own identity, which `mapCongressBill`
-already requires before it will map a record at all. An unrecognized bill type falls back to the Congress.gov home page
-rather than emitting a confidently wrong deep link.
+Two other things can supply that link, and `mapCongressBill` prefers them in this order:
+
+1. **`legislationUrl`, where the record publishes it.** The item-level bill endpoint has carried the public
+   congress.gov page since August 2025 — `https://www.congress.gov/bill/119th-congress/house-bill/1` verbatim — and a
+   published URL beats a derived one on the same rule that governs `laws`, `committeeWebsiteUrl`, and everything else
+   in this document: a fact the publisher states outright cannot be wrong in the way a construction of ours can.
+2. **`congressGovBillUrl` (`src/lib/congress/types.ts`) otherwise.** The derivation still earns its place, because the
+   *list* endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page does.
+   It builds the same string from the bill's own identity, which `mapCongressBill` already requires before it will map
+   a record at all. An unrecognized bill type falls back to the Congress.gov home page rather than emitting a
+   confidently wrong deep link.
+
+The two coexisting is the point rather than a transitional state: neither covers both endpoints, and dropping the
+derivation to use only the published field would leave every card in the bill directory without an outbound link.
 
 ## Preview Data Is Labeled Fiction
 

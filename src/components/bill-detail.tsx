@@ -16,6 +16,7 @@ import {
   type BillAction,
   type BillStage,
   type BillSummary,
+  type BillTextFormat,
   type BillTextVersion,
   billStageLabels,
   type CongressSnapshot,
@@ -451,11 +452,13 @@ export function BillDetail({
                       {version.date ? ` · ${formatDate(version.date)}` : ""}
                     </p>
                     <div className="text-version-list__formats">
-                      {version.formats.map((format) => (
-                        <OutboundLink key={format.url} href={format.url} iconSize={13}>
-                          {format.type}
-                        </OutboundLink>
-                      ))}
+                      {version.formats.map(
+                        (format: BillTextFormat): JSX.Element => (
+                          <OutboundLink key={format.url} href={format.url} iconSize={13}>
+                            {format.type}
+                          </OutboundLink>
+                        ),
+                      )}
                     </div>
                   </li>
                 ),
