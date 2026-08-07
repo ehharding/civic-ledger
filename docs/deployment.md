@@ -55,17 +55,46 @@ time, so it structurally cannot hold `CONGRESS_API_KEY` or serve live data.
 Use this only for a UI/UX preview or portfolio link. **Never represent it as the live product.** Enable it by running
 the workflow (`workflow_dispatch`) or letting it run on pushes to `main`.
 
+The build recipe itself lives in `.github/actions/build-static-demo`, a composite action this workflow shares with the
+`static-export` job in `ci.yml`. That sharing is the point: this is the one build a change can break while passing
+everything else, because `pnpm build` is the *server* build. A new route handler, a fresh `request.url` read, or a
+dynamic API compiles, type-checks, and tests clean, then fails only under `output: "export"`. CI now runs the identical
+recipe on every pull request, so that failure arrives before the change lands rather than on `main` afterward.
+
+### Reproducing the Static Build Locally
+
+The recipe's first step is `rm -rf src/app/api/bills src/app/api/health`, which is safe on a throwaway CI checkout and
+is **destructive on a working tree**. To run it by hand, start from a clean tree so the removal is recoverable:
+
+```bash
+rm -rf src/app/api/bills src/app/api/health
+```
+
+```bash
+STATIC_EXPORT=true GITHUB_PAGES_BASE_PATH=/civic-ledger CONGRESS_API_KEY="" pnpm exec next build
+```
+
+```bash
+git restore src/app/api
+```
+
+The result lands in `out/`. Serve it through any static file server — the export has no Node server, so `pnpm start`
+cannot host it. Passing `GITHUB_PAGES_BASE_PATH` matters even locally: it is what exercises the prefix-sensitive
+output, including the header's plain `<form action>`, the sitemap, and robots.txt.
+
 ### What the Static Build Changes
 
 - Sets `output: "export"` and the `basePath` for a GitHub Pages project site.
 - **Pre-renders a bounded set of pages** via `generateStaticParams`: every preview bill's detail page, one
   bill-directory page per Congress the fixtures cover, and a member page per placeholder member. A static export can't
   look up arbitrary bills, Congresses, or members on demand.
-- **Drops `/api/bills` and `/api/bills/search`** before building. Both need to read the request URL (for
-  `offset`/`congress`, or `q`), which a static export can't do. Pagination is only offered when live data is active
+- **Drops all three route handlers** before building. `/api/bills` and `/api/bills/search` need to read the request URL
+  (for `offset`/`congress`, or `q`), and `/api/health` is `force-dynamic` so its timestamp reflects real request
+  time — none of which a static export has a server left to do. Pagination is only offered when live data is active
   anyway, and search falls back to filtering the preview bills already on the page, client-side (`matchesQuery` in
   `src/lib/congress/search.ts`) — the same fallback the live app uses if `/api/bills/search` is ever unreachable, so
-  this is not a code path invented for the demo.
+  this is not a code path invented for the demo. A liveness probe against a static host answers a question nobody is
+  asking.
 - **Degrades every directory deep link** to that page's default view, since a static export has no request URL to read
   at build time. This covers both bill-directory routes' `?q=`/`?stage=`, the member directory's
   `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`, and the committee directory's `?q=`/`?chamber=`/`?type=`/`?sort=`. The

@@ -20,29 +20,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
-          # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: pnpm check
       - run: pnpm build
+
+  # The static export is the one build a change can break while passing everything above: `pnpm build` is the *server*
+  # build, so a new route handler or a fresh `request.url` read compiles, type-checks, and tests clean and then fails
+  # only under `output: "export"`. deploy-gh-pages.yml runs on pushes to `main`, which meant that failure used to
+  # surface after the change had landed. This job moves it onto the pull request, using the same composite action the
+  # deploy workflow builds with so the two cannot diverge.
+  #
+  # The base path and site URL are the values the real demo is published under, so `basePath`-sensitive output — the
+  # header's plain `<form action>`, the sitemap, robots.txt — is exercised the way it actually ships rather than at a
+  # bare root that hides prefix bugs.
+  static-export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/build-static-demo
+        with:
+          base-path: /${{ github.event.repository.name }}
+          site-url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
   browser:
     runs-on: ubuntu-latest
     needs: quality
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
-          # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+
+      # `playwright.config.ts` sets `trace: "on-first-retry"` and the HTML reporter, both of which exist to make a
+      # failure diagnosable — and both of which were being written into a runner that then evaporated. A red e2e job is
+      # exactly when that output is worth having, so it is kept only then: a passing run's report says nothing a green
+      # check does not already say, and uploading it every time would be paying storage for that silence.
+      - name: Upload Playwright Report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

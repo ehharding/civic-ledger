@@ -47,6 +47,7 @@ GitHub Pages cannot hold a server-side API key or run route handlers, so it is t
 ```bash
 pnpm check         # TypeScript + Biome + unit tests
 pnpm build         # Production build
+pnpm preview       # Production build, then serve it on port 3001
 pnpm test:e2e      # Playwright browser checks
 pnpm test:coverage # Unit tests with a V8 coverage report
 ```
@@ -141,7 +142,8 @@ Behind those routes:
 - **Cookieless analytics with the query string stripped**, so a narrowed directory's `?party=`/`?state=`/`?q=` never
   enters the analytics feed.
 - **Strict TypeScript, Biome, unit tests, Playwright smoke tests, GitHub Actions CI, Dependabot**, and a health
-  endpoint.
+  endpoint. CI also builds the static export on every pull request, since that is the one build a change can break while
+  passing the others, and refuses dependency versions published in the last 24 hours.
 - An initial Drizzle/Postgres schema for future saved bills.
 
 ## Documentation

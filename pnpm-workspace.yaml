@@ -1,5 +1,17 @@
 allowBuilds:
   esbuild: true
   sharp: true
-minimumReleaseAgeExclude:
-  - lucide-react@1.29.0
+
+# Refuse to resolve any version published less than a day ago (the unit is minutes).
+#
+# This is aimed at one specific failure mode: an npm account is compromised, a malicious patch release goes out, and it
+# is yanked within hours once someone notices. A weekly Dependabot run that happens to land inside that window is
+# exactly how such a release reaches a lockfile. A day of distance costs nothing here — nothing in this project needs a
+# dependency the hour it ships — and removes the whole window.
+#
+# `minimumReleaseAgeExclude` below was already here, naming the one package deliberately taken fresh. Until this line
+# existed it excluded a package from a rule that was never set, which is to say it did nothing at all.
+#
+# CI is unaffected either way: `pnpm install --frozen-lockfile` installs what the lockfile already pins and resolves
+# nothing.
+minimumReleaseAge: 1440

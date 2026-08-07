@@ -1,0 +1,25 @@
+name: Set Up Node and pnpm
+description: Installs pnpm, installs the Node version this repository pins, and restores dependencies from the lockfile.
+
+# Every job in every workflow here opens with the same four steps, and until this action existed each of them also
+# carried its own copy of the comment explaining the `.nvmrc` choice — five copies of a rule that only holds while all
+# five agree. Stated once, it cannot drift; a job that forgets to call this fails loudly rather than quietly building
+# against whatever Node the runner image ships this month.
+#
+# Checkout stays with the caller. A composite action that checked out the repository would be doing something the
+# calling job's own first step is expected to own, and would silently re-clone for any caller that already had.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+
+    - uses: actions/setup-node@v7
+      with:
+        # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
+        # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash

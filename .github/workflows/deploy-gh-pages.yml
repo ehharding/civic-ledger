@@ -4,6 +4,9 @@ name: Deploy (GitHub Pages Demo)
 # route handlers or a database, so this build always renders the clearly labeled preview fixtures — never live
 # congressional data. For the real, live-data app, use the Vercel workflow (deploy-vercel.yml) instead. See the "GitHub
 # Pages" section of the README before enabling this workflow.
+#
+# The build itself lives in .github/actions/build-static-demo, shared with the `static-export` job in ci.yml so a pull
+# request finds out it broke the demo before the change lands rather than after.
 
 on:
   workflow_dispatch:
@@ -27,32 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/build-static-demo
         with:
-          # Read from .nvmrc rather than pinned here, so the version a contributor's `nvm use` picks and the version CI
-          # builds against cannot drift apart. `engines` in package.json states the floor; .nvmrc names the one to use.
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-
-      # /api/bills can't be statically exported (it reads the request URL for pagination), and /api/health is
-      # force-dynamic so its timestamp reflects real request time on the primary deployment — neither has a purpose in a
-      # preview-only demo anyway.
-      - name: Remove Routes Incompatible With Static Export
-        run: rm -rf src/app/api/bills src/app/api/health
-
-      - name: Build Static Export
-        run: pnpm exec next build
-        env:
-          STATIC_EXPORT: "true"
-          GITHUB_PAGES_BASE_PATH: /${{ github.event.repository.name }}
-          NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-          # Deliberately unset: a static export must never carry a real key.
-          CONGRESS_API_KEY: ""
-
-      - name: Add .nojekyll
-        run: touch out/.nojekyll
+          base-path: /${{ github.event.repository.name }}
+          site-url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5

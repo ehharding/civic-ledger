@@ -27,6 +27,18 @@ pnpm build
 Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a
 fixture or unit test for the upstream shape it supports.
 
+`pnpm dev` is the loop you work in. `pnpm preview` builds and serves the *production* output on port 3001 — a different
+port on purpose, so it can run beside a dev server rather than fighting it for 3000. Reach for it when the thing you
+changed behaves differently once built: ISR and `revalidate`, the analytics gate, route segment caching, bundle size,
+or anything the dev overlay sits on top of. It is also what `pnpm build` succeeding does *not* tell you, which is
+whether the built app is any good to look at.
+
+Both are declared in `.claude/launch.json`, which is checked in for the same reason `.nvmrc` is: how to run this app is
+a fact about the project, not about one person's machine. An agent or editor that reads that file starts the right
+server on the right port instead of guessing. Its neighbor `.claude/settings.local.json` is machine-local and
+gitignored. Add a configuration there whenever a new way to run the app becomes worth naming; leave personal settings
+out of it.
+
 `pnpm test:coverage` shows what the suite actually reaches. Statements, branches, functions, and lines are all at 100%,
 and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data, test
 infrastructure, and declarative files are excluded outright — the preview fixtures, the shared helpers in `src/test/`,

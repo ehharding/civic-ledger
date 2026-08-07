@@ -1,0 +1,47 @@
+name: Build the Static Demo
+description: Produces the preview-data-only static export published to GitHub Pages, into `out/`.
+
+# The one definition of how the GitHub Pages demo is built, shared by the workflow that *publishes* it
+# (deploy-gh-pages.yml) and the workflow that *proves it still builds* (ci.yml).
+#
+# Sharing it is the whole point. The static export is the one build in this repository that can be broken by a change
+# that passes everything else: adding a route handler, reading `request.url`, or reaching for a dynamic API compiles and
+# tests clean, and then fails only in `output: "export"`. Before CI checked it, that failure surfaced on `main` — after
+# the change had already landed. Two copies of this recipe would have re-opened the same gap the moment they disagreed.
+#
+# See "Secondary: GitHub Pages Static Demo" in docs/deployment.md for what this build can and cannot serve.
+
+inputs:
+  base-path:
+    description: The path prefix the site is served under, e.g., `/civic-ledger` for a GitHub Pages project site.
+    required: true
+  site-url:
+    description: The absolute origin the demo is served from, used for canonical URLs, the sitemap, and robots.txt.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # /api/bills and /api/bills/search read the request URL (for `offset`/`congress`, and `q`), which a static export
+    # has no server left to do; /api/health is force-dynamic so its timestamp reflects real request time on the primary
+    # deployment. None of the three has a purpose in a preview-only demo. Removing them here is safe precisely because
+    # this runs on a throwaway CI checkout — see docs/deployment.md before reproducing it on a working tree.
+    - name: Remove Routes Incompatible With Static Export
+      run: rm -rf src/app/api/bills src/app/api/health
+      shell: bash
+
+    - name: Build Static Export
+      run: pnpm exec next build
+      shell: bash
+      env:
+        STATIC_EXPORT: "true"
+        GITHUB_PAGES_BASE_PATH: ${{ inputs.base-path }}
+        NEXT_PUBLIC_SITE_URL: ${{ inputs.site-url }}
+        # Deliberately unset: a static export must never carry a real key.
+        CONGRESS_API_KEY: ""
+
+    # GitHub Pages runs everything through Jekyll unless told not to, which silently drops any path beginning with an
+    # underscore — including Next's entire `_next/` asset directory.
+    - name: Add .nojekyll
+      run: touch out/.nojekyll
+      shell: bash
