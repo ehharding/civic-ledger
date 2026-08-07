@@ -59,11 +59,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* The pager's two ends and its position sit on one line at desktop width and crowd at phone width, where "Page 847
-     of 851" is the widest of the three. Centering the stack keeps the two controls symmetrical around it. */
+  /* The pager's four steps and its page field share one line at desktop width and stop fitting somewhere in the low
+     600s, where the field is the widest of the three groups. The break is stated rather than left to wrapping: the two
+     step groups keep the row, split to the edges a thumb reaches for, and the field drops to a line of its own
+     underneath. `order` is what puts it there — in source it sits between the groups, and a full-width track at that
+     position would push "Next Last" onto a third row. */
   .committee-records__pager {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+  }
+
+  .committee-records__pager-jump {
+    order: 1;
+    grid-column: 1 / -1;
     justify-content: center;
-    text-align: center;
   }
 
   .segmented-filter {

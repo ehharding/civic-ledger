@@ -270,36 +270,103 @@
   line-height: 1.45;
 }
 
-/* Two links and a position rather than a numbered run: these collections reach five figures, and a full pagination
-   control would be either truncated with ellipses nobody can aim at or a thousand links in the page source. */
+/* Steps out to each edge and the page field between them, rather than a numbered run: these collections reach five
+   figures, and a full pagination control would be either truncated with ellipses nobody can aim at or a thousand links
+   in the page source. The rule sits above it because the pager closes the list rather than floating after it — without
+   one, the last record card and the first step read as the same block. */
 .committee-records__pager {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
+  gap: 12px 18px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
-.committee-records__pager-link {
+/* A grid rather than a flex row with `space-between`, for the centering: the two step groups are different widths
+   ("First Previous" runs wider than "Next Last"), so distributing the free space between three flex items puts the
+   page field a dozen pixels off the column's center — close enough to look like a mistake rather than a choice. Equal
+   `1fr` end tracks center it against the page, not against its neighbors. */
+.committee-records__pager-steps:last-child {
+  justify-self: end;
+}
+
+/* The two backward steps, and the two forward ones. Grouped rather than laid out as four siblings so "First Previous"
+   holds together at one edge and "Next Last" at the other. */
+.committee-records__pager-steps {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.committee-records__pager-step {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--navy);
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+/* Scoped to the anchor, because the edges below wear the same class and must not answer a pointer they can't act
+   on — the same reasoning that keeps `.button:disabled` from lifting on hover. */
+a.committee-records__pager-step:hover {
+  border-color: var(--line);
+  background: var(--paper);
+  color: var(--burgundy);
 }
 
 /* An edge of the range, rendered as text rather than as a disabled link — there is nothing to focus, because there is
    nowhere to go. */
-.committee-records__pager-edge {
+.committee-records__pager-step--edge {
   color: var(--ink-faint);
+}
+
+/* "Page [4] of 851 [Go]" — the position readout and the way to leave it, in one control. The two were separate when the
+   pager could only step, and merging them is what keeps this row from stating the same number twice. */
+.committee-records__pager-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
   font-size: 0.85rem;
+}
+
+.committee-records__pager-jump-label {
   font-weight: 600;
 }
 
-.committee-records__pager-position {
-  color: var(--ink-soft);
+/* Wide enough for the four digits `MAX_COMMITTEE_RECORDS_PAGE` allows plus the browser's own spinner, which is kept
+   rather than suppressed: it is the one affordance in this row that steps without a round trip. */
+.committee-records__pager-input {
+  width: 5rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
   font-size: 0.85rem;
+  text-align: center;
+}
+
+.committee-records__pager-go {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--navy);
+  background: var(--paper);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.committee-records__pager-go:hover {
+  border-color: var(--burgundy);
+  color: var(--burgundy);
 }
 
 /* Two columns of plain links rather than a grid of cards. A subcommittee list is a table of contents for the page's

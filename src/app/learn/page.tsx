@@ -80,7 +80,6 @@ export default function LearnPage(): JSX.Element {
         kicker="Why You Can Check It"
         linkIcon={ArrowUpRight}
         linkLabel="Read the Methodology"
-        spacing="flush"
       />
     </SiteShell>
   );

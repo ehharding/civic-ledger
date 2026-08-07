@@ -1,11 +1,12 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import type { JSX } from "react";
 
 import { billHref } from "@/lib/bill-route";
-import { committeeRecordsHref } from "@/lib/committee-route";
+import { committeeHref, committeeRecordsHref } from "@/lib/committee-route";
 import {
+  COMMITTEE_RECORDS_PARAMS,
   type CommitteeBillReferral,
   type CommitteeNomination,
   type CommitteeRecordKind,
@@ -16,6 +17,7 @@ import {
   committeeRecordKindDescriptions,
   committeeRecordKindLabels,
   committeeRecordKinds,
+  DEFAULT_COMMITTEE_RECORD_KIND,
   describeCommitteeRecordsPage,
 } from "@/lib/congress/committee-records";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees";
@@ -28,11 +30,12 @@ import { formatCount, formatDate, formatOrdinal } from "@/lib/format";
  * Purely presentational, as every other detail component in this app is — the route resolves which collection and which
  * page, fetches it, and passes the result in.
  *
- * **Every control here is a link.** The collection tabs and the pager's two arrows are `next/link`s to this same
- * committee carrying different query params, not buttons over local state. That is what makes each view shareable,
- * openable in a new tab, followable by a crawler, and reachable with JavaScript disabled — and it is what lets this
- * whole section stay a server component, which matters because the alternative would have meant shipping a page's worth
- * of records to the browser to filter records the browser already can't fetch more of.
+ * **Every control here navigates.** The collection tabs and the pager's four steps are `next/link`s to this same
+ * committee carrying different query params, not buttons over local state, and the pager's page field is a plain GET
+ * `<form>` to the same place. That is what makes each view shareable, openable in a new tab, followable by a crawler,
+ * and reachable with JavaScript disabled — and it is what lets this whole section stay a server component, which
+ * matters because the alternative would have meant shipping a page's worth of records to the browser to filter records
+ * the browser already can't fetch more of.
  *
  * @see committee-records.ts for what these collections are and, more importantly, what this page does *not* claim about
  *   the order Congress.gov publishes them in.
@@ -262,11 +265,83 @@ function RecordList({ records }: { records: CommitteeRecords }): JSX.Element {
 }
 
 /**
- * The pager.
+ * The `id`s the page field and the total beside it are wired together with.
  *
- * Two links and a position, rather than a numbered run: these collections reach five figures, so a full pagination
- * control would either be truncated with ellipses nobody can aim at or would be a thousand links in the page source.
- * An edge is rendered as plain text rather than as a disabled link, so there is no focusable control that does nothing.
+ * Module constants rather than generated, because `useId` is a hook and this whole section is a server component — and
+ * because a committee page renders exactly one pager, so there is nothing for a generated id to disambiguate.
+ */
+const PAGE_INPUT_ID = "committee-records-page";
+const PAGE_TOTAL_ID = "committee-records-page-total";
+
+/**
+ * One of the pager's four steps: first, previous, next, last.
+ *
+ * A link when there is somewhere to go and plain text when there isn't, which is the same rule the section held when
+ * there were only two of them — an end of the range is rendered as text rather than as a disabled link, so there is no
+ * focusable control that does nothing.
+ *
+ * @param props - Where the step lands (or `undefined` at the end of the range), what it says, its glyph, and which side
+ *   that glyph sits on.
+ * @returns The step.
+ */
+function PagerStep({
+  href,
+  label,
+  icon: Icon,
+  side,
+  rel,
+}: {
+  href: Route | undefined;
+  label: string;
+  icon: LucideIcon;
+  /** Leading for the two backward steps, trailing for the two forward ones — the glyph points the way it travels. */
+  side: "leading" | "trailing";
+  rel?: "prev" | "next";
+}): JSX.Element {
+  const glyph: JSX.Element = <Icon aria-hidden="true" size={16} />;
+  const content: JSX.Element =
+    side === "leading" ? (
+      <>
+        {glyph}
+        {label}
+      </>
+    ) : (
+      <>
+        {label}
+        {glyph}
+      </>
+    );
+
+  if (href === undefined) {
+    return <span className="committee-records__pager-step committee-records__pager-step--edge">{content}</span>;
+  }
+
+  return (
+    <Link className="committee-records__pager-step" href={href} rel={rel}>
+      {content}
+    </Link>
+  );
+}
+
+/**
+ * The pager: two steps back, the page field, two steps forward.
+ *
+ * Still not a numbered run, and for the reason it never was — these collections reach five figures, so a full
+ * pagination control would either be truncated with ellipses nobody can aim at or be a thousand links in the page
+ * source. What a numbered run is actually *for*, though, is getting somewhere that isn't adjacent, and stepping one
+ * page at a time is a poor answer to that when there are 851 of them. The field is the direct answer: type a number,
+ * land on it, from either end of the collection in one move.
+ *
+ * **It is a real `<form>` with `method="get"`, not a scripted jump.** That is the same commitment every other control
+ * in this section makes — the tabs and the four steps are all `next/link`s rather than click handlers — carried to the
+ * one control a link can't express, because its destination isn't known until the reader types it. A GET form submits
+ * natively, so this works with JavaScript disabled, and what it produces is an ordinary shareable committee URL rather
+ * than a state only this page can restore.
+ *
+ * Two consequences of that choice, stated rather than hidden. Submitting navigates the document instead of routing on
+ * the client, which costs a moment the four steps beside it don't. And a reader who types `1` lands on `?page=1` — a
+ * URL the route reads correctly but that the link builders would have written bare. A form can only submit the field
+ * it has, and neither is worth trading native submission for.
  *
  * @param props - The committee, the current view, and how many pages the collection fills.
  * @returns The pager, or `null` when the collection fits on one page and there is nowhere to go.
@@ -287,36 +362,77 @@ function RecordsPager({
   if (pageCount <= 1) return null;
 
   const label: string = committeeRecordKindLabels[kind].toLowerCase();
+  const pageHref = (target: number): Route => committeeRecordsHref(chamber, systemCode, { kind, page: target });
+  // Across two pages, "First" points exactly where "Previous" does and "Last" where "Next" does. Two controls that can
+  // only ever agree are one control and some furniture, so the ends appear once there is a middle to skip over.
+  const hasEnds: boolean = pageCount > 2;
 
   return (
     <nav aria-label={`Pages of ${label}`} className="committee-records__pager">
-      {page > 1 ? (
-        <Link
-          className="committee-records__pager-link"
-          href={committeeRecordsHref(chamber, systemCode, { kind, page: page - 1 })}
+      <div className="committee-records__pager-steps">
+        {hasEnds ? (
+          <PagerStep href={page > 1 ? pageHref(1) : undefined} icon={ChevronFirst} label="First" side="leading" />
+        ) : null}
+        <PagerStep
+          href={page > 1 ? pageHref(page - 1) : undefined}
+          icon={ChevronLeft}
+          label="Previous"
           rel="prev"
-        >
-          <ChevronLeft aria-hidden="true" size={16} /> Previous
-        </Link>
-      ) : (
-        <span className="committee-records__pager-edge">Previous</span>
-      )}
+          side="leading"
+        />
+      </div>
 
-      <p className="committee-records__pager-position">
-        Page {formatCount(page)} of {formatCount(pageCount)}
-      </p>
+      {/* Points at the committee's bare URL and lets the fields supply the query, so a GET submission rewrites the
+          whole query string rather than appending to one. The collection is carried as a hidden field for the same
+          reason the step links carry it — jumping to page 40 of the reports must not silently land on the bills — and
+          is omitted at its default, so the URL this produces matches the one every link on the page would have built
+          for the same view. */}
+      <form action={committeeHref(chamber, systemCode)} className="committee-records__pager-jump" method="get">
+        {kind === DEFAULT_COMMITTEE_RECORD_KIND ? null : (
+          <input name={COMMITTEE_RECORDS_PARAMS.kind} type="hidden" value={kind} />
+        )}
+        <label className="committee-records__pager-jump-label" htmlFor={PAGE_INPUT_ID}>
+          Page
+        </label>
+        {/* `min`/`max` let the browser reject an out-of-range page before a request goes anywhere, and are an honest
+            statement of the range besides. They are a convenience rather than the guard: the route parses and clamps
+            this param regardless, because a hand-edited URL never passes through this field at all. */}
+        <input
+          aria-describedby={PAGE_TOTAL_ID}
+          className="committee-records__pager-input"
+          defaultValue={page}
+          id={PAGE_INPUT_ID}
+          inputMode="numeric"
+          max={pageCount}
+          min={1}
+          name={COMMITTEE_RECORDS_PARAMS.page}
+          type="number"
+        />
+        <span className="committee-records__pager-total" id={PAGE_TOTAL_ID}>
+          of {formatCount(pageCount)}
+        </span>
+        <button className="committee-records__pager-go" type="submit">
+          Go
+        </button>
+      </form>
 
-      {page < pageCount ? (
-        <Link
-          className="committee-records__pager-link"
-          href={committeeRecordsHref(chamber, systemCode, { kind, page: page + 1 })}
+      <div className="committee-records__pager-steps">
+        <PagerStep
+          href={page < pageCount ? pageHref(page + 1) : undefined}
+          icon={ChevronRight}
+          label="Next"
           rel="next"
-        >
-          Next <ChevronRight aria-hidden="true" size={16} />
-        </Link>
-      ) : (
-        <span className="committee-records__pager-edge">Next</span>
-      )}
+          side="trailing"
+        />
+        {hasEnds ? (
+          <PagerStep
+            href={page < pageCount ? pageHref(pageCount) : undefined}
+            icon={ChevronLast}
+            label="Last"
+            side="trailing"
+          />
+        ) : null}
+      </div>
     </nav>
   );
 }

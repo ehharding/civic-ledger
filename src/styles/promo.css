@@ -1,27 +1,22 @@
 /* Promo/callout blocks reused across routes: the warm "read this next" panel that closes five different pages
    (CalloutCard), and the home page's three-up trust grid.
 
-   There used to be a second class, .learn-strip, for the home page's copy of this panel. It differed from
-   .reading-card in exactly one declaration — the gap above it — while duplicating all six of the others, so it has
-   been folded in as the --spacious modifier below. One panel, three spacings. @see CalloutSpacing */
+   There used to be a second class, .learn-strip, for the home page's copy of this panel. It differed from .reading-card
+   in exactly one declaration — the gap above it — while duplicating all six of the others, so it has been folded in as
+   the --spacious modifier below. One panel, two spacings. @see CalloutSpacing */
 
 .reading-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
-  /* Follows content that ends with no bottom margin of its own (a .detail-grid, or .lesson-steps), so the panel
-     carries the full gap by itself. The two modifiers below are the exceptions. */
+  /* Every one of the six sections this panel can follow ends with no bottom margin of its own — a .detail-grid, the
+     .glossary-grid, .lesson-steps — so the panel carries the whole gap. The one modifier below is the exception. */
   margin-top: 48px;
   padding: 28px 30px;
   border: 1px solid var(--warm-border);
   border-radius: 12px;
   background: var(--warm);
-}
-
-/* The learn hub's copy follows a grid that already ends with its own spacing. */
-.reading-card--flush {
-  margin-top: 0;
 }
 
 /* The home page's copy follows the activity grid, whose rhythm is more generous than the rest of the app's. */

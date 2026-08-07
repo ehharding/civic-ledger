@@ -7,18 +7,21 @@ import type { JSX, ReactNode } from "react";
  * How much room the callout leaves above itself.
  *
  * The gap belongs to the callout rather than to the page because what sits above it differs by route, and every one of
- * those sections ends with no bottom margin of its own. Naming the three cases here keeps that decision at the call
- * site, where the surrounding content is visible, rather than buried in a stylesheet.
+ * those sections ends with no bottom margin of its own. Naming the two cases here keeps that decision at the call site,
+ * where the surrounding content is visible, rather than buried in a stylesheet.
  *
- * - `default` — follows content that supplies no gap (a detail grid, the lesson steps).
- * - `flush` — follows a grid that already ends with its own spacing, so the callout adds none.
+ * There was a third, `flush`, which zeroed the gap on the claim that the learn hub's glossary grid "already ends with
+ * its own spacing". It does not — a grid's `gap` sits *between* its rows and adds nothing below the last one — so the
+ * only page using it was rendering this panel hard against the final glossary card. Deleted rather than corrected,
+ * because a spacing named for a condition no caller meets is one the next caller will reach for by its name.
+ *
+ * - `default` — follows content that supplies no gap (a detail grid, the glossary grid, the lesson steps).
  * - `spacious` — follows the home page's activity grid, whose rhythm is more generous than the rest of the app's.
  */
-export type CalloutSpacing = "default" | "flush" | "spacious";
+export type CalloutSpacing = "default" | "spacious";
 
 const SPACING_CLASSES: Readonly<Record<CalloutSpacing, string>> = {
   default: "reading-card",
-  flush: "reading-card reading-card--flush",
   spacious: "reading-card reading-card--spacious",
 };
 

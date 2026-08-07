@@ -10,9 +10,9 @@
  * - **A report is never given an outbound link.** Congress.gov's report URLs look derivable from what the record
  *   carries, and this project cannot verify that they are — congress.gov answers every automated check with a bot
  *   challenge. An authoritative-looking link that 404s is worse than a citation a reader can search.
- * - **Every control is a real link.** Tabs and pager alike, so each view is shareable, openable in a new tab, and
- *   reachable without JavaScript. A click handler over local state would pass a "does it switch tabs" test and fail
- *   every one of those.
+ * - **Every control navigates.** The tabs and the pager's four steps are real links, and the pager's page field is a
+ *   real GET form, so each view is shareable, openable in a new tab, and reachable without JavaScript. A click handler
+ *   over local state would pass a "does it switch tabs" test and fail every one of those.
  */
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -285,7 +285,31 @@ describe("the pager", (): void => {
       "href",
       "/committees/house/hsag00?records=reports&page=5",
     );
-    expect(screen.getByText("Page 4 of 12")).toBeInTheDocument();
+  });
+
+  it("links to both ends of the collection, so a reader deep in one can leave in a single step", (): void => {
+    renderRecords(
+      { kind: "reports", items: [{ citation: "H. Rept. 109-710" }] },
+      { page: 4, pageCount: 12, total: 142 },
+    );
+
+    expect(screen.getByRole("link", { name: /First/ })).toHaveAttribute(
+      "href",
+      "/committees/house/hsag00?records=reports",
+    );
+    expect(screen.getByRole("link", { name: /Last/ })).toHaveAttribute(
+      "href",
+      "/committees/house/hsag00?records=reports&page=12",
+    );
+  });
+
+  it("leaves the ends off when there is no middle for them to skip over", (): void => {
+    // Across two pages "First" points where "Previous" does and "Last" where "Next" does, so the pair is furniture.
+    renderRecords({ kind: "bills", items: [referral()] }, { page: 1, pageCount: 2, total: 24 });
+
+    expect(screen.queryByText("First")).not.toBeInTheDocument();
+    expect(screen.queryByText("Last")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Next/ })).toBeInTheDocument();
   });
 
   it("drops the page param when stepping back to the first page", (): void => {
@@ -298,10 +322,44 @@ describe("the pager", (): void => {
     renderRecords({ kind: "bills", items: [referral()] }, { page: 1, pageCount: 3, total: 30 });
 
     expect(screen.queryByRole("link", { name: /Previous/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /First/ })).not.toBeInTheDocument();
     expect(screen.getByText("Previous")).toBeInTheDocument();
+    expect(screen.getByText("First")).toBeInTheDocument();
 
     renderRecords({ kind: "bills", items: [referral()] }, { page: 3, pageCount: 3, total: 30 });
     expect(screen.getAllByText("Next").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Last").length).toBeGreaterThan(0);
+  });
+
+  it("offers a page field that submits to this committee natively, without JavaScript", (): void => {
+    renderRecords(
+      { kind: "reports", items: [{ citation: "H. Rept. 109-710" }] },
+      { page: 4, pageCount: 12, total: 142 },
+    );
+
+    const field: HTMLInputElement = screen.getByLabelText("Page");
+    expect(field).toHaveAttribute("name", "page");
+    expect(field).toHaveValue(4);
+    // The range the collection actually has, so the browser can reject an overshoot before a request goes anywhere.
+    expect(field).toHaveAttribute("min", "1");
+    expect(field).toHaveAttribute("max", "12");
+    expect(screen.getByText("of 12")).toBeInTheDocument();
+
+    // A real GET form to the committee's own URL — not a click handler — so the jump produces a shareable address and
+    // works with scripting off, exactly as every link in this section does.
+    const form: HTMLFormElement | null = field.closest("form");
+    expect(form).toHaveAttribute("method", "get");
+    expect(form).toHaveAttribute("action", "/committees/house/hsag00");
+    // Jumping within the reports must not silently land in the bills.
+    expect(form?.querySelector("input[name='records']")).toHaveValue("reports");
+  });
+
+  it("writes no collection param when the default one is showing", (): void => {
+    // The same contract the tab and step links hold: a view at its default produces the bare committee URL rather than
+    // one carrying a param that only restates the default.
+    renderRecords({ kind: "bills", items: [referral()] }, { page: 2, pageCount: 3, total: 30 });
+
+    expect(screen.getByLabelText("Page").closest("form")?.querySelector("input[name='records']")).toBeNull();
   });
 
   it("states the range in a live region, so paging is announced rather than only shown", (): void => {
