@@ -11,16 +11,17 @@
 .empty-state > p,
 .error-page > p:not(.eyebrow) {
   max-width: 48ch;
-  margin-top: 20px;
+  margin-top: var(--space-5);
   color: var(--ink-soft);
 }
 
 .empty-state .button,
 .error-page .button {
-  margin-top: 25px;
+  margin-top: var(--space-6);
 }
 
+/* The same gutter .page-shell and the header/footer use, on a narrower measure. @see layout.css. */
 .error-page {
-  width: min(700px, calc(100% - 48px));
+  width: min(700px, calc(100% - var(--space-12)));
   margin: 0 auto;
 }

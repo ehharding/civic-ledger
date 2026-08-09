@@ -1,11 +1,22 @@
 /* Breakpoint overrides for every component above. Kept together (rather than split back into each component's own file)
    because most of these routes share the same two breakpoints and reasoning about the layout at a given width is easier
-   with its overrides in one place than scattered across a dozen files. */
+   with its overrides in one place than scattered across a dozen files.
+
+   This file is the whole of the `overrides` cascade layer, which is what makes the arrangement safe: every rule here
+   beats every component rule regardless of specificity or of which file loaded first. That matters because several
+   rules below are the same specificity as the ones they override, and the layer is the only thing deciding them.
+   @see the layer contract at the top of globals.css.
+
+   It also means a rule here does not need to be more specific than its target, and shouldn't be — if you find yourself
+   reaching for an extra class to win, the layer already won and something else is wrong. */
 
 @media (max-width: 900px) {
   /* The header tightens before it drops anything. Closing the columns up here buys the three-part layout another ~36px
      of life, which is why the search doesn't go until 860px rather than at this breakpoint. @see the header block
-     below. */
+     below.
+
+     Off the spacing grid on purpose, like the rest of the header's measurements: this gap is a term in the arithmetic
+     that produces the 860px breakpoint below, so it is measured rather than rounded. @see layout.css. */
   .site-header__inner {
     gap: 18px;
   }
@@ -16,7 +27,7 @@
   }
 
   .hero-grid {
-    gap: 43px;
+    gap: var(--space-11);
   }
 
   .seating__layout {
@@ -92,11 +103,12 @@
 
 /* Where the header stops being three things on one line and becomes two.
  *
- * The number is measured, not rounded to something tidy. The three parts need 156px of wordmark, 402px of nav, and a
- * 190px search box, plus the two 18px gaps set above — 784px of content inside a container that is the viewport less
- * 48px. That runs out at a 832px viewport. Dropping the search at 860 leaves ~28px of slack at the tightest point,
- * which is the margin a label rename or a font fallback needs; pinning this to the exact 832 would put the nav one
- * metric change away from wrapping, and a nav that wraps in a 20px-wide band is a bug nobody reproduces on purpose.
+ * The number is measured, not rounded to something tidy — which is also why every input to it stays off the spacing
+ * grid in layout.css and above. The three parts need 156px of wordmark, 402px of nav, and a 190px search box, plus the
+ * two 18px gaps set above — 784px of content inside a container that is the viewport less 48px. That runs out at a
+ * 832px viewport. Dropping the search at 860 leaves ~28px of slack at the tightest point, which is the margin a label
+ * rename or a font fallback needs; pinning this to the exact 832 would put the nav one metric change away from
+ * wrapping, and a nav that wraps in a 20px-wide band is a bug nobody reproduces on purpose.
  *
  * The search is what drops, rather than the nav shedding a destination, because it is the only part of the header that
  * exists somewhere else: /bills carries its own search field, and the "Bills" link is right there in the row. The cost
@@ -105,9 +117,9 @@
  * That reasoning is also why nothing replaces it further down. Below 640px the header stacks and there is obviously
  * room for a search row, but a control added there could only link to /bills, which the "Bills" link one row up
  * already does. A second route to the same page is chrome, not a feature, and it would cost real height in a sticky
- * header on the smallest screens. Shrinking the search box to survive to 768px was the other option considered and
- * rejected: reaching iPad portrait needs the box down near 150px and the nav gap down to ~14px, which buys one device
- * width in exchange for a cramped header and a third set of tuned numbers. */
+ * header on the smallest screens. Shrinking the search box to survive to 768px is the other way to do this, and it
+ * costs more than it returns: reaching iPad portrait needs the box down near 150px and the nav gap down to ~14px,
+ * which buys one device width in exchange for a cramped header and a third set of tuned numbers. */
 @media (max-width: 860px) {
   .site-header__inner {
     grid-template-columns: auto 1fr;
@@ -126,29 +138,30 @@
   .site-header__inner,
   .page-shell,
   .site-footer {
-    width: min(100% - 32px, 1180px);
+    width: min(100% - var(--space-8), 1180px);
   }
 
   /* The nav gets a row of its own below this width.
    *
-   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That worked at four destinations
-   * and stops working at five: squeezed into the column beside the wordmark, the links wrap into a ragged two- or
-   * three-line block hanging off the right edge, and every one added after that makes it worse. The fix that scales is
-   * to stop sharing the line — a full-width row left-aligned under the wordmark fits five labels on one line on any
-   * phone wider than about 340px, and wraps to a tidy left-aligned second line below that instead of a staircase.
+   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That arrangement holds at four
+   * destinations and fails at five, which is what this app has: squeezed into the column beside the wordmark, the links
+   * wrap into a ragged two- or three-line block hanging off the right edge, and each one added past that makes it
+   * worse. The arrangement that scales is to stop sharing the line — a full-width row left-aligned under the wordmark
+   * fits five labels on one line on any phone wider than about 340px, and wraps to a tidy left-aligned second line
+   * below that instead of a staircase.
    *
    * The cost is roughly 12px of a sticky header, which is the trade being made deliberately: the alternative is
-   * shrinking the type again, and these labels are already at 0.78rem. */
+   * shrinking the type again, and these labels are already at the smallest step on the type scale. */
   .site-header__inner {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
     min-height: 0;
-    gap: 4px;
-    padding-block: 10px;
+    gap: var(--space-1);
+    padding-block: var(--space-2);
   }
 
   .wordmark {
-    font-size: 1.1rem;
+    font-size: var(--text-2xl);
   }
 
   .wordmark__mark {
@@ -162,22 +175,22 @@
     flex-wrap: wrap;
     justify-self: start;
     justify-content: flex-start;
-    gap: 6px 16px;
-    font-size: 0.78rem;
+    gap: var(--space-1-5) var(--space-4);
+    font-size: var(--text-xs);
   }
 
   .page-shell {
-    padding-block: 40px 60px;
+    padding-block: var(--space-10) var(--space-15);
   }
 
   .site-footer {
     display: grid;
-    gap: 5px;
+    gap: var(--space-1);
   }
 
   .hero-grid {
     min-height: unset;
-    padding: 10px 0 46px;
+    padding: var(--space-3) 0 var(--space-12);
   }
 
   .hero-copy h1,
@@ -190,7 +203,7 @@
   .journey-card,
   .bill-card,
   .detail-panel {
-    padding: 21px;
+    padding: var(--space-5);
   }
 
   .seating__chambers {
@@ -199,12 +212,12 @@
   }
 
   .seating__legend {
-    gap: 8px 18px;
-    font-size: 0.8rem;
+    gap: var(--space-2) var(--space-5);
+    font-size: var(--text-sm);
   }
 
   .source-notice {
-    margin-bottom: 40px;
+    margin-bottom: var(--space-10);
   }
 
   .section-heading {
@@ -239,8 +252,8 @@
 
   .reading-card {
     grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 24px;
+    gap: var(--space-4);
+    padding: var(--space-6);
   }
 
   .reading-card .secondary-link {
@@ -248,11 +261,11 @@
   }
 
   .trust-grid {
-    gap: 22px;
+    gap: var(--space-6);
   }
 
   .segmented-filter {
-    gap: 5px;
+    gap: var(--space-1);
   }
 
   .segmented-filter svg {
@@ -260,16 +273,16 @@
   }
 
   .segmented-filter button {
-    padding: 5px 8px;
-    font-size: 0.7rem;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-2xs);
   }
 
   .bill-detail-hero {
-    padding-bottom: 35px;
+    padding-bottom: var(--space-9);
   }
 
   .detail-panel .bill-journey li {
-    font-size: 0.57rem;
+    font-size: var(--text-4xs);
   }
 
   .detail-panel .journey-dot {

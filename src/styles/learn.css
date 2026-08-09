@@ -4,42 +4,42 @@
 .lesson-steps {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .lesson-step h2 {
-  margin-top: 6px;
-  font-size: 1.42rem;
+  margin-top: var(--space-1-5);
+  font-size: var(--text-4xl);
 }
 
 .lesson-step .bill-journey {
-  margin-top: 22px;
+  margin-top: var(--space-6);
 }
 
 /* The honest-limits panel that closes every lesson before its sources. It wears .detail-panel--accent's teal rather
    than the preview notice's amber deliberately: this is not a warning that something is wrong, it is the lesson
    naming the simplification it just made. @see LessonArticle. */
 .lesson-limits {
-  margin-top: 34px;
+  margin-top: var(--space-9);
 }
 
 .lesson-limits h2 {
-  margin-top: 6px;
-  font-size: 1.42rem;
+  margin-top: var(--space-1-5);
+  font-size: var(--text-4xl);
 }
 
 .lesson-limits ul {
   display: grid;
-  gap: 13px;
+  gap: var(--space-3);
   max-width: 62ch;
-  margin: 16px 0 0;
-  padding-left: 19px;
+  margin: var(--space-4) 0 0;
+  padding-left: var(--space-5);
   list-style: disc;
 }
 
 .lesson-limits li {
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   line-height: 1.6;
 }
 
@@ -48,13 +48,13 @@
 }
 
 .lesson-sources {
-  margin-top: 34px;
+  margin-top: var(--space-9);
   border-top: 1px solid var(--line-dark);
-  padding-top: 26px;
+  padding-top: var(--space-6);
 }
 
 .lesson-sources h2 {
-  font-size: 1.42rem;
+  font-size: var(--text-4xl);
 }
 
 /* One citation per row, each a title and the publisher under it, rather than a run-in list. The publisher is the part
@@ -62,21 +62,21 @@
 .lesson-source-list {
   display: grid;
   gap: 0;
-  margin: 20px 0 0;
+  margin: var(--space-5) 0 0;
   border-top: 1px solid var(--line);
   list-style: none;
 }
 
 .lesson-source-list li {
   display: grid;
-  gap: 3px;
-  padding: 14px 0;
+  gap: var(--space-1);
+  padding: var(--space-4) 0;
   border-bottom: 1px solid var(--line);
 }
 
 .lesson-source-list__publisher {
   color: var(--ink-faint);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.02em;
 }
 
@@ -93,7 +93,7 @@
 .lesson-index__item {
   display: grid;
   gap: 0;
-  padding: 26px 0;
+  padding: var(--space-6) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -103,37 +103,37 @@
 
 .lesson-index__summary {
   max-width: 62ch;
-  margin-top: 12px;
+  margin-top: var(--space-3);
   color: var(--ink-soft);
-  font-size: 0.92rem;
+  font-size: var(--text-lg);
   line-height: 1.6;
 }
 
 .lesson-index__meta {
-  margin-top: 9px;
+  margin-top: var(--space-2);
   color: var(--ink-faint);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
 }
 
 .lesson-index .text-link {
-  margin-top: 15px;
+  margin-top: var(--space-4);
 }
 
 /* The glossary follows the lesson list, which ends on its own hairline, so this heading supplies the gap between the
    two sections rather than leaving them touching. */
 .learn-glossary-heading {
-  margin-top: 52px;
+  margin-top: var(--space-13);
 }
 
 .glossary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 15px;
+  gap: var(--space-4);
 }
 
 .glossary-entry {
   min-height: 220px;
-  padding: 26px;
+  padding: var(--space-6);
   border-top: 3px solid var(--navy);
   background: var(--paper);
 }
@@ -144,22 +144,23 @@
 
 .glossary-entry h3 {
   max-width: 21ch;
-  font-size: 1.58rem;
+  font-size: var(--text-5xl);
 }
 
 .glossary-entry p:not(.section-kicker) {
-  margin-top: 17px;
+  margin-top: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 
 /* Where every in-prose glossary term's fragment link lands. The offset keeps a targeted entry clear of the top of the
    viewport, and the accent marks which one the link was pointing at — arriving at a wall of entries with no indication
    of which one you asked for is the whole failure this prevents. Last of the `.glossary-entry` rules on purpose:
    `:target` and `:nth-child(2n)` above have the same specificity, so source order is the only thing making the targeted
-   accent win over the alternating one. */
+   accent win over the alternating one. The cascade layers in globals.css do not help here — they order files against
+   each other, not rules within one, and these two rules share a file and a layer. */
 .glossary-entry {
-  scroll-margin-top: 24px;
+  scroll-margin-top: var(--space-6);
 }
 
 .glossary-entry:target {
@@ -175,9 +176,9 @@
 
 .principle {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
-  gap: 19px;
-  padding: 26px 0;
+  grid-template-columns: var(--space-9) minmax(0, 1fr);
+  gap: var(--space-5);
+  padding: var(--space-6) 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -187,11 +188,11 @@
 
 .principle h2 {
   margin: 0;
-  font-size: 1.65rem;
+  font-size: var(--text-6xl);
 }
 
 .principle p {
   max-width: 65ch;
-  margin-top: 7px;
+  margin-top: var(--space-2);
   color: var(--ink-soft);
 }

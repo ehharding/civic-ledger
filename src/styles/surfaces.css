@@ -1,0 +1,43 @@
+/* The card surface, stated once for the six components that wear it.
+ *
+ * The recipe — hairline border, 10px corner, paper ground — lives here rather than in each of the six files, because
+ * six copies of it drift and the drift is invisible. Two cards in adjacent sections of one page differing by a couple
+ * of pixels of padding is not something anyone decides and not something anyone spots on the page; it is only legible
+ * by reading the two files side by side. One copy cannot disagree with itself.
+ *
+ * Stated as a selector list rather than as a `.surface-card` class the markup opts into, which is the other obvious
+ * shape for this. The deciding factor is `.detail-panel`: it appears at twelve call sites across four components, so
+ * the class route means twelve edits and, from then on, twelve chances to forget it — a card that silently isn't one.
+ * A selector list has the opposite failure mode: adding a card here is one line, and forgetting to is immediately
+ * visible, because the new card renders with no border at all.
+ *
+ * This loads before the files that define these components, so each can still specialize. Two do, via the background
+ * custom property below rather than by restating `background` and hoping source order holds.
+ */
+
+.bill-card,
+.committee-card,
+.committee-record,
+.committee-records__tab,
+.detail-panel,
+.member-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  /* The one part of the recipe that genuinely varies: the two cards that sit on a busier ground (the bill card over the
+     page's radial wash, the detail panel over it too) let it show through, and set their own mix in their own file. A
+     custom property rather than an override, so a card has exactly one `background` declaration wherever it lands. */
+  background: var(--surface-card-bg, var(--paper));
+}
+
+/* The four compact list cards — one row of a directory or a record collection. Beyond the surface they share their
+   internal stacking, which is the same short column of label-over-value in all four. `.detail-panel` and `.bill-card`
+   are deliberately not here: both lay out their own contents and set their own, much larger, padding. */
+.committee-card,
+.committee-record,
+.committee-records__tab,
+.member-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-4) var(--space-5);
+}

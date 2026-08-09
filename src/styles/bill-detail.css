@@ -2,16 +2,16 @@
    and the text-version list. */
 
 .bill-backlink {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
   color: var(--ink-soft);
-  font-size: 0.86rem;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
 .bill-backlink a {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-0-5);
 }
 
 .bill-backlink a:hover {
@@ -20,7 +20,7 @@
 
 .bill-detail-hero {
   max-width: 880px;
-  padding-bottom: 46px;
+  padding-bottom: var(--space-12);
 }
 
 /* Sized separately from the hero/page-header/empty-state/error-page h1s in typography.css: those are short, fixed
@@ -30,7 +30,7 @@
    clamp is enough on its own (matching how .section-heading h2 etc. scale in typography.css) without a separate
    mobile-breakpoint override. No ch cap here — .bill-detail-hero's own 880px max-width already governs wrap. */
 .bill-detail-hero h1 {
-  margin-top: 16px;
+  margin-top: var(--space-4);
   color: var(--navy-deep);
   font-size: clamp(1.75rem, 4.2vw, 2.75rem);
   line-height: 1.15;
@@ -41,22 +41,22 @@
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 26px;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
   color: var(--ink-soft);
-  font-size: 0.84rem;
+  font-size: var(--text-md);
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(310px, 0.85fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 /* The bill detail page stacks .detail-grid rows back to back; the first gets its spacing from .source-notice's
    margin-bottom above it, so only the ones after it need their own rule here. */
 .detail-grid + .detail-grid {
-  margin-top: 24px;
+  margin-top: var(--space-6);
 }
 
 /* A row carrying one panel rather than a pair. The committee referrals are the only section on the page whose rows are
@@ -67,16 +67,20 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Border, radius and ground come from the shared card recipe. @see src/styles/surfaces.css. */
 .detail-panel {
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--paper) 75%, transparent);
+  /* As with .bill-card, the page's radial wash reads through rather than being flattened by a solid fill. */
+  --surface-card-bg: color-mix(in srgb, var(--paper) 75%, transparent);
+
+  padding: var(--space-7);
 }
 
+/* Sets the ground through the same custom property the base panel does, rather than restating `background` — so a panel
+   still has exactly one `background` declaration, in surfaces.css, whichever variant it is. */
 .detail-panel--accent {
+  --surface-card-bg: var(--teal-surface);
+
   border-color: var(--teal-border);
-  background: var(--teal-surface);
 }
 
 /* Both are the paragraph directly under a panel heading, so they agree on their measure and the gap above them. They
@@ -84,16 +88,16 @@
 .muted-copy,
 .latest-action-copy {
   max-width: 58ch;
-  margin-top: 13px;
+  margin-top: var(--space-3);
 }
 
 .muted-copy {
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 
 .detail-panel .bill-journey {
-  margin-top: 35px;
+  margin-top: var(--space-9);
 }
 
 /* The latest action is the one sentence on the page that says where the bill actually stands, so it is set larger and
@@ -101,24 +105,24 @@
 .latest-action-copy {
   color: var(--ink);
   font-family: var(--serif), serif;
-  font-size: 1.2rem;
+  font-size: var(--text-3xl);
   line-height: 1.35;
 }
 
 .date-label {
-  margin-top: 15px;
+  margin-top: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 /* Renders sanitized CRS summary HTML (see sanitizeSummaryHtml) — arbitrary paragraphs, lists, emphasis, and links from
    the API, not markup this app authors itself. Needs its own rules because base.css's reset zeroes out <p> margin and
    strips link color/underline sitewide (right for hand-authored UI copy, wrong for a block of prose). */
 .summary-body {
-  margin-top: 13px;
+  margin-top: var(--space-3);
   max-width: 62ch;
   color: var(--ink);
-  font-size: 0.96rem;
+  font-size: var(--text-lg);
   line-height: 1.65;
 }
 
@@ -127,17 +131,17 @@
    where the previous `p + p` rule covered one and leaned on the browser's own list margin for the rest. That margin is
    zeroed sitewide now (@see base.css), so this states the gap rather than inheriting it. */
 .summary-body :is(p, ul, ol) + :is(p, ul, ol) {
-  margin-top: 14px;
+  margin-top: var(--space-4);
 }
 
 /* Room for the marker, which is the whole reason these two opt back in to an indent. */
 .summary-body ul,
 .summary-body ol {
-  padding-left: 22px;
+  padding-left: var(--space-6);
 }
 
 .summary-body li + li {
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
 }
 
 .summary-body li::marker {
@@ -164,38 +168,38 @@
 .text-version-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
   list-style: none;
 }
 
 .text-version-list__type {
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
 .text-version-list__formats {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 6px;
+  gap: var(--space-4);
+  margin-top: var(--space-1-5);
 }
 
 .detail-panel > .text-link {
-  margin-top: 26px;
+  margin-top: var(--space-6);
 }
 
 .summary-history {
-  margin-top: 18px;
+  margin-top: var(--space-5);
   border-top: 1px solid var(--line);
-  padding-top: 14px;
+  padding-top: var(--space-4);
 }
 
 .summary-history__toggle {
   color: var(--burgundy);
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: var(--text-md);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -205,28 +209,28 @@
 }
 
 .summary-history__list {
-  margin-top: 14px;
+  margin-top: var(--space-4);
   list-style: none;
 }
 
 .summary-history__list > li + li {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   border-top: 1px dashed var(--line);
-  padding-top: 16px;
+  padding-top: var(--space-4);
 }
 
 .action-history__list {
-  margin-top: 14px;
-  padding-left: 20px;
+  margin-top: var(--space-4);
+  padding-left: var(--space-5);
 }
 
 .action-history__list > li + li {
-  margin-top: 14px;
+  margin-top: var(--space-4);
 }
 
 .action-history__text {
   color: var(--ink);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   line-height: 1.55;
 }
 
@@ -243,7 +247,10 @@
    `min(230px, 100%)` keeps the identical behavior wherever there is room and collapses the floor to the container's own
    width where there isn't, which is exactly the "one column, no horizontal scroll" result the phone layout wants. It
    belongs on the track rather than in a media query because the constraint is the *container's* width, not the
-   viewport's — these panels are one column below 900px but still sit inside a page shell whose padding varies. */
+   viewport's — these panels are one column below 900px but still sit inside a page shell whose padding varies.
+
+   The track floors below stay literals for that reason: each is a measurement of the content it has to hold, not a step
+   in the page's spacing rhythm. */
 
 /* The committees a bill passed through. Laid out in columns rather than one long list because a bill referred to a
    dozen committees at once is ordinary, and twelve stacked rows push the rest of the page below the fold for a fact
@@ -252,8 +259,8 @@
 .bill-committee-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
-  gap: 16px 24px;
-  margin-top: 16px;
+  gap: var(--space-4) var(--space-6);
+  margin-top: var(--space-4);
   list-style: none;
 }
 
@@ -261,26 +268,26 @@
    the reader inferring it from the names — which for "Aviation Subcommittee" under "Transportation and Infrastructure
    Committee" they could not. */
 .bill-committee-list__subcommittees {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   border-left: 1px solid var(--line);
-  padding-left: 12px;
+  padding-left: var(--space-3);
   list-style: none;
-  font-size: 0.86rem;
+  font-size: var(--text-md);
 }
 
 .bill-committee-list__subcommittees li + li {
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
 }
 
 /* The members who signed on to a bill. Same auto-fill column treatment as the committee list above, and for the same
-   reason turned up: a bill with two hundred cosponsors is ordinary, and two hundred stacked rows would bury every
-   section below. The component caps the inline list at twelve and puts the tail behind a <details>; this makes those
-   twelve read as a block rather than a column of stragglers. */
+   reason: a bill with two hundred cosponsors is ordinary, and two hundred stacked rows would bury every section below.
+   The component caps the inline list at twelve and puts the tail behind a <details>; this makes those twelve read as a
+   block rather than a column of stragglers. */
 .cosponsor-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 14px 24px;
-  margin-top: 16px;
+  gap: var(--space-4) var(--space-6);
+  margin-top: var(--space-4);
   list-style: none;
 }
 
@@ -291,12 +298,12 @@
    distinguish the hues still has it in the text. */
 .cosponsor-list__item {
   border-left: 3px solid var(--party-color, var(--party-other));
-  padding-left: 12px;
+  padding-left: var(--space-3);
 }
 
 .cosponsor-list__name {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   line-height: 1.4;
 }
 
@@ -304,11 +311,11 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 4px;
+  gap: var(--space-1) var(--space-3);
+  margin-top: var(--space-1);
 }
 
-/* .date-label carries a 15px top margin for its use under a panel heading, which is far too much inside a row. */
+/* .date-label carries a top margin for its use under a panel heading, which is far too much inside a row. */
 .cosponsor-list__meta .date-label {
   margin-top: 0;
 }
@@ -316,11 +323,11 @@
 /* The one distinction on the row that a count could not have produced, so it is the one thing given a badge. */
 .cosponsor-list__original {
   border: 1px solid var(--teal-border);
-  border-radius: 999px;
-  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  padding: 1px var(--space-2);
   background: var(--teal-surface-strong);
   color: var(--ink-soft);
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -330,7 +337,7 @@
    app reserves for "read this before you read the rest". */
 .cosponsor-list__withdrawn {
   color: var(--amber-deep);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -339,13 +346,13 @@
 .related-bill-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
-  gap: 22px 24px;
-  margin-top: 18px;
+  gap: var(--space-6);
+  margin-top: var(--space-5);
   list-style: none;
 }
 
 .related-bill-list__identity {
-  font-size: 0.86rem;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
@@ -357,34 +364,34 @@
 }
 
 .related-bill-list__title {
-  margin-top: 4px;
+  margin-top: var(--space-1);
   color: var(--ink);
   font-family: var(--serif), serif;
-  font-size: 1rem;
+  font-size: var(--text-xl);
   line-height: 1.35;
 }
 
 .related-bill-list__action {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   color: var(--ink-soft);
-  font-size: 0.84rem;
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 
 .recorded-vote-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
   list-style: none;
 }
 
 .recorded-vote-list__roll {
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: var(--text-md);
   font-weight: 700;
 }
 
 .recorded-vote-list__roll + a {
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
 }

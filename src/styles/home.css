@@ -7,28 +7,28 @@
   align-items: center;
   gap: clamp(48px, 9vw, 128px);
   min-height: 420px;
-  padding: 26px 0 62px;
+  padding: var(--space-6) 0 var(--space-16);
 }
 
 .hero-copy__lede {
   max-width: 55ch;
-  margin-top: 26px;
+  margin-top: var(--space-6);
   color: var(--ink-soft);
-  font-size: 1.08rem;
+  font-size: var(--text-2xl);
   line-height: 1.65;
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 31px;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
 }
 
 .journey-card {
-  padding: 30px;
+  padding: var(--space-8);
   border: 1px solid color-mix(in srgb, var(--navy) 14%, transparent);
-  border-radius: 13px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(135deg, var(--teal-surface), var(--teal-surface-strong));
   box-shadow: var(--shadow);
   transition:
@@ -56,21 +56,21 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-5);
   color: var(--navy);
 }
 
 .journey-card__header h2 {
-  margin-top: 5px;
-  font-size: 1.55rem;
+  margin-top: var(--space-1);
+  font-size: var(--text-5xl);
 }
 
 .journey-card__title {
   max-width: 30ch;
-  margin-top: 25px;
+  margin-top: var(--space-6);
   color: var(--ink);
   font-family: var(--serif), serif;
-  font-size: 1.38rem;
+  font-size: var(--text-4xl);
   line-height: 1.16;
 }
 
@@ -79,12 +79,12 @@
 }
 
 .journey-card__caption {
-  margin-top: 22px;
+  margin-top: var(--space-6);
   color: var(--ink-soft);
-  font-size: 0.83rem;
+  font-size: var(--text-sm);
   line-height: 1.5;
 }
 
 .journey-card__link {
-  margin-top: 14px;
+  margin-top: var(--space-4);
 }

@@ -63,6 +63,72 @@
   --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --shadow: 0 18px 50px color-mix(in srgb, var(--shadow-color) 9%, transparent);
 
+  /* Spacing, on a 4px grid. The suffix is the multiplier: --space-6 is 6 × 4px.
+   *
+   * The grid does not make any single gap better. What it does is make "what should this be?" answerable without
+   * measuring the neighbors — which is the question that otherwise goes unanswered, because each component is written
+   * beside a different neighbor and nothing pulls their numbers back toward each other. The failure that prevents is
+   * quiet rather than loud: two cards in one grid a couple of pixels apart in padding is not a thing anyone decides,
+   * and not a thing anyone sees until the two files are read side by side. @see surfaces.css.
+   *
+   * Values off the grid are allowed, but they have to say why in a comment — that requirement is the actual mechanism
+   * here. @see the header-gap chain in layout.css and responsive.css for the worked example.
+   *
+   * Two kinds of value are outside this and don't need the note. A `clamp()` states its own range and is a fluid rule
+   * rather than a step — snapping its ends to the grid would say something the grid doesn't mean. And a measurement of
+   * real content (a portrait's box, a skeleton line's height, a grid track's floor) answers to the thing it's sized
+   * against, not to the page's rhythm; those stay literals and say so where they appear. */
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-13: 52px;
+  --space-15: 60px;
+  --space-16: 64px;
+  --space-18: 72px;
+  --space-20: 80px;
+
+  /* Type scale. Steps are ~1px apart at the bottom and widen going up, which is the tightest spacing that still reads
+   * as a deliberate difference rather than as drift. Anything closer is one size plus a rounding error — half a dozen
+   * values inside a single pixel, each looking like a decision and none of them distinguishable. The whole band from
+   * body copy up to the largest meta line is --text-sm and --text-md, and that is the intended density.
+   *
+   * The px equivalents in the comments assume the 16px root set in base.css. */
+  --text-4xs: 0.5625rem; /*  9px */
+  --text-3xs: 0.625rem; /* 10px */
+  --text-2xs: 0.6875rem; /* 11px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.8125rem; /* 13px */
+  --text-md: 0.875rem; /* 14px */
+  --text-lg: 0.9375rem; /* 15px */
+  --text-xl: 1rem; /* 16px */
+  --text-2xl: 1.125rem; /* 18px */
+  --text-3xl: 1.25rem; /* 20px */
+  --text-4xl: 1.375rem; /* 22px */
+  --text-5xl: 1.5625rem; /* 25px */
+  --text-6xl: 1.6875rem; /* 27px */
+
+  /* Corner radii. Sized by what wears them rather than by an abstract ramp: controls (sm/md), cards (lg), and the three
+   * feature panels that sit above the card layer (xl). The steps are deliberately far apart — a 7px corner and an 8px
+   * corner are the same corner, so a scale that offered both would only be offering a way to disagree by accident. */
+  --radius-xs: 4px; /* inline code chips */
+  --radius-sm: 6px; /* compact controls: pager steps, the page field */
+  --radius-md: 8px; /* full-size controls: selects, search boxes, the tooltip */
+  --radius-lg: 10px; /* cards */
+  --radius-xl: 12px; /* feature panels: the seating chart, the hero journey card, the callout */
+  --radius-pill: 999px;
+  --radius-round: 50%;
+
   /* The height every control that sits in a row beside another control is pinned to: the two directory `<select>`s and
      the member directory's "Clear Filters" button. Stated once rather than left to each control's own intrinsic height,
      because those heights are a function of font metrics — a `<select>` at 16px and a button at 0.8rem work out to

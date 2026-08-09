@@ -9,27 +9,27 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 24px;
+  gap: var(--space-6);
   /* Every one of the six sections this panel can follow ends with no bottom margin of its own — a .detail-grid, the
      .glossary-grid, .lesson-steps — so the panel carries the whole gap. The one modifier below is the exception. */
-  margin-top: 48px;
-  padding: 28px 30px;
+  margin-top: var(--space-12);
+  padding: var(--space-7) var(--space-8);
   border: 1px solid var(--warm-border);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   background: var(--warm);
 }
 
 /* The home page's copy follows the activity grid, whose rhythm is more generous than the rest of the app's. */
 .reading-card--spacious {
-  margin-top: 72px;
+  margin-top: var(--space-18);
 }
 
 .reading-card__icon {
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: var(--space-12);
+  height: var(--space-12);
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   color: var(--burgundy);
   background: color-mix(in srgb, var(--paper) 80%, transparent);
 }
@@ -40,21 +40,21 @@
 
 .reading-card p:not(.section-kicker) {
   max-width: 65ch;
-  margin-top: 9px;
+  margin-top: var(--space-2);
   color: var(--ink-soft);
-  font-size: 0.91rem;
+  font-size: var(--text-md);
 }
 
 .trust-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 34px;
-  margin-top: 46px;
+  gap: var(--space-9);
+  margin-top: var(--space-12);
 }
 
 .trust-grid article {
   border-top: 1px solid var(--line-dark);
-  padding-top: 16px;
+  padding-top: var(--space-4);
 }
 
 .trust-grid svg {
@@ -62,12 +62,12 @@
 }
 
 .trust-grid h2 {
-  margin-top: 12px;
-  font-size: 1.12rem;
+  margin-top: var(--space-3);
+  font-size: var(--text-2xl);
 }
 
 .trust-grid p {
-  margin-top: 5px;
+  margin-top: var(--space-1);
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
 }

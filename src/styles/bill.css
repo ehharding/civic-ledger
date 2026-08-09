@@ -1,11 +1,17 @@
 /* The BillJourney stepper and BillCard — the two building blocks reused across the home page, bill directory, and bill
-   detail route. */
+   detail route.
+
+   The stepper's connector geometry below is the other place in this directory that stays off the spacing grid. Its
+   numbers are not rhythm, they are a construction: the rule between two steps starts half a dot past the center and
+   runs a whole dot short, so `left` and `width` are both derived from the dot's diameter and have to move with it.
+   Rounding either one independently would leave the connectors overshooting or falling short of the dots they join. The
+   pairs are marked where they appear. */
 
 .bill-journey {
   display: flex;
   justify-content: space-between;
   gap: 0;
-  margin: 28px 0 0;
+  margin: var(--space-7) 0 0;
   list-style: none;
 }
 
@@ -14,14 +20,15 @@
   display: grid;
   justify-items: center;
   width: 20%;
-  gap: 7px;
+  gap: var(--space-2);
   color: var(--ink-faint);
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   line-height: 1.25;
   text-align: center;
 }
 
+/* Derived from the 25px dot below: half of it plus a hair of clearance either side. @see the file header. */
 .bill-journey li::after {
   position: absolute;
   z-index: 0;
@@ -44,10 +51,10 @@
   height: 25px;
   place-items: center;
   border: 1px solid var(--teal-border);
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   color: var(--ink-faint);
   background: var(--teal-surface);
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
 }
 
 .bill-journey .is-complete,
@@ -69,7 +76,7 @@
 
 .bill-journey--compact {
   margin-top: auto;
-  padding-top: 22px;
+  padding-top: var(--space-6);
 }
 
 .bill-journey--compact li {
@@ -79,9 +86,10 @@
 .bill-journey--compact .journey-dot {
   width: 18px;
   height: 18px;
-  font-size: 0.56rem;
+  font-size: var(--text-4xs);
 }
 
+/* The same derivation as above against the compact 18px dot. @see the file header. */
 .bill-journey--compact li::after {
   top: 9px;
   left: calc(50% + 10px);
@@ -95,17 +103,18 @@
 .activity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
+/* Border, radius and ground come from the shared card recipe. @see src/styles/surfaces.css. */
 .bill-card {
+  /* Let the page's radial wash show through, which a solid paper fill would flatten. */
+  --surface-card-bg: color-mix(in srgb, var(--paper) 78%, transparent);
+
   display: flex;
   flex-direction: column;
   min-height: 320px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  padding: var(--space-6);
   transition:
     box-shadow 180ms ease,
     transform 180ms ease,
@@ -134,18 +143,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .stage-label {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--teal-border);
-  border-radius: 999px;
-  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-2);
   color: var(--navy);
   background: var(--teal-surface);
-  font-size: 0.69rem;
+  font-size: var(--text-2xs);
   font-weight: 750;
   line-height: 1;
   white-space: nowrap;
@@ -159,20 +168,20 @@
   display: inline-flex;
   align-items: center;
   border: 1px solid color-mix(in srgb, var(--burgundy) 40%, transparent);
-  border-radius: 999px;
-  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-2);
   color: var(--burgundy-deep);
   background: color-mix(in srgb, var(--burgundy) 8%, transparent);
-  font-size: 0.69rem;
+  font-size: var(--text-2xs);
   font-weight: 750;
   line-height: 1;
   white-space: nowrap;
 }
 
 .bill-card h3 {
-  margin-top: 18px;
+  margin-top: var(--space-5);
   color: var(--navy-deep);
-  font-size: 1.35rem;
+  font-size: var(--text-4xl);
   line-height: 1.12;
 }
 
@@ -182,21 +191,21 @@
 
 .bill-card__action {
   display: -webkit-box;
-  margin-top: 13px;
+  margin-top: var(--space-3);
   overflow: hidden;
   color: var(--ink-soft);
-  font-size: 0.84rem;
+  font-size: var(--text-md);
   line-height: 1.48;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
 
 .bill-card__footer {
-  margin-top: 18px;
-  padding-top: 12px;
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--line);
   color: var(--ink-soft);
-  font-size: 0.73rem;
+  font-size: var(--text-xs);
 }
 
 .bill-card__footer > span {

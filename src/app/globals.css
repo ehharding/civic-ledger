@@ -4,27 +4,45 @@
  * .bill-card, .text-link, etc.) across many components, and every rule below still lives in exactly one file, so
  * nothing here needed component-scoped styles to stay easy to find.
  *
- * Import order matters: tokens/base/layout establish the foundation each component file builds on, and responsive.css
- * must load last so its breakpoint overrides win over the component rules they're overriding (same-specificity
- * selectors — plain CSS's cascade is source-order-dependent).
+ * The four cascade layers below are what make that split safe. Many of responsive.css's breakpoint rules are the same
+ * specificity as the component rules they override, so plain CSS would resolve them by source order alone — making the
+ * order of the @import list load-bearing, and enforced by nothing but a comment asking you not to move a line.
+ *
+ * Layers take that ordering out of the import list and state it directly: every rule in `overrides` beats every rule in
+ * `components` no matter which file loaded first or how specific either selector is. The list on the next line is the
+ * whole contract, and it is the only place the order is stated.
+ *
+ *   tokens     — custom properties only; no selectors that paint anything
+ *   base       — the reset, bare element styles, and the shared .surface-card recipe
+ *   components — one layer per file below, all of them peers; a rule here never needs to out-specify a sibling
+ *   overrides  — breakpoints, and only breakpoints
+ *
+ * A practical consequence worth knowing before you debug something here: an unlayered rule beats *every* layer. If a
+ * stray rule lands outside these files (a <style> tag, a third-party stylesheet) it will win against all of the below
+ * regardless of specificity, which is the opposite of the pre-layer intuition.
  */
 
-@import "../styles/tokens.css";
-@import "../styles/party.css";
-@import "../styles/base.css";
-@import "../styles/layout.css";
-@import "../styles/typography.css";
-@import "../styles/buttons.css";
-@import "../styles/home.css";
-@import "../styles/seating.css";
-@import "../styles/bill.css";
-@import "../styles/directory.css";
-@import "../styles/skeletons.css";
-@import "../styles/bill-detail.css";
-@import "../styles/member.css";
-@import "../styles/committee.css";
-@import "../styles/promo.css";
-@import "../styles/learn.css";
-@import "../styles/glossary.css";
-@import "../styles/states.css";
-@import "../styles/responsive.css";
+@layer tokens, base, components, overrides;
+
+@import "../styles/tokens.css" layer(tokens);
+@import "../styles/base.css" layer(base);
+
+@import "../styles/party.css" layer(components);
+@import "../styles/layout.css" layer(components);
+@import "../styles/typography.css" layer(components);
+@import "../styles/buttons.css" layer(components);
+@import "../styles/surfaces.css" layer(components);
+@import "../styles/home.css" layer(components);
+@import "../styles/seating.css" layer(components);
+@import "../styles/bill.css" layer(components);
+@import "../styles/directory.css" layer(components);
+@import "../styles/skeletons.css" layer(components);
+@import "../styles/bill-detail.css" layer(components);
+@import "../styles/member.css" layer(components);
+@import "../styles/committee.css" layer(components);
+@import "../styles/promo.css" layer(components);
+@import "../styles/learn.css" layer(components);
+@import "../styles/glossary.css" layer(components);
+@import "../styles/states.css" layer(components);
+
+@import "../styles/responsive.css" layer(overrides);

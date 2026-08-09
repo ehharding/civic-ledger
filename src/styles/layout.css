@@ -1,5 +1,12 @@
 /* Site chrome: the header/footer shell every route renders inside (see SiteShell), plus the page-width container rule
-   they share with .page-shell. */
+   they share with .page-shell.
+
+   The header is the one block in this directory that stays off the 4px spacing grid, and deliberately. Its gaps are
+   inputs to a measured arithmetic chain — the wordmark, nav and search widths add up to the exact viewport where the
+   three-part layout stops fitting, which is what sets the 860px breakpoint in responsive.css. They are measurements
+   rather than choices, so rounding them to the grid means rewriting a derivation to suit a tidier input, and the
+   breakpoint the derivation produces is worth more than the tidiness. Each is marked below. Everything else here is on
+   the grid. @see the block comment above the 860px breakpoint in responsive.css for the derivation itself. */
 
 .site-frame {
   min-height: 100vh;
@@ -17,7 +24,7 @@
 .site-header__inner,
 .page-shell,
 .site-footer {
-  width: min(1180px, calc(100% - 48px));
+  width: min(1180px, calc(100% - var(--space-12)));
   margin: 0 auto;
 }
 
@@ -25,17 +32,17 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  min-height: 72px;
-  gap: 36px;
+  min-height: var(--space-18);
+  gap: 36px; /* off-grid by design — measured. @see the file header. */
 }
 
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 10px; /* off-grid by design — part of the measured 156px wordmark. @see the file header. */
   color: var(--navy-deep);
   font-family: var(--serif), serif;
-  font-size: 1.22rem;
+  font-size: 1.22rem; /* off-grid by design — sets the wordmark's measured width. @see the file header. */
   font-weight: 600;
   white-space: nowrap;
 }
@@ -45,22 +52,22 @@
   width: 30px;
   height: 30px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   color: var(--paper);
   background: var(--burgundy);
 }
 
 /* Centered within its own grid column rather than left-aligned in it. The wordmark and the search box are within ~35px
-   of each other in width, so centering the nav between them reads as a balanced three-part header; flush-left left the
-   five links clumped against the wordmark with ~400px of dead space before the search box. Below 900px the nav is
+   of each other in width, so centering the nav between them reads as a balanced three-part header; flush-left leaves
+   the five links clumped against the wordmark with ~400px of dead space before the search box. Below 900px the nav is
    `justify-self: end`, which shrinks it to its content and makes this line moot rather than fighting it. */
 .primary-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 25px;
+  gap: 25px; /* off-grid by design — sets the measured 402px nav. @see the file header. */
   color: var(--ink-soft);
-  font-size: 0.88rem;
+  font-size: 0.88rem; /* off-grid by design — sets the measured 402px nav. @see the file header. */
   font-weight: 600;
 }
 
@@ -71,10 +78,10 @@
 .header-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 190px;
-  padding: 7px 10px;
-  border-radius: 7px;
+  gap: var(--space-2);
+  width: 190px; /* off-grid by design — the third measured term. @see the file header. */
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   color: var(--ink-soft);
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--paper) 72%, transparent);
@@ -86,7 +93,7 @@
   outline: 0;
   color: var(--ink);
   background: transparent;
-  font-size: 0.84rem;
+  font-size: var(--text-md);
 }
 
 .header-search input::placeholder {
@@ -94,32 +101,32 @@
 }
 
 .page-shell {
-  padding-block: 64px 84px;
+  padding-block: var(--space-16) var(--space-20);
 }
 
 .site-footer {
   display: flex;
   justify-content: space-between;
-  gap: 24px;
-  padding-block: 24px 36px;
+  gap: var(--space-6);
+  padding-block: var(--space-6) var(--space-9);
   border-top: 1px solid var(--line);
   color: var(--ink-soft);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 /* Skip link (SiteShell). Visually hidden until focused, then pinned to the top-left as an ordinary visible control — a
    skip link that stays invisible while focused is useless to the sighted keyboard users who most rely on it. */
 .skip-link {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: var(--space-2);
+  left: var(--space-2);
   z-index: 20;
-  padding: 11px 18px;
+  padding: var(--space-3) var(--space-5);
   border: 1px solid var(--navy);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   color: var(--paper);
   background: var(--navy);
-  font-size: 0.9rem;
+  font-size: var(--text-md);
   font-weight: 700;
   /* Moved out of view rather than display:none, so it stays focusable. */
   transform: translateY(-160%);

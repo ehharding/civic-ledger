@@ -8,19 +8,19 @@
 .source-notice {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  margin-bottom: 52px;
-  padding: 11px 13px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-13);
+  padding: var(--space-3);
   border-left: 3px solid var(--green);
   color: var(--ink-soft);
   background: color-mix(in srgb, var(--paper) 66%, transparent);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   line-height: 1.45;
 }
 
 .source-notice svg {
   flex: 0 0 auto;
-  margin-top: 2px;
+  margin-top: var(--space-0-5);
   color: var(--green);
 }
 
@@ -40,10 +40,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 28px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-7);
   color: var(--ink-soft);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -54,9 +54,9 @@
 .congress-switcher select,
 .directory-facet select {
   min-height: var(--control-height);
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   color: var(--ink);
   background: var(--paper);
   font-weight: 600;
@@ -71,30 +71,29 @@
 
    Here rather than in member.css, and named for the surface rather than for one of its three subjects: a committee's
    type dropdown wearing a class named `.member-facet` is the kind of thing that sends someone looking for a bug that
-   isn't there. Keeping these beside their own siblings also keeps the width override below out of a second file, where
-   it would depend on that file loading after this one. */
+   isn't there. Keeping these beside their own siblings also keeps the width override below in one file. */
 
 .directory-facets {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .directory-facet {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-1);
 }
 
 /* inline-flex so the sort control's icon sits on the label's baseline rather than pushing the text down a line. */
 .directory-facet label {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   color: var(--ink-soft);
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -109,16 +108,17 @@
 }
 
 /* The sort control holds a handful of short, fixed labels rather than a roster-length list, so it needs less room than
-   the facets beside it and shouldn't be padded out to match them. Deliberately a class rather than `select#member-sort`
-   — which would have been wrong twice over, since the committee directory's sort control carries a different id:
-   responsive.css collapses `.directory-facet select` to `min-width: 0` on narrow screens and relies on source order to
-   win, which an id selector would silently outrank. See the note at the top of globals.css. */
+   the facets beside it and shouldn't be padded out to match them. Deliberately a class rather than
+   `select#member-sort`, which would be wrong twice over: the committee directory's sort control carries a different
+   id, and an id selector would outrank the `min-width: 0` responsive.css sets on `.directory-facet select` at narrow
+   widths. Cascade layers protect that override from *source order* (@see globals.css) but not from specificity, so an
+   id here would still win and break the narrow layout. */
 .directory-facet--sort select {
   min-width: 176px;
 }
 
-/* Browsers render an optgroup heading in italics by default, which reads as emphasis rather than as a grouping.
-   Stating the styling keeps "States" and "Territories and Federal District" looking like the section labels they are. */
+/* Browsers render an optgroup heading in italics by default, which reads as emphasis rather than as a grouping. Stating
+   the styling keeps "States" and "Territories and Federal District" looking like the section labels they are. */
 .directory-facet optgroup {
   color: var(--ink-soft);
   font-style: normal;
@@ -134,7 +134,7 @@
  *
  * Deliberately not a `.button.button--quiet`, which is the style for a standalone call to action sitting on open
  * page — the home page's "Learn" link, the bill directory's centered "Load More". Borrowed into a line of bordered
- * dropdowns it reads as a mistake: no border and no background give it nothing to sit on, and `.button`'s 43px minimum
+ * dropdowns it reads as a mistake: no border and no background give it nothing to sit on, and `.button`'s 44px minimum
  * makes its box taller than the 38px selects beside it, so with the row bottom-aligned its label floats a few pixels
  * above theirs. A control with no edges, no ground, and its own baseline looks like text that escaped from somewhere.
  *
@@ -150,14 +150,14 @@
 .directory-facets__clear {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-height: var(--control-height);
-  padding: 0 13px;
+  padding: 0 var(--space-3);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   color: var(--ink-soft);
   background: transparent;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -174,17 +174,17 @@
 .directory-controls {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
-  gap: 18px;
+  gap: var(--space-5);
   align-items: center;
-  margin-bottom: 19px;
+  margin-bottom: var(--space-5);
 }
 
 .directory-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: 8px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   color: var(--ink-soft);
   border: 1px solid var(--line);
   background: var(--paper);
@@ -204,13 +204,13 @@
 
 /* The row of mutually exclusive filter pills all three directories open with (SegmentedFilter). Named for its shape
    rather than its contents: the bill directory fills it with legislative stages, and the member and committee
-   directories with chambers. It was called `.stage-filters` while already doing more than stages — a chamber pill
+   directories with chambers, so a name like `.stage-filters` would be wrong on two of the three — and a chamber pill
    wearing a class named after stages is the kind of thing that sends someone looking for a bug that isn't there. */
 .segmented-filter {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 7px;
+  gap: var(--space-2);
   padding: 0;
   margin: 0;
   border: 0;
@@ -219,11 +219,11 @@
 
 .segmented-filter button {
   border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 6px 9px;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1-5) var(--space-2);
   color: var(--ink-soft);
   background: transparent;
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   cursor: pointer;
 }
@@ -236,9 +236,9 @@
 }
 
 .directory-result-count {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.83rem;
+  font-size: var(--text-sm);
 }
 
 /* The order the member directory is currently in, named beside the count so a reorder is announced by the same live
@@ -248,16 +248,16 @@
 }
 
 .directory-search-note {
-  margin-top: -10px;
-  margin-bottom: 16px;
+  margin-top: calc(var(--space-3) * -1);
+  margin-bottom: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .directory-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .directory-grid .bill-card {
@@ -265,32 +265,32 @@
 }
 
 .no-results {
-  padding: 50px 24px;
+  padding: var(--space-12) var(--space-6);
   border: 1px dashed var(--line-dark);
   text-align: center;
 }
 
 .no-results h2 {
-  font-size: 1.55rem;
+  font-size: var(--text-5xl);
 }
 
 .no-results p {
-  margin-top: 7px;
+  margin-top: var(--space-2);
   color: var(--ink-soft);
 }
 
 .directory-load-more {
-  margin-top: 28px;
+  margin-top: var(--space-7);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .directory-load-more .button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .directory-load-more .spin {
@@ -299,7 +299,7 @@
 
 .directory-load-more__error {
   color: var(--ink-soft);
-  font-size: 0.83rem;
+  font-size: var(--text-sm);
 }
 
 @keyframes directory-load-more-spin {
@@ -323,5 +323,5 @@
 .congress-switcher__hint {
   color: var(--ink-faint);
   font-weight: 400;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }

@@ -1,10 +1,11 @@
 /* The committee directory at /committees (CommitteeDirectory + CommitteeCard) and the individual committee page
    (CommitteeDetail). Breakpoint overrides live in responsive.css with the rest.
 
-   The controls above the grid — the search box, the chamber pills, the type and sort dropdowns, "Clear Filters" —
-   deliberately reuse .directory-search, .segmented-filter, .directory-facet and friends rather than restating them. The
-   three directories in this app are meant to be the same control surface, so they should stay the same control in one
-   place; only the grid and the cards below them are this file's own. */
+   The controls above the grid — the search box, the chamber pills, the type and sort dropdowns, "Clear
+   Filters" — deliberately reuse .directory-search, .segmented-filter, .directory-facet and friends rather than
+   restating them. The three directories in this app are meant to be the same control surface, so they should stay the
+   same control in one place; only the grid and the cards below them are this file's own. The cards' surface, stacking
+   and padding come from the shared recipe in surfaces.css — this file adds only what is particular to a committee. */
 
 /*
  * The one place a committee type is mapped to a color, on exactly the pattern party.css establishes and for the same
@@ -42,31 +43,21 @@
 .committee-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.committee-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--paper);
+  gap: var(--space-4);
 }
 
 /* Tinted by the .committee-type--* class this element also carries, with the neutral fallback every tinted element in
    this app pairs with its custom property. */
 .committee-card__type {
   color: var(--committee-color, var(--ink-faint));
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .committee-card__name {
-  font-size: 1.02rem;
+  font-size: var(--text-xl);
   line-height: 1.35;
 }
 
@@ -78,19 +69,19 @@
 
 .committee-card__meta {
   color: var(--ink-faint);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 /* The individual committee page's hero. A single column rather than the member hero's portrait-and-copy pair: there is
    no committee portrait to sit beside, and Congress.gov publishes no emblem or seal through the API. */
 .committee-hero {
-  padding-bottom: 30px;
-  margin-bottom: 26px;
+  padding-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
   border-bottom: 1px solid var(--line);
 }
 
 .committee-hero h1 {
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
   font-size: clamp(1.9rem, 4vw, 2.6rem);
 }
 
@@ -98,10 +89,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 20px;
-  margin-top: 16px;
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.92rem;
+  font-size: var(--text-lg);
 }
 
 /* Tinted by the .committee-type--* class this element also carries. @see the mapping at the top of this file. */
@@ -110,7 +101,7 @@
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 /* The one-sentence explanation of what this kind of committee is. Set at reading width and in the body face rather
@@ -118,17 +109,21 @@
    burying it in the meta row beside the chamber would read as a caption. */
 .committee-hero__lead {
   max-width: 62ch;
-  margin-top: 18px;
+  margin-top: var(--space-5);
   color: var(--ink-soft);
   line-height: 1.6;
 }
 
 /* The system code, printed as the identifier it is so a reader can match it against the address bar on Congress.gov.
-   Monospaced because it is a literal string to be compared character by character, not a word to be read. */
+   Monospaced because it is a literal string to be compared character by character, not a word to be read.
+
+   The one font-size in this directory stated in `em` rather than as a --text-* step, and it has to be: this is an
+   inline chip that appears inside meta lines of two different sizes, so it sizes against whatever is around it. A fixed
+   step would make it larger than its host text in one place and smaller in the other. */
 .committee-code {
-  padding: 1px 5px;
+  padding: 1px var(--space-1);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   background: color-mix(in srgb, var(--canvas) 60%, transparent);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.88em;
@@ -136,12 +131,12 @@
 
 .committee-records,
 .committee-subcommittees {
-  margin-top: 48px;
+  margin-top: var(--space-12);
 }
 
 .committee-records .muted-copy,
 .committee-subcommittees .muted-copy {
-  margin-top: 10px;
+  margin-top: var(--space-3);
   max-width: 62ch;
 }
 
@@ -155,19 +150,12 @@
 .committee-records__tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  margin-top: 20px;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
   list-style: none;
 }
 
 .committee-records__tab {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--paper);
   color: inherit;
   text-decoration: none;
 }
@@ -187,7 +175,7 @@
 
 .committee-records__tab-label {
   color: var(--ink-soft);
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -196,50 +184,40 @@
 .committee-records__tab-count {
   color: var(--ink);
   font-family: var(--serif), serif;
-  font-size: 1.7rem;
+  font-size: var(--text-6xl);
   line-height: 1.1;
 }
 
 .committee-records__about {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   max-width: 68ch;
 }
 
 /* The range line ("Showing 13-24 of 10,205"). A live region, so paging announces where the reader landed rather than
    only showing it — the same treatment the directories' result-count line gets for the same reason. */
 .committee-records__range {
-  margin-top: 16px;
+  margin-top: var(--space-4);
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
 }
 
 .committee-records__list {
   display: grid;
-  gap: 10px;
-  margin-top: 14px;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
   list-style: none;
-}
-
-.committee-record {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 14px 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--paper);
 }
 
 .committee-record__topline {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .committee-record__id {
   color: var(--ink);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -247,11 +225,11 @@
 /* The relationship ("Referred To", "Reported By"). The most consequential word in a referral row and the distinction
    the page's closing callout is about, so it reads as a chip rather than as more of the meta line. */
 .committee-record__tag {
-  padding: 2px 8px;
+  padding: var(--space-0-5) var(--space-2);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--ink-soft);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -259,14 +237,14 @@
 .committee-record__title {
   margin: 0;
   font-family: var(--serif), serif;
-  font-size: 1rem;
+  font-size: var(--text-xl);
   font-weight: 500;
   line-height: 1.35;
 }
 
 .committee-record__meta {
   color: var(--ink-soft);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   line-height: 1.45;
 }
 
@@ -278,9 +256,9 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 12px 18px;
-  margin-top: 20px;
-  padding-top: 16px;
+  gap: var(--space-3) var(--space-5);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--line);
 }
 
@@ -297,18 +275,18 @@
 .committee-records__pager-steps {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-0-5);
 }
 
 .committee-records__pager-step {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 7px 10px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--navy);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -326,14 +304,14 @@ a.committee-records__pager-step:hover {
   color: var(--ink-faint);
 }
 
-/* "Page [4] of 851 [Go]" — the position readout and the way to leave it, in one control. The two were separate when the
-   pager could only step, and merging them is what keeps this row from stating the same number twice. */
+/* "Page [4] of 851 [Go]" — the position readout and the way to leave it, in one control rather than two. Keeping them
+   together is what stops this row from stating the same number twice. */
 .committee-records__pager-jump {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
 }
 
 .committee-records__pager-jump-label {
@@ -344,22 +322,22 @@ a.committee-records__pager-step:hover {
    rather than suppressed: it is the one affordance in this row that steps without a round trip. */
 .committee-records__pager-input {
   width: 5rem;
-  padding: 6px 8px;
+  padding: var(--space-1-5) var(--space-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--ink);
   background: var(--paper);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   text-align: center;
 }
 
 .committee-records__pager-go {
-  padding: 7px 13px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--navy);
   background: var(--paper);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
 }
@@ -375,20 +353,20 @@ a.committee-records__pager-step:hover {
 .committee-subcommittee-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 24px;
-  margin-top: 20px;
+  gap: 0 var(--space-6);
+  margin-top: var(--space-5);
   list-style: none;
 }
 
 .committee-subcommittee-list li {
-  padding: 11px 0;
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--line);
 }
 
 .committee-subcommittee-list a {
   color: var(--ink);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-lg);
 }
 
 .committee-subcommittee-list a:hover {

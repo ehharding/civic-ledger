@@ -1,8 +1,13 @@
 /* Loading skeletons: the shimmering placeholder blocks shown while a route's data fetch is still in flight (see
-   BillDirectorySkeleton and the various loading.tsx routes). */
+   BillDirectorySkeleton and the various loading.tsx routes).
+
+   The heights and widths here are measurements of the real content each block stands in for, not spacing, so they stay
+   as literals — a skeleton line is 15px tall because that is how tall the line of text arriving after it is. Snapping
+   them to the spacing grid would make the placeholder stop matching the thing it is a placeholder for, which is its
+   entire job. The gaps and margins between them are on the grid, since those are rhythm like anywhere else. */
 
 .skeleton {
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(90deg, var(--line) 25%, var(--skeleton-highlight) 37%, var(--line) 63%);
   background-size: 400% 100%;
   animation: skeleton-shimmer 1.4s ease infinite;
@@ -19,8 +24,8 @@
 
 .skeleton-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
 }
 
 .skeleton--search {
@@ -38,8 +43,8 @@
 .skeleton-facets {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .skeleton--facet {
@@ -50,15 +55,15 @@
 
 .skeleton--card {
   min-height: 320px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 
 .skeleton-detail {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-4);
   max-width: 560px;
-  margin-bottom: 32px;
+  margin-bottom: var(--space-8);
 }
 
 .skeleton--eyebrow {
@@ -78,20 +83,20 @@
 
 .skeleton--panel {
   height: 220px;
-  margin-top: 10px;
+  margin-top: var(--space-3);
 }
 
 /* Member page skeleton (app/members/[bioguideId]/loading.tsx). */
 .skeleton--portrait {
   width: 160px;
   height: 200px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 
 .skeleton--line {
   height: 15px;
-  border-radius: 6px;
-  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
 }
 
 .skeleton--line-short {
@@ -107,7 +112,7 @@
    lines, not a bill card's title, action text, and journey stepper. */
 .skeleton--member-card {
   min-height: 108px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 
 /* Motion-sensitive users: the shimmer doesn't convey information that's lost by holding still — the skeleton is still

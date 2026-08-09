@@ -10,10 +10,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  min-height: 43px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  gap: var(--space-2);
+  /* The one value here sized by something other than the page's rhythm: 44px is the long-standing touch-target floor
+     (iOS HIG, and the neighbourhood WCAG 2.5.5 asks for), so it is worth landing on exactly rather than near.
+     --space-11 happens to be it. Note the 6px gap from --control-height, which is what directory.css's "Clear Filters"
+     note is about. */
+  min-height: var(--space-11);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
   font-weight: 750;
   /* An `<a>` carries this already; a `<button>` does not — it defaults to an arrow, which quietly reads as "not
      clickable" on every one of these that is a real button. */
@@ -29,17 +33,17 @@
   transform: translateY(-1px);
 }
 
-/* "Load More" spends every fetch disabled, and without this it kept answering the pointer the whole time — lifting,
-   darkening, still showing a pointer cursor. A control that reacts to hover while deliberately refusing to be pressed
-   is inviting the press it is about to ignore, so the disabled state stops reacting at all and says so by dimming.
-   `:not(:disabled)` on each hover rather than an override afterwards, so nothing has to out-specify anything. */
+/* "Load More" spends every fetch disabled, which is why this matters here: a control that answers the
+   pointer — lifting, darkening, showing a pointer cursor — while deliberately refusing to be pressed is inviting the
+   press it is about to ignore. So the disabled state stops reacting at all and says so by dimming. `:not(:disabled)` on
+   each hover rather than an override afterwards, so nothing has to out-specify anything. */
 .button:disabled {
   cursor: default;
   opacity: 0.55;
 }
 
 .button--primary {
-  padding: 11px 17px;
+  padding: var(--space-3) var(--space-4);
   color: var(--paper);
   background: var(--navy);
 }
@@ -49,7 +53,7 @@
 }
 
 .button--quiet {
-  padding: 10px 8px;
+  padding: var(--space-3) var(--space-2);
   color: var(--navy);
 }
 
@@ -58,7 +62,7 @@
 }
 
 .secondary-link {
-  padding: 9px 11px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--warm-border);
   color: var(--navy);
   white-space: nowrap;

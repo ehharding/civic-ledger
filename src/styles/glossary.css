@@ -28,16 +28,16 @@
    the word rather than against the window. @see fitTipToViewport. The values here are what it corrects *from*. */
 .glossary-term__tip {
   position: absolute;
-  bottom: calc(100% + 9px);
+  bottom: calc(100% + var(--space-2));
   left: 50%;
   z-index: 20;
   display: grid;
-  gap: 6px;
+  gap: var(--space-1-5);
   width: max-content;
   max-width: min(23rem, 74vw);
-  padding: 14px 16px;
+  padding: var(--space-4);
   border: 1px solid var(--line-dark);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--paper);
   box-shadow: var(--shadow);
   transform: translateX(-50%) translateY(3px);
@@ -54,7 +54,7 @@
 }
 
 .glossary-term__tip[data-side="below"] {
-  top: calc(100% + 9px);
+  top: calc(100% + var(--space-2));
   bottom: auto;
   transform: translateX(-50%) translateY(-3px);
 }
@@ -67,7 +67,7 @@
 
 .glossary-term__tip-name {
   color: var(--ink-faint);
-  font-size: 0.7rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -75,14 +75,14 @@
 
 .glossary-term__tip-plain {
   color: var(--ink);
-  font-size: 0.88rem;
+  font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.45;
 }
 
 .glossary-term__tip-detail {
   color: var(--ink-soft);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   line-height: 1.55;
 }
 
