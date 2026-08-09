@@ -30,11 +30,10 @@ spans files, constrains the product, or has to be found by someone who is not al
 Reasoning about one function, one component, or one CSS rule belongs beside it — where it is read at the moment it is
 needed, and where it goes stale visibly instead of quietly.
 
-That is also why this project has no running decision log. One existed and grew to 36 entries before it became clear
-that most of them were either (a) already stated, better, in the code they described, or (b) genuinely cross-cutting
-rules that readers were unlikely to find in a file ordered by when things were decided. Both halves now live where they
-are used. If a decision is worth recording and fits none of the rows above, that is a strong signal it is a code
-comment.
+That is also why this project has no running decision log. A file ordered by when things were decided is one readers do
+not think to open, and the reasoning in it is either already stated — better — in the code it describes, or is a
+cross-cutting rule belonging to one of the documents above. If a decision is worth recording and fits none of the rows
+above, that is a strong signal it is a code comment.
 
 ## Style
 
@@ -42,3 +41,6 @@ comment.
 - Link to files with backticked paths (`` `src/lib/congress/http.ts` ``) and to documents with Markdown links.
 - Name the constant, function, or file that enforces a rule. A rule with no named enforcement point is a wish.
 - State costs and limits explicitly. A tradeoff written down is a tradeoff someone else does not have to rediscover.
+- **Describe what is, never what was.** A sentence about a previous shape of the code has to be checked against the
+  present one before it can be trusted, which makes it worse than no sentence. State the rule and the reason it holds;
+  Git already holds the rest.

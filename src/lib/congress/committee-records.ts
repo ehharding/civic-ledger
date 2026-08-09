@@ -7,11 +7,10 @@ import { formatCount } from "@/lib/format";
  * and the nominations sent to it — as records a reader can actually read, plus the URL rules that make one of them a
  * place you can link to.
  *
- * The committee page used to print those three counts as bare figures, on the stated reasoning that the URLs the API
- * pairs them with are its own JSON endpoints and would 403 a reader who followed one. That reasoning was right about
- * the *links* and wrong about the *records*: the counts are reachable from the same key the rest of this app already
- * holds, so "Bills Referred: 10,205" can be a heading over the referrals themselves rather than a number a reader has
- * to take on faith.
+ * Each count is a heading over the records themselves rather than a figure a reader has to take on faith. The URLs the
+ * API pairs the counts with are its own JSON endpoints and would 403 anyone who followed one, so they are not
+ * offered — but the collections behind them are reachable with the key the rest of this app already holds, and that is
+ * what makes "Bills Referred: 10,205" something a reader can open.
  *
  * Pure and isomorphic, exactly as `committee-filter.ts` is, and for the same two reasons: the query-param rules are the
  * interesting part and deserve tests that don't render a component, and nothing here may drag the server-only adapter —
@@ -56,8 +55,8 @@ export const DEFAULT_COMMITTEE_RECORD_KIND: CommitteeRecordKind = "bills";
 /**
  * The tab label for each collection.
  *
- * These are the same words the counts were already printed under, kept deliberately: a reader who has seen "Bills
- * Referred" as a figure should recognize the tab that now opens it.
+ * Each names the relationship rather than the record type — a committee has bills *referred to* it and publishes
+ * reports *of its own*, and a tab reading "Bills" would flatten that distinction into a filter of `/bills`.
  */
 export const committeeRecordKindLabels: Record<CommitteeRecordKind, string> = {
   bills: "Bills Referred",

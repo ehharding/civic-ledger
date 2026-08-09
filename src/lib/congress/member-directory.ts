@@ -17,7 +17,7 @@ import type { CongressSnapshot } from "@/lib/congress/types";
  * already reads, through the same {@link getCongressComposition} call, so the two views of "who is serving" cannot
  * disagree and the directory costs nothing extra upstream inside the shared five-minute cache window. What this module
  * adds is the reshaping — flattening two chambers into one alphabetical list, dropping what can't be linked, and
- * carrying the chamber down onto each row, since a flat list no longer has a grouping to imply it.
+ * carrying the chamber down onto each row, since a flat list has no grouping to imply it.
  *
  * Follows the adapter's two standing invariants: nothing throws, and provenance travels with the data.
  *

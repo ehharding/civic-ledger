@@ -111,17 +111,17 @@ export function inferStageFromActions(actions: readonly BillAction[]): BillStage
 /**
  * Settles on the stage to show for a bill, given everything known about it.
  *
- * Takes the *more advanced* of the two readings rather than letting the action history overwrite the record's own. That
- * distinction used to be theoretical and is not any more. `mapCongressBill` now sets `"law"` from the detail endpoint's
- * published `laws` field — the record stating an outcome outright — and this function's earlier form would have
- * discarded that in favor of whatever the action codes happened to establish, so a page could print "Public Law 119-21"
- * beside a stepper that stopped at *Passed a Chamber*. One page cannot say both.
+ * Takes the *more advanced* of the two readings rather than letting the action history overwrite the record's own, and
+ * that direction is load-bearing. `mapCongressBill` sets `"law"` from the detail endpoint's published `laws`
+ * field — the record stating an outcome outright — and an overwrite would discard it in favor of whatever the action
+ * codes happened to establish, so a page could print "Public Law 119-21" beside a stepper that stopped at *Passed a
+ * Chamber*. One page cannot say both.
  *
- * Nothing else regresses under the change, which is what makes it safe rather than merely convenient: {@link
- * inferBillStage} only ever reaches for a stage it can name, and {@link inferStageFromActions} never returns anything
- * below `"chamber"`, so neither reading can be the *lower* one by being wrong. The case the action history exists to
- * fix still resolves the same way — prose says `"committee"` because the latest action names a referral, the codes say
- * `"chamber"` because the bill passed one, and the more advanced of those is the true one.
+ * Taking the maximum costs nothing in the other direction, because neither reading can be the *lower* one by being
+ * wrong: {@link inferBillStage} only ever reaches for a stage it can name, and {@link inferStageFromActions} never
+ * returns anything below `"chamber"`. The case the action history exists to fix resolves as it should — prose says
+ * `"committee"` because the latest action names a referral, the codes say `"chamber"` because the bill passed one, and
+ * the more advanced of those is the true one.
  *
  * @param fallback - The stage carried on the bill record itself: published where the record names a law, and inferred
  *   from the latest action's prose otherwise.

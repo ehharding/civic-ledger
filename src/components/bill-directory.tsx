@@ -99,9 +99,9 @@ export function BillDirectory({
   /**
    * Mirrors the current search and stage into the address bar, and follows the URL when something else moves it.
    *
-   * This route could always *receive* a `?q=` link — the site header's search form sends one — but nothing produced one
-   * from the page itself, so a reader who found something here had no way to hand it to anyone else. Both halves now
-   * use the same spelling of that URL. @see billDirectoryQueryString
+   * The site header's search form sends a `?q=` link into this route, and this is what produces one back out of it, so
+   * a reader who finds something here can hand it to someone else. Both halves go through the same spelling of that
+   * URL. @see billDirectoryQueryString
    *
    * Reconciling in both directions rather than only writing is what makes the header's own "Bills" link work from an
    * already-narrowed directory: a soft navigation to `/bills` changes the URL without remounting this component, so a

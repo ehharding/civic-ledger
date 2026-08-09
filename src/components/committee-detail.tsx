@@ -94,7 +94,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
       </div>
 
       <section className="committee-hero" aria-labelledby="committee-name">
-        {/* No trailing "Committee": the type label already carries it where it belongs, and appending it produced
+        {/* No trailing "Committee": the type label already carries it where it belongs, and appending it would read as
             "Commission or Caucus Committee" for one of the five types. The heading directly below names the body. */}
         <p className="eyebrow">
           {committeeTypeLabels[profile.type]} · {chamberLabel}
@@ -205,10 +205,10 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
         )}
       </section>
 
-      {/* Points at the committee module rather than the lifecycle one it used to: referral, markup, and the silence
-          that ends most bills are what this page's reader is holding a half-answer to, and the lifecycle lesson covers
-          all three in a single sentence. Built through `lessonHref` because the lesson routes are now one dynamic
-          segment, so a literal here is both untyped and a slug typed in a second place. */}
+      {/* Points at the committee module rather than the lifecycle one: referral, markup, and the silence that ends most
+          bills are what this page's reader is holding a half-answer to, and the lifecycle lesson covers all three in a
+          single sentence. Built through `lessonHref` because the lesson routes are one dynamic segment, so a literal
+          here would be both untyped and a slug typed in a second place. */}
       <CalloutCard
         body="Most bills are referred to a committee and never leave it. That is the ordinary outcome rather than a failure of one — a committee's job includes deciding what not to take up, and a referral is the beginning of that process, not a verdict on it."
         heading="A Referral Is Not a Vote."

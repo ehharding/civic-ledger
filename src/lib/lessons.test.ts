@@ -110,9 +110,8 @@ describe("the committee and voting modules", (): void => {
   });
 
   it("draws the vote line where it actually falls: the votes are named here, the arithmetic is not", (): void => {
-    // This used to pin the words "no vote data", which stopped being true once the bill page started naming recorded
-    // votes. A lesson that under-claims misleads exactly as much as one that over-claims — a reader told the app holds
-    // nothing will not go looking for what it holds — so what is pinned now is the real boundary.
+    // Pinned on the real boundary rather than on a blanket "no vote data": a lesson that under-claims misleads exactly
+    // as much as one that over-claims, since a reader told the app holds nothing will not go looking for what it does.
     const voting: Lesson = lessons[2] as Lesson;
     const limits: string = voting.limits.join(" ");
 

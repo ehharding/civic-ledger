@@ -9,9 +9,5 @@ allowBuilds:
 # exactly how such a release reaches a lockfile. A day of distance costs nothing here — nothing in this project needs a
 # dependency the hour it ships — and removes the whole window.
 #
-# `minimumReleaseAgeExclude` below was already here, naming the one package deliberately taken fresh. Until this line
-# existed it excluded a package from a rule that was never set, which is to say it did nothing at all.
-#
-# CI is unaffected either way: `pnpm install --frozen-lockfile` installs what the lockfile already pins and resolves
-# nothing.
+# CI is unaffected: `pnpm install --frozen-lockfile` installs what the lockfile already pins and resolves nothing.
 minimumReleaseAge: 1440

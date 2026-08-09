@@ -12,9 +12,9 @@
  * Constructed once rather than per comparison, which also matters at this size: ordering a full roster is a few
  * thousand comparisons, and every bare `localeCompare` call builds a collator of its own.
  *
- * Lives here, in the module every other layer already depends on, rather than in `members.ts` or `committees.ts` where
- * two byte-identical copies of it used to sit. One collator is what makes the guarantee above hold *everywhere* an
- * ordering happens instead of only in the two places someone remembered to reach for it.
+ * Lives here, in the module every other layer already depends on, rather than beside any one of the models that order
+ * things. One collator is what makes the guarantee above hold *everywhere* an ordering happens instead of only where
+ * someone remembered to reach for it.
  */
 const textCollator: Intl.Collator = new Intl.Collator("en-US");
 
@@ -43,8 +43,8 @@ export function compareText(a: string, b: string): number {
  * chronological order. Collating them would cost more and buy nothing on ASCII digits, and constructing a `Date` per
  * comparison would buy nothing at all.
  *
- * Three separate newest-first comparators used to spell this out by hand, each with its own slightly different handling
- * of a missing date. This is that rule stated once.
+ * Every newest-first ordering in the app goes through this one function, so "what happens to an undated record" has a
+ * single answer rather than one per caller.
  *
  * @param a - One date to compare. An absent date should be passed as an empty string.
  * @param b - The other date to compare.
@@ -60,8 +60,8 @@ export function compareIsoDatesDesc(a: string, b: string): number {
 /**
  * Chooses the singular or plural form of a noun for a count.
  *
- * Every count label in this app was spelling this out inline (`n === 1 ? "Member" : "Members"`), which is both repeated
- * and the kind of thing that quietly ends up saying "1 Members" the first time a new counter is added.
+ * Stated once rather than inline at each count label (`n === 1 ? "Member" : "Members"`), which is the kind of thing
+ * that quietly ends up saying "1 Members" the first time a new counter is added.
  *
  * @param count - How many of the thing there are.
  * @param singular - The singular noun, cased as it should appear.

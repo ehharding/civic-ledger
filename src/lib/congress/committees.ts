@@ -175,9 +175,8 @@ export function isCommitteeSystemCode(value: string | undefined): boolean {
  * A committee named from inside another committee's record — a `parent` on a subcommittee, or an entry in a parent's
  * `subcommittees` array. Just enough to name it and link to it.
  *
- * One shape rather than two, mirroring {@link congressApiCommitteeRefSchema} and the single `mapCommitteeRef` that maps
- * both spellings. A separate `CommitteeParent` used to sit beside this declaring the identical two fields, which meant
- * one relationship modeled twice and two places to edit if a third field ever earns its way in.
+ * One shape rather than one per direction, mirroring {@link congressApiCommitteeRefSchema} and the single
+ * `mapCommitteeRef` that maps both spellings — so a third field earning its way in is one edit rather than two.
  */
 export type CommitteeRef = {
   systemCode: string;
@@ -330,8 +329,8 @@ export type BillCommittee = {
  * `CONGRESS_GOV_HOME` in types.ts — applied for a different reason: not "this record isn't real", but "this URL isn't
  * knowable from what the API gives us".
  *
- * That rule is about congress.gov specifically, and it is unchanged. What *is* now linkable is the committee's own
- * site, because the API publishes that URL rather than leaving it to be guessed. @see CommitteeProfile.websiteUrl.
+ * The rule is about congress.gov specifically. The committee's *own* site is linkable, because the API publishes that
+ * URL rather than leaving it to be guessed. @see CommitteeProfile.websiteUrl.
  */
 export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committees";
 
@@ -362,11 +361,11 @@ export function compareCommitteesByName(a: { name: string }, b: { name: string }
  * referral line into the search box is searching for a string that appears nowhere in the list data, and would be told
  * the committee doesn't exist.
  *
- * An earlier version of this rewrote the name for *display* instead, and that was wrong for a reason worth recording:
- * "Committee" is part of the proper name of some bodies rather than a suffix on a subject. Moving it turns the Joint
- * Economic Committee into "Committee on Joint Economic". There is no reliable way to tell those two cases apart from
- * the string alone, so this app displays whatever Congress.gov published and confines the rewrite to matching, where an
- * extra variant that reads oddly costs nothing because nobody ever sees it.
+ * The rewrite is confined to *matching*, and doing it for display instead would be wrong: "Committee" is part of the
+ * proper name of some bodies rather than a suffix on a subject, so moving it turns the Joint Economic Committee into
+ * "Committee on Joint Economic". There is no reliable way to tell those two cases apart from the string alone, so this
+ * app displays whatever Congress.gov published, where an extra variant that reads oddly costs nothing because nobody
+ * ever sees it.
  *
  * @param name - The upstream name.
  * @returns The name itself, plus the leading form when one can be derived. Both lower-cased, since the only caller
@@ -387,16 +386,15 @@ export function committeeSearchTerms(name: string): string[] {
 /**
  * The one-line description of a committee, in plain English.
  *
- * Lives in the model rather than being assembled at the call site, on the same rule the rest of this file follows and
- * `members.ts` before it: what a reader is told about a committee is display wording, so it belongs somewhere it can be
- * unit-tested rather than somewhere it can only be reached by rendering a page. The route's `generateMetadata` was the
- * last place in the committee code building a sentence by indexing two label tables by hand, which is exactly the kind
- * of thing this rule exists to keep out of route files.
+ * Lives in the model rather than being assembled at the call site, on the rule the rest of this file and `members.ts`
+ * both follow: what a reader is told about a committee is display wording, so it belongs somewhere it can be
+ * unit-tested rather than somewhere it can only be reached by rendering a page. A route's `generateMetadata` composing
+ * this sentence by indexing two label tables by hand is exactly what the rule exists to keep out of route files.
  *
  * @param committee - The committee to describe. Takes the shared summary fields, so a profile serves as well as a
  *   directory row.
- * @returns e.g. `"Standing committee of the House of Representatives."` — a complete sentence, since its only caller is
- *   a page description and a fragment would read as a truncation.
+ * @returns e.g., `"Standing committee of the House of Representatives."` — a complete sentence, since its only caller
+ *   is a page description and a fragment would read as a truncation.
  */
 export function describeCommittee(committee: Pick<CommitteeSummary, "chamber" | "type">): string {
   // "the House of Representatives" and "the Senate" take the article; "both chambers" does not.
@@ -410,8 +408,8 @@ export function describeCommittee(committee: Pick<CommitteeSummary, "chamber" | 
  * A committee's history span, in plain English.
  *
  * @param entry - The history entry to describe.
- * @returns e.g. `"1975–1995"`, or `"1975–present"` for the span still in effect. An empty string when the entry carries
- *   no start date, so callers can omit the line rather than print a dash with nothing around it.
+ * @returns e.g., `"1975–1995"`, or `"1975–present"` for the span still in effect. An empty string when the entry
+ *   carries no start date, so callers can omit the line rather than print a dash with nothing around it.
  */
 export function formatCommitteeHistoryYears(entry: CommitteeHistoryEntry): string {
   const start: string = committeeHistoryYear(entry.startDate);

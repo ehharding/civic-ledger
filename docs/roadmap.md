@@ -21,14 +21,13 @@ grows: congressional records are not stored there and are not mirrored.
 
 ## 3. A Fourth Learning Module
 
-The three this item originally asked for are built — the bill lifecycle, what a committee does, and how Congress votes —
-and they share one registry (`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that file
-rather than a new page. The condition attached here was met rather than dropped: a lesson cites its sources, and every
-module also prints what it leaves out. See
-[Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the standing rule and its
+Three modules are built — the bill lifecycle, what a committee does, and how Congress votes — sharing one registry
+(`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that file rather than a new page. The
+standing condition on any module is that it cites its sources and prints what it leaves out. See
+[Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the rule and its
 enforcement point.
 
-**What a fourth module needs first, and none of the three did: a retrieval date.** Every citation today is a stable
+**What a fourth module may need first, and none of the three do: a retrieval date.** Every citation today is a stable
 explanatory page on house.gov, senate.gov, clerk.house.gov, or the National Archives — documents whose content is not
 versioned by when you read them. A module citing a CRS report, a specific Congress's rules, or anything else that is
 revised in place needs the date it was read printed beside the link, and `LessonSource` carries no such field. Add it
@@ -44,8 +43,8 @@ one. **This unblocks only when a citable source exists** — not when a plausibl
 [The Committee Page Has No Roster](data-policy.md#the-committee-page-has-no-roster-and-no-deep-link) for why.
 
 Rechecked against the API's current committee endpoints in August 2026: still no membership resource. The *deep link*
-half of that section did unblock, separately — the item endpoint now publishes `committeeWebsiteUrl` — and the committee
-page links it. The roster is a different problem and remains this one.
+half of that section is a separate problem and is unblocked — the item endpoint publishes `committeeWebsiteUrl`, and the
+committee page links it. The roster remains this one.
 
 ## 4a. Senate Roll-Call Votes — Partly Blocked
 

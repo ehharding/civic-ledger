@@ -2,14 +2,14 @@
  * The one place a party group is mapped to a color.
  *
  * Four different things tint themselves by party — a seat in the chamber diagram (`fill`), the diagram's read-out and a
- * member's own page (`color`), and the legend's swatch (`background`) — and each used to restate the whole five-way
- * mapping in its own property. That is the same fact written four times: adding a sixth party meant finding all four
- * lists, and any one of them left un-updated produced a party that rendered correctly in three places and gray in the
- * fourth, which is the kind of bug nobody notices until a screenshot goes out.
+ * member's own page (`color`), and the legend's swatch (`background`) — and each needs a different CSS property tinted.
+ * Restating the five-way mapping per property would be the same fact written four times, where any one list left
+ * un-updated gives a party that renders correctly in three places and gray in the fourth: the kind of bug nobody
+ * notices until a screenshot goes out.
  *
  * So the mapping is stated once here, into a `--party-color` custom property, and each consumer reads that property
- * into whichever CSS property it happens to need. Adding a party is now one rule in this file plus its token in
- * tokens.css — and `partyTintClass` in src/lib/congress/members.ts is what puts the class on the element.
+ * into whichever CSS property it happens to need. Adding a party is one rule in this file plus its token in tokens.css
+ * — and `partyTintClass` in src/lib/congress/members.ts is what puts the class on the element.
  *
  * Consumers pair `var(--party-color)` with a `var(--party-other)` fallback, so an element that somehow arrives without
  * a tint class still renders in the neutral gray rather than inheriting an unrelated color or none at all.

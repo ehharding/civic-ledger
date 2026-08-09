@@ -66,27 +66,19 @@ Two kinds of code are worth testing directly even when a component test already 
 
 ## Where Documentation Goes
 
-Documentation scales here by having **one home per fact**, chosen by audience rather than topic:
+Documentation scales here by having **one home per fact**, chosen by audience rather than topic. The routing table and
+the style rules live in [docs/README.md](docs/README.md); anything a contributor does or must not do belongs in this
+file.
 
-| If it is…                                               | It belongs in…                               |
-|---------------------------------------------------------|----------------------------------------------|
-| Why *this line of code* is the way it is                | A doc comment on that code                   |
-| A rule spanning modules, or a boundary between them     | [docs/architecture.md](docs/architecture.md) |
-| A claim or refusal about the data a reader sees         | [docs/data-policy.md](docs/data-policy.md)   |
-| Something an operator does to ship or configure the app | [docs/deployment.md](docs/deployment.md)     |
-| Something a contributor does or must not do             | This file                                    |
-| Not built yet, and gated on something                   | [docs/roadmap.md](docs/roadmap.md)           |
-| How to run this thing at all                            | [README.md](README.md)                       |
-
-**The default is the code comment.** The documents above exist for reasoning that spans files, constrains the product,
-or has to be found by someone who is not already reading the relevant module. Reasoning about one function, one
-component, or one CSS rule belongs beside it — read at the moment it is needed, and going stale visibly rather than
+**The default is the code comment.** The four documents under `docs/` exist for reasoning that spans files, constrains
+the product, or has to be found by someone who is not already reading the relevant module. Reasoning about one function,
+one component, or one CSS rule belongs beside it — read at the moment it is needed, and going stale visibly rather than
 quietly.
 
-This project deliberately has no running decision log. One existed, reached 36 entries, and most of them turned out to
-be either already stated (better) in the code they described, or genuinely cross-cutting rules nobody would find in a
-file ordered by when things were decided. If a decision is worth recording and fits none of the rows above, that is a
-strong signal it is a code comment. See [docs/README.md](docs/README.md) for the documentation style rules.
+Two rules follow, and both are about what a comment is *for*. A comment states why the code is the way it is, not what
+it used to be: this project keeps no running decision log, and a note recording a previous shape is a note the next
+reader has to check against the code before trusting it. If a decision is worth recording and fits none of the rows in
+that table, that is a strong signal it is a code comment.
 
 ## Tooling Stays Small
 
@@ -95,10 +87,11 @@ evolution, and CI without a pile of overlapping abstractions. Adding a dependenc
 default — a few current positions, so they don't have to be relitigated per pull request:
 
 - **No Tailwind.** There is no Tailwind installation at all: no config, no PostCSS setup, just handwritten CSS split
-  across `src/styles/` and imported from `globals.css`, built on custom-property design tokens throughout. Adding it now
-  would mean rewriting every component's `className` from scratch. When `@tailwindcss/typography`'s job was genuinely
-  needed — `.summary-body` (injected CRS summary HTML) and `.text-version-list` had no rules, so the sitewide reset made
-  paragraphs run together and links invisible — it was done by hand on the same tokens as everything else.
+  across `src/styles/` and imported from `globals.css`, built on custom-property design tokens throughout. Adding it
+  would mean rewriting every component's `className` from scratch. Where `@tailwindcss/typography`'s job is genuinely
+  needed — restoring paragraph and link styling inside `.summary-body` (injected CRS summary HTML) and
+  `.text-version-list`, which the sitewide reset otherwise flattens — it is done by hand on the same tokens as
+  everything else.
 - **No DOM-based HTML sanitizer.** `src/lib/congress/sanitize-summary.ts` is hand-written because the input shape is
   narrow and well understood. This is a bounded position, not a permanent one: it expires the moment this app renders
   markup from a less predictable source than Congress.gov.

@@ -160,7 +160,7 @@ describe("CommitteeDetail", (): void => {
     });
 
     it("keeps the section even when the record carries no counts at all", (): void => {
-      // The counts are now headings over records the page can still fetch, so their absence no longer means there is
+      // The counts are headings over records the page can fetch regardless, so their absence does not mean there is
       // nothing to show.
       renderCommittee({ billCount: undefined, reportCount: undefined, nominationCount: undefined });
 

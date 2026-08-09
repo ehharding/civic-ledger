@@ -82,7 +82,7 @@ describe("buildMemberDirectory", (): void => {
     ]);
   });
 
-  it("carries the chamber down onto each row, since a flat list no longer implies it", (): void => {
+  it("carries the chamber down onto each row, since a flat list has no grouping to imply it", (): void => {
     const result: MemberDirectoryEntry[] = buildMemberDirectory({
       congress: 119,
       chambers: [

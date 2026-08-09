@@ -3,8 +3,9 @@ import { compareIsoDatesDesc, formatOrdinal, pluralize } from "@/lib/format";
 /**
  * The five stages of `BillJourney`'s educational progress cue, in order.
  *
- * Derived from a bill's action text by {@link inferBillStage} — an orientation aid, never an authoritative legal
- * status. Ordering matters: `BillJourney` reads a stage's index to decide which steps render as already complete.
+ * An orientation aid, never an authoritative legal status. Ordering matters twice over: `BillJourney` reads a stage's
+ * index to decide which steps render as already complete, and `resolveBillStage` reads it to decide which of two
+ * readings is the more advanced.
  */
 export const billStages = ["introduced", "committee", "chamber", "president", "law"] as const;
 
@@ -21,7 +22,7 @@ export const DEFAULT_PAGE_SIZE = 12;
 
 /**
  * A bill's natural identifier as it appears in a route (e.g., `/bills/119/hr/284`) — congress, type, and number, all as
- * strings. Shared by every per-bill lookup in client.ts (getBillById, getBillSummaries, getBillTextVersions) and by the
+ * strings. Shared by every per-bill lookup in the adapter (`getBillById` and each of the sub-resource reads) and by the
  * bill detail route's own params, so the same three-field shape isn't independently repeated at each site.
  */
 export type BillRouteParams = {
@@ -147,10 +148,10 @@ export type BillAction = {
 /**
  * The law a bill became, exactly as Congress.gov states it on the bill's own record.
  *
- * This is the one fact on a bill that this app previously *only* reached by inference. Both stage classifiers — the
- * prose one and the action-code one — answer "did this become law?" by recognizing something, and a recognizer that
- * doesn't recognize is indistinguishable from a bill that didn't pass. The `laws` field is the record saying so
- * outright, and it carries the citation ("Public Law 119-21") that neither classifier could have produced at all.
+ * This is the one fact on a bill that inference cannot settle. Both stage classifiers — the prose one and the
+ * action-code one — answer "did this become law?" by recognizing something, and a recognizer that doesn't recognize is
+ * indistinguishable from a bill that didn't pass. The `laws` field is the record saying so outright, and it carries the
+ * citation ("Public Law 119-21") that neither classifier could have produced at all.
  *
  * Detail-endpoint only, like {@link BillSponsor} and the cosponsor count — the bill *list* endpoint omits it, which is
  * why the prose classifier still earns its place on a directory card.
@@ -330,8 +331,8 @@ export type RelatedBill = {
  * States how many records a bill's collection holds, attributing the figure to whoever actually produced it.
  *
  * The distinction this exists to keep is a small one to write and an easy one to lose: "Congress.gov records 59
- * actions" is a claim about the congressional record, and "this page shows 59 actions" is a claim about this page.
- * Before the counts above were read, the bill page made the first sentence out of the second's number.
+ * actions" is a claim about the congressional record, and "this page shows 59 actions" is a claim about this page. The
+ * first sentence may only ever be built from a published figure.
  *
  * In the model rather than at the view, on the rule the rest of this layer follows — what a reader is told is display
  * wording, so it belongs somewhere a unit test can reach without rendering a page.
@@ -373,8 +374,8 @@ export type BillSponsor = {
 };
 
 /**
- * The app's stable internal bill shape. Congress.gov API responses (list or detail) are mapped into this by client.ts
- * before anything else touches them.
+ * The app's stable internal bill shape. Congress.gov API responses (list or detail) are mapped into this by
+ * `mapCongressBill` in `mappers.ts` before anything else touches them.
  */
 export type LegislativeBill = {
   congress: number;

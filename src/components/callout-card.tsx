@@ -10,10 +10,9 @@ import type { JSX, ReactNode } from "react";
  * those sections ends with no bottom margin of its own. Naming the two cases here keeps that decision at the call site,
  * where the surrounding content is visible, rather than buried in a stylesheet.
  *
- * There was a third, `flush`, which zeroed the gap on the claim that the learn hub's glossary grid "already ends with
- * its own spacing". It does not — a grid's `gap` sits *between* its rows and adds nothing below the last one — so the
- * only page using it was rendering this panel hard against the final glossary card. Deleted rather than corrected,
- * because a spacing named for a condition no caller meets is one the next caller will reach for by its name.
+ * Two cases, and there is deliberately no third that zeroes the gap: no section this panel follows supplies one. A
+ * grid's `gap` in particular sits *between* its rows and adds nothing below the last, so the glossary grid ends flush
+ * with its final card.
  *
  * - `default` — follows content that supplies no gap (a detail grid, the glossary grid, the lesson steps).
  * - `spacious` — follows the home page's activity grid, whose rhythm is more generous than the rest of the app's.
@@ -53,11 +52,10 @@ type CalloutCardProps = {
 /**
  * The warm "read this next" panel that closes a page.
  *
- * Six routes end with one of these — all three detail pages, both learn pages, and the home page — and each used to
- * spell out the same eleven lines of markup, differing only in their copy and their two icons. That is one place per
- * route to keep a decorative icon `aria-hidden`, one to get the `aria-labelledby` wiring right, and one to update when
- * the shape changes. The home page's copy had already drifted before this existed: its icon was rendering a pixel
- * larger than the rest for no reason anyone chose.
+ * Six routes end with one of these — all three detail pages, both learn pages, and the home page — differing only in
+ * their copy and their two icons. Spelled out per route, that would be six places to keep a decorative icon
+ * `aria-hidden`, six to get the `aria-labelledby` wiring right, and six to update when the shape changes, which is
+ * exactly the arrangement in which one page's icon quietly ends up a pixel larger than the rest.
  *
  * The panel is deliberately *not* a link itself. Each one wraps a heading and a paragraph around a single call to
  * action, and a link containing a heading gives assistive technology a long, unwieldy accessible name for what is

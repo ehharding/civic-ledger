@@ -15,11 +15,12 @@ import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/search-params";
 
 /**
- * Kept as the route segment's data-cache window, though reading `searchParams` now makes this route render on demand
- * rather than being prerendered as it was. That costs a server render per visit and *not* an upstream request: the
- * roster is fetched through the adapter's own five-minute cache (`REVALIDATE_SECONDS` in `http.ts`), which is shared
- * across every visitor and every narrowing of this page. The trade was deliberate: a shared link should arrive at what
- * it says it points to on the first paint, rather than rendering the full roster and visibly narrowing after hydration.
+ * The route segment's data-cache window, declared as on `/bills` and `/committees` so all three directories state the
+ * same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
+ * visit and *not* an upstream request: the roster is fetched through the adapter's own five-minute cache
+ * (`REVALIDATE_SECONDS` in `http.ts`), shared across every visitor and every narrowing of this page. That trade is
+ * deliberate — a shared link should arrive at what it says it points to on the first paint, rather than rendering the
+ * full roster and visibly narrowing after hydration.
  * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 export const revalidate: number = 300;
@@ -39,8 +40,8 @@ type MembersPageProps = {
  * Browsable member directory route.
  *
  * The counterpart to `/bills`: that route is the way into the record, this is the way into the people who make it.
- * Every card links to `/members/[bioguideId]`, the page that already existed but could previously only be reached by
- * finding a seat in the chamber diagram or a bill the member happened to sponsor.
+ * Every card links to `/members/[bioguideId]`, which is otherwise reachable only by finding a seat in the chamber
+ * diagram or a bill the member happened to sponsor.
  *
  * Reads the same roster the home page's chamber diagram does, through the same cached call, so browsing here costs
  * nothing extra upstream within the five-minute window and the two views can't disagree about who is serving.

@@ -8,8 +8,8 @@ import { type ZodCatch, type ZodNumber, type ZodOptional, type ZodString, z } fr
  * TypeScript to stop asking. These schemas make that boundary real: every payload is actually inspected before the
  * mappers touch it.
  *
- * Two conventions run through every schema here, and both exist so validation can only ever *improve* on the previous
- * unchecked casts, never make the app fail where it used to cope:
+ * Two conventions run through every schema here, and both exist so validation can only ever narrow what reaches the
+ * mappers — never turn a payload the app could have coped with into a failed read:
  *
  * - **Objects are loose.** Congress.gov returns far more fields than this app reads, and adds new ones over time.
  *   Unknown keys are preserved rather than treated as errors.

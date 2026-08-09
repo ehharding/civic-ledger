@@ -111,22 +111,21 @@ Behind those routes:
   vote endpoint and no Senate counterpart.
 - **A bill's committees, read from the record and linked, not parsed out of a sentence.** Every committee that held the
   bill, in Congress.gov's own order — primary jurisdiction first — each with the relationship it recorded ("Referred
-  To", "Reported By") and each linking to that committee's page here, subcommittees included. The referral was always
+  To", "Reported By") and each linking to that committee's page here, subcommittees included. The referral is also
   visible in the latest action's prose; what the committee sub-resource adds is the system code, which is the difference
   between naming a committee and being able to open it.
 - **A bill's cosponsors, named rather than counted — and never scored.** The page lists everyone signed on, each linking
-  to their own page here, which closes the one relationship this app could only navigate in one direction: a member's
-  page has always listed the bills they cosponsored, while a bill's page reported a bare number. They appear in
-  Congress.gov's own chronological order, so the list reads as the bill gathering support rather than as an alphabet;
+  to their own page here, so the relationship a member's page states in one direction — the bills they cosponsored — is
+  navigable in both. They appear in Congress.gov's own chronological order, so the list reads as the bill gathering
+  support rather than as an alphabet;
   the members who were on it at introduction are marked from the record's own flag rather than by comparing dates; and
   where the two published figures disagree, the page says how many members signed on and later withdrew instead of
   leaving the gap unexplained. No count is ranked, compared, or turned into a score, and the copy says outright that
   cosponsoring is not a vote, not a prediction, and not a ranking.
 - **The other measures a bill is related to, each with the body that said so.** "Is there a Senate version of this?" is
-  the question a reader most often arrives with, and it had no route through this app at all. Every related measure now
-  links inward to its own page here, carrying its title, its latest action, and the relationship as recorded — with the
-  attribution attached ("Identical bill (CRS)"), because relating two bills is a judgment someone made rather than
-  something either bill records.
+  the question a reader most often arrives with, and every related measure links inward to its own page here, carrying
+  its title, its latest action, and the relationship as recorded — with the attribution attached ("Identical bill
+  (CRS)"), because relating two bills is a judgment someone made rather than something either bill records.
 - **Long collections capped visibly, never silently.** A bill with four hundred cosponsors shows twelve and puts the
   rest behind a disclosure that names how many are there. Nothing is dropped, and the number in the label is what keeps
   the cap from reading as a complete short list.

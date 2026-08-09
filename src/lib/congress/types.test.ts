@@ -175,7 +175,7 @@ describe("billStageLabels", (): void => {
 /**
  * The whole point of this function is *who the sentence credits*, so every case is asserted on the wording rather than
  * on a count: a figure Congress.gov published is a claim about the congressional record, and a figure this app arrived
- * at by counting what it fetched is a claim about this page. The two used to be printed in the same sentence.
+ * at by counting what it fetched is a claim about this page. Nothing here may state one and mean the other.
  */
 describe("describeBillCollection", (): void => {
   it("credits Congress.gov when its published count matches what is shown", (): void => {

@@ -69,11 +69,10 @@
 /* The facet row beneath the control row: the dropdowns each directory narrows and orders itself with, and the
    "Clear Filters" action that stands beside them.
 
-   Here rather than in member.css, where these lived while already dressing all three directories. A committee's type
-   dropdown wearing a class named `.member-facet` is the kind of thing that sends someone looking for a bug that isn't
-   there — the same reason `.stage-filters` became `.segmented-filter`. Moving them beside their own siblings also
-   retires a cross-file source-order dependency: the width override below used to sit in member.css and depend on that
-   file loading after this one. */
+   Here rather than in member.css, and named for the surface rather than for one of its three subjects: a committee's
+   type dropdown wearing a class named `.member-facet` is the kind of thing that sends someone looking for a bug that
+   isn't there. Keeping these beside their own siblings also keeps the width override below out of a second file, where
+   it would depend on that file loading after this one. */
 
 .directory-facets {
   display: flex;
@@ -133,11 +132,11 @@
 
 /* "Clear Filters" belongs to the row of controls, not to the page's button family.
  *
- * It used to be a `.button.button--quiet`, which is the style for a standalone call to action sitting on open page —
- * the home page's "Learn" link, the bill directory's centered "Load More". Borrowed into a line of bordered dropdowns
- * it read as a mistake: no border and no background gave it nothing to sit on, and `.button`'s 43px minimum made its
- * box taller than the 38px selects beside it, so with the row bottom-aligned its label floated a few pixels above
- * theirs. A control with no edges, no ground, and its own baseline looks like text that escaped from somewhere.
+ * Deliberately not a `.button.button--quiet`, which is the style for a standalone call to action sitting on open
+ * page — the home page's "Learn" link, the bill directory's centered "Load More". Borrowed into a line of bordered
+ * dropdowns it reads as a mistake: no border and no background give it nothing to sit on, and `.button`'s 43px minimum
+ * makes its box taller than the 38px selects beside it, so with the row bottom-aligned its label floats a few pixels
+ * above theirs. A control with no edges, no ground, and its own baseline looks like text that escaped from somewhere.
  *
  * So it is built like the controls it stands with — same height, same radius, same border — and set apart from them by
  * what it doesn't take: no filled background, and the quieter `--ink-soft` the facet labels use rather than the `--ink`

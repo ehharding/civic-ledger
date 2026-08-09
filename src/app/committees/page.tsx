@@ -36,8 +36,7 @@ type CommitteesPageProps = {
  *
  * The third way into the record, beside `/bills` and `/members`. A bill's most consequential moment is usually its
  * referral to a committee — "Referred to the House Committee on Transportation and Infrastructure" is the latest action
- * on a large share of everything Congress introduces — and until now that sentence named a body this app could say
- * nothing about. This is that body.
+ * on a large share of everything Congress introduces — and this is where that sentence's subject becomes a page.
  *
  * @param searchParams - The requested view. @see CommitteesPageProps
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.

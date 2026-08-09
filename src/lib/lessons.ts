@@ -7,10 +7,10 @@ import { type BillStage, billStageLabels, billStages } from "@/lib/congress/type
  * The learning modules reached from `/learn`, and the content of each one.
  *
  * Hand-curated editorial content, not sourced from the Congress.gov API — the same reason `glossary.ts` sits in
- * `src/lib` rather than `src/lib/congress`. What is new here, and what `docs/roadmap.md` gated the second and third
- * modules on, is that **a lesson cites its sources**. A glossary entry is a definition anyone could check in a
- * dictionary; a five-step explanation of how a chamber records a vote is a claim, and a project whose entire premise is
- * that you can verify what it tells you should not make claims a reader cannot follow anywhere.
+ * `src/lib` rather than `src/lib/congress`. Unlike a glossary entry, **a lesson cites its sources**: a definition is
+ * something anyone could check in a dictionary, while a five-step explanation of how a chamber records a vote is a
+ * claim, and a project whose entire premise is that you can verify what it tells you should not make claims a reader
+ * cannot follow anywhere.
  *
  * Three rules hold across every lesson below, and the tests beside this file are what keep them:
  *
@@ -19,9 +19,10 @@ import { type BillStage, billStageLabels, billStages } from "@/lib/congress/type
  *   paywall — a citation a reader cannot open is decoration.
  * - **Every lesson states what it leaves out**, in its own `limits`, rendered on the page rather than left in a doc.
  *   These are simplifications by design; a simplification that doesn't say so is just an inaccuracy.
- * - **A lesson never claims this app shows something it doesn't.** The voting module is the sharp case: Civic Ledger
- *   holds no roll-call data at all, and the lesson says so in the same breath it explains what a recorded vote is, then
- *   sends the reader to the two chambers' own tallies.
+ * - **A lesson never misstates what this app shows, in either direction.** The voting module is the sharp case: a
+ *   bill's page names each recorded vote taken on it and links the chamber's own record, and the arithmetic — the
+ *   counts, the margins, the individual positions — stays at the chambers. The lesson draws exactly that line, since a
+ *   reader told the app holds nothing would not go looking for what it does hold.
  *
  * Content lives here rather than in the route files on the rule `committees.ts` states for display wording: what a
  * reader is told should be somewhere it can be unit-tested, not somewhere reachable only by rendering a page.

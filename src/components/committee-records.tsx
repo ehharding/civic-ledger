@@ -276,9 +276,8 @@ const PAGE_TOTAL_ID = "committee-records-page-total";
 /**
  * One of the pager's four steps: first, previous, next, last.
  *
- * A link when there is somewhere to go and plain text when there isn't, which is the same rule the section held when
- * there were only two of them — an end of the range is rendered as text rather than as a disabled link, so there is no
- * focusable control that does nothing.
+ * A link when there is somewhere to go and plain text when there isn't: an end of the range is rendered as text rather
+ * than as a disabled link, so there is no focusable control that does nothing.
  *
  * @param props - Where the step lands (or `undefined` at the end of the range), what it says, its glyph, and which side
  *   that glyph sits on.
@@ -326,11 +325,11 @@ function PagerStep({
 /**
  * The pager: two steps back, the page field, two steps forward.
  *
- * Still not a numbered run, and for the reason it never was — these collections reach five figures, so a full
- * pagination control would either be truncated with ellipses nobody can aim at or be a thousand links in the page
- * source. What a numbered run is actually *for*, though, is getting somewhere that isn't adjacent, and stepping one
- * page at a time is a poor answer to that when there are 851 of them. The field is the direct answer: type a number,
- * land on it, from either end of the collection in one move.
+ * Deliberately not a numbered run: these collections reach five figures, so a full pagination control would either be
+ * truncated with ellipses nobody can aim at or be a thousand links in the page source. What a numbered run is actually
+ * *for* is getting somewhere that isn't adjacent, and stepping one page at a time is a poor answer to that when there
+ * are 851 of them. The field is the direct answer: type a number, land on it, from either end of the collection in one
+ * move.
  *
  * **It is a real `<form>` with `method="get"`, not a scripted jump.** That is the same commitment every other control
  * in this section makes — the tabs and the four steps are all `next/link`s rather than click handlers — carried to the

@@ -350,7 +350,7 @@ describe("BillDirectory deep links", (): void => {
 /**
  * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
  * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the half
- * that used to be silently overwritten with whatever the reader had last searched for.
+ * a write-only mirror silently overwrites with whatever the reader last searched for.
  *
  * The member and committee directories reconcile the same way, through the same hook. @see useDirectoryUrlSync
  */
@@ -372,7 +372,7 @@ describe("BillDirectory following a URL it did not write", (): void => {
     expect(narrowed).toBeLessThan(previewBills.length);
 
     // How the router navigates: the URL changes, then the route re-renders with the view it resolved. Nothing remounts,
-    // which is exactly why a write-only mirror used to put the stale view straight back.
+    // which is exactly why a write-only mirror would put the stale view straight back.
     window.history.replaceState(null, "", "/bills");
     rerender(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
 

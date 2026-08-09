@@ -12,10 +12,9 @@ import { type BillCosponsor, type BillRouteParams, billIdentityKey } from "@/lib
 /**
  * Who put their name to a bill they did not introduce.
  *
- * The read that closes this app's one genuinely asymmetric surface. A member's page has always listed the bills they
- * cosponsored; a bill's page reported only how many members did, as a number with no names behind it — so the
- * relationship was navigable in one direction and a dead end in the other. Every cosponsor here carries a Bioguide ID,
- * which makes the return trip a link rather than a search.
+ * The read that keeps cosponsorship navigable in both directions. A member's page lists the bills they cosponsored, and
+ * this is the other end of the same relationship: names rather than a bare count, each carrying a Bioguide ID, which
+ * makes the return trip a link rather than a search.
  *
  * **The publisher's order is chronological and is kept.** Congress.gov returns cosponsors oldest first — the members
  * who signed at introduction, then everyone who joined afterwards, in the order they did. That order is the bill

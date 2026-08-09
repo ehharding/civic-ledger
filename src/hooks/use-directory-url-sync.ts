@@ -31,10 +31,9 @@ type DirectoryUrlSyncOptions = {
  * state of the page can be copied out of the address bar and handed to someone else.
  *
  * That mirroring is the same problem three times over, and it is a genuinely fiddly one, so it lives here once rather
- * than being re-derived per directory. Two of the three carried a verbatim copy of this logic; the third had only the
- * write half, and so had the bug the other two describe: following the header's own "Bills" link from an
- * already-narrowed directory appeared to do nothing, because the component wrote its stale query string straight back
- * over the URL the router had just set.
+ * than being re-derived per directory. A directory carrying only the *write* half has a specific and quiet bug:
+ * following the header's own "Bills" link from an already-narrowed directory appears to do nothing, because the
+ * component writes its stale query string straight back over the URL the router had just set.
  *
  * The subtlety is that "the reader narrowed something" and "the URL changed underneath us" are indistinguishable from
  * inside a render and need opposite responses — one should rewrite the URL, the other should rewrite the state. What

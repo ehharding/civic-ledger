@@ -12,10 +12,10 @@ import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
  * The body of one learning module, in the shape every module shares: header, numbered steps, an honest-limits panel,
  * the citation list, and a "read this next" callout.
  *
- * Extracted the moment there was a second lesson, on the same reasoning that produced `CalloutCard`: three routes
- * spelling out the same forty lines of markup means three places to keep an `aria-labelledby` correct and three to
- * update when the shape changes. The lesson *content* lives in `src/lib/lessons.ts` and this renders it, which is what
- * makes adding a module an edit to one data file rather than a new page.
+ * One component for every module, on the same reasoning that produced `CalloutCard`: a lesson spelling out its own
+ * forty lines of markup would be one more place to keep an `aria-labelledby` correct and one more to update when the
+ * shape changes. The lesson *content* lives in `src/lib/lessons.ts` and this renders it, which is what makes adding a
+ * module an edit to one data file rather than a new page.
  *
  * The limits panel is not optional and takes the accent treatment deliberately. Every one of these lessons is a
  * simplification — that is the point of a lesson — and the panel is where each one says which simplification it made. A

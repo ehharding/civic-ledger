@@ -305,11 +305,11 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
 /**
  * Fetches a bill's full action history, most recent first.
  *
- * This is the record behind two things the bill page can otherwise only approximate. The stepper stops guessing a
- * stage from one line of prose and reads the Library of Congress's own action codes instead (@see
- * inferStageFromActions) — which matters most for a bill that has passed one chamber and been referred to a committee
- * in the other, where the latest action names only the referral. And the roll-call votes taken on the bill are named
- * here and nowhere else in this API for the Senate, since there is no `senate-vote` endpoint to ask.
+ * This is the record behind two things the bill page can otherwise only approximate. The stepper reads the Library of
+ * Congress's own action codes rather than guessing a stage from one line of prose (@see inferStageFromActions) — which
+ * matters most for a bill that has passed one chamber and been referred to a committee in the other, where the latest
+ * action names only the referral. And the roll-call votes taken on the bill are named here and nowhere else in this API
+ * for the Senate, since there is no `senate-vote` endpoint to ask.
  *
  * The list is deliberately not deduplicated. Congress.gov reports the same event from several source systems at once,
  * and which system recorded an action is part of the record rather than noise — the near-duplicate rows say that the

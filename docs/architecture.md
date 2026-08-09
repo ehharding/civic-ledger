@@ -123,11 +123,10 @@ page. Only a payload that isn't an object at all is rejected outright.
    member's page to their entry in the Biographical Directory. Seats in the chamber diagram and sponsor lines on bill
    pages both link *inward* first, to that member's own page, which carries the outbound link onward.
 
-Point 5 is a deliberate reversal. Both of those used to point straight out to the Biographical Directory, which answers
-"who is this person" but not "what else have they introduced," and takes the reader off the site to do it. Nothing is
-lost by linking inward: the member page carries the official-biography link onward, alongside the member's own
-house.gov/senate.gov site when the record has one. The route is keyed on the Bioguide ID because it is already unique
-and, unlike a name slug, never changes.
+Point 5 is deliberate. The Biographical Directory answers "who is this person" but not "what else have they introduced,"
+and takes the reader off the site to do it. Nothing is lost by linking inward: the member page carries the
+official-biography link onward, alongside the member's own house.gov/senate.gov site when the record has one. The route
+is keyed on the Bioguide ID because it is already unique and, unlike a name slug, never changes.
 
 ### Membership
 
@@ -139,8 +138,8 @@ request "who holds a seat right now" — without it, a member who resigned mid-t
 and the chamber over-counts. For any earlier Congress the same value is straightforwardly wrong, and Congress.gov's own
 documentation makes the mirror-image recommendation. The 117th answers `currentMember=true` with the 377 of its members
 still serving today, against the 557 who actually served in it; a diagram drawn from the first would be missing a third
-of its seats while presenting itself as the whole body. Nothing in the app reads a past Congress's roster today, so this
-was a loaded parameter rather than a live bug — which is precisely the kind that ships the day someone adds the route.
+of its seats while presenting itself as the whole body. No surface reads a past Congress's roster today, so the flag is
+correct in advance of the route that will need it rather than after one ships wrong.
 
 Chart geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about
 Congress.gov — see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and
@@ -154,7 +153,7 @@ directly testable.
 
 **The member directory is not a fourth endpoint.** `getMemberDirectory` (in `member-directory.ts`) calls the same
 `getCongressComposition` the chamber diagram does, on the same cache tag and five-minute window. Two things follow, and
-both were the point:
+both are the point:
 
 - **It costs nothing extra upstream.** Within the cache window, a visitor who lands on the home page and then opens
   `/members` makes no additional Congress.gov requests at all. Adding a page did not add a quota cost.
@@ -163,8 +162,8 @@ both were the point:
   inconsistency that erodes trust in a source-provenance product.
 
 What the directory adds is reshaping: flattening both chambers into one alphabetical list, carrying `chamber` and the
-member's portrait down onto each row (a flat list no longer has a grouping to imply the first, and the second is what a
-reader actually scans by), and dropping any member whose record carries no Bioguide ID, since a directory row that opens
+member's portrait down onto each row (a flat list has no grouping to imply the first, and the second is what a reader
+actually scans by), and dropping any member whose record carries no Bioguide ID, since a directory row that opens
 nothing is dead weight. That last rule is what makes the preview path a genuinely separate branch — every placeholder
 seat is unattributed and ID-less, so a preview directory built from the composition would be empty. It is built from
 `previewMemberProfiles` instead.
@@ -326,13 +325,13 @@ the jurisdictions the roster actually contains — matched case-insensitively, s
 own `"Ohio"` — because a value the control has no option for would leave the `<select>` showing one thing while the grid
 showed another. That is the specific reason `/members` resolves its URL *after* the roster rather than concurrently.
 
-**What this costs, named honestly:** `/members` used to be prerendered and is now rendered on demand, because a route
-that reads `searchParams` has to be. The alternative was reading the params in the browser and keeping the page static,
-at the price of every shared link rendering the full roster and then visibly narrowing after hydration — and of the link
-doing nothing at all without JavaScript. That trade goes the other way here, for the same reason the header's search is
-a real `<form>` rather than a click handler: a link should arrive at what it says it points to, on the first paint,
-whatever is or isn't running. The upstream cost is unchanged either way, since the roster still comes through the shared
-five-minute cache; what changed is a server render per visit, not a Congress.gov request per visit.
+**What this costs, named honestly:** `/members` is rendered on demand rather than prerendered, because a route that
+reads `searchParams` has to be. The alternative is reading the params in the browser and keeping the page static, at the
+price of every shared link rendering the full roster and then visibly narrowing after hydration — and of the link doing
+nothing at all without JavaScript. That trade goes the other way here, for the same reason the header's search is a real
+`<form>` rather than a click handler: a link should arrive at what it says it points to, on the first paint, whatever is
+or isn't running. The cost is a server render per visit, not a Congress.gov request per visit: the roster still comes
+through the shared five-minute cache.
 
 ## The Glossary Comes to the Reader
 
@@ -436,15 +435,15 @@ history, notification delivery, or more than a few API-facing features.
 - Upstream payloads are validated at runtime, not cast.
 - Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
   hold a server render open indefinitely.
-- **The CRS summary sanitizer builds its output rather than patching its input.** An earlier version ran one
-  `.replace()` across the raw fragment, rewriting recognized tags and leaving everything else alone — and "everything
-  else" was the problem. Given `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, the pattern matched and
-  stripped the inner `<img …>`, splicing the surviving fragments into a working `<img onerror>`: sanitizing the input
-  was what produced the payload. `sanitizeSummaryHtml` now walks the input once and *builds* the output — text between
-  recognized tags is escaped, and only an allow-listed tag is re-emitted as markup — which closes the overlapping-tag
-  class as a class rather than closing the two payloads that happened to find it. The regression cases beside it are the
-  record of which bypasses have been tested; if this is ever pointed at markup from a less predictable source than
-  Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.
+- **The CRS summary sanitizer builds its output rather than patching its input.** `sanitizeSummaryHtml` walks the input
+  once and *builds* the output: text between recognized tags is escaped, and only an allow-listed tag is re-emitted as
+  markup, so nothing passes through by default. Patching instead — one `.replace()` across the raw fragment, rewriting
+  recognized tags and leaving everything else alone — is what makes overlapping tags exploitable. Given
+  `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, such a pattern matches and strips the inner `<img …>` and
+  splices the surviving fragments into a working `<img onerror>`: sanitizing the input is what produces the payload.
+  Building the output closes that as a class rather than closing the payloads that happen to be known. The regression
+  cases beside the file are the record of which bypasses have been tested; if this is ever pointed at markup from a less
+  predictable source than Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.
 - No political-affiliation targeting or persuasion logic belongs in the product, and the measurement layer is held to
   the same rule rather than exempted from it — see
   [Analytics Records the Page, Not the Reader](data-policy.md#analytics-records-the-page-not-the-reader).

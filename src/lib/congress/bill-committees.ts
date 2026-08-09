@@ -16,7 +16,7 @@ import type { BillRouteParams } from "@/lib/congress/types";
  * that endpoint omits; asking a bill which committees held it costs one request, and the committees arrive named,
  * chambered, and coded, which is everything an inward link needs.
  *
- * Why this is a read at all rather than something derived: the bill page already had the referral in front of it, in
+ * Why this is a read at all rather than something derived: the bill page already has the referral in front of it, in
  * the prose of the latest action ("Referred to the Committee on Energy and Commerce") and in the action history
  * beneath. What prose cannot give is the *system code*, and without a system code a committee is a string rather than a
  * destination. Parsing a committee's identity back out of a sentence would also be exactly the kind of inference this

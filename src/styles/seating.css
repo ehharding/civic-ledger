@@ -52,9 +52,8 @@
   color: var(--ink);
 }
 
-/* Matches the ARIA tabs pattern the component actually implements. This selector previously readc[aria-pressed="true"],
-   left over from an earlier toggle-button version — it matched nothing, so the selected chamber was styled identically
-   to the unselected one. */
+/* Matches on `aria-selected`, which is the ARIA tabs pattern the component implements — these are tabs over two
+   chamber panels, not toggle buttons, so `aria-pressed` would select nothing and leave both chambers styled alike. */
 .seating__chamber-button[aria-selected="true"] {
   border-color: var(--navy);
   color: var(--paper);

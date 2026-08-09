@@ -1,41 +1,17 @@
 /**
- * The Congress.gov adapter's public surface.
+ * The Congress.gov adapter's public surface — a barrel, not an implementation.
  *
- * This module used to hold the entire adapter — transport, schemas, mappers, bills, and members — in one ~840-line
- * file. That has since been split by responsibility, but the split is deliberately invisible to callers: every route,
- * component, and test still imports from `@/lib/congress/client`, so the internal layout can keep evolving without a
- * churn of import rewrites across the app.
- *
- * Where things now live:
- *
- * | Module                   | Responsibility                                                              |
- * |--------------------------|-----------------------------------------------------------------------------|
- * | `api-schema.ts`          | Runtime shapes for Congress.gov v3 payloads — the untrusted-input boundary. |
- * | `http.ts`                | Key access, URL building, caching policy, one request helper, route guards. |
- * | `mappers.ts`             | Upstream shapes to this app's stable model. Pure; no I/O.                   |
- * | `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                 |
- * | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.       |
- * | `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.            |
- * | `bill-cosponsors.ts`     | Who put their name to a bill they did not introduce.                        |
- * | `bill-related.ts`        | The other measures a bill is recorded as related to, and who said so.       |
- * | `stage.ts`               | Where a bill has got to — from its record, its codes, or its latest action. |
- * | `composition.ts`         | Chamber membership, including the member list's pagination.                 |
- * | `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.            |
- * | `committee-filter.ts`    | The committee directory's narrowing, ordering, and URL rules. Pure; no I/O. |
- * | `committee-profile.ts`   | One committee's record, its history, and its subcommittees.                 |
- * | `committee-records.ts`   | The bills/reports/nominations model, paging, and URL rules. Pure; no I/O.   |
- * | `committee-activity.ts`  | One page of one of those collections.                                       |
- * | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.       |
- * | `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure; no I/O.           |
- * | `member-profile.ts`      | One member's record, plus the legislation they sponsored and cosponsored.   |
+ * The adapter is split by responsibility across the rest of this directory, and the split is deliberately invisible to
+ * callers: every route, component, and test imports from `@/lib/congress/client`, so the internal layout can keep
+ * moving without a churn of import rewrites across the app. What each module is responsible for is tabulated once, in
+ * [docs/architecture.md](../../../docs/architecture.md) under "Inside the Congress Adapter", rather than restated here
+ * where a second copy would be free to fall out of step with the first.
  *
  * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an
  * exception), and anything that can come from either live or preview data reports which it was, on the returned value
- * itself. That is also what keeps `http.ts` and `bill-sub-resource.ts` off this list — the key reader, the cache
- * window, and the request helpers are the transport those guarantees are built out of, not reads that hold them, and
- * the modules above import them directly.
- *
- * @see docs/architecture.md for how this layer fits into the app as a whole.
+ * itself. That is what keeps `http.ts` and `bill-sub-resource.ts` off this surface — the key reader, the cache window,
+ * and the request helpers are the transport those guarantees are built out of rather than reads that hold them, so the
+ * modules that need them import them directly.
  */
 export { getBillCommittees } from "@/lib/congress/bill-committees";
 export { getBillCosponsors } from "@/lib/congress/bill-cosponsors";

@@ -58,7 +58,7 @@ the workflow (`workflow_dispatch`) or letting it run on pushes to `main`.
 The build recipe itself lives in `.github/actions/build-static-demo`, a composite action this workflow shares with the
 `static-export` job in `ci.yml`. That sharing is the point: this is the one build a change can break while passing
 everything else, because `pnpm build` is the *server* build. A new route handler, a fresh `request.url` read, or a
-dynamic API compiles, type-checks, and tests clean, then fails only under `output: "export"`. CI now runs the identical
+dynamic API compiles, type-checks, and tests clean, then fails only under `output: "export"`. CI runs the identical
 recipe on every pull request, so that failure arrives before the change lands rather than on `main` afterward.
 
 ### Reproducing the Static Build Locally

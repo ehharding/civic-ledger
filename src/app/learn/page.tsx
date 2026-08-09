@@ -21,10 +21,9 @@ export const metadata: Metadata = pageMetadata({
  * Entirely static: all content comes from the local lesson and glossary modules, with no data fetching, because the
  * vocabulary of the legislative process doesn't change with the news cycle.
  *
- * Lessons sit above the glossary rather than after it, which is a reversal from when there was one lesson and it was a
- * footnote to the vocabulary. The relationship now runs the other way: the modules are the thing to read, and the
- * glossary is the reference you come back to — including for the terms ("markup", "cloture", "quorum") the second and
- * third modules introduce.
+ * Lessons sit above the glossary because that is the relationship between them: the modules are the thing to read, and
+ * the glossary is the reference you come back to — including for the terms ("markup", "cloture", "quorum") the modules
+ * introduce.
  *
  * @returns The lesson index and the glossary.
  */
@@ -56,7 +55,7 @@ export default function LearnPage(): JSX.Element {
       <div className="glossary-grid">
         {glossary.map(
           (entry: GlossaryTerm): JSX.Element => (
-            // h3, not h2: the entries now sit under the "Glossary" section heading rather than directly under the page
+            // h3, not h2: the entries sit under the "Glossary" section heading rather than directly under the page
             // title, and a heading that skips no level is the whole point of having one.
             //
             // The id is what makes an entry a destination. Every defined term in the app's own prose links here by

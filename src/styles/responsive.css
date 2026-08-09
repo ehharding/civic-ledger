@@ -157,7 +157,7 @@
   }
 
   /* Overrides the `justify-self: end` set at 860px, which would otherwise shrink this row to its content and keep it
-     pinned right even now that it has a line to itself. */
+     pinned right even though it has a line to itself here. */
   .primary-nav {
     flex-wrap: wrap;
     justify-self: start;

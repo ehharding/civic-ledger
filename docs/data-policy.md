@@ -62,10 +62,10 @@ upstream read fails. Preview content is fictional and is never presented as live
   unmistakable: the IDs (`PREVIEW-1`…) deliberately fail `isBioguideId`, so a placeholder is never sent upstream *and*
   can never produce a link to a real person's biography; and placeholder members carry no official website, since a
   fabricated deep link is the easiest way for preview content to be taken for the record.
-- **No placeholder has a face.** Since the member directory started showing portraits, this is the sharpest form of the
-  rule above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a
-  photograph is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from
-  every fixture and `member-directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
+- **No placeholder has a face.** The member directory shows portraits, which makes this the sharpest form of the rule
+  above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a photograph
+  is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from every fixture
+  and `member-directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
 - **Preview cosponsors reuse the placeholder members and widen the fiction by nobody.** The no-key build serves fixture
   cosponsors so the static demo — the only build a UI reviewer can see — shows that section working rather than showing
   its empty state. Every name in `previewCosponsors` is one of the seven placeholder people the fixtures already name as
@@ -116,10 +116,10 @@ committee reports below: congress.gov's URL for a public law is not published by
 
 **A collection's size is read, and the sentence says whose figure it is.** The detail record describes each of the four
 collections the bill page fetches separately — actions, committees, summaries, text versions — as `{ count, url }`, and
-the count is Congress.gov's own answer to how many there are. Until it was read, the page counted the rows it had
-fetched and mapped, and then printed that number in a sentence beginning "Congress.gov records…". Those two figures
-agree on nearly every bill, which is exactly what made the claim worth fixing: a statement that is usually true is the
-kind that goes wrong without anyone noticing.
+the count is Congress.gov's own answer to how many there are. A sentence beginning "Congress.gov records…" is only true
+of that figure, never of the rows this app happened to fetch and map. The two agree on nearly every bill, which is
+exactly why the distinction is worth keeping: a statement that is usually true is the kind that goes wrong without
+anyone noticing.
 
 They can diverge in two ways. A row this app declines is one it cannot render honestly — an action with no text is not
 a row — and a collection longer than the single 250-record page this app requests is cut off at that page. Where the
@@ -166,9 +166,8 @@ difference between naming a committee and being able to open it. A referral is a
 as on the committee's own page: most bills referred to a committee never leave it.
 
 **A bill names its cosponsors, and cosponsorship is never scored.** The page lists everyone currently signed on, each
-linking inward to their own page here — which closes the one genuinely one-way relationship this app had, since a
-member's page has always listed the bills they cosponsored while a bill's page reported only how many members did. Three
-rules govern the section:
+linking inward to their own page here, so the relationship a member's page states in one direction — the bills they
+cosponsored — is navigable in both. Three rules govern the section:
 
 - **The order is the publisher's, and it is chronological.** Congress.gov returns cosponsors oldest first — the members
   on the bill at introduction, then everyone who joined afterwards, in sequence. That order is the bill gathering
@@ -272,14 +271,13 @@ The same committee is published under two word orders depending on where you mee
 `officialName` all say `"Committee on Agriculture"`. A reader who copies a referral line off a bill page into the
 committee search box is searching for a string that appears nowhere in the list data.
 
-Rewriting the name for *display* is wrong, and a component test caught it: "Committee" is part of the proper name of
-some bodies rather than a suffix on a subject, so the rewrite turned the Joint Economic Committee into "Committee on
-Joint Economic". Nothing in the string distinguishes the two cases, and a project whose claim is that you can check it
-against the record should not be inventing names for the bodies in it. So the app displays whatever Congress.gov
-published, and `committeeSearchTerms` confines the rewrite to matching, where a variant that reads oddly costs nothing
-because nobody sees one. The visible consequence: a directory card and a committee's own page can show the same
-committee under different word orders, because the two endpoints publish it differently. Both are verbatim, which is the
-property that matters.
+Rewriting the name for *display* would be wrong: "Committee" is part of the proper name of some bodies rather than a
+suffix on a subject, so the rewrite turns the Joint Economic Committee into "Committee on Joint Economic". Nothing in
+the string distinguishes the two cases, and a project whose claim is that you can check it against the record should not
+be inventing names for the bodies in it. So the app displays whatever Congress.gov published, and `committeeSearchTerms`
+confines the rewrite to matching, where a variant that reads oddly costs nothing because nobody sees one. The visible
+consequence: a directory card and a committee's own page can show the same committee under different word orders,
+because the two endpoints publish it differently. Both are verbatim, which is the property that matters.
 
 ### The Committee Page Has No Roster, and No Deep Link
 
@@ -350,11 +348,10 @@ does, both rendered on the page rather than kept in a doc:
   is what a lesson is — and a simplification that doesn't say so is just an inaccuracy. The panel sits between the last
   step and the sources, so a reader who skims still passes it.
 
-A third rule follows from the rest of this document: **a lesson never implies this app shows something it doesn't.** The
-voting module is the sharp case, and its limits list was rewritten rather than left standing when the bill page started
-naming recorded votes — a lesson that under-claims is as wrong as one that over-claims, and a reader told the app holds
-nothing would not go looking for the thing it now holds. What the module says instead is the actual line: the votes are
-named and linked here, the arithmetic is at the chambers.
+A third rule follows from the rest of this document: **a lesson never misstates what this app shows, in either
+direction.** The voting module is the sharp case. A lesson that under-claims is as wrong as one that over-claims — a
+reader told the app holds nothing would not go looking for what it does hold — so the module draws the actual line: the
+votes are named and linked here, the arithmetic is at the chambers.
 
 The glossary (`src/lib/glossary.ts`) is deliberately exempt. The line is length rather than rigor: a one-line definition
 of "cosponsor" is vocabulary, and a five-step account of how a chamber records a vote is a claim. What the glossary owes

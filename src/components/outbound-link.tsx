@@ -23,11 +23,10 @@ type OutboundLinkProps = {
  * visible glyph marking the link as leaving, and — because that glyph is `aria-hidden` and conveys nothing to a screen
  * reader — the audible {@link ExternalLinkHint} warning that focus is about to move to a new tab.
  *
- * Those four were previously spelled out by hand at every call site, which made the accessibility half of the contract
- * a thing each new link had to *remember* rather than a thing it inherited. `ExternalLinkHint` already existed to keep
- * the wording identical; this composes it with the rest so a link that opens a tab cannot ship without announcing that
- * it does.
- * @see WCAG 3.2.5 (Change on Request).
+ * All four are composed here rather than spelled out per call site, so the accessibility half of the contract is a
+ * thing a new link inherits rather than a thing it has to *remember*: a link that opens a tab cannot ship without
+ * announcing that it does.
+ * @see WCAG 3.2.5 (Change on Request), and {@link ExternalLinkHint} for the wording itself.
  *
  * Used only for links that genuinely leave the app. In-app navigation uses `next/link`, which neither opens a tab nor
  * needs any of this — see `MemberCard` and `BillCard`.

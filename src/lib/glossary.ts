@@ -22,9 +22,8 @@ export type GlossaryTerm = {
  *
  * Deliberately uncited, unlike the lessons in {@link lessons}. The line between the two is length, not rigor: a
  * one-line definition of "cosponsor" is vocabulary anyone can confirm in a sentence, while a five-step account of how a
- * chamber records a vote is a claim, and claims get sources. What this file owes instead is *coverage* — every term a
- * lesson leans on should be findable here, which is why the committee and voting modules brought eight entries with
- * them.
+ * chamber records a vote is a claim, and claims get sources. What this file owes instead is *coverage*: every term a
+ * lesson leans on has to be findable here.
  */
 export const glossary: GlossaryTerm[] = [
   {
@@ -99,8 +98,8 @@ export const glossary: GlossaryTerm[] = [
     term: "Roll Call Vote",
     plainEnglish: "A recorded vote, where each member's position is entered in the record.",
     detail:
-      "Recorded only when demanded — the Constitution lets one-fifth of the members present require it. Civic Ledger " +
-      "holds no vote data; the House Clerk and the Senate publish their own tallies.",
+      "Recorded only when demanded — the Constitution lets one-fifth of the members present require it. A bill's " +
+      "page here names each one taken on it and links the chamber's own tally; the counts themselves stay there.",
   },
   {
     term: "Passed",

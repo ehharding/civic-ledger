@@ -1,9 +1,9 @@
-/* Promo/callout blocks reused across routes: the warm "read this next" panel that closes five different pages
+/* Promo/callout blocks reused across routes: the warm "read this next" panel that closes six different pages
    (CalloutCard), and the home page's three-up trust grid.
 
-   There used to be a second class, .learn-strip, for the home page's copy of this panel. It differed from .reading-card
-   in exactly one declaration — the gap above it — while duplicating all six of the others, so it has been folded in as
-   the --spacious modifier below. One panel, two spacings. @see CalloutSpacing */
+   One panel, two spacings. The only thing that varies between the pages this closes is the gap above it, so that is the
+   whole of the --spacious modifier below rather than a second class restating the other six declarations.
+   @see CalloutSpacing */
 
 .reading-card {
   display: grid;

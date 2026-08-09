@@ -4,7 +4,7 @@
  * Entirely static, so the useful assertions are about the commitments it publishes rather than about data flow: the
  * three principles are the ones the rest of the codebase is written to keep, and the page states them publicly so they
  * can be held against the product. A test that only counted `<article>` elements would let any of them be reworded into
- * something the code no longer does.
+ * a claim the code does not keep.
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

@@ -103,9 +103,9 @@ type DisclosedListProps<Item> = {
 /**
  * A long list, capped at a preview length with the remainder behind a `<details>`.
  *
- * Both of this page's newest collections need the same treatment for the same reason — a bill can have four hundred
- * cosponsors or three dozen related measures, and either would bury every section beneath it — so the rule is stated
- * once here rather than implemented twice with two chances to disagree about it.
+ * Two of this page's collections need the same treatment for the same reason — a bill can have four hundred cosponsors
+ * or three dozen related measures, and either would bury every section beneath it — so the rule is stated once here
+ * rather than implemented twice with two chances to disagree about it.
  *
  * **Nothing is dropped and the label says how much is behind it.** That is the point of the disclosure rather than a
  * detail of it: this app's standing rule is that a bounded view names what it bounded (@see describeBillCollection),
@@ -266,14 +266,11 @@ function describeRelationships(relationships: RelatedBillRelationship[]): string
 }
 
 /**
- * The other measures Congress.gov records as related to this bill, each linking to its page here.
- *
- * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — which
- * previously had no route through this app at all.
+ * One related measure: its identity, its title, how the two are related, and its own latest action.
  *
  * Every relationship prints who identified it. Relatedness is an editorial judgment rather than a legislative act, and
  * the Congressional Research Service, the House, and the Senate each make their own; naming the source is the same
- * standard this app holds its own stage cue to. @see getRelatedBills.
+ * standard this app holds its own stage cue to. @see describeRelationships.
  *
  * @param measure - The related measure to render.
  * @returns The row.
@@ -306,12 +303,8 @@ function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
 /**
  * The other measures Congress.gov records as related to this bill, each linking to its page here.
  *
- * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — which
- * previously had no route through this app at all.
- *
- * Every relationship prints who identified it. Relatedness is an editorial judgment rather than a legislative act, and
- * the Congressional Research Service, the House, and the Senate each make their own; naming the source is the same
- * standard this app holds its own stage cue to. @see getRelatedBills.
+ * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — and the
+ * publisher's own order is kept, since the API documents no meaning for it. @see getRelatedBills.
  *
  * @param related - The related measures, in the publisher's order.
  * @returns The list, its tail behind a disclosure.
@@ -416,11 +409,11 @@ function RecordedVotes({ votes }: { votes: RecordedVote[] }): JSX.Element {
 
   return (
     <>
-      {/* Deliberately not phrased as "Congress.gov records N votes", the way the sections around it now can be. There
-          is no published count to read here, and the number is this app's own in a stronger sense than a fetched
-          array's length: `collectRecordedVotes` deduplicates a roll call that the chamber's floor log and the Library
-          of Congress both attached to their own action, so Congress.gov's record genuinely contains more references
-          than this says. The sentence claims the dedup rather than attributing it upstream. */}
+      {/* Deliberately not phrased as "Congress.gov records N votes", the way the surrounding sections are. There is no
+          published count to read here, and the number is this app's own in a stronger sense than a fetched array's
+          length: `collectRecordedVotes` deduplicates a roll call that the chamber's floor log and the Library of
+          Congress both attached to their own action, so Congress.gov's record genuinely contains more references than
+          this says. The sentence claims the dedup rather than attributing it upstream. */}
       <p className="muted-copy">
         This bill’s actions reference {votes.length} distinct recorded {pluralize(votes.length, "vote")}. The tallies
         themselves — the counts, and who voted which way — live in each chamber’s own record, linked below.
@@ -659,8 +652,7 @@ export function BillDetail({
 
       {/* Sits here, between the committees that held the bill and the actions taken on it, because it answers the
           question the hero's sponsor line opens and cannot close: one name introduced this, and these are the others
-          who put theirs to it. A member's page has always listed the bills they cosponsored; until this section existed
-          the relationship was navigable in exactly one direction. */}
+          who put theirs to it. */}
       <div className="detail-grid detail-grid--single">
         <section className="detail-panel" aria-labelledby="cosponsors-heading">
           <p className="section-kicker">Who Else Put Their Name To It</p>
@@ -773,11 +765,10 @@ export function BillDetail({
           <h2 id="fulltext-heading">Read the Full Text</h2>
           {textVersions.length > 0 ? (
             <>
-              {/* This section had no count line at all before the published figures were read, which is why one is
-                  added here rather than reworded. It is also the collection where a gap between the two numbers is
-                  most expected: `mapCongressTextVersion` drops a version carrying no linkable rendering, since a
-                  heading with nothing behind it is not a row, and saying both figures is what keeps that drop from
-                  reading as the record being shorter than it is. */}
+              {/* The collection where a gap between the published figure and the shown one is most expected:
+                  `mapCongressTextVersion` drops a version carrying no linkable rendering, since a heading with nothing
+                  behind it is not a row. Naming both figures is what keeps that drop from reading as the record being
+                  shorter than it is. */}
               <p className="muted-copy">
                 {describeBillCollection({
                   shown: textVersions.length,

@@ -76,7 +76,7 @@ type GlossaryTermTipProps = {
 /**
  * A word in the app's prose that carries its own definition.
  *
- * The glossary was previously a page you had to know to visit. This is the other half of it: a reader who meets
+ * The half of the glossary that comes to the reader rather than waiting on `/learn` to be visited: someone who meets
  * "markup" or "cloture" in a lesson or in a bill's latest action gets the definition where they met the word, without
  * losing their place in what they were reading.
  *

@@ -8,9 +8,9 @@ const ALLOWED_TAGS: Set<string> = new Set(["p", "strong", "b", "em", "i", "ul", 
  * Matches one HTML tag (opening, closing, or self-closing) so it can be inspected and rewritten in isolation.
  *
  * The separator before the attribute list is `[\s/]`, not `\s+`, because a tag can separate its name from its
- * attributes with a slash: `<svg/onload=alert(1)>` is a real element with a real event handler, and a pattern that only
- * recognized whitespace would not match it *at all* — which used to mean it bypassed the allow-list entirely and was
- * emitted verbatim.
+ * attributes with a slash: `<svg/onload=alert(1)>` is a real element with a real event handler, and a pattern
+ * recognizing only whitespace would not match it *at all* — leaving it to be escaped as text rather than inspected
+ * against the allow-list, which is safe but renders a real tag as visible gibberish.
  */
 const TAG_PATTERN: RegExp = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:[\s/][^<>]*)?)>/g;
 
@@ -75,17 +75,17 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
  * valid" caveat in BillEndpoint.md), so this works tag-by-tag with a regex rather than assuming a parseable DOM tree;
  * malformed nesting just renders a little oddly rather than breaking anything.
  *
- * The output is assembled rather than patched, and that distinction is the whole security property. An earlier version
- * ran a single `.replace()` over the input, which meant any text the tag pattern *didn't* match — notably a `<` that
- * began no valid tag — survived into the output untouched. Overlapping tags exploited exactly that gap: the input
- * `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>` had its inner `<img …>` matched and stripped, and the
- * leftover `<i` and `mg src=x onerror=alert(1)>` fragments then closed up around each other into a live, executing
- * `<img onerror>`. Stripping a dangerous tag made a dangerous tag.
+ * **The output is assembled rather than patched, and that distinction is the whole security property.** The input is
+ * walked once; text between recognized tags is escaped, and only a recognized, allow-listed tag is re-emitted as
+ * markup. A `<` that begins no valid tag becomes `&lt;` and renders as the visible character it is. Nothing passes
+ * through by default, so there is no path by which unmatched input reaches the browser as markup.
  *
- * So nothing passes through by default now. The input is walked once; text between recognized tags is escaped, and only
- * a recognized, allow-listed tag is re-emitted as markup. A `<` that begins no valid tag becomes `&lt;` and renders as
- * the visible character it is. There is no longer any path by which unmatched input reaches the browser as markup,
- * which is what closes the whole overlapping-tag class rather than the particular payloads that found it.
+ * Patching instead — a single `.replace()` over the input — leaves any text the tag pattern *doesn't* match untouched
+ * in the output, and overlapping tags exploit exactly that gap. Given
+ * `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, the inner `<img …>` matches and is stripped, and the
+ * leftover `<i` and `mg src=x onerror=alert(1)>` fragments close up around each other into a live, executing
+ * `<img onerror>`: stripping a dangerous tag makes a dangerous tag. Building the output closes that whole class rather
+ * than the particular payloads known to find it.
  *
  * Every tag not on `ALLOWED_TAGS` is dropped (its own markup is removed, but any text between an opening and closing
  * pair is kept as plain text). Every attribute is dropped except `href` on `<a>`, which is kept only if it's an

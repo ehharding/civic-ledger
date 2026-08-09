@@ -10,9 +10,9 @@ import type { BillRouteParams, RelatedBill } from "@/lib/congress/types";
 /**
  * The other measures a bill is recorded as related to.
  *
- * This is the read that makes a bill page stop being an island. The single most common question a reader arrives with
- * after finding a House bill — "is there a Senate version of this?" — has an answer on the record, and until this
- * existed the only way to reach it was to guess a number and search.
+ * This is the read that keeps a bill page from being an island. The single most common question a reader arrives with
+ * after finding a House bill — "is there a Senate version of this?" — has an answer on the record, and this is what
+ * turns that answer into a link rather than a number to guess at.
  *
  * **Every relationship here is attributed, and that is the point rather than a nicety.** Two bills being "related" is
  * an editorial judgment, not a legislative act: the Congressional Research Service identifies its own, and so do the

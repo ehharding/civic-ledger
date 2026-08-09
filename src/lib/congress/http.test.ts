@@ -1,7 +1,7 @@
 /**
  * Covers http.ts's boundary rules — the ones the module's own documentation makes security claims about.
  *
- * Two of those claims are load-bearing and were previously asserted nowhere:
+ * Two of those claims are load-bearing, and neither is observable from any other test in the suite:
  *
  * 1. A route-derived value can never reach Congress.gov malformed. `normalizeBillRouteParams` and `normalizeBioguideId`
  *    validate *shape* rather than escaping, so a bad segment is rejected outright instead of being sanitized and sent

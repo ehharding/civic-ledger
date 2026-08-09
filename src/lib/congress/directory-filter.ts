@@ -3,15 +3,12 @@
  *
  * `search.ts` (bills), `member-filter.ts`, and `committee-filter.ts` are deliberately the same design in three
  * subjects — same wildcard sentinel, same facet-option shape, same total parsers, same only-write-what-isn't-default
- * serialization. Each of those files says so in its own header, and until now that was the only thing making it true:
- * three modules each declared their own `"all"` under a different name, their own byte-identical facet-option type,
- * their own `200`-character cap, and seven parsers with one shared body between them.
- *
- * A sameness that is asserted in prose is a sameness that drifts. This module is that shared vocabulary stated once,
- * for the same reason `compareText` in `format.ts` replaced two collators and four bare `localeCompare` calls: a rule
- * that lives in one place is a rule that applies everywhere, rather than one that applies wherever someone remembered
- * to reach for it. The same argument extends past parsing to the two things every faceted directory then *does* with a
- * list: count its facets ({@link buildFacetOptions}) and order it ({@link sortWithTiebreak}).
+ * serialization. That sameness is held here, in one shared vocabulary, rather than asserted in three headers: a
+ * sameness that is only described in prose is a sameness that drifts. It is the same argument `compareText` in
+ * `format.ts` makes for ordering — a rule that lives in one place is a rule that applies everywhere, rather than one
+ * that applies wherever someone remembered to reach for it — and it extends past parsing to the two things every
+ * faceted directory then *does* with a list: count its facets ({@link buildFacetOptions}) and order it
+ * ({@link sortWithTiebreak}).
  *
  * Pure and isomorphic, as its three consumers have to be — the browser imports all of them, and none may drag the
  * server-only adapter, or the API key it reads, into a client bundle behind it.
@@ -130,10 +127,10 @@ export function toQueryString(params: URLSearchParams): string {
 /**
  * Tallies how many records carry each value of one facet.
  *
- * The counting loop behind every facet control in the app. It is three lines, and it was three lines in three
- * places — the member directory's party and jurisdiction lists and the committee directory's type list — each of which
- * then had to remember the same two things: that a `Map` lookup returns `undefined` before the first increment, and
- * that a record carrying no value for the facet contributes to nothing rather than to a blank option.
+ * The counting loop behind every facet control in the app — the member directory's party and jurisdiction lists and the
+ * committee directory's type list. Three lines, shared because each copy of them would have to remember the same two
+ * things: that a `Map` lookup returns `undefined` before the first increment, and that a record carrying no value for
+ * the facet contributes to nothing rather than to a blank option.
  *
  * @typeParam Item - The kind of record being counted.
  * @typeParam Value - The facet value each record carries.
@@ -160,7 +157,7 @@ export function countFacetValues<Item, Value>(
 /**
  * Builds a facet control's options from the records in hand, in an order the facet's own model declares.
  *
- * Two rules, both of which every facet in this app holds and each of which was previously restated per facet:
+ * Two rules, both of which every facet in this app holds:
  *
  * - **Order comes from the model, not the data.** Parties read in the chamber diagram's left-to-right order and
  *   committee types read from the most consequential kind to the least, because `order` says so — not because of how
@@ -168,8 +165,8 @@ export function countFacetValues<Item, Value>(
  * - **A value nobody holds is not offered.** Filtering `order` down to what is actually present is what keeps a control
  *   from ever presenting a choice that can only return an empty grid.
  *
- * Reading the count off the map once, rather than testing membership and then looking it up, is why this has no
- * unreachable `?? 0` to exempt from coverage — which the two hand-written copies of it both needed.
+ * The count is read off the map once rather than tested for membership and then looked up, which is why there is no
+ * unreachable `?? 0` here to exempt from coverage.
  *
  * @typeParam Item - The kind of record being counted.
  * @typeParam Value - The facet value each record carries.
