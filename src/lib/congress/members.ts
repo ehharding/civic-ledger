@@ -89,6 +89,37 @@ export function normalizePartyName(partyName?: string): PartyGroup {
   return "other";
 }
 
+/** The one-letter party abbreviations the sponsor and cosponsor records use, mapped to their groups. */
+const partyCodes: Readonly<Record<string, PartyGroup>> = {
+  d: "democratic",
+  r: "republican",
+  i: "independent",
+  l: "libertarian",
+};
+
+/**
+ * Narrows a party value that may arrive as a one-letter abbreviation rather than a name.
+ *
+ * The member endpoints send `"Democratic"`; the *sponsor* and *cosponsor* records send `"D"`. That is one field with
+ * two dialects, and {@link normalizePartyName} only speaks the longer one — a bare `"R"` matches none of its stems and
+ * falls through to `"other"`, which is how a Republican cosponsor ends up tinted the neutral gray reserved for parties
+ * this app doesn't recognize.
+ *
+ * Handled here rather than by adding single letters to `normalizePartyName`'s stem list, so the two dialects stay
+ * visibly separate: a caller reaching for this one is saying its data came from a sponsorship record, which is exactly
+ * where the abbreviation appears.
+ *
+ * @param party - The upstream party value, in either dialect.
+ * @returns The matching group. Anything longer than one character is handed to {@link normalizePartyName}, so this is
+ *   safe to use wherever the dialect is uncertain, and an unrecognized letter degrades to `"other"` rather than
+ *   throwing.
+ */
+export function normalizePartyCode(party?: string): PartyGroup {
+  const value: string = (party ?? "").trim().toLowerCase();
+
+  return value.length === 1 ? (partyCodes[value] ?? "other") : normalizePartyName(value);
+}
+
 /** The two chambers of Congress, as this app identifies them internally. */
 export const congressChambers = ["house", "senate"] as const;
 

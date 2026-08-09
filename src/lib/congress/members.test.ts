@@ -21,6 +21,7 @@ import {
   isNonVotingJurisdiction,
   normalizeChamberName,
   normalizeJurisdiction,
+  normalizePartyCode,
   normalizePartyName,
   type PartyGroup,
   type PartyTally,
@@ -290,5 +291,32 @@ describe("normalizeJurisdiction", (): void => {
     // isNonVotingJurisdiction lowercases anyway, but these two have to agree for the House's seat split to stay right.
     expect(isNonVotingJurisdiction(normalizeJurisdiction("PUERTO RICO"))).toBe(true);
     expect(isNonVotingJurisdiction(normalizeJurisdiction("OHIO"))).toBe(false);
+  });
+});
+
+describe("normalizePartyCode", (): void => {
+  it("maps the one-letter abbreviations the sponsor and cosponsor records use", (): void => {
+    // The bug this pins: a cosponsor arriving as "R" fell through normalizePartyName's stem list to "other" and was
+    // tinted the neutral gray reserved for parties this app does not recognize.
+    expect(normalizePartyCode("D")).toBe("democratic");
+    expect(normalizePartyCode("R")).toBe("republican");
+    expect(normalizePartyCode("I")).toBe("independent");
+    expect(normalizePartyCode("L")).toBe("libertarian");
+  });
+
+  it("accepts the abbreviations in either case and with surrounding space", (): void => {
+    expect(normalizePartyCode(" d ")).toBe("democratic");
+    expect(normalizePartyCode("r")).toBe("republican");
+  });
+
+  it("hands anything longer than a letter to the full-name reader, so one entry point covers both dialects", (): void => {
+    expect(normalizePartyCode("Democratic")).toBe("democratic");
+    expect(normalizePartyCode("Independent Democrat")).toBe("independent");
+  });
+
+  it("degrades an unrecognized letter to other rather than throwing", (): void => {
+    expect(normalizePartyCode("Z")).toBe("other");
+    expect(normalizePartyCode("")).toBe("other");
+    expect(normalizePartyCode(undefined)).toBe("other");
   });
 });

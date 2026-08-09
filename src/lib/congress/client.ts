@@ -16,6 +16,8 @@
  * | `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                 |
  * | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.       |
  * | `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.            |
+ * | `bill-cosponsors.ts`     | Who put their name to a bill they did not introduce.                        |
+ * | `bill-related.ts`        | The other measures a bill is recorded as related to, and who said so.       |
  * | `stage.ts`               | Where a bill has got to — from its record, its codes, or its latest action. |
  * | `composition.ts`         | Chamber membership, including the member list's pagination.                 |
  * | `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.            |
@@ -36,6 +38,8 @@
  * @see docs/architecture.md for how this layer fits into the app as a whole.
  */
 export { getBillCommittees } from "@/lib/congress/bill-committees";
+export { getBillCosponsors } from "@/lib/congress/bill-cosponsors";
+export { getRelatedBills } from "@/lib/congress/bill-related";
 export {
   type BillLookupResult,
   type BillSearchResult,

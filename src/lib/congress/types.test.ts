@@ -30,6 +30,8 @@ import {
   compareBillsByRecency,
   congressGovBillUrl,
   describeBillCollection,
+  describeOriginalCosponsors,
+  describeWithdrawnCosponsors,
   type LegislativeBill,
 } from "@/lib/congress/types";
 
@@ -218,5 +220,63 @@ describe("describeBillCollection", (): void => {
         pluralNoun: "Congressional Research Service summaries",
       }),
     ).toBe("Congress.gov records 3 Congressional Research Service summaries on this bill.");
+  });
+});
+
+describe("describeWithdrawnCosponsors", (): void => {
+  it("names how many withdrew when the two published figures disagree", (): void => {
+    expect(describeWithdrawnCosponsors({ current: 40, includingWithdrawn: 43 })).toBe(
+      "3 more members cosponsored this bill and later withdrew, so those names are counted by Congress.gov but absent from the list below.",
+    );
+  });
+
+  it("uses the singular for exactly one withdrawal", (): void => {
+    expect(describeWithdrawnCosponsors({ current: 40, includingWithdrawn: 41 })).toBe(
+      "1 more member cosponsored this bill and later withdrew, so that name is counted by Congress.gov but absent from the list below.",
+    );
+  });
+
+  it("says nothing when the figures agree, which is the shape of nearly every bill", (): void => {
+    expect(describeWithdrawnCosponsors({ current: 40, includingWithdrawn: 40 })).toBe("");
+  });
+
+  it("says nothing when either figure is missing, rather than subtracting from an unknown", (): void => {
+    expect(describeWithdrawnCosponsors({ current: 40 })).toBe("");
+    expect(describeWithdrawnCosponsors({ includingWithdrawn: 43 })).toBe("");
+    expect(describeWithdrawnCosponsors(undefined)).toBe("");
+  });
+
+  it("says nothing rather than reporting a negative withdrawal, which should not happen", (): void => {
+    expect(describeWithdrawnCosponsors({ current: 43, includingWithdrawn: 40 })).toBe("");
+  });
+});
+
+describe("describeOriginalCosponsors", (): void => {
+  it("splits the list between original signers and those who joined later", (): void => {
+    expect(describeOriginalCosponsors(2, 6)).toBe(
+      "2 of the names below were on the bill when it was introduced; the other 4 joined later.",
+    );
+  });
+
+  it("uses the singular verb for exactly one original cosponsor", (): void => {
+    expect(describeOriginalCosponsors(1, 6)).toBe(
+      "1 of the names below was on the bill when it was introduced; the other 5 joined later.",
+    );
+  });
+
+  it("does not claim a remainder that does not exist when every name is original", (): void => {
+    // The bug this pins: "3 of the names below were… ; the other 0 joined later" on the very common small bill whose
+    // cosponsors all signed at introduction.
+    expect(describeOriginalCosponsors(3, 3)).toBe(
+      "Every one of them — all 3 — was on the bill when it was introduced.",
+    );
+  });
+
+  it("says so plainly when none of them were original", (): void => {
+    expect(describeOriginalCosponsors(0, 4)).toBe("None of the names below were on the bill when it was introduced.");
+  });
+
+  it("says nothing when there is nothing listed to describe", (): void => {
+    expect(describeOriginalCosponsors(0, 0)).toBe("");
   });
 });

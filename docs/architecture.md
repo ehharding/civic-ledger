@@ -73,6 +73,8 @@ components, and tests import one stable path while the internals stay free to mo
 | `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                   |
 | `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
 | `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.              |
+| `bill-cosponsors.ts`     | Who put their name to a bill they did not introduce.                          |
+| `bill-related.ts`        | The other measures a bill is recorded as related to, and who said so.         |
 | `members.ts`             | The member model: parties, chambers, seats, shapes, display helpers. Pure.    |
 | `composition.ts`         | Chamber membership, including the member list's pagination.                   |
 | `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |

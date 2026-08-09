@@ -24,7 +24,7 @@ import {
   type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members";
-import { billIdentityKey, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
+import { type BillCosponsor, billIdentityKey, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/types";
 
 /**
  * Clearly labeled fixture records, so the application renders without an API key.
@@ -53,7 +53,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "committee",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Rep. Bennett, Marcus T. [D-OH-9]", party: "D", state: "OH", bioguideId: "PREVIEW-1" },
-    cosponsorCount: 12,
+    cosponsorTally: { current: 12, includingWithdrawn: 12 },
   },
   {
     congress: 119,
@@ -70,7 +70,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "chamber",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Sen. Alvarez, Priya R. [R-AZ]", party: "R", state: "AZ", bioguideId: "PREVIEW-2" },
-    cosponsorCount: 34,
+    cosponsorTally: { current: 34, includingWithdrawn: 34 },
   },
   {
     congress: 119,
@@ -87,7 +87,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "introduced",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Rep. Okafor, Daniel K. [D-GA-4]", party: "D", state: "GA", bioguideId: "PREVIEW-3" },
-    cosponsorCount: 3,
+    cosponsorTally: { current: 3, includingWithdrawn: 3 },
   },
   {
     congress: 119,
@@ -104,7 +104,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "president",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Sen. Whitmore, Louise B. [R-ME]", party: "R", state: "ME", bioguideId: "PREVIEW-4" },
-    cosponsorCount: 21,
+    cosponsorTally: { current: 21, includingWithdrawn: 21 },
   },
   {
     congress: 118,
@@ -121,7 +121,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "law",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Rep. Castillo, Ana P. [D-TX-20]", party: "D", state: "TX", bioguideId: "PREVIEW-5" },
-    cosponsorCount: 47,
+    cosponsorTally: { current: 47, includingWithdrawn: 47 },
   },
   {
     congress: 117,
@@ -138,7 +138,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "law",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Rep. Dupont, Lauren M. [D-NM-2]", party: "D", state: "NM", bioguideId: "PREVIEW-6" },
-    cosponsorCount: 58,
+    cosponsorTally: { current: 58, includingWithdrawn: 58 },
   },
   {
     congress: 116,
@@ -159,7 +159,7 @@ export const previewBills: LegislativeBill[] = [
     stage: "chamber",
     officialUrl: "https://www.congress.gov/",
     sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA", bioguideId: "PREVIEW-7" },
-    cosponsorCount: 9,
+    cosponsorTally: { current: 9, includingWithdrawn: 9 },
   },
 ];
 
@@ -170,6 +170,80 @@ export const previewBills: LegislativeBill[] = [
  * against `previewBills[0]` under `noUncheckedIndexedAccess`.
  */
 export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;
+
+/**
+ * Fictional cosponsors for the preview fixtures, keyed by `billIdentityKey`.
+ *
+ * Drawn *only* from the seven placeholder members the fixtures already name as sponsors, which is what keeps this from
+ * widening the fiction: every person here already has a preview page, already appears on a preview bill, and already
+ * carries a `PREVIEW-n` id that deliberately fails `isBioguideId` — so none of them can be sent upstream or linked to a
+ * real person's biography. @see docs/data-policy.md, "Placeholder members exist where a placeholder roster still
+ * doesn't."
+ *
+ * These exist so the no-key build — which is what the GitHub Pages demo runs, and the only thing a UI reviewer can
+ * see — shows the cosponsor section doing its job rather than showing its empty state. The one thing the preview path
+ * must not do is credit Congress.gov with a count for a bill it never published, which is why the section drops the
+ * published figure entirely when `source` is `"preview"`. @see CosponsorList.
+ *
+ * The `isOriginal` flags are mixed on purpose, so the preview exercises both branches of the row and both halves of the
+ * sentence above it rather than only the one a uniform list would reach.
+ */
+export const previewCosponsors: Record<string, BillCosponsor[]> = {
+  "119-HR-284": [
+    {
+      fullName: "Rep. Okafor, Daniel K. [D-GA-4]",
+      bioguideId: "PREVIEW-3",
+      party: "D",
+      state: "GA",
+      sponsorshipDate: "2026-02-11",
+      isOriginal: true,
+    },
+    {
+      fullName: "Rep. Castillo, Ana P. [D-TX-20]",
+      bioguideId: "PREVIEW-5",
+      party: "D",
+      state: "TX",
+      sponsorshipDate: "2026-02-11",
+      isOriginal: true,
+    },
+    {
+      fullName: "Sen. Whitmore, Louise B. [R-ME]",
+      bioguideId: "PREVIEW-4",
+      party: "R",
+      state: "ME",
+      sponsorshipDate: "2026-03-19",
+      isOriginal: false,
+    },
+  ],
+  "119-S-917": [
+    {
+      fullName: "Sen. Halloran, Peter J. [R-IA]",
+      bioguideId: "PREVIEW-7",
+      party: "R",
+      state: "IA",
+      sponsorshipDate: "2026-01-22",
+      isOriginal: true,
+    },
+    {
+      fullName: "Rep. Bennett, Marcus T. [D-OH-9]",
+      bioguideId: "PREVIEW-1",
+      party: "D",
+      state: "OH",
+      sponsorshipDate: "2026-04-02",
+      isOriginal: false,
+    },
+  ],
+  "119-HJRES-66": [
+    {
+      fullName: "Rep. Dupont, Lauren M. [D-NM-2]",
+      bioguideId: "PREVIEW-6",
+      party: "D",
+      state: "NM",
+      sponsorshipDate: "2026-05-06",
+      isOriginal: true,
+    },
+  ],
+};
 
 /**
  * Fictional, illustrative summaries for the preview fixtures, keyed by `billIdentityKey`. Used only when no API key is

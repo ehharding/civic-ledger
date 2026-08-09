@@ -11,6 +11,7 @@ import type {
   CongressApiCommitteeNomination,
   CongressApiCommitteeRef,
   CongressApiCommitteeReport,
+  CongressApiCosponsor,
   CongressApiDepiction,
   CongressApiLaw,
   CongressApiLeadership,
@@ -19,6 +20,8 @@ import type {
   CongressApiMemberDetailTerm,
   CongressApiMemberTerm,
   CongressApiRecordedVote,
+  CongressApiRelatedBill,
+  CongressApiRelationshipDetail,
   CongressApiSponsor,
   CongressApiSummary,
   CongressApiTextFormat,
@@ -55,6 +58,8 @@ import { inferBillStage } from "@/lib/congress/stage";
 import {
   type BillAction,
   type BillCollectionCounts,
+  type BillCosponsor,
+  type BillCosponsorTally,
   type BillSponsor,
   type BillSummary,
   type BillTextFormat,
@@ -63,6 +68,8 @@ import {
   type EnactedLaw,
   type LegislativeBill,
   type RecordedVote,
+  type RelatedBill,
+  type RelatedBillRelationship,
 } from "@/lib/congress/types";
 import { compareIsoDatesDesc } from "@/lib/format";
 
@@ -144,18 +151,18 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
           bioguideId: sponsor.bioguideId,
         } satisfies BillSponsor)
       : undefined,
-    cosponsorCount: bill.cosponsors?.count,
+    cosponsorTally: mapCosponsorTally(bill),
     enactedLaw,
     collectionCounts: mapBillCollectionCounts(bill),
   };
 }
 
 /**
- * Reads the publisher's own sizes for the four collections hanging off a bill.
+ * Reads the publisher's own sizes for the collections hanging off a bill.
  *
  * @param bill - A validated bill object from either endpoint.
  * @returns The counts, or `undefined` when the record published none — which is every bill from the *list* endpoint,
- *   and is deliberately not the same as an object holding four `undefined`s. A caller that has one of these knows
+ *   and is deliberately not the same as an object holding only `undefined`s. A caller that has one of these knows
  *   Congress.gov answered the question; a caller that has `undefined` knows it was never asked, and the bill page says
  *   different things in the two cases. Same rule as {@link mapCommitteeNomination}'s `latestAction`: a value is carried
  *   only when it says something.
@@ -166,9 +173,94 @@ function mapBillCollectionCounts(bill: CongressApiBill): BillCollectionCounts | 
     committees: bill.committees?.count,
     summaries: bill.summaries?.count,
     textVersions: bill.textVersions?.count,
+    relatedBills: bill.relatedBills?.count,
   };
 
   return Object.values(counts).some((count: number | undefined): boolean => count !== undefined) ? counts : undefined;
+}
+
+/**
+ * Reads the publisher's two cosponsor figures.
+ *
+ * Kept out of {@link mapBillCollectionCounts} because the two are not the same kind of fact: that function reports how
+ * long a collection is, and this one reports a pair whose *difference* is the interesting part. Folding a withdrawal
+ * count into a list of lengths would make the page's "Congress.gov records N" sentence claim something it doesn't mean.
+ *
+ * @param bill - A validated bill object from either endpoint.
+ * @returns The tally, or `undefined` when the record published neither figure — which is every bill from the list
+ *   endpoint. Same rule as {@link mapBillCollectionCounts}: an object of `undefined`s would say "asked and got
+ *   nothing", and `undefined` says "never asked", and the page distinguishes them.
+ */
+function mapCosponsorTally(bill: CongressApiBill): BillCosponsorTally | undefined {
+  const tally: BillCosponsorTally = {
+    current: bill.cosponsors?.count,
+    includingWithdrawn: bill.cosponsors?.countIncludingWithdrawnCosponsors,
+  };
+
+  return tally.current === undefined && tally.includingWithdrawn === undefined ? undefined : tally;
+}
+
+/**
+ * Maps one entry from a bill's `/cosponsors` collection.
+ *
+ * @param cosponsor - A validated cosponsor entry.
+ * @returns The mapped cosponsor, or `null` without a name — the one field that makes a row a row. A missing
+ *   `bioguideId` is *not* disqualifying, unlike on the member directory: there, the id is the page a card opens and a
+ *   card opening nothing is broken; here the name still says who signed on, and only the link is lost.
+ */
+export function mapBillCosponsor(cosponsor: CongressApiCosponsor): BillCosponsor | null {
+  if (!cosponsor.fullName) return null;
+
+  return {
+    fullName: cosponsor.fullName,
+    bioguideId: cosponsor.bioguideId,
+    party: cosponsor.party,
+    state: cosponsor.state,
+    sponsorshipDate: cosponsor.sponsorshipDate,
+    withdrawnDate: cosponsor.sponsorshipWithdrawnDate,
+    // Defaulted to false rather than carried as optional: every consumer wants a boolean, and "the record didn't say"
+    // and "the record said no" are not distinguishable in anything this app would print.
+    isOriginal: cosponsor.isOriginalCosponsor === true,
+  };
+}
+
+/**
+ * Maps one statement of how two measures relate.
+ *
+ * @param detail - A validated relationship entry.
+ * @returns The mapped relationship, or `null` without a type. An attribution with nothing attributed to it — "CRS
+ *   said…" and then nothing — is not a row.
+ */
+export function mapRelatedBillRelationship(detail: CongressApiRelationshipDetail): RelatedBillRelationship | null {
+  const type: string = (detail.type ?? "").trim();
+  if (type.length === 0) return null;
+
+  return { type, identifiedBy: detail.identifiedBy };
+}
+
+/**
+ * Maps one entry from a bill's `/relatedbills` collection.
+ *
+ * @param related - A validated related-bill entry.
+ * @returns The mapped reference, or `null` when it lacks the congress, type, number, or title an inward link and its
+ *   label are built from. The same completeness bar {@link mapCongressBill} applies, and for the same reason: a related
+ *   measure a reader cannot open is worse than one that isn't listed.
+ */
+export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | null {
+  if (!related.congress || !related.type || related.number === undefined || !related.title) return null;
+
+  const actionText: string | undefined = related.latestAction?.text;
+
+  return {
+    congress: related.congress,
+    type: related.type.toUpperCase(),
+    number: String(related.number),
+    title: related.title,
+    // Carried only when it says something, like `mapCommitteeNomination`'s: a latest action with a date and no text
+    // renders as a stray date rather than as a sentence.
+    latestAction: actionText ? { date: related.latestAction?.actionDate, text: actionText } : undefined,
+    relationships: mapUsable(related.relationshipDetails, mapRelatedBillRelationship),
+  };
 }
 
 /**

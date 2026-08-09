@@ -1,6 +1,6 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
-import type { JSX } from "react";
+import { Fragment, type JSX } from "react";
 
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";
@@ -8,22 +8,31 @@ import { DataSourceNotice } from "@/components/data-source-notice";
 import { GlossaryProse } from "@/components/glossary-prose";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
+import { billHref } from "@/lib/bill-route";
 import { committeeHref } from "@/lib/committee-route";
 import type { BillCommittee, BillCommitteeActivity, BillSubcommittee } from "@/lib/congress/committees";
 import { collectRecordedVotes } from "@/lib/congress/mappers";
+import { normalizePartyCode, type PartyGroup, partyTintClass } from "@/lib/congress/members";
 import { resolveBillStage } from "@/lib/congress/stage";
 import {
   type BillAction,
+  type BillCosponsor,
+  type BillCosponsorTally,
   type BillStage,
   type BillSummary,
   type BillTextFormat,
   type BillTextVersion,
+  billIdentityKey,
   billStageLabels,
   type CongressSnapshot,
   describeBillCollection,
+  describeOriginalCosponsors,
+  describeWithdrawnCosponsors,
   formatEnactedLaw,
   type LegislativeBill,
   type RecordedVote,
+  type RelatedBill,
+  type RelatedBillRelationship,
 } from "@/lib/congress/types";
 import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
 import { lessonHref } from "@/lib/lesson-route";
@@ -46,7 +55,279 @@ type BillDetailProps = {
   actions: BillAction[];
   /** Every committee that held this bill, in Congress.gov's own order. Empty in preview mode and on failure. */
   committees: BillCommittee[];
+  /**
+   * Everyone currently signed on, in the publisher's chronological order. Empty on failure, and in preview mode holds
+   * the labeled fixture cosponsors rather than nothing.
+   * @see previewCosponsors
+   */
+  cosponsors: BillCosponsor[];
+  /** Every measure recorded as related to this one, in the publisher's order. Empty in preview mode and on failure. */
+  related: RelatedBill[];
 };
+
+/**
+ * How many cosponsors are shown before the rest move behind a disclosure.
+ *
+ * A bill can carry four hundred names, and a page that prints all of them puts every section below it — the summary,
+ * the full text, the related measures — an unreasonable scroll away. Twelve is enough to see the shape of who signed
+ * on, including whether the list crosses party lines, while keeping the rest of the page reachable. Nothing is dropped:
+ * the remainder is one click away, in the same `<details>` idiom the action history and the earlier summaries use.
+ */
+const COSPONSOR_PREVIEW_LIMIT: number = 12;
+
+/**
+ * How many related measures are shown before the rest move behind a disclosure.
+ *
+ * Lower than the cosponsor limit because the rows are taller by a wide margin: a cosponsor is one name, and a related
+ * measure carries a title plus its own latest action, which on an appropriations bill runs to five lines by itself.
+ * Nine keeps this section roughly the height of the ones above it instead of several times their length.
+ */
+const RELATED_BILL_PREVIEW_LIMIT: number = 9;
+
+/** Props for {@link DisclosedList}. */
+type DisclosedListProps<Item> = {
+  /** Everything to show, in the order it should read. */
+  items: Item[];
+  /** How many appear before the disclosure. */
+  limit: number;
+  /** The `<ul>`'s class, applied to both the visible list and the disclosed one so they lay out identically. */
+  listClassName: string;
+  /** Renders one item. */
+  renderItem: (item: Item) => JSX.Element;
+  /** A stable key for one item. */
+  keyFor: (item: Item) => string;
+  /** The disclosure's label, given how many are behind it — e.g., `` (n) => `Show the Remaining ${n} Cosponsors` ``. */
+  moreLabel: (remaining: number) => string;
+};
+
+/**
+ * A long list, capped at a preview length with the remainder behind a `<details>`.
+ *
+ * Both of this page's newest collections need the same treatment for the same reason — a bill can have four hundred
+ * cosponsors or three dozen related measures, and either would bury every section beneath it — so the rule is stated
+ * once here rather than implemented twice with two chances to disagree about it.
+ *
+ * **Nothing is dropped and the label says how much is behind it.** That is the point of the disclosure rather than a
+ * detail of it: this app's standing rule is that a bounded view names what it bounded (@see describeBillCollection),
+ * and a list that silently stopped at twelve would read as a complete list of twelve. The count in the summary text is
+ * what keeps the cap honest, and it is why `moreLabel` receives the number rather than being a fixed string.
+ *
+ * @typeParam Item - The record type being listed.
+ * @param props - @see DisclosedListProps
+ * @returns The visible list, followed by the disclosure when anything is behind it.
+ */
+function DisclosedList<Item>({
+  items,
+  limit,
+  listClassName,
+  renderItem,
+  keyFor,
+  moreLabel,
+}: DisclosedListProps<Item>): JSX.Element {
+  const shown: Item[] = items.slice(0, limit);
+  const remaining: Item[] = items.slice(limit);
+
+  return (
+    <>
+      <ul className={listClassName}>
+        {shown.map(
+          (item: Item): JSX.Element => (
+            <Fragment key={keyFor(item)}>{renderItem(item)}</Fragment>
+          ),
+        )}
+      </ul>
+
+      {remaining.length > 0 ? (
+        <details className="summary-history">
+          <summary className="summary-history__toggle">{moreLabel(remaining.length)}</summary>
+          <ul className={listClassName}>
+            {remaining.map(
+              (item: Item): JSX.Element => (
+                <Fragment key={keyFor(item)}>{renderItem(item)}</Fragment>
+              ),
+            )}
+          </ul>
+        </details>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * One cosponsor: who they are, which party they sit with, and when they signed on.
+ *
+ * Links inward to the member's own page, on the same reasoning as the sponsor line in the hero — that page collects
+ * their seat, service record, and everything else they have put their name to, and carries the official biography link
+ * onward. A cosponsor arriving without a Bioguide ID renders as plain text rather than as a link to nothing, which is
+ * also what every preview fixture does.
+ *
+ * @param cosponsor - The cosponsor to render.
+ * @returns The row.
+ */
+function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element {
+  const party: PartyGroup = normalizePartyCode(cosponsor.party);
+
+  return (
+    <li className={`cosponsor-list__item ${partyTintClass(party)}`}>
+      <span className="cosponsor-list__name">
+        {cosponsor.bioguideId ? (
+          <Link className="text-link" href={memberHref(cosponsor.bioguideId)}>
+            {cosponsor.fullName}
+          </Link>
+        ) : (
+          cosponsor.fullName
+        )}
+      </span>
+      <span className="cosponsor-list__meta">
+        {/* "Original" is the record's own distinction, not a date comparison this app made — @see BillCosponsor. It is
+            the one thing on the row that says something a count could not. */}
+        {cosponsor.isOriginal ? <span className="cosponsor-list__original">Original</span> : null}
+        {cosponsor.sponsorshipDate ? (
+          <span className="date-label">
+            {cosponsor.isOriginal ? "At introduction" : `Joined ${formatDate(cosponsor.sponsorshipDate)}`}
+          </span>
+        ) : null}
+        {cosponsor.withdrawnDate ? (
+          <span className="cosponsor-list__withdrawn">Withdrawn {formatDate(cosponsor.withdrawnDate)}</span>
+        ) : null}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The members who put their name to a bill, listed rather than merely counted.
+ *
+ * Congress.gov returns these oldest first — everyone who signed at introduction, then everyone who joined afterwards,
+ * in order — and that sequence is kept rather than re-sorted, since it is the bill gathering support over time.
+ * @see getBillCosponsors.
+ *
+ * The one number this section computes rather than reads is how many were original cosponsors, and the sentence
+ * attributes it accordingly: it is a tally of a published boolean, not a published figure.
+ *
+ * **The published figures are dropped entirely on a preview record**, which is the one thing this section must not get
+ * wrong. Unlike every other collection on this page, a fixture bill *does* carry a cosponsor tally — the fixtures set
+ * it so the hero's meta row has a count to show — so passing it straight through would print "Congress.gov records 12
+ * cosponsors on this bill" over three fictional names. Preview copy never credits a real institution with invented
+ * content; the same rule spells the summary caption.
+ * @see SummaryCaption, and docs/data-policy.md.
+ *
+ * @param cosponsors - Everyone currently signed on, in the publisher's order.
+ * @param tally - Congress.gov's own figures, including anyone who later withdrew.
+ * @param source - Whether this record is live or preview data.
+ * @returns The count lines and the list, the tail of it behind a disclosure.
+ */
+function CosponsorList({
+  cosponsors,
+  tally,
+  source,
+}: {
+  cosponsors: BillCosponsor[];
+  tally: BillCosponsorTally | undefined;
+  source: CongressSnapshot["source"];
+}): JSX.Element {
+  const published: BillCosponsorTally | undefined = source === "preview" ? undefined : tally;
+  const originals: number = cosponsors.filter((cosponsor: BillCosponsor): boolean => cosponsor.isOriginal).length;
+  const withdrawn: string = describeWithdrawnCosponsors(published);
+
+  return (
+    <>
+      <p className="muted-copy">
+        {describeBillCollection({ shown: cosponsors.length, published: published?.current, noun: "cosponsor" })}{" "}
+        {describeOriginalCosponsors(originals, cosponsors.length)}
+      </p>
+      {withdrawn.length > 0 ? <p className="muted-copy">{withdrawn}</p> : null}
+
+      <DisclosedList
+        items={cosponsors}
+        keyFor={(cosponsor: BillCosponsor): string => cosponsor.bioguideId ?? cosponsor.fullName}
+        limit={COSPONSOR_PREVIEW_LIMIT}
+        listClassName="cosponsor-list"
+        moreLabel={(remaining: number): string => `Show the Remaining ${remaining} Cosponsors`}
+        renderItem={(cosponsor: BillCosponsor): JSX.Element => <CosponsorRow cosponsor={cosponsor} />}
+      />
+    </>
+  );
+}
+
+/**
+ * How one related measure relates to this one, with the body that said so named.
+ *
+ * @param relationships - Every recorded statement about the pair.
+ * @returns e.g., `"Identical bill (CRS)"`, joined by middots — or an empty string when the record named none, which the
+ *   caller renders as no line rather than as an empty one.
+ */
+function describeRelationships(relationships: RelatedBillRelationship[]): string {
+  return relationships
+    .map((relationship: RelatedBillRelationship): string =>
+      relationship.identifiedBy ? `${relationship.type} (${relationship.identifiedBy})` : relationship.type,
+    )
+    .join(" · ");
+}
+
+/**
+ * The other measures Congress.gov records as related to this bill, each linking to its page here.
+ *
+ * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — which
+ * previously had no route through this app at all.
+ *
+ * Every relationship prints who identified it. Relatedness is an editorial judgment rather than a legislative act, and
+ * the Congressional Research Service, the House, and the Senate each make their own; naming the source is the same
+ * standard this app holds its own stage cue to. @see getRelatedBills.
+ *
+ * @param measure - The related measure to render.
+ * @returns The row.
+ */
+function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
+  const relationships: string = describeRelationships(measure.relationships);
+
+  return (
+    <li>
+      <p className="related-bill-list__identity">
+        <Link className="text-link" href={billHref(measure)}>
+          {measure.type} {measure.number}
+        </Link>
+        {/* Always printed rather than guarded: `congress` is required on the model, and a related measure can sit in a
+            different Congress from the bill pointing at it, so the number is doing real work here. */}
+        <span className="date-label"> · {formatOrdinal(measure.congress)} Congress</span>
+      </p>
+      <p className="related-bill-list__title">{measure.title}</p>
+      {relationships.length > 0 ? <p className="date-label">{relationships}</p> : null}
+      {measure.latestAction ? (
+        // The other measure's own words, so they get the same glossary treatment this bill's latest action does.
+        <p className="related-bill-list__action">
+          <GlossaryProse text={measure.latestAction.text} />
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
+/**
+ * The other measures Congress.gov records as related to this bill, each linking to its page here.
+ *
+ * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — which
+ * previously had no route through this app at all.
+ *
+ * Every relationship prints who identified it. Relatedness is an editorial judgment rather than a legislative act, and
+ * the Congressional Research Service, the House, and the Senate each make their own; naming the source is the same
+ * standard this app holds its own stage cue to. @see getRelatedBills.
+ *
+ * @param related - The related measures, in the publisher's order.
+ * @returns The list, its tail behind a disclosure.
+ */
+function RelatedBillList({ related }: { related: RelatedBill[] }): JSX.Element {
+  return (
+    <DisclosedList
+      items={related}
+      keyFor={billIdentityKey}
+      limit={RELATED_BILL_PREVIEW_LIMIT}
+      listClassName="related-bill-list"
+      moreLabel={(remaining: number): string => `Show the Remaining ${remaining} Related Measures`}
+      renderItem={(measure: RelatedBill): JSX.Element => <RelatedBillRow measure={measure} />}
+    />
+  );
+}
 
 /**
  * What a committee did with the bill, as one line.
@@ -266,6 +547,8 @@ export function BillDetail({
   textVersions,
   actions,
   committees,
+  cosponsors,
+  related,
 }: BillDetailProps): JSX.Element {
   const [summary, ...earlierSummaries]: BillSummary[] = summaries;
   const votes: RecordedVote[] = collectRecordedVotes(actions);
@@ -311,9 +594,9 @@ export function BillDetail({
               )}
             </span>
           ) : null}
-          {typeof bill.cosponsorCount === "number" ? (
+          {typeof bill.cosponsorTally?.current === "number" ? (
             <span>
-              {bill.cosponsorCount} <GlossaryProse text={pluralize(bill.cosponsorCount, "Cosponsor")} />
+              {bill.cosponsorTally.current} <GlossaryProse text={pluralize(bill.cosponsorTally.current, "Cosponsor")} />
             </span>
           ) : null}
         </div>
@@ -369,6 +652,32 @@ export function BillDetail({
               {source === "preview"
                 ? "Committees of referral appear here once live Congress.gov data is connected."
                 : "No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."}
+            </p>
+          )}
+        </section>
+      </div>
+
+      {/* Sits here, between the committees that held the bill and the actions taken on it, because it answers the
+          question the hero's sponsor line opens and cannot close: one name introduced this, and these are the others
+          who put theirs to it. A member's page has always listed the bills they cosponsored; until this section existed
+          the relationship was navigable in exactly one direction. */}
+      <div className="detail-grid detail-grid--single">
+        <section className="detail-panel" aria-labelledby="cosponsors-heading">
+          <p className="section-kicker">Who Else Put Their Name To It</p>
+          <h2 id="cosponsors-heading">Cosponsors</h2>
+          {cosponsors.length > 0 ? (
+            <>
+              <CosponsorList cosponsors={cosponsors} source={source} tally={bill.cosponsorTally} />
+              <p className="muted-copy">
+                Cosponsoring records that a member supported introducing a measure. It is not a vote, not a prediction,
+                and not a ranking — most cosponsored bills never reach a floor.
+              </p>
+            </>
+          ) : (
+            <p className="muted-copy">
+              {source === "preview"
+                ? "Cosponsors appear here once live Congress.gov data is connected."
+                : "No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."}
             </p>
           )}
         </section>
@@ -507,6 +816,37 @@ export function BillDetail({
             </p>
           )}
         </aside>
+      </div>
+
+      {/* Last of the record sections, and outward-facing on purpose: everything above is about this bill, and this is
+          where a reader leaves it for the companion measure in the other chamber. */}
+      <div className="detail-grid detail-grid--single">
+        <section className="detail-panel" aria-labelledby="related-heading">
+          <p className="section-kicker">Elsewhere in Congress</p>
+          <h2 id="related-heading">Related Measures</h2>
+          {related.length > 0 ? (
+            <>
+              <p className="muted-copy">
+                {describeBillCollection({
+                  shown: related.length,
+                  published: bill.collectionCounts?.relatedBills,
+                  noun: "related measure",
+                })}{" "}
+                Each is listed with the body that identified the relationship — the Congressional Research Service, the
+                House, or the Senate — because relating two measures is a judgment someone made rather than something
+                the bills themselves record. They are in Congress.gov’s own order, which the API documents no meaning
+                for, so neither end of this list is the most significant.
+              </p>
+              <RelatedBillList related={related} />
+            </>
+          ) : (
+            <p className="muted-copy">
+              {source === "preview"
+                ? "Related measures appear here once live Congress.gov data is connected."
+                : "Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."}
+            </p>
+          )}
+        </section>
       </div>
 
       <CalloutCard

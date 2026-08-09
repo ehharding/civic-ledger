@@ -230,13 +230,28 @@
   line-height: 1.55;
 }
 
+/* Every auto-filled grid inside a `.detail-panel` wraps its track floor in `min(…, 100%)`, and it is load-bearing
+   rather than defensive.
+
+   A bare `minmax(230px, 1fr)` reads as "at least 230px, and share what's left" — but the floor is a hard one, so once
+   the container is narrower than 230px the track stays 230px and overflows it. Inside a detail panel that happens on a
+   phone rather than in some pathological case: the panel spends 56px of the viewport on its own padding and the page
+   shell takes more, so a 375px screen leaves about 286px of usable width, and 320px (the minimum `html` declares in
+   base.css) leaves about 224px. The 300px floor on `.related-bill-list` overflowed at 375px; 230px and 240px overflow
+   at 320px.
+
+   `min(230px, 100%)` keeps the identical behavior wherever there is room and collapses the floor to the container's own
+   width where there isn't, which is exactly the "one column, no horizontal scroll" result the phone layout wants. It
+   belongs on the track rather than in a media query because the constraint is the *container's* width, not the
+   viewport's — these panels are one column below 900px but still sit inside a page shell whose padding varies. */
+
 /* The committees a bill passed through. Laid out in columns rather than one long list because a bill referred to a
    dozen committees at once is ordinary, and twelve stacked rows push the rest of the page below the fold for a fact
    that is a list of names. `auto-fill` rather than a fixed count so a bill with two committees gets two, not two in a
    twelve-wide grid. */
 .bill-committee-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
   gap: 16px 24px;
   margin-top: 16px;
   list-style: none;
@@ -255,6 +270,105 @@
 
 .bill-committee-list__subcommittees li + li {
   margin-top: 6px;
+}
+
+/* The members who signed on to a bill. Same auto-fill column treatment as the committee list above, and for the same
+   reason turned up: a bill with two hundred cosponsors is ordinary, and two hundred stacked rows would bury every
+   section below. The component caps the inline list at twelve and puts the tail behind a <details>; this makes those
+   twelve read as a block rather than a column of stragglers. */
+.cosponsor-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 14px 24px;
+  margin-top: 16px;
+  list-style: none;
+}
+
+/* The party tint arrives as --party-color from .party-tint--* (@see src/styles/party.css), read here into a leading
+   rule. A bar rather than a filled chip: it identifies the caucus at a glance without coloring the name itself, which
+   on a page about a bill would read as this app taking a position on the person. Color is not the only carrier — the
+   party letter is in the name Congress.gov publishes ("Rep. Issa, Darrell [R-CA-48]"), so a reader who cannot
+   distinguish the hues still has it in the text. */
+.cosponsor-list__item {
+  border-left: 3px solid var(--party-color, var(--party-other));
+  padding-left: 12px;
+}
+
+.cosponsor-list__name {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.cosponsor-list__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+/* .date-label carries a 15px top margin for its use under a panel heading, which is far too much inside a row. */
+.cosponsor-list__meta .date-label {
+  margin-top: 0;
+}
+
+/* The one distinction on the row that a count could not have produced, so it is the one thing given a badge. */
+.cosponsor-list__original {
+  border: 1px solid var(--teal-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: var(--teal-surface-strong);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A withdrawal is rare and is the row's most consequential fact when it happens, so it takes the amber the rest of the
+   app reserves for "read this before you read the rest". */
+.cosponsor-list__withdrawn {
+  color: var(--amber-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Other measures related to this bill. Wider minimum than the cosponsor grid because each entry carries a full bill
+   title and a latest action rather than one name. */
+.related-bill-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 22px 24px;
+  margin-top: 18px;
+  list-style: none;
+}
+
+.related-bill-list__identity {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+/* The identity line pairs the bill number with its Congress on one baseline, so the date-label's heading-context top
+   margin has to come off here as it does in the cosponsor row. */
+.related-bill-list__identity .date-label {
+  margin-top: 0;
+  font-weight: 400;
+}
+
+.related-bill-list__title {
+  margin-top: 4px;
+  color: var(--ink);
+  font-family: var(--serif), serif;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.related-bill-list__action {
+  margin-top: 8px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.5;
 }
 
 .recorded-vote-list {

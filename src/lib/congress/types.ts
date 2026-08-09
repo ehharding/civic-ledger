@@ -195,6 +195,135 @@ export type BillCollectionCounts = {
   committees?: number;
   summaries?: number;
   textVersions?: number;
+  relatedBills?: number;
+};
+
+/**
+ * The two figures Congress.gov publishes about a bill's cosponsors.
+ *
+ * Separate from {@link BillCollectionCounts} because it is not one number, and the second one is not decoration. The
+ * `/cosponsors` collection lists whoever is *currently* signed on; `includingWithdrawn` counts everyone who ever was.
+ * Where they differ, a member took their name off the bill — an event with no other trace anywhere on this page, since
+ * the withdrawing member is by then absent from the very list a reader would check.
+ *
+ * Carried as a pair so the page can never state one without being able to check the other.
+ * @see describeWithdrawnCosponsors
+ */
+export type BillCosponsorTally = {
+  /** How many are signed on now. */
+  current?: number;
+  /** How many have been at any point, withdrawals included. Equal to `current` on nearly every bill. */
+  includingWithdrawn?: number;
+};
+
+/**
+ * States that cosponsors withdrew, when the two published figures say so.
+ *
+ * The subtraction is this app's, but both operands are Congress.gov's and the sentence says what it did rather than
+ * presenting the difference as a published fact. Returns an empty string whenever the figures agree, either is missing,
+ * or the difference is negative — the last of which should not happen and is not worth a confident sentence if it does.
+ *
+ * @param tally - The bill's two cosponsor figures.
+ * @returns The sentence, or an empty string when there is nothing to say.
+ */
+export function describeWithdrawnCosponsors(tally: BillCosponsorTally | undefined): string {
+  const { current, includingWithdrawn } = tally ?? {};
+  if (current === undefined || includingWithdrawn === undefined) return "";
+
+  const withdrawn: number = includingWithdrawn - current;
+  if (withdrawn <= 0) return "";
+
+  return `${withdrawn} more ${pluralize(withdrawn, "member")} cosponsored this bill and later withdrew, so ${
+    withdrawn === 1 ? "that name is" : "those names are"
+  } counted by Congress.gov but absent from the list below.`;
+}
+
+/**
+ * States how many of a bill's cosponsors were on it at introduction.
+ *
+ * The one figure the cosponsor section computes rather than reads, so the wording is careful about whose number it is:
+ * it counts a boolean Congress.gov publishes on each row, and says "of the names below" rather than "on this bill",
+ * because the list it describes is the one on screen and not necessarily the whole collection.
+ *
+ * In the model rather than at the view, on the rule the rest of this layer follows — display wording belongs somewhere
+ * a unit test can reach without rendering a page.
+ * @see describeBillCollection.
+ *
+ * @param originals - How many of the listed cosponsors the record marks as original.
+ * @param total - How many are listed.
+ * @returns The sentence, or an empty string when there is nothing listed to describe.
+ */
+export function describeOriginalCosponsors(originals: number, total: number): string {
+  if (total === 0) return "";
+  if (originals === 0) return "None of the names below were on the bill when it was introduced.";
+
+  const wereOn: string = `${originals} of the names below ${pluralize(originals, "was", "were")} on the bill when it was introduced`;
+
+  // "…; the rest joined later" is false when there is no rest, which is the common shape for a bill with two or three
+  // cosponsors — so the all-original case gets its own ending rather than a clause that contradicts the count.
+  if (originals === total) return `Every one of them — all ${total} — was on the bill when it was introduced.`;
+
+  const later: number = total - originals;
+
+  return `${wereOn}; the other ${later} joined later.`;
+}
+
+/**
+ * One member who put their name to a bill they did not introduce.
+ *
+ * Everything here is published rather than derived — including {@link isOriginal}, which is the distinction that makes
+ * the collection worth listing rather than counting. A member on the bill the day it was introduced and one who joined
+ * eight months later are both cosponsors, and only the record separates them.
+ */
+export type BillCosponsor = {
+  /** The name as Congress.gov spells it, e.g., `"Rep. Issa, Darrell [R-CA-48]"`. */
+  fullName: string;
+  /** Present on essentially every live record; its absence is what makes a cosponsor unlinkable rather than unusable. */
+  bioguideId?: string;
+  party?: string;
+  state?: string;
+  /** When they signed on. */
+  sponsorshipDate?: string;
+  /** Set only for the rare member who later took their name off. */
+  withdrawnDate?: string;
+  /** Whether they were on the bill at introduction, as the record states it — never inferred from dates. */
+  isOriginal: boolean;
+};
+
+/**
+ * How one measure relates to another, and who said it does.
+ *
+ * The attribution is not optional decoration. A relationship between two bills is an editorial judgment rather than a
+ * legislative act — the Congressional Research Service, the House, and the Senate each identify their own — so the page
+ * prints who made the call beside the call itself, on the same rule that keeps this app's stage cue labeled as a
+ * reading rather than a status.
+ */
+export type RelatedBillRelationship = {
+  /** e.g., `"Related bill"`, `"Identical bill"`, `"Procedurally-related"`. */
+  type: string;
+  /** e.g., `"CRS"`, `"House"`, `"Senate"`. */
+  identifiedBy?: string;
+};
+
+/**
+ * Another measure this bill is recorded as related to.
+ *
+ * A reference, not a bill: it carries what a link and a label need and nothing else, which is all the endpoint sends.
+ * The identity fields are required rather than optional because a related bill this app cannot open is worse than one
+ * it does not list — the same rule that drops a recorded vote missing its roll number.
+ * @see mapRelatedBill
+ */
+export type RelatedBill = {
+  congress: number;
+  type: string;
+  number: string;
+  title: string;
+  latestAction?: {
+    date?: string;
+    text: string;
+  };
+  /** Every recorded statement of how the two measures relate. Can be empty when the record named none. */
+  relationships: RelatedBillRelationship[];
 };
 
 /**
@@ -267,7 +396,13 @@ export type LegislativeBill = {
   stage: BillStage;
   officialUrl: string;
   sponsor?: BillSponsor;
-  cosponsorCount?: number;
+  /**
+   * How many members put their name to the bill, as a pair rather than a number.
+   *
+   * Detail-endpoint only, like {@link BillSponsor} and {@link EnactedLaw}. @see BillCosponsorTally for why the
+   * withdrawn figure travels alongside the current one instead of being dropped as a near-duplicate.
+   */
+  cosponsorTally?: BillCosponsorTally;
   /** Set only for an enacted measure, and only from the detail endpoint. @see EnactedLaw */
   enactedLaw?: EnactedLaw;
   /**

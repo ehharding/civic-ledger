@@ -69,7 +69,18 @@ export const congressApiBillSchema = z.looseObject({
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
   // Only populated on the detail endpoint — the list endpoint doesn't return any of these.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
-  cosponsors: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  /**
+   * The cosponsor count, and separately the count *including* anyone who later withdrew.
+   *
+   * Two figures rather than one because a withdrawal is a real event on the record, and the `/cosponsors` collection
+   * lists only who is currently signed on. Where the two disagree, someone took their name off — a fact the bill page
+   * states in words rather than leaving as an unexplained gap between a heading and a list.
+   * @see BillCosponsorTally
+   */
+  cosponsors: z
+    .looseObject({ count: optionalNumber, countIncludingWithdrawnCosponsors: optionalNumber })
+    .optional()
+    .catch(undefined),
   laws: z.array(congressApiLawSchema).optional().catch(undefined),
   /**
    * The four collections this app fetches separately, each described here as `{ count, url }`.
@@ -88,6 +99,7 @@ export const congressApiBillSchema = z.looseObject({
   committees: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   summaries: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   textVersions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  relatedBills: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   /**
    * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
    *
@@ -225,6 +237,70 @@ export const congressApiBillCommitteeSchema = z.looseObject({
 /** Shape of `GET /v3/bill/{congress}/{type}/{number}/committees`. */
 export const congressApiBillCommitteesResponseSchema = z.looseObject({
   committees: z.array(congressApiBillCommitteeSchema).optional().catch(undefined),
+});
+
+/**
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/cosponsors`.
+ *
+ * `isOriginalCosponsor` is the field that makes this collection worth listing rather than counting. A member who signed
+ * on the day a bill was introduced and one who joined eight months later are both "cosponsors", and only the record
+ * distinguishes them — so the distinction is read here rather than inferred from whether `sponsorshipDate` happens to
+ * match the bill's `introducedDate`, which is a comparison this app would be making up.
+ *
+ * `sponsorshipWithdrawnDate` is documented and is genuinely rare — no bill sampled while this was written carried one.
+ * It is read anyway, on the same rule as everything else in this file: a field that arrives is mapped, and a field that
+ * doesn't degrades to `undefined` rather than to a wrong claim. @see congressApiBillSchema's `cosponsors` for the
+ * counts that say a withdrawal happened even when the collection no longer lists the member.
+ */
+export const congressApiCosponsorSchema = z.looseObject({
+  bioguideId: optionalString,
+  fullName: optionalString,
+  party: optionalString,
+  state: optionalString,
+  district: optionalNumber,
+  sponsorshipDate: optionalString,
+  sponsorshipWithdrawnDate: optionalString,
+  isOriginalCosponsor: z.boolean().optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/bill/{congress}/{type}/{number}/cosponsors`. */
+export const congressApiCosponsorsResponseSchema = z.looseObject({
+  cosponsors: z.array(congressApiCosponsorSchema).optional().catch(undefined),
+});
+
+/**
+ * One statement of *how* two measures are related, and — crucially — who said so.
+ *
+ * `identifiedBy` is the reason this endpoint fits a provenance-first product at all. A relationship between two bills
+ * is an editorial judgment, not a legislative act, and this field names the body that made it: the Congressional
+ * Research Service, or the House, or the Senate. The bill page prints the attribution beside the relationship rather
+ * than presenting "related" as a property the measures simply have. @see RelatedBillRelationship
+ */
+export const congressApiRelationshipDetailSchema = z.looseObject({
+  type: optionalString,
+  identifiedBy: optionalString,
+});
+
+/**
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/relatedbills`.
+ *
+ * A bill reference rather than a bill: it carries enough identity to build this app's own link
+ * (`congress`/`type`/`number`), the title to label it, and the other measure's latest action — but none of the sponsor,
+ * policy-area, or collection-count fields {@link congressApiBillSchema} describes. Kept separate for the same reason
+ * {@link congressApiBillCommitteeSchema} is: this describes a *relationship between two bills*, not a bill.
+ */
+export const congressApiRelatedBillSchema = z.looseObject({
+  congress: optionalNumber,
+  type: optionalString,
+  number: z.union([z.string(), z.number()]).optional().catch(undefined),
+  title: optionalString,
+  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  relationshipDetails: z.array(congressApiRelationshipDetailSchema).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/bill/{congress}/{type}/{number}/relatedbills`. */
+export const congressApiRelatedBillsResponseSchema = z.looseObject({
+  relatedBills: z.array(congressApiRelatedBillSchema).optional().catch(undefined),
 });
 
 /**
@@ -558,6 +634,11 @@ export type CongressApiBillCommitteeActivity = z.infer<typeof congressApiBillCom
 export type CongressApiBillSubcommittee = z.infer<typeof congressApiBillSubcommitteeSchema>;
 export type CongressApiBillCommittee = z.infer<typeof congressApiBillCommitteeSchema>;
 export type CongressApiBillCommitteesResponse = z.infer<typeof congressApiBillCommitteesResponseSchema>;
+export type CongressApiCosponsor = z.infer<typeof congressApiCosponsorSchema>;
+export type CongressApiCosponsorsResponse = z.infer<typeof congressApiCosponsorsResponseSchema>;
+export type CongressApiRelationshipDetail = z.infer<typeof congressApiRelationshipDetailSchema>;
+export type CongressApiRelatedBill = z.infer<typeof congressApiRelatedBillSchema>;
+export type CongressApiRelatedBillsResponse = z.infer<typeof congressApiRelatedBillsResponseSchema>;
 export type CongressApiDepiction = z.infer<typeof congressApiDepictionSchema>;
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;

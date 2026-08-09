@@ -146,13 +146,20 @@ describe("mapCongressBill", (): void => {
         committees: { count: 1 },
         summaries: { count: 5 },
         textVersions: { count: 6 },
+        relatedBills: { count: 38 },
       }),
     );
 
-    expect(bill?.collectionCounts).toEqual({ actions: 59, committees: 1, summaries: 5, textVersions: 6 });
+    expect(bill?.collectionCounts).toEqual({
+      actions: 59,
+      committees: 1,
+      summaries: 5,
+      textVersions: 6,
+      relatedBills: 38,
+    });
   });
 
-  it("carries a partial set of counts rather than requiring all four", (): void => {
+  it("carries a partial set of counts rather than requiring every one", (): void => {
     // A bill can be published with some of these and not others, and the one figure that did arrive is still the
     // publisher's answer for its own collection.
     expect(mapCongressBill(apiBill({ actions: { count: 3 } }))?.collectionCounts).toEqual({
@@ -160,11 +167,12 @@ describe("mapCongressBill", (): void => {
       committees: undefined,
       summaries: undefined,
       textVersions: undefined,
+      relatedBills: undefined,
     });
   });
 
   it("leaves the counts absent entirely for a record that published none", (): void => {
-    // Which is every bill from the *list* endpoint. `undefined` and "four undefined counts" mean different things to
+    // Which is every bill from the *list* endpoint. `undefined` and "a set of undefined counts" mean different things to
     // the bill page — "never asked" versus "asked and told nothing" — so they must not collapse into one another.
     expect(mapCongressBill(apiBill())?.collectionCounts).toBeUndefined();
   });
@@ -184,7 +192,7 @@ describe("mapCongressBill", (): void => {
     expect(bill).not.toBeNull();
     expect(bill?.policyArea).toBeUndefined();
     expect(bill?.sponsor).toBeUndefined();
-    expect(bill?.cosponsorCount).toBeUndefined();
+    expect(bill?.cosponsorTally).toBeUndefined();
   });
 
   it("says so plainly when no action text has been published", (): void => {
@@ -1031,5 +1039,35 @@ describe("mapUsable", (): void => {
 
   it("treats an omitted collection as an empty one", (): void => {
     expect(mapUsable(undefined, (n: number): number => n)).toEqual([]);
+  });
+});
+
+describe("mapCongressBill cosponsor tally", (): void => {
+  it("carries both published figures, so the page can tell whether anyone withdrew", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({ cosponsors: { count: 40, countIncludingWithdrawnCosponsors: 43 } }),
+    );
+
+    expect(bill?.cosponsorTally).toEqual({ current: 40, includingWithdrawn: 43 });
+  });
+
+  it("carries whichever figure arrived when the record published only one", (): void => {
+    expect(mapCongressBill(apiBill({ cosponsors: { count: 12 } }))?.cosponsorTally).toEqual({
+      current: 12,
+      includingWithdrawn: undefined,
+    });
+  });
+
+  it("leaves the tally absent entirely for a record that published neither figure", (): void => {
+    // Same distinction the collection counts draw: a list-endpoint bill was never asked, and the bill page's meta row
+    // omits the cosponsor line rather than printing a zero it did not receive.
+    expect(mapCongressBill(apiBill({ cosponsors: undefined }))?.cosponsorTally).toBeUndefined();
+  });
+
+  it("keeps a genuine zero, which is not the same as no answer", (): void => {
+    expect(mapCongressBill(apiBill({ cosponsors: { count: 0 } }))?.cosponsorTally).toEqual({
+      current: 0,
+      includingWithdrawn: undefined,
+    });
   });
 });

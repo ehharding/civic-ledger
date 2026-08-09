@@ -10,7 +10,14 @@ import { describe, expect, it } from "vitest";
 import { BillDetail } from "@/components/bill-detail";
 import type { BillCommittee } from "@/lib/congress/committees";
 import { firstPreviewBill } from "@/lib/congress/fixtures";
-import type { BillAction, BillSummary, BillTextVersion, LegislativeBill } from "@/lib/congress/types";
+import type {
+  BillAction,
+  BillCosponsor,
+  BillSummary,
+  BillTextVersion,
+  LegislativeBill,
+  RelatedBill,
+} from "@/lib/congress/types";
 import { readerText } from "@/test/reader-text";
 
 const bill: LegislativeBill = firstPreviewBill;
@@ -43,10 +50,19 @@ describe("BillDetail", (): void => {
     const withSponsor: LegislativeBill = {
       ...bill,
       sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" },
-      cosponsorCount: 5,
+      cosponsorTally: { current: 5 },
     };
     const { container } = render(
-      <BillDetail actions={[]} committees={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={withSponsor}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText("Sponsor: Rep. Test, Sample A. [D-ZZ-1]")).toBeInTheDocument();
@@ -56,9 +72,18 @@ describe("BillDetail", (): void => {
   });
 
   it("uses the singular form for exactly one cosponsor", (): void => {
-    const withSponsor: LegislativeBill = { ...bill, cosponsorCount: 1 };
+    const withSponsor: LegislativeBill = { ...bill, cosponsorTally: { current: 1 } };
     const { container } = render(
-      <BillDetail actions={[]} committees={[]} bill={withSponsor} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={withSponsor}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     const meta: string = readerText(container.querySelector(".bill-detail-meta") as Element);
@@ -68,18 +93,39 @@ describe("BillDetail", (): void => {
   });
 
   it("omits sponsor and cosponsor lines when neither is present", (): void => {
-    const withoutSponsor: LegislativeBill = { ...bill, sponsor: undefined, cosponsorCount: undefined };
-    render(
-      <BillDetail actions={[]} committees={[]} bill={withoutSponsor} source="live" summaries={[]} textVersions={[]} />,
+    const withoutSponsor: LegislativeBill = { ...bill, sponsor: undefined, cosponsorTally: undefined };
+    const { container } = render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={withoutSponsor}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.queryByText(/^Sponsor:/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Cosponsor/)).not.toBeInTheDocument();
+    // Scoped to the hero's meta row rather than the whole document: the page now carries a "Cosponsors" section
+    // heading unconditionally, since a bill with none says so in words. What this pins is that the meta row prints no
+    // count when the record published none — which is a different claim from "the word never appears".
+    expect(readerText(container.querySelector(".bill-detail-meta") as Element)).not.toContain("Cosponsor");
   });
 
   it("renders the live summary's sanitized HTML with CRS attribution", (): void => {
     render(
-      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[summaryB]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText(/Congressional Research Service summary — Reported to House/)).toBeInTheDocument();
@@ -88,7 +134,16 @@ describe("BillDetail", (): void => {
 
   it("labels a preview summary as illustrative rather than crediting CRS", (): void => {
     render(
-      <BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[summaryA]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="preview"
+        summaries={[summaryA]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText("Illustrative preview summary — not a real CRS summary.")).toBeInTheDocument();
@@ -98,6 +153,8 @@ describe("BillDetail", (): void => {
   it("notes there are more summaries on file when a bill has more than one", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -115,6 +172,8 @@ describe("BillDetail", (): void => {
   it("credits Congress.gov with a collection's size when the record published one", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={{ ...bill, collectionCounts: { summaries: 2 } }}
@@ -132,6 +191,8 @@ describe("BillDetail", (): void => {
   it("names both figures when fewer records are shown than the record publishes", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={{ ...bill, collectionCounts: { summaries: 5 } }}
@@ -153,6 +214,8 @@ describe("BillDetail", (): void => {
   it("offers earlier summaries in a collapsed disclosure, without hiding the newest one", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -170,7 +233,16 @@ describe("BillDetail", (): void => {
 
   it("shows no disclosure when a bill has only one summary", (): void => {
     render(
-      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[summaryB]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.queryByText(/Earlier Summar/)).not.toBeInTheDocument();
@@ -182,7 +254,16 @@ describe("BillDetail", (): void => {
       sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]", bioguideId: "T000001" },
     };
     render(
-      <BillDetail actions={[]} committees={[]} bill={withBioguide} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={withBioguide}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     const link = screen.getByRole("link", { name: /Rep. Test, Sample A./ });
@@ -195,28 +276,68 @@ describe("BillDetail", (): void => {
   it("shows the sponsor as plain text when no Bioguide ID is on file", (): void => {
     const withoutBioguide: LegislativeBill = { ...bill, sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" } };
     render(
-      <BillDetail actions={[]} committees={[]} bill={withoutBioguide} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={withoutBioguide}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.queryByRole("link", { name: /Rep. Test, Sample A./ })).not.toBeInTheDocument();
   });
 
   it("shows the date the bill was introduced", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(screen.getByText("Introduced July 8, 2026")).toBeInTheDocument();
   });
 
   it("doesn't show the multi-summary note when there's only one summary", (): void => {
     render(
-      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[summaryB]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[summaryB]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.queryByText(/most recent of/)).not.toBeInTheDocument();
   });
 
   it("shows a live-specific empty state when no summary has been published", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(
       screen.getByText("The Congressional Research Service hasn't published a summary for this bill yet."),
@@ -224,14 +345,34 @@ describe("BillDetail", (): void => {
   });
 
   it("shows a preview-specific empty state for the summary section", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(screen.getByText("Summaries appear here once live Congress.gov data is connected.")).toBeInTheDocument();
   });
 
   it("lists each text version's formats as links to the official record", (): void => {
     render(
-      <BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[textVersion]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[textVersion]}
+      />,
     );
 
     const formattedTextLink = screen.getByRole("link", { name: /Formatted Text/ });
@@ -241,13 +382,35 @@ describe("BillDetail", (): void => {
   });
 
   it("shows a live-specific empty state when no text version has been published", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(screen.getByText("Congress.gov hasn't published bill text for this record yet.")).toBeInTheDocument();
   });
 
   it("shows a preview-specific empty state for the full-text section", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(
       screen.getByText("Full-text links appear here once live Congress.gov data is connected."),
@@ -269,7 +432,18 @@ describe("BillDetail with a sparse record", (): void => {
   };
 
   it("omits the policy area, introduced date, and action date when the record carries none", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bare} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bare}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     // A sparse record is a normal record, not a broken one: the page renders without empty labels standing in for
     // fields Congress.gov has not published.
@@ -283,6 +457,8 @@ describe("BillDetail with a sparse record", (): void => {
   it("captions an undated summary without a trailing comma where the date would be", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -298,6 +474,8 @@ describe("BillDetail with a sparse record", (): void => {
   it("lists an undated text version by type alone", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -316,6 +494,8 @@ describe("BillDetail with a sparse record", (): void => {
     // of them silently.
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -335,6 +515,8 @@ describe("BillDetail with a sparse record", (): void => {
   it("keys multiple undated text versions by position rather than collapsing them", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         committees={[]}
         bill={bill}
@@ -379,6 +561,8 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("counts the actions and lists them all", (): void => {
     const { container } = render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[passage, referral]}
         committees={[]}
         bill={bill}
@@ -400,6 +584,8 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("uses the singular for a bill with exactly one action", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[referral]}
         committees={[]}
         bill={{ ...bill, collectionCounts: { actions: 1 } }}
@@ -416,6 +602,8 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("claims only the dedup for recorded votes, which carry no published count", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[passage, referral]}
         committees={[]}
         bill={bill}
@@ -435,6 +623,8 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("links a recorded vote to the chamber's own tally rather than printing a count", (): void => {
     const { container } = render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[passage, referral]}
         committees={[]}
         bill={bill}
@@ -468,7 +658,16 @@ describe("BillDetail action history and recorded votes", (): void => {
       ],
     };
     render(
-      <BillDetail actions={[senate]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[senate]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByRole("link", { name: /Senate tally/ })).toBeInTheDocument();
@@ -476,7 +675,16 @@ describe("BillDetail action history and recorded votes", (): void => {
 
   it("explains a bill with no recorded vote instead of leaving the section blank", (): void => {
     render(
-      <BillDetail actions={[referral]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[referral]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     // A bill with no roll call is the ordinary case, not a gap in the data, and the copy has to say which.
@@ -491,7 +699,16 @@ describe("BillDetail action history and recorded votes", (): void => {
       ],
     };
     render(
-      <BillDetail actions={[undated]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[undated]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(screen.getByText("House Roll Call 12")).toBeInTheDocument();
@@ -500,6 +717,8 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("omits the dateline for an undated action rather than printing an empty one", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[{ text: "Introduced in House", recordedVotes: [] }]}
         bill={bill}
         committees={[]}
@@ -514,7 +733,18 @@ describe("BillDetail action history and recorded votes", (): void => {
   });
 
   it("says the history and votes are unavailable rather than absent when the fetch found nothing", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(screen.getByText("No action history could be read for this bill.")).toBeInTheDocument();
     expect(document.querySelector(".summary-history")).not.toBeInTheDocument();
@@ -523,7 +753,18 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("makes no claim about votes or actions in preview mode", (): void => {
     // Preview fixtures fabricate no action record, and a fabricated roll call is the single worst thing this app
     // could invent — so both sections say they are waiting on live data rather than reporting "none".
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(
       screen.getByText("Recorded votes appear here once live Congress.gov data is connected."),
@@ -544,6 +785,8 @@ describe("BillDetail action history and recorded votes", (): void => {
     };
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[passage]}
         committees={[]}
         bill={passedThenReferred}
@@ -560,6 +803,8 @@ describe("BillDetail action history and recorded votes", (): void => {
     const inCommittee: LegislativeBill = { ...bill, stage: "committee" };
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[referral]}
         committees={[]}
         bill={inCommittee}
@@ -578,14 +823,36 @@ describe("BillDetail action history and recorded votes", (): void => {
       stage: "law",
       enactedLaw: { type: "Public Law", number: "119-21" },
     };
-    render(<BillDetail actions={[]} committees={[]} bill={enacted} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={enacted}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(document.querySelector(".law-label")).toHaveTextContent("Public Law 119-21");
     expect(document.querySelector(".stage-label")).toHaveTextContent("Became Law");
   });
 
   it("prints no law chip for a bill the record names none for", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
 
     expect(document.querySelector(".law-label")).not.toBeInTheDocument();
   });
@@ -595,7 +862,16 @@ describe("BillDetail action history and recorded votes", (): void => {
     // is the one that isn't a reading. @see resolveBillStage.
     const enacted: LegislativeBill = { ...bill, stage: "law", enactedLaw: { type: "Public Law", number: "119-21" } };
     render(
-      <BillDetail actions={[passage]} committees={[]} bill={enacted} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[passage]}
+        committees={[]}
+        bill={enacted}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(document.querySelector(".stage-label")).toHaveTextContent("Became Law");
@@ -624,6 +900,8 @@ describe("BillDetail committees of referral", (): void => {
   it("links each committee inward, to this app's own page for it", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         bill={bill}
         committees={[transportation, agriculture]}
@@ -648,6 +926,8 @@ describe("BillDetail committees of referral", (): void => {
   it("prints the relationship Congress.gov recorded, verbatim", (): void => {
     render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         bill={bill}
         committees={[transportation]}
@@ -663,7 +943,16 @@ describe("BillDetail committees of referral", (): void => {
 
   it("omits the activity line entirely when the record named nothing printable", (): void => {
     const { container } = render(
-      <BillDetail actions={[]} bill={bill} committees={[agriculture]} source="live" summaries={[]} textVersions={[]} />,
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        bill={bill}
+        committees={[agriculture]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
     );
 
     expect(container.querySelectorAll(".bill-committee-list .date-label")).toHaveLength(0);
@@ -672,6 +961,8 @@ describe("BillDetail committees of referral", (): void => {
   it("keeps the publisher's order rather than sorting the committees by name", (): void => {
     const { container } = render(
       <BillDetail
+        cosponsors={[]}
+        related={[]}
         actions={[]}
         bill={bill}
         committees={[transportation, agriculture]}
@@ -690,12 +981,459 @@ describe("BillDetail committees of referral", (): void => {
   });
 
   it("distinguishes a bill with no referral from a preview record that has none yet", (): void => {
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="live" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
     expect(screen.getByText(/No committee referral appears on this bill/)).toBeInTheDocument();
 
-    render(<BillDetail actions={[]} committees={[]} bill={bill} source="preview" summaries={[]} textVersions={[]} />);
+    render(
+      <BillDetail
+        cosponsors={[]}
+        related={[]}
+        actions={[]}
+        committees={[]}
+        bill={bill}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
     expect(
       screen.getByText(/Committees of referral appear here once live Congress.gov data is connected/),
+    ).toBeInTheDocument();
+  });
+});
+
+/**
+ * A cosponsor, overridable per test. Only the fields a given assertion reads are ever meaningful.
+ */
+function cosponsor(overrides: Partial<BillCosponsor> = {}): BillCosponsor {
+  return {
+    fullName: "Rep. Sample, Test [D-ZZ-1]",
+    bioguideId: "S000001",
+    party: "D",
+    state: "ZZ",
+    sponsorshipDate: "2025-03-04",
+    isOriginal: false,
+    ...overrides,
+  };
+}
+
+describe("BillDetail cosponsors", (): void => {
+  const original: BillCosponsor = cosponsor({
+    bioguideId: "B000001",
+    fullName: "Rep. Bergman, Jack [R-MI-1]",
+    party: "R",
+    isOriginal: true,
+    sponsorshipDate: "2025-01-03",
+  });
+  const later: BillCosponsor = cosponsor({ bioguideId: "P000002", fullName: "Rep. Pappas, Chris [D-NH-1]" });
+
+  it("links each cosponsor to their own member page, closing the one-way relationship", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Rep. Bergman, Jack [R-MI-1]" })).toHaveAttribute(
+      "href",
+      "/members/B000001",
+    );
+  });
+
+  it("marks the members who were on the bill at introduction, from the record's own flag", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    const badges: NodeListOf<Element> = container.querySelectorAll(".cosponsor-list__original");
+
+    expect(badges).toHaveLength(1);
+    expect(screen.getByText("At introduction")).toBeInTheDocument();
+    expect(screen.getByText("Joined March 4, 2025")).toBeInTheDocument();
+  });
+
+  it("tints each row by party, reading the one-letter code the cosponsor record uses", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    const rows: Element[] = [...container.querySelectorAll(".cosponsor-list__item")];
+
+    expect(rows[0]?.className).toContain("party-tint--republican");
+    expect(rows[1]?.className).toContain("party-tint--democratic");
+  });
+
+  it("renders a cosponsor with no Bioguide ID as plain text rather than a link to nothing", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[cosponsor({ bioguideId: undefined, fullName: "Rep. Unlinkable, Sample [I-ZZ-1]" })]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Rep. Unlinkable, Sample [I-ZZ-1]")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Rep. Unlinkable, Sample [I-ZZ-1]" })).not.toBeInTheDocument();
+  });
+
+  it("marks the rare cosponsor who took their name off, with the date they did", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[cosponsor({ withdrawnDate: "2025-05-01" })]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Withdrawn May 1, 2025")).toBeInTheDocument();
+  });
+
+  it("omits the sponsorship date line when the record carries no date", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[cosponsor({ sponsorshipDate: undefined })]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".cosponsor-list__meta .date-label")).toHaveLength(0);
+  });
+
+  it("caps the visible list and says how many are behind the disclosure", (): void => {
+    const many: BillCosponsor[] = Array.from(
+      { length: 15 },
+      (_unused: unknown, index: number): BillCosponsor =>
+        cosponsor({ bioguideId: `X${index}`, fullName: `Rep. Number${index}, Test [D-ZZ-1]` }),
+    );
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={many}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    const lists: NodeListOf<Element> = container.querySelectorAll(".cosponsor-list");
+
+    // Twelve visible, three disclosed — and nothing dropped, which is what the label has to say.
+    expect(lists[0]?.querySelectorAll("li")).toHaveLength(12);
+    expect(lists[1]?.querySelectorAll("li")).toHaveLength(3);
+    expect(screen.getByText("Show the Remaining 3 Cosponsors")).toBeInTheDocument();
+  });
+
+  it("offers no disclosure when everything already fits", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.queryByText(/Show the Remaining/)).not.toBeInTheDocument();
+  });
+
+  it("states that names are missing from the list when the published figures say some withdrew", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={{ ...bill, cosponsorTally: { current: 2, includingWithdrawn: 4 } }}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText(/2 more members cosponsored this bill and later withdrew/)).toBeInTheDocument();
+  });
+
+  it("never credits Congress.gov with a count on a preview record", (): void => {
+    // The trap this pins: a fixture bill *does* carry a cosponsor tally, because the hero's meta row needs a count to
+    // show. Passing it through would print "Congress.gov records 12 cosponsors" over invented names.
+    render(
+      <BillDetail
+        actions={[]}
+        bill={{ ...bill, cosponsorTally: { current: 12, includingWithdrawn: 14 } }}
+        committees={[]}
+        cosponsors={[original, later]}
+        related={[]}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.queryByText(/Congress\.gov records/)).not.toBeInTheDocument();
+    expect(screen.getByText(/This page shows 2 cosponsors for this bill/)).toBeInTheDocument();
+    // The withdrawal sentence is built from the same published pair, so it goes with them.
+    expect(screen.queryByText(/later withdrew/)).not.toBeInTheDocument();
+  });
+
+  it("distinguishes a bill nobody cosponsored from a preview record that has none yet", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+    expect(screen.getByText(/No member has cosponsored this bill/)).toBeInTheDocument();
+
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[]}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+    expect(screen.getByText(/Cosponsors appear here once live Congress.gov data is connected/)).toBeInTheDocument();
+  });
+});
+
+describe("BillDetail related measures", (): void => {
+  const companion: RelatedBill = {
+    congress: 119,
+    type: "S",
+    number: "2875",
+    title: "CHOICE Act",
+    latestAction: { date: "2025-09-18", text: "Read twice and referred to the Committee on Finance." },
+    relationships: [{ type: "Identical bill", identifiedBy: "CRS" }],
+  };
+
+  it("links each related measure to its own page here rather than out to Congress.gov", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[companion]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "S 2875" })).toHaveAttribute("href", "/bills/119/s/2875");
+    expect(screen.getByText("CHOICE Act")).toBeInTheDocument();
+  });
+
+  it("names the body that identified the relationship, since relatedness is a judgment", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[companion]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Identical bill (CRS)")).toBeInTheDocument();
+  });
+
+  it("prints an unattributed relationship without inventing a source for it", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[{ ...companion, relationships: [{ type: "Procedurally-related" }] }]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText("Procedurally-related")).toBeInTheDocument();
+  });
+
+  it("omits the relationship line entirely when the record named none", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[{ ...companion, relationships: [] }]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    // The identity line's Congress label is a .date-label too, so the count distinguishes "no relationship line" from
+    // "no labels at all".
+    expect(container.querySelectorAll(".related-bill-list .date-label")).toHaveLength(1);
+  });
+
+  it("omits the latest action when the related record carries none", (): void => {
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[{ ...companion, latestAction: undefined }]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".related-bill-list__action")).toHaveLength(0);
+  });
+
+  it("names the Congress a related measure sits in, which need not be this bill's", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[{ ...companion, congress: 118 }]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    expect(screen.getByText(/118th Congress/)).toBeInTheDocument();
+  });
+
+  it("caps the visible list and says how many are behind the disclosure", (): void => {
+    const many: RelatedBill[] = Array.from(
+      { length: 12 },
+      (_unused: unknown, index: number): RelatedBill => ({ ...companion, number: String(index) }),
+    );
+    const { container } = render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={many}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+
+    const lists: NodeListOf<Element> = container.querySelectorAll(".related-bill-list");
+
+    expect(lists[0]?.querySelectorAll("li")).toHaveLength(9);
+    expect(lists[1]?.querySelectorAll("li")).toHaveLength(3);
+    expect(screen.getByText("Show the Remaining 3 Related Measures")).toBeInTheDocument();
+  });
+
+  it("distinguishes a bill with no companion from a preview record that has none yet", (): void => {
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[]}
+        source="live"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+    expect(screen.getByText(/Congress.gov records no measure as related to this one/)).toBeInTheDocument();
+
+    render(
+      <BillDetail
+        actions={[]}
+        bill={bill}
+        committees={[]}
+        cosponsors={[]}
+        related={[]}
+        source="preview"
+        summaries={[]}
+        textVersions={[]}
+      />,
+    );
+    expect(
+      screen.getByText(/Related measures appear here once live Congress.gov data is connected/),
     ).toBeInTheDocument();
   });
 });

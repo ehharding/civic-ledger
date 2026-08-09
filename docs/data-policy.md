@@ -66,6 +66,17 @@ upstream read fails. Preview content is fictional and is never presented as live
   rule above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a
   photograph is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from
   every fixture and `member-directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
+- **Preview cosponsors reuse the placeholder members and widen the fiction by nobody.** The no-key build serves fixture
+  cosponsors so the static demo — the only build a UI reviewer can see — shows that section working rather than showing
+  its empty state. Every name in `previewCosponsors` is one of the seven placeholder people the fixtures already name as
+  sponsors: each already has a preview page, and each carries a `PREVIEW-n` id that deliberately fails `isBioguideId`.
+  `bill-cosponsors.test.ts` asserts that membership rather than leaving it to whoever edits the fixtures next.
+- **A preview record never credits Congress.gov with a count.** This is sharper for cosponsors than for any other
+  collection, because a fixture bill genuinely *does* carry a cosponsor tally — the fixtures set one so the bill hero's
+  meta row has a number to show. Passing it into the section's count sentence would print "Congress.gov records 12
+  cosponsors on this bill" above three invented names, which is the same error the summary caption exists to prevent. So
+  the section drops both published figures outright when the source is preview and states only what the page is showing.
+  Every other collection reaches the same place by a duller route: fixtures set no `collectionCounts` at all.
 
 ## What the Chamber Diagram Claims
 
@@ -153,6 +164,42 @@ recorded printed verbatim — "Referred To", "Reported By", "Markup By". The sam
 action and the action history, as prose; what the `/committees` sub-resource adds is the system code, which is the
 difference between naming a committee and being able to open it. A referral is a referral and not an outcome, exactly
 as on the committee's own page: most bills referred to a committee never leave it.
+
+**A bill names its cosponsors, and cosponsorship is never scored.** The page lists everyone currently signed on, each
+linking inward to their own page here — which closes the one genuinely one-way relationship this app had, since a
+member's page has always listed the bills they cosponsored while a bill's page reported only how many members did. Three
+rules govern the section:
+
+- **The order is the publisher's, and it is chronological.** Congress.gov returns cosponsors oldest first — the members
+  on the bill at introduction, then everyone who joined afterwards, in sequence. That order is the bill gathering
+  support over time, so nothing re-sorts it into an alphabetical list that would throw the sequence away.
+- **"Original cosponsor" is read, not inferred.** The record publishes the flag on each row. Deriving it by comparing a
+  sponsorship date against the bill's introduction date would be this app inventing a comparison, and would be wrong for
+  any bill whose record carries one date and not the other.
+- **A withdrawal is stated rather than left as a gap.** The record publishes two figures — how many are signed on now,
+  and how many have been including anyone who withdrew. The `/cosponsors` collection lists only the first group, so
+  where the two disagree the page says how many names are counted upstream but absent from the list below. The
+  subtraction is this app's and the sentence says so; both operands are Congress.gov's.
+
+What the section refuses is the obvious next step: cosponsor counts are not ranked, compared, aggregated into a score,
+or presented as a measure of a bill's odds or a member's effectiveness. The copy says outright that cosponsoring is not
+a vote, not a prediction, and not a ranking. That is the same stance the member page takes on sponsorship, applied from
+the other end.
+
+**A bill's related measures are listed with whoever identified the relationship.** Congress.gov's `/relatedbills`
+sub-resource answers the question a reader most often arrives at a House bill with — is there a Senate version? — and
+each measure links inward to its own page here. Relating two bills is an editorial judgment rather than a legislative
+act, and the record names the body that made it (`identifiedBy`: the Congressional Research Service, the House, or the
+Senate), so the page prints the attribution beside the relationship instead of presenting relatedness as a property the
+measures simply have. A relationship arriving without an attribution is printed without one rather than assigned a
+plausible source. The list is in Congress.gov's own order, which the API documents no meaning for, and the copy says so
+rather than implying either end is the most significant — the same wording rule the committee-records pages follow.
+
+**A long collection is capped visibly, never silently.** A bill can carry four hundred cosponsors or three dozen related
+measures, and either would bury every section beneath it. Both lists show a preview and put the remainder behind a
+`<details>` whose label states how many are behind it ("Show the Remaining 28 Cosponsors"). Nothing is dropped, and the
+count in the label is what keeps the cap honest: a list that silently stopped at twelve would read as a complete list of
+twelve. The published-count sentence above it makes the same guarantee against the upstream record.
 
 **Recorded votes are named, never tallied.** A bill's page lists each roll call taken on it — chamber, roll number,
 date — and links the chamber's own record. It prints no counts, no margins, and no member positions, because

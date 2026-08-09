@@ -16,16 +16,16 @@ import type { BillRouteParams } from "@/lib/congress/types";
 
 /**
  * The two reads shared by every module that reaches for a *single bill*: the bill's own record, and any of the
- * collections hanging off it — `/summaries`, `/text`, `/actions`, `/committees`.
+ * collections hanging off it — `/summaries`, `/text`, `/actions`, `/committees`, `/cosponsors`, `/relatedbills`.
  *
- * Those four collections differ in their path segment, their payload schema, the collection to read off it, the mapper
+ * Those collections differ in their path segment, their payload schema, the collection to read off it, the mapper
  * applied to each entry, and whether they are ordered by date. Everything they have in common is stated here once: the
  * key check, the route-param guard, the page-size ceiling, the cache tags, and the rule that an absent record is an
  * empty list rather than an error.
  *
- * It lives in its own module rather than inside `bills.ts` because `bill-committees.ts` and `committee-activity.ts`
- * need it too, and a module whose exports are otherwise all public reads is the wrong place to keep an internal helper
- * three modules share.
+ * It lives in its own module rather than inside `bills.ts` because `bill-committees.ts`, `bill-cosponsors.ts`,
+ * `bill-related.ts`, and `committee-activity.ts` need it too, and a module whose exports are otherwise all public reads
+ * is the wrong place to keep an internal helper five modules share.
  */
 
 /**
@@ -71,7 +71,7 @@ export function requestBillDetail(
 export async function fetchBillSubResource<Payload, Raw, Entry>(
   input: BillRouteParams,
   config: {
-    path: "summaries" | "text" | "actions" | "committees";
+    path: "summaries" | "text" | "actions" | "committees" | "cosponsors" | "relatedbills";
     schema: ZodType<Payload>;
     select: (payload: Payload) => Raw[] | undefined;
     map: (entry: Raw) => Entry | null;
