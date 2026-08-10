@@ -1,7 +1,6 @@
 import type { Route } from "next";
-
-import { CONGRESS_GOV_COMMITTEES } from "@/lib/congress/committees";
-import { type BillStage, billStageLabels, billStages } from "@/lib/congress/types";
+import { type BillStage, billStageLabels, billStages } from "@/lib/congress/bills/model";
+import { CONGRESS_GOV_COMMITTEES } from "@/lib/congress/committees/model";
 
 /**
  * The learning modules reached from `/learn`, and the content of each one.
@@ -24,8 +23,9 @@ import { type BillStage, billStageLabels, billStages } from "@/lib/congress/type
  *   counts, the margins, the individual positions — stays at the chambers. The lesson draws exactly that line, since a
  *   reader told the app holds nothing would not go looking for what it does hold.
  *
- * Content lives here rather than in the route files on the rule `committees.ts` states for display wording: what a
- * reader is told should be somewhere it can be unit-tested, not somewhere reachable only by rendering a page.
+ * Content lives here rather than in the route files on the rule `congress/committees/model.ts` states for display
+ * wording: what a reader is told should be somewhere it can be unit-tested, not somewhere reachable only by rendering a
+ * page.
  */
 
 /**
@@ -122,8 +122,8 @@ const CONSTITUTION_TRANSCRIPT: LessonSource = {
  *
  * Keyed rather than listed so the steps can be *derived* from `billStages` below. That is the load-bearing part: the
  * lesson walks the same five stages `BillJourney` draws on a real bill record, in the same order, under the same
- * labels — and a sixth stage added upstream in `types.ts` becomes a missing-key type error here rather than a lesson
- * that quietly stops covering the process it claims to.
+ * labels — and a sixth stage added upstream in `congress/bills/model.ts` becomes a missing-key type error here rather
+ * than a lesson that quietly stops covering the process it claims to.
  */
 const billLifecycleCopy: Record<BillStage, string> = {
   introduced:

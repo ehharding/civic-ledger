@@ -2,8 +2,8 @@ import { CheckCircle2, Database, type LucideProps, ShieldCheck } from "lucide-re
 import type { Metadata } from "next";
 import type { ForwardRefExoticComponent, JSX, RefAttributes } from "react";
 
-import { PageHeader } from "@/components/page-header";
-import { SiteShell } from "@/components/site-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { SiteShell } from "@/components/layout/site-shell";
 import { pageMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = pageMetadata({

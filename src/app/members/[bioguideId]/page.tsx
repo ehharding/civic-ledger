@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
-import { MemberDetail } from "@/components/member-detail";
+import { MemberDetail } from "@/components/members/member-detail";
 import { getMemberProfile, MEMBER_LEGISLATION_LIMIT, type MemberProfileResult } from "@/lib/congress/client";
-import { previewMemberProfiles } from "@/lib/congress/fixtures";
 import {
   chamberLabels,
   formatMemberName,
   formatMemberSeat,
   formatMemberTitle,
   type MemberProfile,
-} from "@/lib/congress/members";
+} from "@/lib/congress/members/model";
+import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
 import { memberHref } from "@/lib/member-route";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 

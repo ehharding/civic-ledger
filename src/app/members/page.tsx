@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
-
-import { DataSourceNotice } from "@/components/data-source-notice";
-import { MemberDirectory } from "@/components/member-directory";
-import { PageHeader } from "@/components/page-header";
-import { SiteShell } from "@/components/site-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { SiteShell } from "@/components/layout/site-shell";
+import { MemberDirectory } from "@/components/members/member-directory";
+import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { getMemberDirectory, type MemberDirectoryResult } from "@/lib/congress/client";
 import {
   type JurisdictionOption,
   listMemberJurisdictions,
   type MemberDirectoryQuery,
-} from "@/lib/congress/member-filter";
+} from "@/lib/congress/members/filter";
 import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/search-params";
 
@@ -18,9 +17,9 @@ import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/searc
  * The route segment's data-cache window, declared as on `/bills` and `/committees` so all three directories state the
  * same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
  * visit and *not* an upstream request: the roster is fetched through the adapter's own five-minute cache
- * (`REVALIDATE_SECONDS` in `http.ts`), shared across every visitor and every narrowing of this page. That trade is
- * deliberate — a shared link should arrive at what it says it points to on the first paint, rather than rendering the
- * full roster and visibly narrowing after hydration.
+ * (`REVALIDATE_SECONDS` in `congress/upstream/http.ts`), shared across every visitor and every narrowing of this page.
+ * That trade is deliberate — a shared link should arrive at what it says it points to on the first paint, rather than
+ * rendering the full roster and visibly narrowing after hydration.
  * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 export const revalidate: number = 300;

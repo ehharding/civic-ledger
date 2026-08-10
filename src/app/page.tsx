@@ -1,9 +1,9 @@
 import type { JSX } from "react";
 
-import { HomePage } from "@/components/home-page";
+import { HomePage } from "@/components/home/home-page";
+import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { getCongressComposition, getCongressSnapshot } from "@/lib/congress/client";
-import type { CongressComposition } from "@/lib/congress/members";
-import type { CongressSnapshot } from "@/lib/congress/types";
+import type { CongressComposition } from "@/lib/congress/members/model";
 
 export const revalidate: number = 300;
 

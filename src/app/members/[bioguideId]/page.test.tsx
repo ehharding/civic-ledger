@@ -11,8 +11,8 @@ import type { Metadata } from "next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import MemberPage, { generateMetadata, generateStaticParams } from "@/app/members/[bioguideId]/page";
-import { previewMemberProfiles } from "@/lib/congress/fixtures";
-import { chamberLabels, formatMemberName, formatMemberTitle, type MemberProfile } from "@/lib/congress/members";
+import { chamberLabels, formatMemberName, formatMemberTitle, type MemberProfile } from "@/lib/congress/members/model";
+import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
 import { memberHref } from "@/lib/member-route";
 import { expectNotFound } from "@/test/next-not-found";
 

@@ -57,43 +57,68 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | `src/lib/metadata.ts`         | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
 | `src/lib/search-params.ts`    | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`            | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
-| `src/lib/congress/seating.ts` | Chart geometry only                                   | Stay free of React and of any Congress.gov concern.               |
+
+### Inside `src/components`
+
+Grouped by the subject a component presents, not by the route that happens to render it: `bills/`, `members/`, and
+`committees/` hold everything that draws one of the three record types, `learn/` the editorial content, `home/` the
+dashboard, `layout/` the site chrome every page sits inside, and `ui/` the presentation pieces that carry no knowledge
+of any of it.
+
+Subject rather than route is the load-bearing half. `BillCard` is rendered by the home page, the bill directory, and a
+member's page, and grouping by route would have to pick one of the three or invent a `shared/` for it; grouping by
+subject puts it in `bills/` because that is what it draws, wherever it is drawn. The test for `ui/` is the same rule
+read backwards — a component belongs there when it could render a record type it has never heard of.
+
+Unlike the adapter below, the filenames did not lose their prefixes in the move. A component file is named for the one
+component it exports, so `bills/bill-card.tsx` holds `BillCard`; shortening it to `bills/card.tsx` would buy a little
+brevity at the import site and cost the property that you can go from a name in a stack trace to a path without looking
+anything up.
 
 ### Inside the Congress Adapter
 
 `src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
 components, and tests import one stable path while the internals stay free to move.
 
-| Module                   | Responsibility                                                                |
-|--------------------------|-------------------------------------------------------------------------------|
-| `api-schema.ts`          | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
-| `http.ts`                | Key access, URL building, caching policy, one request helper, route guards.   |
-| `mappers.ts`             | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
-| `types.ts`               | The bill model: identity, stages, official URLs, display helpers. Pure.       |
-| `bill-sub-resource.ts`   | The reads shared by every module that reaches for one bill.                   |
-| `bills.ts`               | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
-| `bill-committees.ts`     | Which committees held a bill, and what each of them did with it.              |
-| `bill-cosponsors.ts`     | Who put their name to a bill they did not introduce.                          |
-| `bill-related.ts`        | The other measures a bill is recorded as related to, and who said so.         |
-| `members.ts`             | The member model: parties, chambers, seats, shapes, display helpers. Pure.    |
-| `composition.ts`         | Chamber membership, including the member list's pagination.                   |
-| `member-directory.ts`    | The same membership, reshaped into one browsable alphabetical roster.         |
-| `member-filter.ts`       | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
-| `member-profile.ts`      | One member's own record, plus the legislation they sponsored and cosponsored. |
-| `committees.ts`          | The committee model: chambers, types, shapes, display helpers. Pure; no I/O.  |
-| `committee-directory.ts` | Every committee of a Congress, reshaped into one browsable list.              |
-| `committee-filter.ts`    | That directory's narrowing, ordering, and URL rules. Pure and isomorphic.     |
-| `committee-profile.ts`   | One committee's record, its name history, and its subcommittees.              |
-| `committee-records.ts`   | The bills/reports/nominations model, paging, and URL rules. Pure; no I/O.     |
-| `committee-activity.ts`  | One page of one of those collections, plus the referred bills' titles.        |
-| `directory-filter.ts`    | The vocabulary all three directories narrow with. Pure and isomorphic.        |
-| `search.ts`              | The bill directory's matching, citation parsing, and URL rules. Pure.         |
-| `stage.ts`               | The stage cue: from the record where it says, from codes or prose otherwise.  |
-| `congress-history.ts`    | Which Congresses this app covers, and when each sat. Computed, not fetched.   |
-| `current-congress.ts`    | Which Congress is seated now, from the constitutional cadence. No I/O.        |
-| `sanitize-summary.ts`    | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
-| `fixtures.ts`            | The labeled preview records every read falls back to. Fiction, marked as it.  |
-| `client.ts`              | Public surface. Re-exports only.                                              |
+The directory is grouped by what a module is *about*: `upstream/` for everything that touches Congress.gov itself, then
+one folder per record type this app publishes. Four modules sit at the root because they belong to no single record
+type — the barrel, the vocabulary all three directories share, and the two that answer "which Congress?".
+
+Within a record-type folder, `model.ts` is the pure one: shapes, vocabulary, and display helpers, with no I/O. That
+naming is the rule rather than a coincidence, and it is what the folder buys — `bills/committees.ts` is a bill's
+committees, `committees/model.ts` is what a committee *is*, and neither name has to carry a prefix to say so.
+
+| Module                      | Responsibility                                                                |
+|-----------------------------|-------------------------------------------------------------------------------|
+| `upstream/api-schema.ts`    | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
+| `upstream/http.ts`          | Key access, URL building, caching policy, one request helper, route guards.   |
+| `upstream/mappers.ts`       | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
+| `upstream/fixtures.ts`      | The labeled preview records every read falls back to. Fiction, marked as it.  |
+| `bills/model.ts`            | The bill model: identity, stages, official URLs, display helpers. Pure.       |
+| `bills/sub-resource.ts`     | The reads shared by every module that reaches for one bill.                   |
+| `bills/reads.ts`            | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
+| `bills/committees.ts`       | Which committees held a bill, and what each of them did with it.              |
+| `bills/cosponsors.ts`       | Who put their name to a bill they did not introduce.                          |
+| `bills/related.ts`          | The other measures a bill is recorded as related to, and who said so.         |
+| `bills/search.ts`           | The bill directory's matching, citation parsing, and URL rules. Pure.         |
+| `bills/stage.ts`            | The stage cue: from the record where it says, from codes or prose otherwise.  |
+| `bills/sanitize-summary.ts` | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
+| `members/model.ts`          | The member model: parties, chambers, seats, shapes, display helpers. Pure.    |
+| `members/composition.ts`    | Chamber membership, including the member list's pagination.                   |
+| `members/directory.ts`      | The same membership, reshaped into one browsable alphabetical roster.         |
+| `members/filter.ts`         | The directory's narrowing, ordering, and URL rules. Pure and isomorphic.      |
+| `members/profile.ts`        | One member's own record, plus the legislation they sponsored and cosponsored. |
+| `members/seating.ts`        | The chamber diagram's geometry. Pure; free of React and of Congress.gov.      |
+| `committees/model.ts`       | The committee model: chambers, types, shapes, display helpers. Pure; no I/O.  |
+| `committees/directory.ts`   | Every committee of a Congress, reshaped into one browsable list.              |
+| `committees/filter.ts`      | That directory's narrowing, ordering, and URL rules. Pure and isomorphic.     |
+| `committees/profile.ts`     | One committee's record, its name history, and its subcommittees.              |
+| `committees/records.ts`     | The bills/reports/nominations model, paging, and URL rules. Pure; no I/O.     |
+| `committees/activity.ts`    | One page of one of those collections, plus the referred bills' titles.        |
+| `directory-filter.ts`       | The vocabulary all three directories narrow with. Pure and isomorphic.        |
+| `congress-history.ts`       | Which Congresses this app covers, and when each sat. Computed, not fetched.   |
+| `current-congress.ts`       | Which Congress is seated now, from the constitutional cadence. No I/O.        |
+| `client.ts`                 | Public surface. Re-exports only.                                              |
 
 Two invariants hold across every exported read:
 
@@ -131,7 +156,7 @@ is keyed on the Bioguide ID because it is already unique and, unlike a name slug
 ### Membership
 
 `/v3/member/congress/{congress}` is paginated at the API's 250-record ceiling, so `getCongressComposition` (in
-`composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel.
+`members/composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel.
 
 **`currentMember` is decided per Congress, not fixed.** For the Congress currently seated it is `true`, which makes the
 request "who holds a seat right now" — without it, a member who resigned mid-term and their replacement both come back
@@ -141,7 +166,7 @@ still serving today, against the 557 who actually served in it; a diagram drawn 
 of its seats while presenting itself as the whole body. No surface reads a past Congress's roster today, so the flag is
 correct in advance of the route that will need it rather than after one ships wrong.
 
-Chart geometry is computed separately, in a pure module (`src/lib/congress/seating.ts`) that knows nothing about
+Chart geometry is computed separately, in a pure module (`src/lib/congress/members/seating.ts`) that knows nothing about
 Congress.gov — see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and
 does not assert.
 
@@ -151,7 +176,7 @@ chamber diagram a drifted seat is either an unseated member or an empty chair no
 in a pure module is what makes "every member gets exactly one seat, no two seats overlap, nothing escapes the viewBox"
 directly testable.
 
-**The member directory is not a fourth endpoint.** `getMemberDirectory` (in `member-directory.ts`) calls the same
+**The member directory is not a fourth endpoint.** `getMemberDirectory` (in `members/directory.ts`) calls the same
 `getCongressComposition` the chamber diagram does, on the same cache tag and five-minute window. Two things follow, and
 both are the point:
 
@@ -178,7 +203,7 @@ to row. See [Data Policy](data-policy.md#what-each-directory-covers) for the att
 
 ### Individual Records
 
-An *individual* member (`/members/[bioguideId]`) is a separate read in `member-profile.ts`, against a different
+An *individual* member (`/members/[bioguideId]`) is a separate read in `members/profile.ts`, against a different
 endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list
 endpoint omits, plus the portrait and leadership history. It issues three requests concurrently — the member, their
 sponsored legislation, and their cosponsored legislation — and a failure in either legislation list still yields a page,
@@ -216,10 +241,10 @@ committee that named none of its activities still appears, with no activity line
 
 ### A Committee's Own Records
 
-An individual committee page reads more than the committee: `committee-activity.ts` fetches one page of one of the three
-collections Congress.gov counts alongside it (`/bills`, `/reports`, `/nominations`), selected and paged by the page's
-own query params. The pure half — the model, the paging arithmetic, and the URL spelling — is `committee-records.ts`,
-split from the fetcher on exactly the `committee-directory.ts`/`committee-filter.ts` line.
+An individual committee page reads more than the committee: `committees/activity.ts` fetches one page of one of the
+three collections Congress.gov counts alongside it (`/bills`, `/reports`, `/nominations`), selected and paged by the
+page's own query params. The pure half — the model, the paging arithmetic, and the URL spelling — is
+`committees/records.ts`, split from the fetcher on exactly the `committees/directory.ts`/`committees/filter.ts` line.
 
 Three things about this are worth knowing before changing it.
 
@@ -254,7 +279,7 @@ structurally rather than by convention, in four separate places:
 
 - **Vocabulary** — `src/lib/congress/directory-filter.ts`: the `ANY_FACET` sentinel, the facet-option shape, the
   query-length cap, and the one total-parser rule every facet and sort param resolves through.
-- **Markup** — `src/components/directory-controls.tsx`: search field, segmented filter, facet dropdown, sort control,
+- **Markup** — `src/components/ui/directory-controls.tsx`: search field, segmented filter, facet dropdown, sort control,
   "Clear Filters", and the result-count line.
 - **Styling** — `src/styles/directory.css`: `.directory-search`, `.segmented-filter`, `.directory-facet*`, and
   `.directory-result-count`. These are named for the surface rather than for one of its three subjects, so a committee's
@@ -274,8 +299,8 @@ being serialized into the page to draw the grid — so it is handed to the brows
 chamber toggle, party choice, and state selection runs there instantly. No request per keystroke, no debounce, no
 loading state, no failure mode when a route handler is unreachable, and nothing to special-case for the static export.
 
-That is why the narrowing rules live in pure, isomorphic modules (`member-filter.ts`, `committee-filter.ts`,
-`search.ts`) that import nothing server-side: a client component must be able to import them without dragging the
+That is why the narrowing rules live in pure, isomorphic modules (`members/filter.ts`, `committees/filter.ts`,
+`bills/search.ts`) that import nothing server-side: a client component must be able to import them without dragging the
 adapter — and the API key it reads — into the browser bundle. It is also why `src/lib/api-query.ts` keeps a separate
 `MAX_QUERY_LENGTH` from the directories' own caps: it is zod-backed and server-oriented, and importing it from an
 isomorphic module would pull schema validation into the browser behind it. The dependency runs one way on purpose.
@@ -288,10 +313,10 @@ can be linked and bookmarked (`/members?chamber=senate&sort=state`, `/bills?q=br
 is lying about where you are.
 
 Each directory's URL spelling lives beside its rules rather than in its route — `MEMBER_DIRECTORY_PARAMS`/
-`memberDirectoryQueryString` in `member-filter.ts`, `BILL_DIRECTORY_PARAMS`/`billDirectoryQueryString` in `search.ts`,
-and the committee pair in `committee-filter.ts` — because those names cross a boundary the server and the browser both
-write to, and a param name typed twice is a link that looks right and restores nothing. Each also has one parser that
-*both* sides go through, so a route and a browser can never disagree about what a given link means.
+`memberDirectoryQueryString` in `members/filter.ts`, `BILL_DIRECTORY_PARAMS`/`billDirectoryQueryString` in
+`bills/search.ts`, and the committee pair in `committees/filter.ts` — because those names cross a boundary the server
+and the browser both write to, and a param name typed twice is a link that looks right and restores nothing. Each also
+has one parser that *both* sides go through, so a route and a browser can never disagree about what a given link means.
 
 **The server half** is `src/lib/search-params.ts`: it reads the request and resolves a starting view, so a shared link
 renders already narrowed on its first paint rather than flashing the full list. It also resolves the one deep link that
@@ -389,10 +414,10 @@ telling a reader which of a member's bills is recent. The preview path sorts on 
 ordering is no more authoritative than an upstream one.
 
 Normalization happens at the mapping boundary, not at the view, for the same reason. `normalizeJurisdiction` title-cases
-the represented state in `mappers.ts` alongside `normalizePartyName` and `type.toUpperCase()`, because the jurisdiction
-is the value the member directory's state filter is *keyed on*. If `"NEW YORK"` and `"New York"` ever arrived on
-different records, the facet list would offer two New Yorks, each returning half the delegation, and neither would be
-wrong from the control's point of view.
+the represented state in `upstream/mappers.ts` alongside `normalizePartyName` and `type.toUpperCase()`, because the
+jurisdiction is the value the member directory's state filter is *keyed on*. If `"NEW YORK"` and `"New York"` ever
+arrived on different records, the facet list would offer two New Yorks, each returning half the delegation, and neither
+would be wrong from the control's point of view.
 
 ## Crawlability
 

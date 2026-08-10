@@ -1,11 +1,10 @@
 import { ArrowUpRight, ScrollText } from "lucide-react";
 import type { Metadata } from "next";
 import type { JSX } from "react";
-
-import { CalloutCard } from "@/components/callout-card";
-import { LessonIndex } from "@/components/lesson-index";
-import { PageHeader } from "@/components/page-header";
-import { SiteShell } from "@/components/site-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { SiteShell } from "@/components/layout/site-shell";
+import { LessonIndex } from "@/components/learn/lesson-index";
+import { CalloutCard } from "@/components/ui/callout-card";
 import { type GlossaryTerm, glossary, glossaryEntryId } from "@/lib/glossary";
 import { pageMetadata } from "@/lib/metadata";
 

@@ -28,7 +28,7 @@ intends to hold). In scope for reports:
 - Anything that could expose the server-only `CONGRESS_API_KEY` to a client
 - Injection, XSS, SSRF, or other issues in request handling (`/api/health`, `/api/bills`, `/api/bills/search`, and the
   bill, member, and committee routes)
-- A bypass of the CRS summary sanitizer (`src/lib/congress/sanitize-summary.ts`) that gets markup to the browser
+- A bypass of the CRS summary sanitizer (`src/lib/congress/bills/sanitize-summary.ts`) that gets markup to the browser
 - Anything that defeats the analytics query-string stripping described in
   [docs/data-policy.md](docs/data-policy.md#analytics-records-the-page-not-the-reader)
 - Dependency vulnerabilities with a realistic exploit path in this app

@@ -1,7 +1,7 @@
 /**
  * The vocabulary all three of this app's directories narrow themselves with.
  *
- * `search.ts` (bills), `member-filter.ts`, and `committee-filter.ts` are deliberately the same design in three
+ * `bills/search.ts` (bills), `members/filter.ts`, and `committees/filter.ts` are deliberately the same design in three
  * subjects — same wildcard sentinel, same facet-option shape, same total parsers, same only-write-what-isn't-default
  * serialization. That sameness is held here, in one shared vocabulary, rather than asserted in three headers: a
  * sameness that is only described in prose is a sameness that drifts. It is the same argument `compareText` in

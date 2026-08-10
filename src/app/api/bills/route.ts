@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { parseCongressQueryParam, parseOffsetParam } from "@/lib/api-query";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMoreBills } from "@/lib/congress/client";
-import type { LegislativeBill } from "@/lib/congress/types";
 
 // NOTE: this route reads the request URL (the `offset` and `congress` query params), which a static export can't do —
 // there's no server left at request time. The GitHub Pages static-demo workflow deletes this route before building

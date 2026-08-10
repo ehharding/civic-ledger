@@ -33,10 +33,10 @@ Two other things can supply that link, and `mapCongressBill` prefers them in thi
    congress.gov page since August 2025 — `https://www.congress.gov/bill/119th-congress/house-bill/1` verbatim — and a
    published URL beats a derived one on the same rule that governs `laws`, `committeeWebsiteUrl`, and everything else
    in this document: a fact the publisher states outright cannot be wrong in the way a construction of ours can.
-2. **`congressGovBillUrl` (`src/lib/congress/types.ts`) otherwise.** The derivation still earns its place, because the
-   *list* endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page does.
-   It builds the same string from the bill's own identity, which `mapCongressBill` already requires before it will map
-   a record at all. An unrecognized bill type falls back to the Congress.gov home page rather than emitting a
+2. **`congressGovBillUrl` (`src/lib/congress/bills/model.ts`) otherwise.** The derivation still earns its place, because
+   the *list* endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page
+   does. It builds the same string from the bill's own identity, which `mapCongressBill` already requires before it will
+   map a record at all. An unrecognized bill type falls back to the Congress.gov home page rather than emitting a
    confidently wrong deep link.
 
 The two coexisting is the point rather than a transitional state: neither covers both endpoints, and dropping the
@@ -85,7 +85,8 @@ upstream read fails. Preview content is fictional and is never presented as live
   the floor never acquires a referral. Getting that backwards is the same error as above in a quieter register: "the
   Congressional Research Service hasn't published a summary" printed over a fixture credits a real institution with the
   emptiness of invented content. One component holds the branch for all ten, so the rule has a single enforcement point
-  rather than ten chances to be spelled differently, and `src/components/empty-section-note.test.tsx` pins both sides.
+  rather than ten chances to be spelled differently, and `src/components/ui/empty-section-note.test.tsx` pins both
+  sides.
 
 ## What the Chamber Diagram Claims
 
@@ -227,7 +228,7 @@ Congress.gov's `/v3/bill` endpoint can only be filtered by congress and bill typ
 query parameter at all**. So `getSearchResults` approximates a broad search the only way the API allows: it fetches each
 supported Congress's most recently active bills (`sort=updateDate+desc`, up to the API's 250-per-request ceiling) and
 matches the query against title, type, number, policy area, and latest action text — the same fields already shown on
-the card and the detail page (`matchesQuery` in `src/lib/congress/search.ts`).
+the card and the detail page (`matchesQuery` in `src/lib/congress/bills/search.ts`).
 
 Two honest limits follow, and the result-count copy states them rather than implying an exhaustive search:
 
@@ -403,11 +404,11 @@ of those URLs is a log of what each reader searched for and whose delegation the
 affiliation targeting would be decorative if the measurement layer assembled the raw material for it as a side effect of
 a feature rather than by anyone's decision.
 
-So `stripQuery` in `src/components/site-analytics.tsx` cuts everything from the first `?` or `#` before either collector
-reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which answers "which
-parts of this are worth keeping" without answering "who is reading it." It is enforced in a `beforeSend` callback rather
-than a dashboard setting, because a dashboard setting is a thing someone can flip and a callback is a thing that shows
-up in a diff. It has its own test for the same reason: a promise made in prose and kept by one uncovered line is a
+So `stripQuery` in `src/components/layout/site-analytics.tsx` cuts everything from the first `?` or `#` before either
+collector reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which answers
+"which parts of this are worth keeping" without answering "who is reading it." It is enforced in a `beforeSend` callback
+rather than a dashboard setting, because a dashboard setting is a thing someone can flip and a callback is a thing that
+shows up in a diff. It has its own test for the same reason: a promise made in prose and kept by one uncovered line is a
 promise that survives until the next refactor.
 
 The static GitHub Pages demo ships neither collector — see

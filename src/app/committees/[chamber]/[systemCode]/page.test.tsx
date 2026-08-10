@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import CommitteePage, { generateMetadata, generateStaticParams } from "@/app/committees/[chamber]/[systemCode]/page";
 import { committeeHref } from "@/lib/committee-route";
-import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees";
-import { previewCommitteeProfiles } from "@/lib/congress/fixtures";
+import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees/model";
+import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { expectNotFound } from "@/test/next-not-found";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;

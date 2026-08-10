@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { JSX } from "react";
 
-import { SiteShell } from "@/components/site-shell";
+import { SiteShell } from "@/components/layout/site-shell";
 
 /**
  * Rendered for any unmatched route, and for a bill lookup that resolved to no record.

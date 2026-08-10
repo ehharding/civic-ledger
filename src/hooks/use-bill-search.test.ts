@@ -14,8 +14,8 @@ import { act, type RenderHookResult, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type BillSearchState, SEARCH_DEBOUNCE_MS, useBillSearch } from "@/hooks/use-bill-search";
-import { previewBills } from "@/lib/congress/fixtures";
-import type { LegislativeBill } from "@/lib/congress/types";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
+import { previewBills } from "@/lib/congress/upstream/fixtures";
 
 const [firstBill, secondBill] = previewBills as [LegislativeBill, LegislativeBill];
 

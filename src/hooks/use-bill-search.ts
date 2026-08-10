@@ -1,9 +1,8 @@
 "use client";
 
 import { type RefObject, useEffect, useRef, useState } from "react";
-
-import { matchesQuery } from "@/lib/congress/search";
-import type { LegislativeBill } from "@/lib/congress/types";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
+import { matchesQuery } from "@/lib/congress/bills/search";
 
 /**
  * How long to wait after the user stops typing before firing a search request, so each keystroke doesn't.

@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "@/app/api/bills/search/route";
 import { MAX_QUERY_LENGTH } from "@/lib/api-query";
 import type { BillSearchResult } from "@/lib/congress/client";
-import { firstPreviewBill } from "@/lib/congress/fixtures";
+import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 
 const { getSearchResults } = vi.hoisted(() => ({ getSearchResults: vi.fn() }));
 

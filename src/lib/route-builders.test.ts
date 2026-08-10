@@ -13,7 +13,7 @@ import { describe, expect, it } from "vitest";
 
 import { billHref } from "@/lib/bill-route";
 import { committeeHref } from "@/lib/committee-route";
-import { billIdentityKey } from "@/lib/congress/types";
+import { billIdentityKey } from "@/lib/congress/bills/model";
 import { lessonHref } from "@/lib/lesson-route";
 import { findLesson, type Lesson, lessons } from "@/lib/lessons";
 import { memberHref } from "@/lib/member-route";

@@ -8,8 +8,8 @@
  * notices until a screenshot goes out.
  *
  * So the mapping is stated once here, into a `--party-color` custom property, and each consumer reads that property
- * into whichever CSS property it happens to need. Adding a party is one rule in this file plus its token in tokens.css
- * — and `partyTintClass` in src/lib/congress/members.ts is what puts the class on the element.
+ * into whichever CSS property it happens to need. Adding a party is one rule in this file plus its token in
+ * tokens.css — and `partyTintClass` in src/lib/congress/members/model.ts is what puts the class on the element.
  *
  * Consumers pair `var(--party-color)` with a `var(--party-other)` fallback, so an element that somehow arrives without
  * a tint class still renders in the neutral gray rather than inheriting an unrelated color or none at all.

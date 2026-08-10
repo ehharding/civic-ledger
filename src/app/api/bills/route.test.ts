@@ -15,9 +15,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/bills/route";
 import { MAX_BILL_OFFSET } from "@/lib/api-query";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { firstPreviewBill } from "@/lib/congress/fixtures";
-import type { LegislativeBill } from "@/lib/congress/types";
+import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 
 const { getMoreBills } = vi.hoisted(() => ({ getMoreBills: vi.fn() }));
 

@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 
-import { SiteShell } from "@/components/site-shell";
-import { LoadingStatus, SkeletonGrid } from "@/components/skeleton";
+import { SiteShell } from "@/components/layout/site-shell";
+import { LoadingStatus, SkeletonGrid } from "@/components/ui/skeleton";
 
 /** The member page shows a capped number of sponsored bills; this matches that cap. */
 const SKELETON_CARD_COUNT: number = 3;

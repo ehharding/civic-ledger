@@ -40,7 +40,7 @@ export default defineConfig({
         // for it would only ever restate theirs.
         "src/test/**",
         // Preview fixtures are test data in their own right; measuring coverage of them says nothing useful.
-        "src/lib/congress/fixtures.ts",
+        "src/lib/congress/upstream/fixtures.ts",
         // Declarative Drizzle table definitions — no branches, nothing to exercise.
         "src/db/schema.ts",
       ],
@@ -58,10 +58,10 @@ export default defineConfig({
        * cases no input can reach, because the type system or the value's own construction has already ruled them out:
        *
        * - `arr[i] ?? fallback` guards required by `noUncheckedIndexedAccess`, over indices a loop bound has already
-       *   proven valid (`seating.ts`, `sanitize-summary.ts`).
-       * - `map.get(k) ?? 0` immediately after a `map.has(k)` filter (`member-filter.ts`, `committee-filter.ts`).
-       * - Handlers guarding against state their own render condition excludes — `congress-seating-chart.tsx` attaches
-       *   its keyboard handler to an `<svg>` that only exists when there is at least one seat.
+       *   proven valid (`members/seating.ts`, `bills/sanitize-summary.ts`).
+       * - `map.get(k) ?? 0` immediately after a `map.has(k)` filter (`members/filter.ts`, `committees/filter.ts`).
+       * - Handlers guarding against state their own render condition excludes — `members/congress-seating-chart.tsx`
+       *   attaches its keyboard handler to an `<svg>` that only exists when there is at least one seat.
        * - A `??` whose left side the model types as a required `string` (the bill route's metadata description).
        *
        * The rule that keeps this number meaningful: reach for a new ignore only when writing the test would mean

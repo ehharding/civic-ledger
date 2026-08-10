@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { FacetedDirectorySkeleton } from "@/components/faceted-directory-skeleton";
+import { FacetedDirectorySkeleton } from "@/components/ui/faceted-directory-skeleton";
 
 /** The directory's second control row: committee type and sort — one fewer than the member directory's. */
 const SKELETON_FACET_COUNT: number = 2;

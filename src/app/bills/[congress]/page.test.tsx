@@ -32,10 +32,10 @@ vi.mock("next/navigation", async (importOriginal): Promise<typeof import("next/n
 });
 
 import CongressBillsPage, { generateMetadata, generateStaticParams } from "@/app/bills/[congress]/page";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { previewBills } from "@/lib/congress/fixtures";
-import type { LegislativeBill } from "@/lib/congress/types";
+import { previewBills } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 import { expectNotFound } from "@/test/next-not-found";
 

@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { billStageLabels, billStages } from "@/lib/congress/types";
+import { billStageLabels, billStages } from "@/lib/congress/bills/model";
 import { findLesson, type Lesson, type LessonSource, type LessonStep, lessonNumber, lessons } from "@/lib/lessons";
 
 /** The publishers a citation may come from. @see the "primary sources only" rule in lessons.ts. */

@@ -1,19 +1,23 @@
 import {
+  type BillDirectoryQuery,
+  DEFAULT_BILL_DIRECTORY_QUERY,
+  parseBillDirectoryQuery,
+} from "@/lib/congress/bills/search";
+import {
   type CommitteeDirectoryQuery,
   DEFAULT_COMMITTEE_DIRECTORY_QUERY,
   parseCommitteeDirectoryQuery,
-} from "@/lib/congress/committee-filter";
+} from "@/lib/congress/committees/filter";
 import {
   type CommitteeRecordsQuery,
   DEFAULT_COMMITTEE_RECORDS_QUERY,
   parseCommitteeRecordsQuery,
-} from "@/lib/congress/committee-records";
+} from "@/lib/congress/committees/records";
 import {
   DEFAULT_MEMBER_DIRECTORY_QUERY,
   type MemberDirectoryQuery,
   parseMemberDirectoryQuery,
-} from "@/lib/congress/member-filter";
-import { type BillDirectoryQuery, DEFAULT_BILL_DIRECTORY_QUERY, parseBillDirectoryQuery } from "@/lib/congress/search";
+} from "@/lib/congress/members/filter";
 
 /**
  * Resolves each directory's shareable deep link from the request.

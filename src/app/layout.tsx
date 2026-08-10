@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { JSX, ReactNode } from "react";
 
-import { SiteAnalytics } from "@/components/site-analytics";
+import { SiteAnalytics } from "@/components/layout/site-analytics";
 import { SITE_DEFAULT_TITLE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE_TEMPLATE } from "@/lib/metadata";
 import { getSiteUrl } from "@/lib/site";
 

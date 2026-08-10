@@ -63,8 +63,9 @@ Two kinds of code are worth testing directly even when a component test already 
 - **Anything that races.** Debouncing, aborting, out-of-order responses, and reconciling state against the address bar
   all keep working by accident until they don't, and statement coverage through a component says nothing about whether
   the guard still holds. @see `use-bill-search.test.ts` and `use-directory-url-sync.test.ts`.
-- **Wording a reader is shown.** Display helpers live in the model (`members.ts`, `committees.ts`) specifically so the
-  sentence a page prints can be asserted here rather than only reached by rendering a route.
+- **Wording a reader is shown.** Display helpers live in the model (`congress/members/model.ts`,
+  `congress/committees/model.ts`) specifically so the sentence a page prints can be asserted here rather than only
+  reached by rendering a route.
 
 ## Where Documentation Goes
 
@@ -94,9 +95,9 @@ default — a few current positions, so they don't have to be relitigated per pu
   needed — restoring paragraph and link styling inside `.summary-body` (injected CRS summary HTML) and
   `.text-version-list`, which the sitewide reset otherwise flattens — it is done by hand on the same tokens as
   everything else.
-- **No DOM-based HTML sanitizer.** `src/lib/congress/sanitize-summary.ts` is hand-written because the input shape is
-  narrow and well understood. This is a bounded position, not a permanent one: it expires the moment this app renders
-  markup from a less predictable source than Congress.gov.
+- **No DOM-based HTML sanitizer.** `src/lib/congress/bills/sanitize-summary.ts` is hand-written because the input
+  shape is narrow and well understood. This is a bounded position, not a permanent one: it expires the moment this app
+  renders markup from a less predictable source than Congress.gov.
 - **`date-fns` earns its place on one job.** `DataSourceNotice`'s "Updated 5 minutes ago" line, via
   `formatDistanceToNow`. Bill and member dates stay on native `Intl.DateTimeFormat` in `src/lib/format.ts`, which
   already handles a subtle UTC rollback bug in Congress.gov's date-only strings correctly.
@@ -116,6 +117,17 @@ default — a few current positions, so they don't have to be relitigated per pu
   `src/lib/congress/` is the house style.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
   point is a wish.
-- Pure, isomorphic modules (`*-filter.ts`, `search.ts`, `seating.ts`, `format.ts`) must not import anything server-side.
-  A client component has to be able to import them without dragging the adapter, and the API key it reads, into the
-  browser bundle.
+- Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import
+  anything server-side. A client component has to be able to import them without dragging the adapter, and the API key
+  it reads, into the browser bundle.
+- Import with the `@/` alias, never a relative path. It is what let the adapter and the component tree be regrouped
+  into folders without touching a single import statement, and it keeps a module's imports readable in a diff that
+  doesn't say which directory the file is in.
+- A new file goes in the folder named for its *subject*, not for whoever calls it — `src/components/bills/` for
+  anything that draws a bill, `src/lib/congress/members/` for anything that knows what a member is. Two exceptions,
+  both stated in [Architecture](docs/architecture.md): `src/components/ui/` is for pieces that could render a record
+  type they have never heard of, and `src/lib/congress/upstream/` is for the modules that talk to Congress.gov itself.
+- Inside `src/lib/congress/<record type>/`, `model.ts` is the pure one — shapes, vocabulary, and display helpers, with
+  no I/O. Anything that fetches belongs beside it under its own name, not inside it.
+- A component file is named for the single component it exports, so `BillCard` is findable at `bills/bill-card.tsx`
+  from the name alone. The adapter's modules export many things and are named for their responsibility instead.

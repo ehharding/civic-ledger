@@ -1,7 +1,6 @@
 import type { Route } from "next";
-
-import { type CommitteeRecordsQuery, committeeRecordsQueryString } from "@/lib/congress/committee-records";
-import type { CommitteeChamber } from "@/lib/congress/committees";
+import type { CommitteeChamber } from "@/lib/congress/committees/model";
+import { type CommitteeRecordsQuery, committeeRecordsQueryString } from "@/lib/congress/committees/records";
 
 /**
  * Builds the in-app route to a committee's page, e.g., `/committees/house/hsag00`.

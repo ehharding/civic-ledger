@@ -2,8 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
-import { BillDetail } from "@/components/bill-detail";
+import { BillDetail } from "@/components/bills/bill-detail";
 import { billHref } from "@/lib/bill-route";
+import type {
+  BillAction,
+  BillCosponsor,
+  BillRouteParams,
+  BillSummary,
+  BillTextVersion,
+  LegislativeBill,
+  RelatedBill,
+} from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
   getBillActions,
@@ -14,17 +23,8 @@ import {
   getBillTextVersions,
   getRelatedBills,
 } from "@/lib/congress/client";
-import type { BillCommittee } from "@/lib/congress/committees";
-import { previewBills } from "@/lib/congress/fixtures";
-import type {
-  BillAction,
-  BillCosponsor,
-  BillRouteParams,
-  BillSummary,
-  BillTextVersion,
-  LegislativeBill,
-  RelatedBill,
-} from "@/lib/congress/types";
+import type { BillCommittee } from "@/lib/congress/committees/model";
+import { previewBills } from "@/lib/congress/upstream/fixtures";
 import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 

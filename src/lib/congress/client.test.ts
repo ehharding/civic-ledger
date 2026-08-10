@@ -4,7 +4,7 @@
  * found" (404) and "temporarily unavailable" (any other failure).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
   type BillSearchResult,
@@ -18,9 +18,8 @@ import {
   getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { firstPreviewBill, previewBills } from "@/lib/congress/fixtures";
-import type { ChamberComposition, CongressComposition, CongressMember } from "@/lib/congress/members";
-import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/types";
+import type { ChamberComposition, CongressComposition, CongressMember } from "@/lib/congress/members/model";
+import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
-import { BillDirectory } from "@/components/bill-directory";
-import { CongressSwitcher } from "@/components/congress-switcher";
-import { DataSourceNotice } from "@/components/data-source-notice";
-import { PageHeader } from "@/components/page-header";
-import { SiteShell } from "@/components/site-shell";
+import { BillDirectory } from "@/components/bills/bill-directory";
+import { CongressSwitcher } from "@/components/bills/congress-switcher";
+import { PageHeader } from "@/components/layout/page-header";
+import { SiteShell } from "@/components/layout/site-shell";
+import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { getCongressSnapshot } from "@/lib/congress/client";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
@@ -16,7 +16,7 @@ import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-
  * The route segment's data-cache window, declared as on `/members` and `/committees` so all three directories state the
  * same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
  * visit and *not* an upstream request: the snapshot is fetched through the adapter's own five-minute cache
- * (`REVALIDATE_SECONDS` in `http.ts`), shared across every visitor and every narrowing of this page.
+ * (`REVALIDATE_SECONDS` in `congress/upstream/http.ts`), shared across every visitor and every narrowing of this page.
  */
 export const revalidate: number = 300;
 

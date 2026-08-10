@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
-import { CommitteeDirectory } from "@/components/committee-directory";
-import { DataSourceNotice } from "@/components/data-source-notice";
-import { PageHeader } from "@/components/page-header";
-import { SiteShell } from "@/components/site-shell";
+import { CommitteeDirectory } from "@/components/committees/committee-directory";
+import { PageHeader } from "@/components/layout/page-header";
+import { SiteShell } from "@/components/layout/site-shell";
+import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { type CommitteeDirectoryResult, getCommitteeDirectory } from "@/lib/congress/client";
-import type { CommitteeDirectoryQuery } from "@/lib/congress/committee-filter";
+import type { CommitteeDirectoryQuery } from "@/lib/congress/committees/filter";
 import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveCommitteeDirectoryQuery } from "@/lib/search-params";
 

@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 
-import { SiteShell } from "@/components/site-shell";
-import { LoadingStatus, SkeletonPageHeader } from "@/components/skeleton";
+import { SiteShell } from "@/components/layout/site-shell";
+import { LoadingStatus, SkeletonPageHeader } from "@/components/ui/skeleton";
 
 /**
  * Streamed by Next while a committee's record resolves.

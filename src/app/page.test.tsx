@@ -11,9 +11,8 @@ import { render, screen } from "@testing-library/react";
 import type React from "react";
 import type { JSX } from "react";
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-
-import type { CongressComposition } from "@/lib/congress/members";
-import type { CongressSnapshot } from "@/lib/congress/types";
+import type { CongressSnapshot } from "@/lib/congress/bills/model";
+import type { CongressComposition } from "@/lib/congress/members/model";
 
 const getCongressSnapshot: Mock<() => Promise<CongressSnapshot>> = vi.fn<() => Promise<CongressSnapshot>>();
 const getCongressComposition: Mock<() => Promise<CongressComposition>> = vi.fn<() => Promise<CongressComposition>>();
@@ -23,7 +22,7 @@ vi.mock("@/lib/congress/client", async (importOriginal): Promise<typeof import("
   return { ...actual, getCongressSnapshot, getCongressComposition };
 });
 
-const { previewBills, buildPreviewComposition } = await import("@/lib/congress/fixtures");
+const { previewBills, buildPreviewComposition } = await import("@/lib/congress/upstream/fixtures");
 
 /** A placeholder roster, stamped with a fixed time so nothing in these tests depends on the clock. */
 function composition(): CongressComposition {

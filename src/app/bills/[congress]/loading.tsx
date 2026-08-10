@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { BillDirectorySkeleton } from "@/components/bill-directory-skeleton";
+import { BillDirectorySkeleton } from "@/components/bills/bill-directory-skeleton";
 
 /**
  * Streamed by Next while a `/bills/[congress]` route's snapshot fetch resolves.

@@ -31,9 +31,9 @@ vi.mock("next/navigation", async (importOriginal): Promise<typeof import("next/n
 });
 
 import BillsPage, { metadata } from "@/app/bills/page";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { previewBills } from "@/lib/congress/fixtures";
-import type { LegislativeBill } from "@/lib/congress/types";
+import { previewBills } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;

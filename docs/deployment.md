@@ -92,8 +92,8 @@ output, including the header's plain `<form action>`, the sitemap, and robots.tx
   (for `offset`/`congress`, or `q`), and `/api/health` is `force-dynamic` so its timestamp reflects real request
   time — none of which a static export has a server left to do. Pagination is only offered when live data is active
   anyway, and search falls back to filtering the preview bills already on the page, client-side (`matchesQuery` in
-  `src/lib/congress/search.ts`) — the same fallback the live app uses if `/api/bills/search` is ever unreachable, so
-  this is not a code path invented for the demo. A liveness probe against a static host answers a question nobody is
+  `src/lib/congress/bills/search.ts`) — the same fallback the live app uses if `/api/bills/search` is ever unreachable,
+  so this is not a code path invented for the demo. A liveness probe against a static host answers a question nobody is
   asking.
 - **Degrades every directory deep link** to that page's default view, since a static export has no request URL to read
   at build time. This covers both bill-directory routes' `?q=`/`?stage=`, the member directory's

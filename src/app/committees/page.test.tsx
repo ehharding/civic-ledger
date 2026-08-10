@@ -10,8 +10,8 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import CommitteesPage, { metadata } from "@/app/committees/page";
-import type { CommitteeSummary } from "@/lib/congress/committees";
-import { previewCommitteeDirectory } from "@/lib/congress/fixtures";
+import type { CommitteeSummary } from "@/lib/congress/committees/model";
+import { previewCommitteeDirectory } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
