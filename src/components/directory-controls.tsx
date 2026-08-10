@@ -275,6 +275,47 @@ export function ClearFiltersButton({ onClear }: { onClear: () => void }): JSX.El
   );
 }
 
+/** Props for {@link DirectoryEmptyState}. */
+type DirectoryEmptyStateProps = {
+  /** What happened, e.g., `"No Members Match Those Filters."` */
+  heading: string;
+  /** What to try next. */
+  body: string;
+  /**
+   * Undoes the narrowing, when narrowing is what emptied the list.
+   *
+   * Omitted when it isn't — the bill directory's "no records yet" state is a fact about the Congress being browsed
+   * rather than about the filters, and offering to clear filters there would be offering a control that changes
+   * nothing.
+   */
+  onClear?: () => void;
+};
+
+/**
+ * What a directory shows in place of its grid when nothing survived.
+ *
+ * All three directories reach this state and all three word it the same way — a heading naming what happened and a line
+ * suggesting what to try — so the markup lives beside the controls that produced the state rather than in each of them.
+ *
+ * **The advice is a control, not only a sentence.** These states tell the reader to clear the filters, and the only
+ * other control that does it sits in the facet row, which an empty grid has usually scrolled out of view — so the
+ * sentence would be asking for something the interface is standing right there able to do. It renders the same
+ * {@link ClearFiltersButton} the facet row does, so clearing from here and clearing from there are visibly one action
+ * rather than two that happen to agree.
+ *
+ * @param props - @see DirectoryEmptyStateProps
+ * @returns The empty state, with the clear action when there is something to clear.
+ */
+export function DirectoryEmptyState({ heading, body, onClear }: DirectoryEmptyStateProps): JSX.Element {
+  return (
+    <div className="no-results">
+      <h2>{heading}</h2>
+      <p>{body}</p>
+      {onClear ? <ClearFiltersButton onClear={onClear} /> : null}
+    </div>
+  );
+}
+
 /** Props for {@link DirectoryResultCount}. */
 type DirectoryResultCountProps = {
   /** How many records are showing, already worded by the caller (`"12 of 541 Members"`, `"3 Matches"`). */

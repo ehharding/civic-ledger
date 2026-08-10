@@ -3,7 +3,7 @@
  * scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked for is the
  * view that renders, and that a preview list doesn't claim to be the committees of a real Congress.
  */
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -134,6 +134,28 @@ describe("CommitteeDirectory", (): void => {
     await user.type(screen.getByRole("searchbox", { name: /Search committees/ }), "appropriations");
 
     expect(screen.getByText("No Committees Match Those Filters.")).toBeInTheDocument();
+  });
+
+  it("offers no clear action when an empty grid is not the filters' doing", (): void => {
+    renderDirectory({ committees: [] });
+
+    expect(screen.getByText("No Committees Match Those Filters.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear Filters" })).not.toBeInTheDocument();
+  });
+
+  it("carries out the empty state's own advice rather than only giving it", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    const { container } = renderDirectory();
+
+    await user.type(screen.getByRole("searchbox", { name: /Search committees/ }), "nothing at all");
+
+    // The one inside the empty state, not the one in the facet row above it — the point of this control is that a
+    // reader who has scrolled to an empty grid does not have to scroll back to the row that emptied it.
+    const emptyState: HTMLElement = container.querySelector(".no-results") as HTMLElement;
+    await user.click(within(emptyState).getByRole("button", { name: "Clear Filters" }));
+
+    expect(shownNames()).toHaveLength(list.length);
+    expect(screen.getByRole("searchbox", { name: /Search committees/ })).toHaveValue("");
   });
 
   it("reorders the grid without renaming the default order", async (): Promise<void> => {

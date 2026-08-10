@@ -4,6 +4,7 @@ import { type JSX, useCallback, useMemo, useState } from "react";
 
 import {
   ClearFiltersButton,
+  DirectoryEmptyState,
   DirectoryFacet,
   DirectoryResultCount,
   DirectorySearch,
@@ -254,10 +255,11 @@ export function MemberDirectory({
           )}
         </div>
       ) : (
-        <div className="no-results">
-          <h2>No Members Match Those Filters.</h2>
-          <p>Try a shorter name, a different chamber, or clear the filters to start again.</p>
-        </div>
+        <DirectoryEmptyState
+          body="Try a shorter name, a different chamber, or clear the filters to start again."
+          heading="No Members Match Those Filters."
+          onClear={isFiltered ? (): void => setFilters(NO_MEMBER_FILTERS) : undefined}
+        />
       )}
     </section>
   );

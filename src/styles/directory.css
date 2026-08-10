@@ -279,6 +279,13 @@
   color: var(--ink-soft);
 }
 
+/* The same control as the one in the facet row, so it needs no appearance of its own — only the gap that separates it
+   from the advice it carries out. `inline-flex` centers it inside the block's own `text-align: center` without a
+   wrapper. */
+.no-results .directory-facets__clear {
+  margin-top: var(--space-6);
+}
+
 .directory-load-more {
   margin-top: var(--space-7);
   display: flex;

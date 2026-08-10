@@ -1,7 +1,7 @@
 import type { Route } from "next";
 
 /**
- * Builds the in-app route to a learning module, e.g. `/learn/how-a-bill-becomes-law`.
+ * Builds the in-app route to a learning module, e.g., `/learn/how-a-bill-becomes-law`.
  *
  * The fourth member of the `*-route.ts` family, and it exists for the same reason the other three do: the lesson slug
  * is now written down once, in `src/lib/lessons.ts`, and read by the hub index, each lesson's own "read this next"

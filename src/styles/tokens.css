@@ -15,10 +15,18 @@
   --canvas: #f6f3ed;
   --paper: #fffdf8;
 
-  /* Text */
+  /* Text.
+   *
+   * The three are a legibility ramp, not a lightness ramp, and --ink-faint is where that distinction bites. It is the
+   * quietest of the three and still carries ordinary body-size copy — a committee card's chamber and type line, the
+   * chamber diagram's legend shares and source note — so it answers to WCAG 1.4.3's 4.5:1 for normal text rather than
+   * to the 3:1 that large text and non-text marks get. It clears that against every surface in this palette, the
+   * tightest of which is the promo strip's --warm at 4.71:1, and stays visibly lighter than --ink-soft so the ramp is
+   * still a ramp. Enforced rather than asserted: tests/e2e/accessibility.spec.ts sweeps every route in both palettes
+   * and fails on a contrast regression. */
   --ink: #172837;
   --ink-soft: #4d5a65;
-  --ink-faint: #6c7c87;
+  --ink-faint: #5c6871;
 
   /* Borders */
   --line: #d9d7ce;

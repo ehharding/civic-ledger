@@ -4,7 +4,12 @@ import { Loader2 } from "lucide-react";
 import { type JSX, useCallback, useState } from "react";
 
 import { BillCard } from "@/components/bill-card";
-import { DirectoryResultCount, DirectorySearch, SegmentedFilter } from "@/components/directory-controls";
+import {
+  DirectoryEmptyState,
+  DirectoryResultCount,
+  DirectorySearch,
+  SegmentedFilter,
+} from "@/components/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
@@ -164,6 +169,18 @@ export function BillDirectory({
   const showNoRecordsYet: boolean = !isSearchActive && allBills.length === 0;
   const showNoMatches: boolean = !showNoRecordsYet && displayedBills.length === 0 && !isInitialSearchLoad;
 
+  /**
+   * Returns the directory to browsing everything.
+   *
+   * Both controls at once, because both narrow the same grid and a reader who has emptied it rarely knows which of the
+   * two did it — a search that survived a stage change looks exactly like a stage that survived a search. The member
+   * and committee directories clear all of their facets together for the same reason.
+   */
+  function clearFilters(): void {
+    setQuery("");
+    setStage(ANY_FACET);
+  }
+
   return (
     <section className="bill-directory" aria-label="Bill directory">
       <div className="directory-controls">
@@ -195,15 +212,17 @@ export function BillDirectory({
           )}
         </div>
       ) : showNoRecordsYet ? (
-        <div className="no-results">
-          <h2>No Records Yet.</h2>
-          <p>Nothing has been recorded for this Congress yet. Try another Congress above, or check back soon.</p>
-        </div>
+        // No clear action: this Congress holds no records at all, which no filter caused and none can undo.
+        <DirectoryEmptyState
+          body="Nothing has been recorded for this Congress yet. Try another Congress above, or check back soon."
+          heading="No Records Yet."
+        />
       ) : showNoMatches ? (
-        <div className="no-results">
-          <h2>No Records Match That Search.</h2>
-          <p>Try a shorter phrase, a bill number, or another stage.</p>
-        </div>
+        <DirectoryEmptyState
+          body="Try a shorter phrase, a bill number, or another stage."
+          heading="No Records Match That Search."
+          onClear={clearFilters}
+        />
       ) : null}
 
       {hasMore && !isSearchActive ? (

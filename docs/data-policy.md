@@ -78,6 +78,15 @@ upstream read fails. Preview content is fictional and is never presented as live
   the section drops both published figures outright when the source is preview and states only what the page is showing.
   Every other collection reaches the same place by a duller route: fixtures set no `collectionCounts` at all.
 
+- **An empty section says which kind of empty it is, and `EmptySectionNote` is where that is decided.** Ten sections
+  across the bill, member, and committee pages can come back with nothing to list, and the sentence each prints is not a
+  wording choice. On preview data it says the section is waiting for live records; on live data it says why the absence
+  is ordinary — most bills have no companion measure, most questions are settled by voice vote, a resolution taken up on
+  the floor never acquires a referral. Getting that backwards is the same error as above in a quieter register: "the
+  Congressional Research Service hasn't published a summary" printed over a fixture credits a real institution with the
+  emptiness of invented content. One component holds the branch for all ten, so the rule has a single enforcement point
+  rather than ten chances to be spelled differently, and `src/components/empty-section-note.test.tsx` pins both sides.
+
 ## What the Chamber Diagram Claims
 
 The home page's seating chart draws one dot per seated member, grouped into contiguous party blocks across a half-disc.

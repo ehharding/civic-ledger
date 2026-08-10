@@ -199,9 +199,9 @@ export type Subcommittee = CommitteeRef;
  * one is dropped at the boundary rather than rendered as an inert card.
  */
 export type CommitteeSummary = {
-  /** Congress.gov's stable identifier, e.g. `"hsag00"`. Lower-cased, since it is also a URL path segment. */
+  /** Congress.gov's stable identifier, e.g., `"hsag00"`. Lower-cased, since it is also a URL path segment. */
   systemCode: string;
-  /** The committee's name as Congress.gov publishes it in the list, e.g. `"Agriculture Committee"`. */
+  /** The committee's name as Congress.gov publishes it in the list, e.g., `"Agriculture Committee"`. */
   name: string;
   chamber: CommitteeChamber;
   type: CommitteeType;
@@ -230,7 +230,7 @@ export type CommitteeHistoryEntry = {
   startDate?: string;
   /** Absent for the span still in effect. */
   endDate?: string;
-  /** e.g. `"Statute"`, `"House Rule X"` — what created the committee, when the record says. */
+  /** e.g., `"Statute"`, `"House Rule X"` — what created the committee, when the record says. */
   establishingAuthority?: string;
 };
 

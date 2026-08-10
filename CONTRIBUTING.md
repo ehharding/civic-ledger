@@ -24,8 +24,10 @@ pnpm check
 pnpm build
 ```
 
-Run `pnpm test:e2e` when changing navigation, forms, or layout behavior. Every data adapter change should include a
-fixture or unit test for the upstream shape it supports.
+Run `pnpm test:e2e` when changing navigation, forms, or layout behavior — and when changing a color, a design token, or
+anything a control inherits from the user agent, because `tests/e2e/accessibility.spec.ts` runs there and is the only
+check that reads the page as a browser paints it. Every data adapter change should include a fixture or unit test for
+the upstream shape it supports.
 
 `pnpm dev` is the loop you work in. `pnpm preview` builds and serves the *production* output on port 3001 — a different
 port on purpose, so it can run beside a dev server rather than fighting it for 3000. Reach for it when the thing you
@@ -98,6 +100,13 @@ default — a few current positions, so they don't have to be relitigated per pu
 - **`date-fns` earns its place on one job.** `DataSourceNotice`'s "Updated 5 minutes ago" line, via
   `formatDistanceToNow`. Bill and member dates stay on native `Intl.DateTimeFormat` in `src/lib/format.ts`, which
   already handles a subtle UTC rollback bug in Congress.gov's date-only strings correctly.
+- **`@axe-core/playwright` is the accessibility baseline's enforcement point.** It overlaps nothing else here: Biome
+  lints source text, Vitest renders into jsdom — which has no layout and no computed colors, so it cannot see a
+  contrast failure at all — and Playwright on its own drives behavior without judging markup. This is the only check
+  that reads a rendered page, which is what makes it the only one that can catch a token that fails contrast, a control
+  inheriting user-agent chrome, or an `aria-labelledby` pointing at nothing. It adds one dependency and no build step,
+  and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — @see the
+  header of `tests/e2e/accessibility.spec.ts` for what stays with review.
 - **No Storybook yet.** Add it when the component inventory justifies it.
 
 ## Code Conventions

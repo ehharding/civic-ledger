@@ -3,6 +3,7 @@ import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";
+import { DetailPanel } from "@/components/detail-panel";
 import { GlossaryProse } from "@/components/glossary-prose";
 import { LessonSources } from "@/components/lesson-sources";
 import { PageHeader } from "@/components/page-header";
@@ -44,23 +45,30 @@ export function LessonArticle({ lesson }: { lesson: Lesson }): JSX.Element {
       <div className="lesson-steps">
         {lesson.steps.map(
           (step: LessonStep, index: number): JSX.Element => (
-            <article className="detail-panel lesson-step" key={step.id} aria-labelledby={`lesson-${step.id}`}>
-              <p className="section-kicker">
-                {lesson.stepNoun} {index + 1} of {stepCount}
-              </p>
-              <h2 id={`lesson-${step.id}`}>{step.heading}</h2>
+            <DetailPanel
+              as="article"
+              className="lesson-step"
+              heading={step.heading}
+              headingId={`lesson-${step.id}`}
+              key={step.id}
+              kicker={`${lesson.stepNoun} ${index + 1} of ${stepCount}`}
+            >
               <p className="muted-copy">
                 <GlossaryProse text={step.copy} />
               </p>
               {step.stage ? <BillJourney stage={step.stage} compact /> : null}
-            </article>
+            </DetailPanel>
           ),
         )}
       </div>
 
-      <section className="detail-panel detail-panel--accent lesson-limits" aria-labelledby="lesson-limits-heading">
-        <p className="section-kicker">Stated Plainly</p>
-        <h2 id="lesson-limits-heading">{lesson.limitsHeading}</h2>
+      <DetailPanel
+        accent
+        className="lesson-limits"
+        heading={lesson.limitsHeading}
+        headingId="lesson-limits-heading"
+        kicker="Stated Plainly"
+      >
         <ul>
           {lesson.limits.map(
             (limit: string): JSX.Element => (
@@ -70,7 +78,7 @@ export function LessonArticle({ lesson }: { lesson: Lesson }): JSX.Element {
             ),
           )}
         </ul>
-      </section>
+      </DetailPanel>
 
       <LessonSources sources={lesson.sources} headingId="lesson-sources-heading" />
 

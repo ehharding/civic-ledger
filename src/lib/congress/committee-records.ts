@@ -110,7 +110,7 @@ export type CommitteeBillReferral = {
   /** Upper-cased, as `LegislativeBill.type` is — e.g., `"HR"`. */
   type: string;
   number: string;
-  /** e.g. `"Referred To"`, `"Reported By"`. Verbatim from Congress.gov; this app defines no vocabulary of its own. */
+  /** e.g., `"Referred To"`, `"Reported By"`. Verbatim from Congress.gov; this app defines no vocabulary of its own. */
   relationship?: string;
   /** ISO 8601 timestamp of the action that created the relationship. */
   actionDate?: string;

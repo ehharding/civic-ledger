@@ -16,6 +16,18 @@
      --space-11 happens to be it. Note the 6px gap from --control-height, which is what directory.css's "Clear Filters"
      note is about. */
   min-height: var(--space-11);
+  /* Neutralizes the user agent's own button chrome, which is what makes the split noted above — worn by both links and
+     real buttons — invisible to a reader. A `<button>` arrives with `2px outset ButtonBorder` and a `ButtonFace`
+     background; an `<a>` arrives with neither, so without this one class paints as two different controls and no
+     variant below can correct it without restating the reset.
+
+     It is a contrast rule as much as a visual one. `color-scheme: light dark` resolves `ButtonFace` to a mid grey, so
+     a quiet button carrying only a --navy text color sits on that grey at 2.37:1 in dark mode — a WCAG 1.4.3 failure
+     that a light-mode screenshot cannot show. Every variant below states the surface it wants; the ones that want none
+     get none, on both elements and in both palettes. @see tests/e2e/accessibility.spec.ts, which fails on a
+     regression. */
+  border: 0;
+  background: transparent;
   border-radius: var(--radius-sm);
   font-size: var(--text-md);
   font-weight: 750;
@@ -52,6 +64,8 @@
   background: var(--navy-deep);
 }
 
+/* The one variant that adds no surface at all — hence the name, and hence its dependence on the reset above, which is
+   the only thing making its `<a>` and its `<button>` agree. */
 .button--quiet {
   padding: var(--space-3) var(--space-2);
   color: var(--navy);

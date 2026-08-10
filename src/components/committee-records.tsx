@@ -3,6 +3,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { JSX } from "react";
 
+import { previewPendingCopy } from "@/components/empty-section-note";
 import { billHref } from "@/lib/bill-route";
 import { committeeHref, committeeRecordsHref } from "@/lib/committee-route";
 import {
@@ -452,7 +453,7 @@ function emptyCopy(options: { kind: CommitteeRecordKind; unavailable: boolean; i
   }
 
   if (options.isPreview) {
-    return "Records appear here once live Congress.gov data is connected.";
+    return previewPendingCopy("Records appear");
   }
 
   const clause: string = `Congress.gov records ${committeeRecordKindClauses[options.kind]}.`;

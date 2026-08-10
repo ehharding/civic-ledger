@@ -227,6 +227,28 @@ describe("MemberDirectory", (): void => {
     expect(screen.getByRole("heading", { name: "No Members Match Those Filters." })).toBeInTheDocument();
   });
 
+  it("offers no clear action when an empty grid is not the filters' doing", (): void => {
+    renderDirectory({ members: [] });
+
+    expect(screen.getByRole("heading", { name: "No Members Match Those Filters." })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear Filters" })).not.toBeInTheDocument();
+  });
+
+  it("carries out the empty state's own advice rather than only giving it", async (): Promise<void> => {
+    const user: UserEvent = userEvent.setup();
+    const { container } = renderDirectory();
+
+    await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "nobody");
+
+    // The one inside the empty state, not the one in the facet row above it — the point of this control is that a
+    // reader who has scrolled to an empty grid does not have to scroll back to the row that emptied it.
+    const emptyState: HTMLElement = container.querySelector(".no-results") as HTMLElement;
+    await user.click(within(emptyState).getByRole("button", { name: "Clear Filters" }));
+
+    expect(shownNames()).toHaveLength(3);
+    expect(screen.getByRole("searchbox", { name: /Search members/ })).toHaveValue("");
+  });
+
   it("does not claim a preview roster is who currently holds a seat", (): void => {
     renderDirectory({ source: "preview" });
 

@@ -5,6 +5,8 @@ import { Fragment, type JSX } from "react";
 import { BillJourney } from "@/components/bill-journey";
 import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
+import { DetailPanel } from "@/components/detail-panel";
+import { EmptySectionNote, previewPendingCopy } from "@/components/empty-section-note";
 import { GlossaryProse } from "@/components/glossary-prose";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
@@ -598,19 +600,21 @@ export function BillDetail({
       <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
 
       <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="journey-heading">
-          <p className="section-kicker">How This Moves</p>
-          <h2 id="journey-heading">The Bill’s Journey</h2>
+        <DetailPanel headingId="journey-heading" kicker="How This Moves" heading="The Bill’s Journey">
           <p className="muted-copy">
             This is an orientation aid, not an official legal status. Read the latest action and primary source
             alongside it.
           </p>
           <BillJourney stage={stage} compact={false} />
-        </section>
+        </DetailPanel>
 
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="next-heading">
-          <p className="section-kicker">Latest Action</p>
-          <h2 id="next-heading">What Happened Most Recently</h2>
+        <DetailPanel
+          accent
+          as="aside"
+          heading="What Happened Most Recently"
+          headingId="next-heading"
+          kicker="Latest Action"
+        >
           {/* The one line on this page written in Congress's own voice rather than this app's — "Referred to the
               Committee on…", "Passed Senate without amendment" — which makes it the place a reader is most likely to
               hit a word they don't have. @see GlossaryProse. */}
@@ -619,13 +623,11 @@ export function BillDetail({
           </p>
           {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
           <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
-        </aside>
+        </DetailPanel>
       </div>
 
       <div className="detail-grid detail-grid--single">
-        <section className="detail-panel" aria-labelledby="committees-heading">
-          <p className="section-kicker">Who Has Held It</p>
-          <h2 id="committees-heading">Committees of Referral</h2>
+        <DetailPanel headingId="committees-heading" kicker="Who Has Held It" heading="Committees of Referral">
           {committees.length > 0 ? (
             <>
               <p className="muted-copy">
@@ -641,22 +643,20 @@ export function BillDetail({
               <CommitteeReferrals committees={committees} />
             </>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "Committees of referral appear here once live Congress.gov data is connected."
-                : "No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."}
-            </p>
+            <EmptySectionNote
+              absence="No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."
+              previewLead="Committees of referral appear"
+              source={source}
+            />
           )}
-        </section>
+        </DetailPanel>
       </div>
 
       {/* Sits here, between the committees that held the bill and the actions taken on it, because it answers the
           question the hero's sponsor line opens and cannot close: one name introduced this, and these are the others
           who put theirs to it. */}
       <div className="detail-grid detail-grid--single">
-        <section className="detail-panel" aria-labelledby="cosponsors-heading">
-          <p className="section-kicker">Who Else Put Their Name To It</p>
-          <h2 id="cosponsors-heading">Cosponsors</h2>
+        <DetailPanel headingId="cosponsors-heading" kicker="Who Else Put Their Name To It" heading="Cosponsors">
           {cosponsors.length > 0 ? (
             <>
               <CosponsorList cosponsors={cosponsors} source={source} tally={bill.cosponsorTally} />
@@ -666,19 +666,17 @@ export function BillDetail({
               </p>
             </>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "Cosponsors appear here once live Congress.gov data is connected."
-                : "No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."}
-            </p>
+            <EmptySectionNote
+              absence="No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."
+              previewLead="Cosponsors appear"
+              source={source}
+            />
           )}
-        </section>
+        </DetailPanel>
       </div>
 
       <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="actions-heading">
-          <p className="section-kicker">Every Step on the Record</p>
-          <h2 id="actions-heading">What Congress Actually Did</h2>
+        <DetailPanel headingId="actions-heading" kicker="Every Step on the Record" heading="What Congress Actually Did">
           {actions.length > 0 ? (
             <p className="muted-copy">
               {describeBillCollection({
@@ -690,30 +688,32 @@ export function BillDetail({
               are kept here rather than merged.
             </p>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "The action history appears here once live Congress.gov data is connected."
-                : "No action history could be read for this bill."}
-            </p>
+            <EmptySectionNote
+              absence="No action history could be read for this bill."
+              previewLead="The action history appears"
+              source={source}
+            />
           )}
           <ActionHistory actions={actions} />
-        </section>
+        </DetailPanel>
 
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="votes-heading">
-          <p className="section-kicker">Where Names Went on the Record</p>
-          <h2 id="votes-heading">Recorded Votes</h2>
+        <DetailPanel
+          accent
+          as="aside"
+          heading="Recorded Votes"
+          headingId="votes-heading"
+          kicker="Where Names Went on the Record"
+        >
           {source === "preview" ? (
-            <p className="muted-copy">Recorded votes appear here once live Congress.gov data is connected.</p>
+            <p className="muted-copy">{previewPendingCopy("Recorded votes appear")}</p>
           ) : (
             <RecordedVotes votes={votes} />
           )}
-        </aside>
+        </DetailPanel>
       </div>
 
       <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="summary-heading">
-          <p className="section-kicker">In Plain English</p>
-          <h2 id="summary-heading">What This Bill Would Do</h2>
+        <DetailPanel headingId="summary-heading" kicker="In Plain English" heading="What This Bill Would Do">
           {summary ? (
             <>
               <SummaryCaption summary={summary} source={source} />
@@ -752,17 +752,21 @@ export function BillDetail({
               ) : null}
             </>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "Summaries appear here once live Congress.gov data is connected."
-                : "The Congressional Research Service hasn't published a summary for this bill yet."}
-            </p>
+            <EmptySectionNote
+              absence="The Congressional Research Service hasn't published a summary for this bill yet."
+              previewLead="Summaries appear"
+              source={source}
+            />
           )}
-        </section>
+        </DetailPanel>
 
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="fulltext-heading">
-          <p className="section-kicker">Primary Source</p>
-          <h2 id="fulltext-heading">Read the Full Text</h2>
+        <DetailPanel
+          accent
+          as="aside"
+          heading="Read the Full Text"
+          headingId="fulltext-heading"
+          kicker="Primary Source"
+        >
           {textVersions.length > 0 ? (
             <>
               {/* The collection where a gap between the published figure and the shown one is most expected:
@@ -800,21 +804,19 @@ export function BillDetail({
               </ul>
             </>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "Full-text links appear here once live Congress.gov data is connected."
-                : "Congress.gov hasn't published bill text for this record yet."}
-            </p>
+            <EmptySectionNote
+              absence="Congress.gov hasn't published bill text for this record yet."
+              previewLead="Full-text links appear"
+              source={source}
+            />
           )}
-        </aside>
+        </DetailPanel>
       </div>
 
       {/* Last of the record sections, and outward-facing on purpose: everything above is about this bill, and this is
           where a reader leaves it for the companion measure in the other chamber. */}
       <div className="detail-grid detail-grid--single">
-        <section className="detail-panel" aria-labelledby="related-heading">
-          <p className="section-kicker">Elsewhere in Congress</p>
-          <h2 id="related-heading">Related Measures</h2>
+        <DetailPanel headingId="related-heading" kicker="Elsewhere in Congress" heading="Related Measures">
           {related.length > 0 ? (
             <>
               <p className="muted-copy">
@@ -831,13 +833,13 @@ export function BillDetail({
               <RelatedBillList related={related} />
             </>
           ) : (
-            <p className="muted-copy">
-              {source === "preview"
-                ? "Related measures appear here once live Congress.gov data is connected."
-                : "Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."}
-            </p>
+            <EmptySectionNote
+              absence="Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."
+              previewLead="Related measures appear"
+              source={source}
+            />
           )}
-        </section>
+        </DetailPanel>
       </div>
 
       <CalloutCard

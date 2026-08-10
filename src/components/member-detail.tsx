@@ -5,6 +5,8 @@ import type { JSX } from "react";
 import { BillCard } from "@/components/bill-card";
 import { CalloutCard } from "@/components/callout-card";
 import { DataSourceNotice } from "@/components/data-source-notice";
+import { DetailPanel } from "@/components/detail-panel";
+import { EmptySectionNote } from "@/components/empty-section-note";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import {
@@ -108,7 +110,9 @@ function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: s
  * @param headingId - The id this section's `aria-labelledby` points at, so each list is its own labeled region.
  * @param kicker - The small label above the heading.
  * @param heading - The section heading.
- * @param emptyCopy - What to say when the list is empty, which for a newly seated member is an ordinary state.
+ * @param emptyNote - What to say when the list is empty, which for a newly seated member is an ordinary state. Passed
+ *   as an element rather than a string because the wording branches on live-versus-preview data, and that branch is
+ *   stated once for the whole app. @see EmptySectionNote.
  * @param total - The member's complete count for this list, when Congress.gov reports one.
  * @param limit - The cap the list was sliced to, so the copy can distinguish "all of them" from "the most recent few".
  * @returns The labeled section.
@@ -118,7 +122,7 @@ function LegislationSection({
   headingId,
   kicker,
   heading,
-  emptyCopy,
+  emptyNote,
   total,
   limit,
 }: {
@@ -126,7 +130,7 @@ function LegislationSection({
   headingId: string;
   kicker: string;
   heading: string;
-  emptyCopy: string;
+  emptyNote: JSX.Element;
   total?: number;
   limit: number;
 }): JSX.Element {
@@ -157,7 +161,7 @@ function LegislationSection({
           </div>
         </>
       ) : (
-        <p className="muted-copy">{emptyCopy}</p>
+        emptyNote
       )}
     </section>
   );
@@ -239,9 +243,7 @@ export function MemberDetail({
       <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
 
       <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="service-heading">
-          <p className="section-kicker">Time in Office</p>
-          <h2 id="service-heading">Service Record</h2>
+        <DetailPanel headingId="service-heading" kicker="Time in Office" heading="Service Record">
           {profile.terms.length > 0 ? (
             <ol className="member-terms">
               {profile.terms.map(
@@ -257,11 +259,15 @@ export function MemberDetail({
           ) : (
             <p className="muted-copy">Congress.gov publishes no term history for this member.</p>
           )}
-        </section>
+        </DetailPanel>
 
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="member-sources-heading">
-          <p className="section-kicker">Primary Source</p>
-          <h2 id="member-sources-heading">Verify This Yourself</h2>
+        <DetailPanel
+          accent
+          as="aside"
+          heading="Verify This Yourself"
+          headingId="member-sources-heading"
+          kicker="Primary Source"
+        >
           {biographyUrl ? (
             <>
               <p className="muted-copy">
@@ -279,15 +285,17 @@ export function MemberDetail({
           {profile.officialWebsiteUrl ? (
             <OutboundLink href={profile.officialWebsiteUrl}>Official Website</OutboundLink>
           ) : null}
-        </aside>
+        </DetailPanel>
       </div>
 
       <LegislationSection
         bills={sponsored}
-        emptyCopy={
-          source === "preview"
-            ? "Sponsored bills appear here once live Congress.gov data is connected."
-            : "Congress.gov records no sponsored legislation for this member."
+        emptyNote={
+          <EmptySectionNote
+            absence="Congress.gov records no sponsored legislation for this member."
+            previewLead="Sponsored bills appear"
+            source={source}
+          />
         }
         heading="Bills They Introduced"
         headingId="sponsored-heading"
@@ -298,10 +306,12 @@ export function MemberDetail({
 
       <LegislationSection
         bills={cosponsored}
-        emptyCopy={
-          source === "preview"
-            ? "Cosponsored bills appear here once live Congress.gov data is connected."
-            : "Congress.gov records no cosponsored legislation for this member."
+        emptyNote={
+          <EmptySectionNote
+            absence="Congress.gov records no cosponsored legislation for this member."
+            previewLead="Cosponsored bills appear"
+            source={source}
+          />
         }
         heading="Bills They Signed On To"
         headingId="cosponsored-heading"

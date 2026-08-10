@@ -19,7 +19,8 @@ import "./globals.css";
  * the site, so running it through the title template would produce "Civic Ledger — Congress in Context — Civic Ledger".
  *
  * `metadataBase` is what lets the canonical and `og:url` paths every page declares stay root-relative, rather than each
- * one rebuilding the deployment's own origin. @see getSiteUrl
+ * one rebuilding the deployment's own origin.
+ * @see getSiteUrl
  */
 export const metadata: Metadata = {
   title: {

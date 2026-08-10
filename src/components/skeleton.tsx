@@ -16,7 +16,7 @@ import type { JSX, ReactNode } from "react";
  * in for, and a placeholder heading would be announced and then replaced — worse than one arriving once. The whole
  * group is `aria-hidden`, and each route pairs it with a {@link LoadingStatus} instead.
  *
- * @param children - Extra placeholder blocks that belong inside the same header group, e.g. the bill record's summary
+ * @param children - Extra placeholder blocks that belong inside the same header group, e.g., the bill record's summary
  *   panel. Most callers pass none.
  * @returns The header placeholder, hidden from assistive technology.
  */

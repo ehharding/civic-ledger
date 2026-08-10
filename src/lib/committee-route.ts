@@ -4,7 +4,7 @@ import { type CommitteeRecordsQuery, committeeRecordsQueryString } from "@/lib/c
 import type { CommitteeChamber } from "@/lib/congress/committees";
 
 /**
- * Builds the in-app route to a committee's page, e.g. `/committees/house/hsag00`.
+ * Builds the in-app route to a committee's page, e.g., `/committees/house/hsag00`.
  *
  * Shared by every place that links to a committee — a directory card, a parent's subcommittee list, a subcommittee's
  * link back up — so none of them can drift out of sync with the route's shape.
@@ -23,7 +23,7 @@ export function committeeHref(chamber: CommitteeChamber, systemCode: string): Ro
 }
 
 /**
- * Builds the route to one view of a committee's records, e.g. `/committees/house/hsag00?records=reports&page=3`.
+ * Builds the route to one view of a committee's records, e.g., `/committees/house/hsag00?records=reports&page=3`.
  *
  * Every control in the records section is one of these — the collection tabs, the pager's two arrows, and the count
  * tiles above them — because they are all the same thing: a link to this committee's page showing a different slice of

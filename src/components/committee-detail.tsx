@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import { CalloutCard } from "@/components/callout-card";
 import { CommitteeRecordsSection } from "@/components/committee-records";
 import { DataSourceNotice } from "@/components/data-source-notice";
+import { DetailPanel } from "@/components/detail-panel";
 import { OutboundLink } from "@/components/outbound-link";
 import { SiteShell } from "@/components/site-shell";
 import { committeeHref } from "@/lib/committee-route";
@@ -122,9 +123,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
       <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
 
       <div className="detail-grid">
-        <section className="detail-panel" aria-labelledby="committee-history-heading">
-          <p className="section-kicker">What It Has Been Called</p>
-          <h2 id="committee-history-heading">Recorded History</h2>
+        <DetailPanel headingId="committee-history-heading" kicker="What It Has Been Called" heading="Recorded History">
           {profile.history.length > 0 ? (
             <>
               <p className="muted-copy">
@@ -142,11 +141,15 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
           ) : (
             <p className="muted-copy">Congress.gov publishes no name history for this committee.</p>
           )}
-        </section>
+        </DetailPanel>
 
-        <aside className="detail-panel detail-panel--accent" aria-labelledby="committee-sources-heading">
-          <p className="section-kicker">Primary Source</p>
-          <h2 id="committee-sources-heading">Verify This Yourself</h2>
+        <DetailPanel
+          accent
+          as="aside"
+          heading="Verify This Yourself"
+          headingId="committee-sources-heading"
+          kicker="Primary Source"
+        >
           {isRealCommittee ? (
             <>
               <p className="muted-copy">
@@ -173,7 +176,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
               key to browse the real ones.
             </p>
           )}
-        </aside>
+        </DetailPanel>
       </div>
 
       <CommitteeRecordsSection profile={profile} result={records} />

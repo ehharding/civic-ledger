@@ -450,8 +450,24 @@ history, notification delivery, or more than a few API-facing features.
 
 ## Accessibility Baseline
 
+Everything below is swept automatically, in both color schemes, by `tests/e2e/accessibility.spec.ts` — every route
+shape the app serves, against WCAG 2.1 A and AA, in the Playwright job CI already runs. That covers the
+machine-checkable half: an unnamed control, an `aria-labelledby` pointing at nothing, a contrast ratio under threshold,
+a skipped heading level. The half a rule cannot judge — whether an accessible name is *useful*, whether focus order
+makes sense, whether the chamber diagram's arrow-key model is discoverable — stays with `navigation.spec.ts`, which
+drives the keyboard directly, and with review. Sweeping the dark palette is not a courtesy: contrast is a property of
+the palette in force, so a `prefers-color-scheme: dark` token that fails is invisible to a light-mode run and to every
+reviewer who does not use dark mode.
+
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
-  real links.
+  real links. `--ink-faint` is the tightest of those colors and is sized against WCAG 1.4.3's 4.5:1 for *normal* text
+  rather than the 3:1 large text gets, because it carries ordinary body-size copy.
+- **A shared control class neutralizes the user agent's own chrome once.** `.button` and `.secondary-link` are worn by
+  both `<a>` and `<button>` elements, which do not start from the same place — a button brings a `ButtonBorder` and a
+  `ButtonFace` background with it. Resetting both in the shared block is what keeps one class from painting as two
+  different controls, and it is a contrast rule rather than a cosmetic one: `color-scheme: light dark` resolves
+  `ButtonFace` to a mid grey, so a quiet button carrying only a text color sits on that gray below threshold — in dark
+  mode only, which is exactly the failure a light-mode reviewer cannot see.
 - Every page begins with a skip link to the `<main>` landmark, which takes `tabIndex={-1}` so the jump actually moves
   focus rather than only scrolling. The header's search form is a `search` landmark in its own right.
 - Links that open a new tab say so in their accessible name (`ExternalLinkHint`); the external-link glyph beside them is

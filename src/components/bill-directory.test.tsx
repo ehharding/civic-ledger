@@ -149,6 +149,27 @@ describe("BillDirectory", (): void => {
 
     expect(screen.getByRole("heading", { name: "No Records Yet." })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "No Records Match That Search." })).not.toBeInTheDocument();
+    // Nothing narrowed this list, so nothing here can un-narrow it. @see DirectoryEmptyState.
+    expect(screen.queryByRole("button", { name: "Clear Filters" })).not.toBeInTheDocument();
+  });
+
+  it("clears both the search and the stage from the empty state, restoring the full list", async (): Promise<void> => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse([])));
+
+    render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
+
+    await user.click(screen.getByRole("button", { name: "Became Law" }));
+    await user.type(screen.getByLabelText("Search bill records"), "no such bill anywhere");
+    expect(await screen.findByRole("heading", { name: "No Records Match That Search." })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Clear Filters" }));
+
+    // Both controls, not only the one the reader last touched: a search surviving a cleared stage looks exactly like a
+    // stage surviving a cleared search, and either would leave the grid still empty after a click that promised
+    // otherwise.
+    expect(screen.getByLabelText("Search bill records")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "All Stages" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText(`Showing ${previewBills.length} Records`)).toBeInTheDocument();
   });
 
   it("filters by stage and marks the active button pressed", async (): Promise<void> => {

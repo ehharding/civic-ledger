@@ -544,7 +544,7 @@ export const congressApiCommitteeBillSchema = z.looseObject({
   congress: optionalNumber,
   type: optionalString,
   number: z.union([z.string(), z.number()]).optional().catch(undefined),
-  /** e.g. `"Referred To"`, `"Reported By"`. */
+  /** e.g., `"Referred To"`, `"Reported By"`. */
   relationshipType: optionalString,
   actionDate: optionalString,
   updateDate: optionalString,
@@ -580,7 +580,7 @@ export const congressApiCommitteeReportSchema = z.looseObject({
   citation: optionalString,
   congress: optionalNumber,
   chamber: optionalString,
-  /** The report-series code, e.g. `"HRPT"` — not a bill type. */
+  /** The report-series code, e.g., `"HRPT"` — not a bill type. */
   type: optionalString,
   number: optionalNumber,
   part: optionalNumber,

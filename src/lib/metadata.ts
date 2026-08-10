@@ -11,7 +11,8 @@ import type { Metadata } from "next";
  * congressional record is a thing worth handing to someone else, and the moment of handing it over is exactly the
  * moment the page stopped describing itself.
  *
- * So the rule is one call per page, and the tags are composed rather than inherited. @see pageMetadata
+ * So the rule is one call per page, and the tags are composed rather than inherited.
+ * @see pageMetadata
  */
 
 /** The site's name, as it appears in a title suffix and as the `og:site_name` of every page. */
