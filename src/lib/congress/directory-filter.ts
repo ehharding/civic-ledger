@@ -214,7 +214,7 @@ export function sortWithTiebreak<Item>(
   compare: (a: Item, b: Item) => number,
   tiebreak: (a: Item, b: Item) => number,
 ): Item[] {
-  return [...items].sort((a: Item, b: Item): number => {
+  return items.toSorted((a: Item, b: Item): number => {
     const primary: number = compare(a, b);
     return primary !== 0 ? primary : tiebreak(a, b);
   });

@@ -285,4 +285,15 @@ test("a defined term in a lesson explains itself and leads to its glossary entry
   await term.click();
   await expect(page).toHaveURL(/\/learn#glossary-markup$/);
   await expect(page.locator("#glossary-markup")).toBeInViewport();
+
+  // …and in the part of the viewport nothing is painted over. `toBeInViewport` intersects rectangles and knows nothing
+  // about occlusion, so it holds just as well for an entry sitting *underneath* the sticky header — which is what this
+  // link used to do, landing the targeted entry ~49px behind it on a wide screen. The offset that prevents that is
+  // `scroll-padding-top` on `html` (base.css), one rule covering every fragment target in the app, so checking it once
+  // here is checking it for all of them.
+  const headerBox = await page.locator(".site-header").boundingBox();
+  const entryBox = await page.locator("#glossary-markup").boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(entryBox).not.toBeNull();
+  if (headerBox && entryBox) expect(entryBox.y).toBeGreaterThan(headerBox.y + headerBox.height);
 });

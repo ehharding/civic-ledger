@@ -828,12 +828,13 @@ function normalizeApiTimestamp(value: string | undefined): string | undefined {
  * real summary.
  *
  * @typeParam Item - Any record carrying an optional ISO date under `key`.
- * @param items - The records to order.
+ * @param items - The records to order. Left untouched — `toSorted` copies before ordering, which is what lets the
+ *   parameter be `readonly` and so lets callers hand over a list they intend to keep.
  * @param key - Which field holds the date (`"actionDate"` for summaries, `"date"` for text versions).
  * @returns A new array, most recent first.
  */
-export function sortByDateDesc<Item>(items: Item[], key: keyof Item): Item[] {
-  return [...items].sort((a: Item, b: Item): number => compareIsoDatesDesc(String(a[key] ?? ""), String(b[key] ?? "")));
+export function sortByDateDesc<Item>(items: readonly Item[], key: keyof Item): Item[] {
+  return items.toSorted((a: Item, b: Item): number => compareIsoDatesDesc(String(a[key] ?? ""), String(b[key] ?? "")));
 }
 
 /**

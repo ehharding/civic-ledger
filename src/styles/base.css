@@ -8,6 +8,21 @@
 html {
   min-width: 320px;
   background: var(--canvas);
+
+  /* Keeps a fragment target clear of the sticky header (layout.css), which is otherwise painted straight over whatever
+     the browser just scrolled to. Every in-page link in the app lands somewhere covered without this: a glossary term
+     in a lesson links to `/learn#glossary-<term>`, and the entry it names — its `:target` accent, its top border, and
+     the first line of the term itself — arrives underneath the header. The skip link has the same problem one layer up.
+
+     `scroll-padding` on the scroll container rather than `scroll-margin` on each target, because the offset is a fact
+     about the header, not about any element that happens to be linked to. Stated per-element it has to be repeated
+     onto every future target and re-tuned in all of them whenever the header's height changes — which is exactly how
+     the 24px that used to sit on `.glossary-entry` came to be a third of what it needed to be.
+
+     One value for both header layouts rather than a breakpoint pair. The header is 73px wide-screen (--space-18 plus
+     its 1px border) and 66px below 640px, where the nav takes its own row; --space-18 + --space-4 clears the taller of
+     the two with room left over, and a single number cannot drift out of step with the other one. */
+  scroll-padding-top: calc(var(--space-18) + var(--space-4));
 }
 
 body {

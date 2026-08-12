@@ -187,7 +187,7 @@ export type GlossarySegment = {
  * in the glossary collides today; ordering by length is what keeps that a property of the matcher rather than a
  * property of the current word list.
  */
-const termsByLength: readonly GlossaryTerm[] = [...glossary].sort(
+const termsByLength: readonly GlossaryTerm[] = glossary.toSorted(
   (a: GlossaryTerm, b: GlossaryTerm): number => b.term.length - a.term.length,
 );
 

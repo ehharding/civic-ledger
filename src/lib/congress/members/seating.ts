@@ -284,13 +284,14 @@ export function compareMembersForSeating(a: CongressMember, b: CongressMember): 
  * *diagrammed* — it communicates how many seats each party holds and lets a person reach any individual member, and the
  * chart says as much in its own caption rather than leaving a reader to assume otherwise.
  *
- * @param members - The chamber's members, in any order.
+ * @param members - The chamber's members, in any order. Left untouched — `toSorted` copies before ordering, so a caller
+ *   can hand over the roster it is still rendering from.
  * @param rowOverride - Force a specific arc count. @see computeSeatingGeometry
  * @returns The geometry plus one seat per member. A member with no position available (only possible if a caller forces
  *   an arc count too small to hold everyone) is omitted rather than drawn on top of someone else.
  */
-export function buildChamberSeating(members: CongressMember[], rowOverride?: number): ChamberSeating {
-  const ordered: CongressMember[] = [...members].sort(compareMembersForSeating);
+export function buildChamberSeating(members: readonly CongressMember[], rowOverride?: number): ChamberSeating {
+  const ordered: CongressMember[] = members.toSorted(compareMembersForSeating);
   const geometry: SeatingGeometry = computeSeatingGeometry(ordered.length, rowOverride);
 
   const seats: ChamberSeat[] = ordered.flatMap((member: CongressMember, index: number): ChamberSeat[] => {

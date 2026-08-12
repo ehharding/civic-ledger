@@ -153,16 +153,18 @@
   font-size: var(--text-md);
 }
 
-/* Where every in-prose glossary term's fragment link lands. The offset keeps a targeted entry clear of the top of the
-   viewport, and the accent marks which one the link was pointing at — arriving at a wall of entries with no indication
-   of which one you asked for is the whole failure this prevents. Last of the `.glossary-entry` rules on purpose:
-   `:target` and `:nth-child(2n)` above have the same specificity, so source order is the only thing making the targeted
-   accent win over the alternating one. The cascade layers in globals.css do not help here — they order files against
-   each other, not rules within one, and these two rules share a file and a layer. */
-.glossary-entry {
-  scroll-margin-top: var(--space-6);
-}
+/* Where every in-prose glossary term's fragment link lands. The accent marks which entry the link was pointing
+   at — arriving at a wall of entries with no indication of which one you asked for is the whole failure this prevents.
 
+   Landing the entry somewhere visible is the other half, and it is not handled here: `scroll-padding-top` on `html` in
+   base.css holds every fragment target in this app clear of the sticky header. This rule used to carry a 24px
+   `scroll-margin-top` of its own for that, which predated the header and left the targeted entry ~49px underneath it.
+   Anything added here would stack on top of the global offset rather than replace it.
+
+   Last of the `.glossary-entry` rules on purpose: `:target` and `:nth-child(2n)` above have the same specificity, so
+   source order is the only thing making the targeted accent win over the alternating one. The cascade layers in
+   globals.css do not help here — they order files against each other, not rules within one, and these two rules share
+   a file and a layer. */
 .glossary-entry:target {
   border-color: var(--green);
   background: var(--teal-surface);
