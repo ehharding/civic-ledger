@@ -191,6 +191,19 @@ describe("redactEvent", (): void => {
     expect(redactEvent(event)).toEqual({ request: { url: "https://civic-ledger.example/bills" }, self: undefined });
   });
 
+  it("keeps a node that appears twice without being a cycle, since an event is a graph and not a tree", (): void => {
+    // The SDK reuses one object across branches routinely — the same `contexts` entry, the same breadcrumb `data`, the
+    // same frame in a recursive stack. Treating the second appearance as a cycle would delete data that is simply
+    // shared, and the missing half would look like a redaction nobody asked for.
+    const shared = { url: "https://civic-ledger.example/bills?q=broadband" };
+    const event = { request: shared, breadcrumb: { data: shared } };
+
+    expect(redactEvent(event)).toEqual({
+      request: { url: "https://civic-ledger.example/bills" },
+      breadcrumb: { data: { url: "https://civic-ledger.example/bills" } },
+    });
+  });
+
   it("stops descending past the depth cap rather than walking an arbitrarily deep payload", (): void => {
     // 14 levels, past the cap of 12. Built rather than written out so the shape stays legible.
     let deep: Record<string, unknown> = { url: `https://api.congress.gov/v3?api_key=${KEY}` };

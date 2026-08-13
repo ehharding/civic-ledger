@@ -148,7 +148,11 @@ export function redactEvent<Payload>(payload: Payload, secrets: readonly string[
  * @param secrets - Literal values to strip.
  * @param isUrl - Whether the key this value arrived under names a URL, which decides how a string here is treated.
  * @param depth - Current recursion depth, against {@link MAX_DEPTH}.
- * @param seen - Objects already visited, so a cycle terminates instead of recurring forever.
+ * @param ancestors - The objects on the path from the root down to this node, so a cycle terminates instead of
+ *   recurring forever. Deliberately the current path and not every object already visited: a Sentry event is a graph
+ *   rather than a tree — the same `contexts` object, breadcrumb `data`, or stack frame can legitimately hang off two
+ *   branches at once — and a set that never forgets would drop the second appearance of a shared node as though it
+ *   were a cycle, quietly deleting present-and-fine data from the report.
  * @returns The redacted node.
  */
 function redactValue(
@@ -156,7 +160,7 @@ function redactValue(
   secrets: readonly string[],
   isUrl: boolean,
   depth: number,
-  seen: WeakSet<object>,
+  ancestors: WeakSet<object>,
 ): unknown {
   if (typeof value === "string")
     return isUrl ? redactUrl(redactSecrets(value, secrets)) : redactSecrets(value, secrets);
@@ -164,19 +168,24 @@ function redactValue(
   // Past the depth cap, or round a cycle, the safe answer is to drop the subtree rather than to trust it: an
   // un-walked object is an un-redacted one, and a missing branch on an error report costs less than a leaked key.
   if (value === null || typeof value !== "object") return value;
-  if (depth >= MAX_DEPTH || seen.has(value)) return undefined;
+  if (depth >= MAX_DEPTH || ancestors.has(value)) return undefined;
 
-  seen.add(value);
+  ancestors.add(value);
 
+  let output: unknown;
   if (Array.isArray(value)) {
-    return value.map((entry: unknown): unknown => redactValue(entry, secrets, isUrl, depth + 1, seen));
+    output = value.map((entry: unknown): unknown => redactValue(entry, secrets, isUrl, depth + 1, ancestors));
+  } else {
+    const record: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value)) {
+      if (DROPPED_KEYS.has(key)) continue;
+      record[key] = redactValue(entry, secrets, URL_KEYS.has(key), depth + 1, ancestors);
+    }
+    output = record;
   }
 
-  const output: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (DROPPED_KEYS.has(key)) continue;
-    output[key] = redactValue(entry, secrets, URL_KEYS.has(key), depth + 1, seen);
-  }
+  // Off the path again now that this node's children are done. A node is only a cycle if it is its own ancestor.
+  ancestors.delete(value);
 
   return output;
 }
