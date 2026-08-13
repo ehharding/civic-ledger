@@ -25,18 +25,21 @@ concurrency:
 
 # The Vercel CLI, pinned.
 #
-# `pnpm dlx vercel` resolves whatever is newest at the moment the job runs, which puts the highest-privilege step in
-# this repository — the one holding VERCEL_TOKEN and SENTRY_AUTH_TOKEN — outside every control the rest of the project
-# has. It is not in `pnpm-lock.yaml`, so nothing pins it and Dependabot never proposes it; a release published an hour
-# ago ships straight into this runner. That is the same window `minimumReleaseAge` in `pnpm-workspace.yaml` was added to
-# close for ordinary dependencies, left open on the one step where it matters most.
+# Bare `pnpm dlx vercel` resolves at job time, which puts the highest-privilege step in this repository — the one
+# holding VERCEL_TOKEN and SENTRY_AUTH_TOKEN — on a version nobody here chose. It is not in `pnpm-lock.yaml`, so nothing
+# records it and Dependabot never proposes it, and a green deploy can turn red with no commit behind it: the hardest
+# kind of failure to read, because the diff is empty.
 #
-# It also means a green deploy can turn red with no commit behind it, which is the hardest kind of failure to read: the
-# only thing that changed is a version nobody in this repository chose.
+# **`minimumReleaseAge` in `pnpm-workspace.yaml` does cover `dlx`.** So the unpinned form was never resolving to
+# *newest* — it was resolving to newest-at-least-a-day-old, which is the supply-chain half of the problem already
+# handled. What the pin adds is the reproducibility half.
 #
-# Bumping it is a normal pull request. Watch for a CLI major, which is where `vercel build`'s output layout moves.
+# That same setting constrains this value: **pin only to a version already past the 24-hour cutoff.** A fresher one is
+# refused outright — `ERR_PNPM_NO_MATURE_MATCHING_VERSION`, before a single deploy step runs — which is the guard
+# working, not a bug to route around. Bumping is a normal pull request; check the publish date first, and watch for a
+# CLI major, which is where `vercel build`'s output layout moves.
 env:
-  VERCEL_CLI: vercel@58.11.0
+  VERCEL_CLI: vercel@58.9.5
 
 jobs:
   deploy:
