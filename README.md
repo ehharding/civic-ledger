@@ -45,12 +45,18 @@ GitHub Pages cannot hold a server-side API key or run route handlers, so it is t
 ## Quality Checks
 
 ```bash
-pnpm check         # TypeScript + Biome + unit tests
+pnpm check         # TypeScript + Biome + unit tests with coverage thresholds — the same command CI runs
 pnpm build         # Production build
 pnpm preview       # Production build, then serve it on port 3001
 pnpm test:e2e      # Playwright browser checks
+pnpm test          # Unit tests alone, without the coverage pass
 pnpm test:coverage # Unit tests with a V8 coverage report
 ```
+
+`check` runs the coverage pass rather than the bare test run, because the thresholds below are only enforced by the
+command that measures them — and a threshold CI does not run is a comment. The measurement costs about two seconds on
+the current suite, which is a low price for the difference between a stated guarantee and an enforced one. `pnpm test`
+is still there for the inner loop, where the number is not the question.
 
 `test:coverage` reports on every source file rather than only the ones a test happens to import, so a module with no
 test at all shows up as a `0%` row instead of being absent from the summary. It writes a browsable report to

@@ -41,10 +41,11 @@ server on the right port instead of guessing. Its neighbor `.claude/settings.loc
 gitignored. Add a configuration there whenever a new way to run the app becomes worth naming; leave personal settings
 out of it.
 
-`pnpm test:coverage` shows what the suite actually reaches. Statements, branches, functions, and lines are all at 100%,
-and `vitest.config.mts` sets all four thresholds there, so dropping below it fails the build. Only test data, test
-infrastructure, and declarative files are excluded outright — the preview fixtures, the shared helpers in `src/test/`,
-and the Drizzle schema.
+`pnpm test:coverage` shows what the suite actually reaches, and `pnpm check` above runs it — the thresholds exist only
+inside the coverage pass, so a `check` running the bare suite would leave them stated and unenforced. Statements,
+branches, functions, and lines are all at 100%, and `vitest.config.mts` sets all four thresholds there, so dropping
+below it fails the build. Only test data, test infrastructure, and declarative files are excluded outright — the preview
+fixtures, the shared helpers in `src/test/`, and the Drizzle schema.
 
 Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
 was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether

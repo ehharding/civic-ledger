@@ -55,6 +55,10 @@ export default defineConfig({
       /**
        * All four at 100, so any regression fails CI rather than waiting to be noticed in a diff.
        *
+       * The enforcement point is `pnpm check`, which runs `test:coverage` rather than the bare suite for exactly this
+       * reason: a threshold is only checked by the command that measures, so a `check` running plain `vitest run` — as
+       * it once did — leaves everything below true of the config file and of nothing else.
+       *
        * Route components — including the async server ones — are unit-tested directly: an async component is a function
        * returning an element, so it can be awaited and rendered like any other. Playwright still owns the browser-level
        * checks; these are the cheaper, more specific half.

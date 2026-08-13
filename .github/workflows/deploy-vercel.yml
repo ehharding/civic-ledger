@@ -5,7 +5,8 @@ name: Deploy (Vercel)
 # host like GitHub Pages can run. See docs/deployment.md for both pipelines and what each one can serve.
 #
 # Setup (one time):
-#   1. `pnpm dlx vercel link` locally to create/link the Vercel project.
+#   1. `pnpm dlx vercel link` locally to create/link the Vercel project. (Unpinned on purpose: this is a one-time
+#      interactive setup run on a person's own machine, not the pinned CLI the jobs below use. @see VERCEL_CLI.)
 #   2. Add repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
 #   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the Vercel
 #      project settings — not as GitHub secrets — so the key never appears in Action logs.
@@ -22,9 +23,32 @@ concurrency:
   group: deploy-vercel-${{ github.ref }}
   cancel-in-progress: true
 
+# The Vercel CLI, pinned.
+#
+# `pnpm dlx vercel` resolves whatever is newest at the moment the job runs, which puts the highest-privilege step in
+# this repository — the one holding VERCEL_TOKEN and SENTRY_AUTH_TOKEN — outside every control the rest of the project
+# has. It is not in `pnpm-lock.yaml`, so nothing pins it and Dependabot never proposes it; a release published an hour
+# ago ships straight into this runner. That is the same window `minimumReleaseAge` in `pnpm-workspace.yaml` was added to
+# close for ordinary dependencies, left open on the one step where it matters most.
+#
+# It also means a green deploy can turn red with no commit behind it, which is the hardest kind of failure to read: the
+# only thing that changed is a version nobody in this repository chose.
+#
+# Bumping it is a normal pull request. Watch for a CLI major, which is where `vercel build`'s output layout moves.
+env:
+  VERCEL_CLI: vercel@58.11.0
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    # Skip pull requests from forks, which cannot possibly pass. GitHub withholds secrets from a fork's `pull_request`
+    # run by design, so `VERCEL_TOKEN` arrives empty and the first step fails — leaving an outside contributor with a
+    # red required-looking check on their first pull request, caused by a permission they cannot be given and pointing
+    # at nothing they wrote. CI's own quality, static-export, and browser jobs need no secrets and still run, so the
+    # change is still fully checked; what is lost is a preview URL nobody could have generated anyway.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     # The workflow-level `contents: read` above sets every other scope to none, which the final step needs one exception
     # to: posting the preview URL back to the pull request is a write, and without this it fails with a 403 *after* a
@@ -38,7 +62,7 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Pull Vercel Environment
-        run: pnpm dlx vercel pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx "$VERCEL_CLI" pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -54,7 +78,7 @@ jobs:
       # masked org slug turns "uploading to organization ehharding" into "uploading to organization ***" in exactly the
       # failed-upload log someone is reading to find out which organization it tried.
       - name: Build via Vercel
-        run: pnpm dlx vercel build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx "$VERCEL_CLI" build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -65,20 +89,38 @@ jobs:
       - name: Deploy to Vercel
         id: deploy
         run: |
-          url=$(pnpm dlx vercel deploy --prebuilt ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(pnpm dlx "$VERCEL_CLI" deploy --prebuilt ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # One comment per pull request, rewritten in place on each push rather than appended to.
+      #
+      # `createComment` unconditionally is how a ten-commit pull request ends up with ten "Preview Deployed" comments,
+      # nine of them pointing at deployments of code that no longer exists — and the newest at the bottom of a thread
+      # that reviewers have to scroll past to reach the review. Editing one comment keeps the URL in a fixed place and
+      # keeps it current, which is the only state in which it is useful.
+      #
+      # The marker is an HTML comment, invisible when rendered, because matching on the body text would also match a
+      # human quoting the bot.
       - name: Comment Preview URL
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v9
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `Preview Deployed: ${{ steps.deploy.outputs.url }}`,
-            });
+            const marker = '<!-- civic-ledger:vercel-preview -->';
+            const body = `${marker}\nPreview Deployed: ${process.env.PREVIEW_URL}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

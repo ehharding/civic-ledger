@@ -475,6 +475,16 @@ history, notification delivery, or more than a few API-facing features.
   Building the output closes that as a class rather than closing the payloads that happen to be known. The regression
   cases beside the file are the record of which bypasses have been tested; if this is ever pointed at markup from a less
   predictable source than Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.
+- **Every document carries four response headers, and `Referrer-Policy` is the one doing this project's own work.**
+  `next.config.ts` sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a `Permissions-Policy` denying
+  features the app never asks for, and `Referrer-Policy: strict-origin-when-cross-origin`. The last is the third door
+  out for the query string the two sections above already close: a narrowed directory's URL is a search log, and every
+  cross-origin subresource the page loads — the Congress.gov member portraits on `/members`, most concretely — sends
+  `Referer`. Browsers default to this value today, so stating it changes nothing and removes a promise's dependence on a
+  default this project does not control. Outbound *links* are covered separately, by `rel="noreferrer"` in
+  `OutboundLink` and in the summary sanitizer. There is no CSP; @see [the roadmap](roadmap.md#deferred-tooling) for
+  what would have to be measured first. The static export sends none of these — `headers()` is a server feature, and
+  the demo build has no server — which is why the config gates it rather than declaring it and letting Next warn.
 - No political-affiliation targeting or persuasion logic belongs in the product, and the measurement layer is held to
   the same rule rather than exempted from it — see
   [Analytics Records the Page, Not the Reader](data-policy.md#analytics-records-the-page-not-the-reader) and

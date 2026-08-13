@@ -72,5 +72,14 @@ present to check it, which raises the bar on everything above it rather than add
   [Tooling Stays Small](../CONTRIBUTING.md#tooling-stays-small).
 - **A DOM-based HTML sanitizer** — the hand-written one is correct for the narrow, well-understood input CRS summaries
   provide. If this app ever renders markup from a less predictable source, that reasoning expires.
+- **A Content-Security-Policy** — `next.config.ts` sends the four response headers that cost nothing to be right about
+  (`X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`) and no CSP. The gap is
+  deliberate: a policy worth having on a page rendering sanitized upstream HTML is a nonce-based one, and in Next.js a
+  nonce comes from middleware, which forfeits static rendering on every route it covers. That is a real cost against a
+  real benefit and a decision larger than a header list, so it is unbuilt rather than satisfied with an `unsafe-inline`
+  policy that would let the box be ticked without the property being had. **What has to be true first:** a measurement
+  of what dropping static rendering costs these routes, and an inventory of the inline styles and scripts Next, Sentry,
+  and the Vercel collectors actually emit — the second is what decides whether the policy can be strict enough to be
+  worth the first.
 - **A seventh header destination** — five fit on one row, six would fit the current layout, a seventh wants a different
   pattern. The comment on `NAV_LINKS` is the marker for whoever gets there.

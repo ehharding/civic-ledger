@@ -25,8 +25,51 @@ const basePath: string = isStaticExport ? (process.env.GITHUB_PAGES_BASE_PATH ??
 // Sentry-caused build failure surfaces before it ships rather than only on deploy.
 const isSentryBuild: boolean = !isStaticExport && process.env.NODE_ENV === "production";
 
+/**
+ * Response headers sent with every document this app serves.
+ *
+ * Each of these is a browser-side default this project would rather state than inherit — the same reasoning
+ * `sentry-options.ts` applies to `userInfo: false`. A default is a decision someone else made, and it changes without a
+ * diff here; a stated one has to be changed on purpose.
+ *
+ * **`Referrer-Policy` is the one that carries this project's own rule rather than a generic hardening win.** A narrowed
+ * directory's URL is a search log — `/members?party=republican&state=Ohio`, `/bills?q=broadband` — and
+ * `docs/data-policy.md` already refuses to let it reach the analytics feed or an error report. The `Referer` header is
+ * the third door out: every cross-origin subresource this page loads, including the Congress.gov member portraits on
+ * `/members`, sends it. Current browsers default to exactly the value set here, so this changes nothing today; what it
+ * does is keep a promise the app makes in two other places from depending on a default the app does not control.
+ * Outbound *links* are covered separately and already — `OutboundLink` and the summary sanitizer both write
+ * `rel="noreferrer"`.
+ *
+ * **No `Content-Security-Policy` here, deliberately.** A policy worth having on a page that renders sanitized upstream
+ * HTML is a nonce-based one, which in Next.js means generating a nonce in middleware and giving up static rendering on
+ * every route it covers — a real cost, paid against a real benefit, and a decision larger than a header list. The
+ * honest position is that it is not built rather than shipping `unsafe-inline` and calling the box ticked;
+ * `docs/roadmap.md` names it under Deferred Tooling.
+ */
+const SECURITY_HEADERS: readonly { key: string; value: string }[] = [
+  // Refuse MIME sniffing. Nothing this app serves relies on a browser guessing a type its `Content-Type` did not name.
+  { key: "X-Content-Type-Options", value: "nosniff" },
+
+  // Origin only, cross-origin. @see the note above — this is the query-string rule, not a generic default.
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+
+  // Nothing here is meant to be framed, and a reading surface over public records that can be framed can be framed
+  // beside a caption it did not write. `frame-ancestors 'none'` is the CSP spelling of the same rule and supersedes
+  // this header where both are sent — so if a policy is ever added, this moves into it rather than being kept twice.
+  { key: "X-Frame-Options", value: "DENY" },
+
+  // The app asks for none of these, so the page is denied them outright rather than left able to ask.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+];
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
+
+  // Drops `X-Powered-By: Next.js`, which Next sends by default. It names the framework to anyone who asks — a free
+  // first filter for someone scanning hosts against a known Next.js advisory — and buys nothing back: no client, cache,
+  // or proxy in this app's path reads it.
+  poweredByHeader: false,
   // Next applies `basePath` to next/link, the router, and next/image — not to raw HTML attributes. The header's search
   // control is a plain `<form action>` precisely so it works with no JavaScript, which puts it outside that rewriting
   // and means it has to read the prefix itself. Exposed here so there is one source for it. @see SiteHeader.
@@ -48,7 +91,16 @@ const nextConfig: NextConfig = {
         // @see src/lib/observability/sentry-stub.ts.
         turbopack: { resolveAlias: { "@sentry/nextjs": "./src/lib/observability/sentry-stub.ts" } },
       }
-    : {}),
+    : {
+        // Gated off for the static export rather than declared unconditionally, because `headers()` is a *server*
+        // feature: `output: "export"` emits files, and whatever serves them decides their headers. Next warns and moves
+        // on rather than failing, which is the worst of both — a header list sitting in the config, reviewed as though
+        // it were in force, and absent from every response the demo actually sends. GitHub Pages sends its own
+        // `X-Content-Type-Options: nosniff` and nothing else; that build serves labeled fiction and holds no secret, so
+        // the gap it leaves is a real one and a small one.
+        headers: (): Promise<{ source: string; headers: { key: string; value: string }[] }[]> =>
+          Promise.resolve([{ source: "/:path*", headers: [...SECURITY_HEADERS] }]),
+      }),
 };
 
 /**
