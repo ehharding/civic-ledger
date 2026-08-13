@@ -1,4 +1,9 @@
+# `@sentry/cli`'s install script downloads the platform binary the Sentry bundler plugin shells out to. Without it the
+# build still succeeds and events still arrive — only the source-map upload is lost, which is the difference between a
+# stack trace naming `bill-detail.tsx:42` and one naming `page-4f2a9c.js:1:28471`. That upload is most of what an error
+# tracker is *for* on a minified bundle, so the script is allowed. It only ever runs when `SENTRY_AUTH_TOKEN` is set.
 allowBuilds:
+  '@sentry/cli': true
   esbuild: true
   sharp: true
 

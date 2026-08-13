@@ -154,8 +154,9 @@ Behind those routes:
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.
-- **Cookieless analytics with the query string stripped**, so a narrowed directory's `?party=`/`?state=`/`?q=` never
-  enters the analytics feed.
+- **Cookieless analytics and error reporting with the query string stripped**, so a narrowed directory's
+  `?party=`/`?state=`/`?q=` never enters either feed, and the Congress.gov key — which travels in the request
+  URL — never leaves the machine in a crash report. One cut, applied in both places, with its own tests.
 - **Strict TypeScript, Biome, unit tests, Playwright smoke tests, GitHub Actions CI, Dependabot**, and a health
   endpoint. CI also builds the static export on every pull request, since that is the one build a change can break while
   passing the others, and refuses dependency versions published in the last 24 hours.

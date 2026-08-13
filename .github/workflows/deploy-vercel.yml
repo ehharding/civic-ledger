@@ -43,11 +43,24 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      # All three Sentry values are *build-time* ones, unlike CONGRESS_API_KEY and the DSN: `next.config.ts` reads them
+      # while `withSentryConfig` uploads source maps during this step, and nothing reads them at runtime. That is why
+      # they sit here rather than in the Vercel project settings — `vercel build` runs the build in this runner, so this
+      # step's environment is what the config sees. Their absence is not an error: the build succeeds and the app still
+      # reports, it just reports against minified frames. @see "Error Reporting" in docs/deployment.md.
+      #
+      # Only the token is a `secret`. The org and project slugs are `vars` because they are not credentials — they are
+      # already visible in any Sentry URL — and because GitHub masks a secret's value everywhere it appears in a log. A
+      # masked org slug turns "uploading to organization ehharding" into "uploading to organization ***" in exactly the
+      # failed-upload log someone is reading to find out which organization it tried.
       - name: Build via Vercel
         run: pnpm dlx vercel build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Deploy to Vercel
         id: deploy

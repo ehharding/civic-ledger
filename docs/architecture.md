@@ -55,6 +55,7 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | `src/lib/glossary.ts`         | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
 | `src/lib/lessons.ts`          | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |
 | `src/lib/metadata.ts`         | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
+| `src/lib/observability`       | What a report may carry off this machine              | Never the API key; never the reader's query string.               |
 | `src/lib/search-params.ts`    | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`            | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
 
@@ -457,6 +458,11 @@ history, notification delivery, or more than a few API-facing features.
   (`normalizeBillRouteParams`, `normalizeBioguideId`), and this app's own query params are parsed rather than coerced
   (`src/lib/api-query.ts`, `src/lib/search-params.ts`). None of the directories' query params is ever interpolated into
   an upstream request; they only ever select among values already in hand.
+- **The key is scrubbed on the way out, not only kept off the page.** It travels in the Congress.gov request URL, so
+  any telemetry that records a URL records the credential. `src/lib/observability/redact.ts` cuts the query string off
+  every URL bound for Sentry, strips `api_key=…` from free text such as an exception message, and strips the key's
+  literal value in case it was captured from a local variable rather than a URL. Local-variable capture is switched off
+  besides. @see the [Data Policy](data-policy.md#an-error-report-names-a-page-never-a-query).
 - Upstream payloads are validated at runtime, not cast.
 - Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
   hold a server render open indefinitely.
@@ -471,7 +477,9 @@ history, notification delivery, or more than a few API-facing features.
   predictable source than Congress.gov, that reasoning expires and a DOM-based sanitizer is the correct answer.
 - No political-affiliation targeting or persuasion logic belongs in the product, and the measurement layer is held to
   the same rule rather than exempted from it — see
-  [Analytics Records the Page, Not the Reader](data-policy.md#analytics-records-the-page-not-the-reader).
+  [Analytics Records the Page, Not the Reader](data-policy.md#analytics-records-the-page-not-the-reader) and
+  [An Error Report Names a Page, Never a Query](data-policy.md#an-error-report-names-a-page-never-a-query). Any new
+  telemetry inherits that rule; a tool nobody thinks of as a measurement layer is still a measurement layer.
 
 ## Accessibility Baseline
 

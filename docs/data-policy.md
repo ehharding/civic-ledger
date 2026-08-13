@@ -404,8 +404,8 @@ of those URLs is a log of what each reader searched for and whose delegation the
 affiliation targeting would be decorative if the measurement layer assembled the raw material for it as a side effect of
 a feature rather than by anyone's decision.
 
-So `stripQuery` in `src/components/layout/site-analytics.tsx` cuts everything from the first `?` or `#` before either
-collector reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which answers
+So `redactUrl` (`src/lib/observability/redact.ts`) cuts everything from the first `?` or `#` before either collector
+reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which answers
 "which parts of this are worth keeping" without answering "who is reading it." It is enforced in a `beforeSend` callback
 rather than a dashboard setting, because a dashboard setting is a thing someone can flip and a callback is a thing that
 shows up in a diff. It has its own test for the same reason: a promise made in prose and kept by one uncovered line is a
@@ -413,6 +413,41 @@ promise that survives until the next refactor.
 
 The static GitHub Pages demo ships neither collector — see
 [Deployment](deployment.md#secondary-github-pages-static-demo).
+
+### An Error Report Names a Page, Never a Query
+
+Sentry reports crashes and upstream failures, and it is held to the rule above rather than exempted from it. Left on its
+defaults it would break that rule outright, which is why this section exists.
+
+Sentry's own documentation is explicit: with `sendDefaultPii` off and every other default in place, "the full request
+URL of outgoing and incoming HTTP requests is always sent," query string included. In this app that sentence describes
+two separate leaks that happen to have one fix:
+
+- **The Congress.gov key travels in the query string.** `buildCongressUrl` appends `api_key=…` to every outbound URL, so
+  an unfiltered breadcrumb or span is a published credential. The rule at the top of this document — that the key never
+  reaches a browser — would be kept on the page and broken on the wire.
+- **The reader's query string is the search log.** `/bills?q=broadband` and `/members?party=republican&state=Ohio` would
+  arrive on every crash report: the same dataset the section above refuses, collected through a different door by a tool
+  nobody thinks of as a measurement layer.
+
+So both layers make the same cut through the same function. `redactUrl` lives in `src/lib/observability/redact.ts`
+rather than beside either caller, because a promise kept by two copies of a function is a promise that survives until
+someone edits one of them.
+
+What the error tracker is allowed to collect is set in `src/lib/observability/sentry-options.ts`, in code rather than in
+a Sentry project setting: query params, request and response headers, cookies, request bodies, user info, and captured
+local variables are all refused outright. The redaction callbacks then run over every event as a backstop, so a field a
+future SDK version adds is covered before anyone here has heard of it. Local variables get both treatments because the
+key can reach a stack frame with no `api_key=` prefix for a pattern to find — so the redactor also strips the key's
+literal value, which is the pass that makes this airtight rather than merely careful.
+
+**No Session Replay.** It is the SDK's headline feature and the wrong feature for this product: it records the DOM, and
+the DOM here is the congressional record a reader was reading plus whatever they typed into a search box. Adding it
+would rebuild, in higher fidelity, precisely the dataset this section refuses. Turning it on needs an argument in this
+document, not a line in a config file.
+
+As with the analytics cut, all of this has its own tests (`redact.test.ts`, `sentry-options.test.ts`) — and for the same
+reason. The static GitHub Pages demo carries no error tracker at all; the SDK is replaced with a no-op at build time.
 
 ## Working With the Upstream API
 

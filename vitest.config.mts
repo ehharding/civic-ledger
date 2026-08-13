@@ -43,6 +43,14 @@ export default defineConfig({
         "src/lib/congress/upstream/fixtures.ts",
         // Declarative Drizzle table definitions — no branches, nothing to exercise.
         "src/db/schema.ts",
+        // The Sentry entry points Next.js requires by name. Each is a single `Sentry.init(sentryInitOptions(…))` or a
+        // re-export of an SDK hook, and all of them initialize the SDK as a side effect of being imported — so a test
+        // covering them would be a test of `Sentry.init`, run against a mock, asserting that a line that has no branch
+        // was reached. The decisions those files pass along are unit-tested where they are made, in
+        // `src/lib/observability/`, and that is deliberately not excluded here.
+        "src/instrumentation.ts",
+        "src/instrumentation-client.ts",
+        "src/sentry.*.config.ts",
       ],
       /**
        * All four at 100, so any regression fails CI rather than waiting to be noticed in a diff.

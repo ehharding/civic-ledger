@@ -10,7 +10,15 @@ import { render, screen } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import GlobalError from "@/app/error";
+/**
+ * The SDK is replaced rather than initialized. Importing the real one here would start a client whose only job is to
+ * decide it has no DSN, and the thing worth asserting is not what Sentry does with the error — it is that this
+ * component hands the error over at all. What the report may then *carry* is `sentry-options.test.ts`'s subject.
+ */
+const captureException = vi.fn();
+vi.mock("@sentry/nextjs", () => ({ captureException: (error: unknown): void => captureException(error) }));
+
+import AppError from "@/app/error";
 
 /** An error carrying exactly the kind of detail that must never be rendered. */
 function leakyError(): Error & { digest?: string } {
@@ -25,6 +33,7 @@ let user: UserEvent;
 
 beforeEach((): void => {
   user = userEvent.setup();
+  captureException.mockClear();
   vi.spyOn(console, "error").mockImplementation((): void => {});
 });
 
@@ -32,16 +41,16 @@ afterEach((): void => {
   vi.restoreAllMocks();
 });
 
-describe("GlobalError", (): void => {
+describe("AppError", (): void => {
   it("shows a generic message rather than anything about the failure", (): void => {
-    render(<GlobalError error={leakyError()} reset={(): void => {}} />);
+    render(<AppError error={leakyError()} reset={(): void => {}} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("We Could Not Load This Civic Record.");
     expect(screen.getByText("Something Went Wrong")).toBeInTheDocument();
   });
 
   it("never puts the error, its digest, or an API key into the DOM", (): void => {
-    const { container } = render(<GlobalError error={leakyError()} reset={(): void => {}} />);
+    const { container } = render(<AppError error={leakyError()} reset={(): void => {}} />);
 
     expect(container.textContent).not.toContain("SUPER-SECRET-KEY");
     expect(container.textContent).not.toContain("api.congress.gov");
@@ -50,14 +59,21 @@ describe("GlobalError", (): void => {
 
   it("logs the error instead, so it stays available where only operators can read it", (): void => {
     const error: Error & { digest?: string } = leakyError();
-    render(<GlobalError error={error} reset={(): void => {}} />);
+    render(<AppError error={error} reset={(): void => {}} />);
 
     expect(console.error).toHaveBeenCalledWith("[error-boundary]", error);
   });
 
+  it("reports the error to Sentry, so a failure nobody saw is still a failure someone hears about", (): void => {
+    const error: Error & { digest?: string } = leakyError();
+    render(<AppError error={error} reset={(): void => {}} />);
+
+    expect(captureException).toHaveBeenCalledWith(error);
+  });
+
   it("offers a retry, because most failures here are transient upstream ones", async (): Promise<void> => {
     const reset = vi.fn();
-    render(<GlobalError error={leakyError()} reset={reset} />);
+    render(<AppError error={leakyError()} reset={reset} />);
 
     await user.click(screen.getByRole("button", { name: "Try Again" }));
 
@@ -66,14 +82,15 @@ describe("GlobalError", (): void => {
 
   it("re-logs when a different error arrives, rather than only on first mount", (): void => {
     const first: Error = leakyError();
-    const { rerender } = render(<GlobalError error={first} reset={(): void => {}} />);
+    const { rerender } = render(<AppError error={first} reset={(): void => {}} />);
     expect(console.error).toHaveBeenCalledTimes(1);
 
     // Same props object identity would legitimately skip the effect; a genuinely new error must not.
     const second: Error = new Error("A different failure");
-    rerender(<GlobalError error={second} reset={(): void => {}} />);
+    rerender(<AppError error={second} reset={(): void => {}} />);
 
     expect(console.error).toHaveBeenCalledTimes(2);
     expect(console.error).toHaveBeenLastCalledWith("[error-boundary]", second);
+    expect(captureException).toHaveBeenLastCalledWith(second);
   });
 });
