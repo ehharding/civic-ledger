@@ -68,10 +68,16 @@
   line-height: 1.1;
 }
 
+/* `min-height` for the 24px WCAG 2.5.8 (Target Size, Minimum) floor. These are already `inline-flex`, so the box is a
+   real one that can be given a height, and at --text-md the line alone lands at 21px — three pixels short, across every
+   "View This Bill", "Start the Lesson" and "Browse All Records" on the site. Stated as a minimum rather than as padding
+   so the box grows to the floor and no further: a link that has wrapped to two lines, or one carrying a larger step, is
+   already past 24px and is left exactly as it is. */
 .text-link {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: var(--space-6);
   color: var(--burgundy);
   font-size: var(--text-md);
   font-weight: 750;

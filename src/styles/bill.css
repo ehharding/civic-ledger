@@ -215,8 +215,14 @@
   white-space: nowrap;
 }
 
+/* The card's second route to the same bill, drawn as a 17px arrow. The heading above it is the same link at full size,
+   so this one is inside WCAG 2.5.8's exception for a duplicate target — but "technically exempt" and "reachable with a
+   thumb" are different claims, and on a phone this is the one a reader actually aims at. The minimums give the link a
+   24px box; the icon is unaffected at 17px, centered inside it by `place-items`. */
 .bill-card__footer a {
   display: grid;
+  min-width: var(--space-6);
+  min-height: var(--space-6);
   place-items: center;
   color: var(--burgundy);
 }

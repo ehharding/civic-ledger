@@ -31,7 +31,6 @@
   bottom: calc(100% + var(--space-2));
   left: 50%;
   z-index: 20;
-  display: grid;
   gap: var(--space-1-5);
   width: max-content;
   max-width: min(23rem, 74vw);
@@ -43,13 +42,27 @@
   transform: translateX(-50%) translateY(3px);
   /* Hidden rather than unmounted: `aria-describedby` resolves its text from the element whether or not it is showing,
      which is what lets a screen reader announce the definition the instant the term takes focus. @see GlossaryTermTip.
-     `visibility` rather than `display` so the transition has something to animate. */
-  visibility: hidden;
+     That requirement is about the element being in the *document*, not about which way it is hidden — the accessible
+     name and description spec includes a hidden node that is directly referenced by `aria-describedby`, and `display`
+     and `visibility` are the same kind of hidden to it.
+
+     `display` rather than `visibility`, because a `visibility: hidden` box is still laid out, and a closed tip has no
+     correction applied to it — the measurement that pulls it back inside the window only runs when it opens. On a
+     lesson, where a defined term can sit anywhere in a line, a laid-out closed bubble is a ~277px box centered on a
+     word that may be near the edge of the line, and it overhangs the document whether or not anyone has opened it,
+     pushing the page into horizontal scrolling. Taken out of flow entirely, a closed tip cannot overhang anything, and
+     the open one is corrected before it can. @see fitTipToViewport.
+
+     `allow-discrete` and the `@starting-style` block below are what buy the fade: `display` is a discrete property, so
+     without them the two states swap instantly. A browser that knows neither simply shows and hides the bubble without
+     the 120ms, which is the same thing the reduced-motion rule at the bottom of this file asks for deliberately. `grid`
+     is declared on the open state alone, which is the only state that has a box to lay out. */
+  display: none;
   opacity: 0;
   transition:
     opacity 120ms ease,
     transform 120ms ease,
-    visibility 120ms;
+    display 120ms allow-discrete;
   white-space: normal;
 }
 
@@ -60,9 +73,23 @@
 }
 
 .glossary-term__tip[data-open="true"] {
-  visibility: visible;
+  display: grid;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Where the opening transition starts from. An element arriving from `display: none` has no previous computed style to
+   animate out of, so these restate the closed values above — and the second rule restates the flipped nudge, since a
+   bubble placed below its term should rise into place rather than drop into it. */
+@starting-style {
+  .glossary-term__tip[data-open="true"] {
+    opacity: 0;
+    transform: translateX(-50%) translateY(3px);
+  }
+
+  .glossary-term__tip[data-side="below"][data-open="true"] {
+    transform: translateX(-50%) translateY(-3px);
+  }
 }
 
 .glossary-term__tip-name {

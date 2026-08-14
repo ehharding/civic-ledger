@@ -21,9 +21,17 @@
     gap: 18px;
   }
 
+  /* `minmax(0, 1fr)` rather than a bare `1fr`, which is the same spelling the un-narrowed rules in home.css and
+     bill-detail.css already use and for the same reason. A `1fr` track's automatic minimum is min-content, so the
+     column silently refuses to go narrower than the widest un-breakable thing in it — here the featured bill's
+     five-step journey stepper, whose labels floor it at 314px. Below a 340px viewport that is wider than the page's own
+     gutter allows, so the hero alone would push the front page into horizontal scrolling at the 320px width WCAG
+     1.4.10 (Reflow) names. Stating the minimum as 0 lets the track do what a single-column layout is supposed to do and
+     take the width it is given. @see the journey stepper's own override below, which is what then lets its contents fit
+     inside that width rather than overflow the card. */
   .hero-grid,
   .detail-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-grid {
@@ -170,12 +178,18 @@
   }
 
   /* Overrides the `justify-self: end` set at 860px, which would otherwise shrink this row to its content and keep it
-     pinned right even though it has a line to itself here. */
+     pinned right even though it has a line to itself here.
+   *
+   * The row gap is zero because the separation it would provide is carried inside the links instead: each has 3px of
+   * block padding for the target-size floor (@see layout.css), so two wrapped rows still sit 6px apart visually, with
+   * that space counting toward the hit area rather than sitting between two things a thumb can miss. Adjacent rows meet
+   * exactly, without overlapping, so no link can swallow a tap meant for its neighbor. The trade is 6px of sticky
+   * header on the smallest screens, taken deliberately for the same reason as the 12px above. */
   .primary-nav {
     flex-wrap: wrap;
     justify-self: start;
     justify-content: flex-start;
-    gap: var(--space-1-5) var(--space-4);
+    gap: 0 var(--space-4);
     font-size: var(--text-xs);
   }
 
@@ -298,5 +312,23 @@
 
   .member-portrait__image {
     width: 128px;
+  }
+}
+
+/* The featured bill's journey stepper is the one component in the app with a hard floor on how narrow it goes, and this
+ * is the width where it reaches it. Its five steps split the card evenly at 20% each, so each label's column is a fifth
+ * of whatever the card is given: 62px at a 400px viewport, 46px at the 320px reflow floor `html` carries a `min-width`
+ * for in base.css. The labels themselves wrap, but their longest *words* ("Introduced", "Committee", "Chamber",
+ * "President") cannot, and at --text-2xs those run 62px — exactly the width of the column at the top of this range and
+ * wider than it everywhere below, where they spill out and crowd the label beside them.
+ *
+ * 400px rather than the ~396px where the arithmetic actually crosses, because a round number is easier to hold than a
+ * derived one and the four pixels between them cost nothing. Stepping to --text-4xs takes the longest word to 51px,
+ * which clears the column down to ~335px and keeps the labels legible rather than exact below that; it is the bottom of
+ * the type scale, so there is no smaller step to take. The detail panel's copy of this stepper makes the same move at
+ * 640px, for the same reason and to the same size. @see the 640px block above. */
+@media (max-width: 400px) {
+  .journey-card .bill-journey li {
+    font-size: var(--text-4xs);
   }
 }

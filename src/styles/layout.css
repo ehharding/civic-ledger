@@ -8,8 +8,21 @@
    breakpoint the derivation produces is worth more than the tidiness. Each is marked below. Everything else here is on
    the grid. @see the block comment above the 860px breakpoint in responsive.css for the derivation itself. */
 
+/* A column, so the footer can be pushed to the bottom of a short page rather than left floating in the middle of one.
+   `min-height` alone reserves the viewport's height but hands it to nobody: on a page whose content does not fill the
+   window — a 404, an error boundary, a directory narrowed to nothing — the footer sits directly under the last line of
+   content with the remaining canvas empty beneath it, which reads as an unfinished page rather than a short one. Giving
+   `.page-shell` the free space below is what closes that gap.
+
+   `dvh` rather than `vh`, which on a mobile browser is the *largest* viewport height — the one with the address bar
+   retracted. Sized against that, a short page's footer sits just below the fold until the bar hides, which is the
+   opposite of what this rule is for. `dvh` tracks the height actually visible and needs no `vh` fallback beside it:
+   every browser this app supports has had the unit since 2022, and a duplicate declaration is the one thing biome's
+   `noDuplicateProperties` rule will not take on faith. */
 .site-frame {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 .site-header {
@@ -71,6 +84,23 @@
   font-weight: 600;
 }
 
+/* Lifts each destination's hit area to the 24px floor WCAG 2.5.8 (Target Size, Minimum) sets, without touching what is
+   drawn. A nav label's box is only as tall as its line — 21px at the desktop size and 18px once the type steps down
+   below 640px — which would leave the five most-used controls on the site as the five smallest, and on a phone they
+   are also the ones stacked into a wrapped row, where a near miss lands on a different section entirely.
+
+   Off the spacing grid because it is a derivation rather than a choice: 3px is what the shorter of the two line boxes
+   needs to clear 24px, and the value has to move with the type size rather than with the page's rhythm. @see the file
+   header for the rule that requires this note.
+
+   Padding rather than a min-height, because the row that matters is the wrapped one, and only padding grows the box
+   symmetrically around the text — a min-height would center the label in a taller box on one row and leave the rows
+   themselves further apart. It costs nothing on wide screens, where the header's own min-height is what sets its
+   height; the row-gap that pays for it below 640px is handled at that breakpoint. @see responsive.css. */
+.primary-nav a {
+  padding-block: 3px;
+}
+
 .primary-nav a:hover {
   color: var(--burgundy);
 }
@@ -101,12 +131,17 @@
   text-underline-offset: 6px;
 }
 
+/* The block padding sits on the input rather than here, which is what makes the field's hit area the box you can see.
+   Held by the wrapper, the same 8px would be dead space: the input's own box is a 21px line, so the top and bottom
+   fifths of the thing that looks like a search field would do nothing when tapped, and 21px is under the 24px WCAG
+   2.5.8 asks of a target. Inside, it makes the input 37px and leaves the wrapper at the same 39px either way — the
+   control is drawn identically, and accepts a tap anywhere in it only this way. */
 .header-search {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   width: 190px; /* off-grid by design — the third measured term. @see the file header. */
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   color: var(--ink-soft);
   border: 1px solid var(--line);
@@ -115,6 +150,7 @@
 
 .header-search input {
   width: 100%;
+  padding-block: var(--space-2);
   border: 0;
   outline: 0;
   color: var(--ink);
@@ -126,7 +162,11 @@
   color: var(--ink-faint);
 }
 
+/* Takes whatever height the header and footer don't, which is what actually pushes the footer down. @see .site-frame.
+   `flex-basis: auto` rather than the `flex: 1` shorthand's `0`, so a page taller than the viewport still sizes to its
+   content instead of being asked to start from nothing and grow. */
 .page-shell {
+  flex: 1 0 auto;
   padding-block: var(--space-16) var(--space-20);
 }
 
