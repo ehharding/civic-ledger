@@ -56,6 +56,43 @@ test("primary nav links land on the right page", async ({
   await expect(page).toHaveTitle("About — Civic Ledger");
 });
 
+/*
+ * The nav marks which section you are in, and this is the only place that claim is tested against a real router. The
+ * unit tests feed `navCurrent` a path directly and mock `usePathname` outright, so neither can catch the failure that
+ * actually matters here: `usePathname` is a client hook reading a context that only exists in a real app, and a nav
+ * that marks correctly on a fresh load can still go stale across a soft navigation, which is how nearly every visit
+ * moves between these five pages.
+ *
+ * Both values are asserted because they mean different things to a screen reader — "page" only on the section's own
+ * front page, "true" from a record inside it, where the current page is the record rather than the directory.
+ * @see navCurrent.
+ */
+test("the primary nav marks the section being read, and keeps marking it across navigations", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/");
+  const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
+
+  // The home route is the wordmark's destination, not one of the five, so nothing in the row claims it.
+  await expect(primaryNav.locator("a[aria-current]")).toHaveCount(0);
+
+  await primaryNav.getByRole("link", { name: "Members" }).click();
+  await expect(page).toHaveURL(/\/members$/);
+  await expect(primaryNav.getByRole("link", { name: "Members" })).toHaveAttribute("aria-current", "page");
+  await expect(primaryNav.locator("a[aria-current]")).toHaveCount(1);
+
+  // A soft navigation to a different section: the mark has to move, not accumulate.
+  await primaryNav.getByRole("link", { name: "Committees" }).click();
+  await expect(page).toHaveURL(/\/committees$/);
+  await expect(primaryNav.getByRole("link", { name: "Committees" })).toHaveAttribute("aria-current", "page");
+  await expect(primaryNav.locator("a[aria-current]")).toHaveCount(1);
+
+  // And down into a record, where the section is still the one being read but is no longer the page.
+  await page.goto("/bills/119/hr/134");
+  await expect(primaryNav.getByRole("link", { name: "Bills" })).toHaveAttribute("aria-current", "true");
+  await expect(primaryNav.locator("a[aria-current]")).toHaveCount(1);
+});
+
 test("header search submits the query to the bills directory", async ({
   page,
 }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {

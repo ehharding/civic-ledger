@@ -1,4 +1,10 @@
-/** Covers SiteHeader's wordmark link, primary nav destinations, and the search form's action/name attributes. */
+/**
+ * Covers SiteHeader's wordmark link, the presence of the nav landmark, and the search form's action/name attributes.
+ *
+ * The nav's own contents — its five destinations and the `aria-current` marking derived from the open path — are
+ * covered in primary-nav.test.tsx, beside the component that now owns them. What belongs here is only that the header
+ * still composes the three parts.
+ */
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,27 +16,24 @@ describe("SiteHeader", (): void => {
     expect(screen.getByRole("link", { name: "Civic Ledger home" })).toHaveAttribute("href", "/");
   });
 
-  it("renders the primary nav with the expected destinations", (): void => {
+  it("renders the primary nav landmark", (): void => {
     render(<SiteHeader />);
-    const primaryNav: HTMLElement = screen.getByRole("navigation", { name: "Primary navigation" });
 
-    expect(primaryNav.querySelector('a[href="/bills"]')).toHaveTextContent("Bills");
-    expect(primaryNav.querySelector('a[href="/members"]')).toHaveTextContent("Members");
-    expect(primaryNav.querySelector('a[href="/committees"]')).toHaveTextContent("Committees");
-    expect(primaryNav.querySelector('a[href="/learn"]')).toHaveTextContent("Learn");
-    expect(primaryNav.querySelector('a[href="/about"]')).toHaveTextContent("Methodology");
+    expect(screen.getByRole("navigation", { name: "Primary navigation" })).toBeInTheDocument();
   });
 
   /*
-   * The nav's length is the thing that decides whether the header still fits on a phone — five destinations is what
-   * moved it onto a row of its own below 640px. A sixth arriving without anyone revisiting that decision is exactly the
-   * kind of change that ships looking fine on a laptop, so this asserts the count rather than only the members.
+   * PrimaryNav is a client component reading usePathname, which returns null outside a router — as here, where the
+   * header is rendered on its own. That has to degrade to an unmarked nav rather than an exception, since a throw in
+   * the nav takes the wordmark and the search box down with it.
+   * @see navCurrent.
    */
-  it("carries exactly the five primary destinations", (): void => {
+  it("renders without a router, marking nothing current", (): void => {
     render(<SiteHeader />);
     const primaryNav: HTMLElement = screen.getByRole("navigation", { name: "Primary navigation" });
 
     expect(primaryNav.querySelectorAll("a")).toHaveLength(5);
+    expect(primaryNav.querySelectorAll("a[aria-current]")).toHaveLength(0);
   });
 
   it("submits the search form's q param to /bills", (): void => {

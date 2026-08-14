@@ -142,10 +142,17 @@ describe("getBillCommittees", (): void => {
   });
 
   it("treats a 404 and an outage alike, since neither leaves a referral to show", async (): Promise<void> => {
+    // Stubbed rather than merely tolerated: the two halves return the same empty list but log differently — a 404 is an
+    // answer and stays quiet, an outage is not and is reported — and asserting that here is what keeps the server log
+    // out of this suite's output, where it reads like a failure in a passing run.
+    const logged = vi.spyOn(console, "error").mockImplementation((): void => {});
+
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getBillCommittees(ROUTE)).toEqual([]);
+    expect(logged).not.toHaveBeenCalled();
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     expect(await getBillCommittees(ROUTE)).toEqual([]);
+    expect(logged).toHaveBeenCalledTimes(1);
   });
 });

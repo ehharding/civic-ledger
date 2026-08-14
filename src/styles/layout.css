@@ -75,6 +75,32 @@
   color: var(--burgundy);
 }
 
+/* The section the reader is currently inside.
+ *
+ * Keyed to `aria-current` rather than to a class it would sit beside, which is the rule the committee record tabs
+ * already follow: the attribute is what carries the meaning, so a parallel class would be a second answer to the same
+ * question and a second thing to keep in step. Matching on the attribute's *presence* also styles both values it
+ * takes — `page` on the section's own front page, `true` anywhere below it — identically, which is intended. That
+ * distinction exists for a screen reader announcing where you are; on screen the answer to "which section is this?" is
+ * the same either way. @see navCurrent.
+ *
+ * Two channels, not one, for the same reason every other state in this app avoids hue alone: the ink darkens from
+ * --ink-soft to --navy-deep *and* the label takes a burgundy rule. Either read on its own says "this one is
+ * different" — which matters here beyond the usual color-vision case, because the nav is the one place a reader looks
+ * to answer "where am I?" and a single quiet channel is easy to miss at 0.88rem.
+ *
+ * A text decoration rather than a border or a pseudo-element, because it costs no layout. The nav is a flex row whose
+ * gaps are load-bearing arithmetic (@see the file header) and which wraps to its own line below 640px; an underline
+ * drawn by a border would add height to exactly one item and push that row around, while this draws inside the line box
+ * and moves nothing. The offset clears the descenders on "Bills" and "Committees". */
+.primary-nav a[aria-current] {
+  color: var(--navy-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--burgundy);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
 .header-search {
   display: flex;
   align-items: center;
