@@ -8,6 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getRelatedBills } from "@/lib/congress/client";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
@@ -75,7 +76,7 @@ describe("getRelatedBills", (): void => {
   it("keeps the publisher's order, which the API documents no meaning for", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const related: RelatedBill[] = await getRelatedBills(ROUTE);
+    const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
     expect(related.map((measure: RelatedBill): string => measure.number)).toEqual(["8415", "5463", "2875"]);
   });
@@ -83,7 +84,7 @@ describe("getRelatedBills", (): void => {
   it("upper-cases the bill type so an inward link matches every other link to that bill", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    expect((await getRelatedBills(ROUTE)).map((measure: RelatedBill): string => measure.type)).toEqual([
+    expect((await getRelatedBills(ROUTE)).entries.map((measure: RelatedBill): string => measure.type)).toEqual([
       "HR",
       "HR",
       "S",
@@ -93,7 +94,7 @@ describe("getRelatedBills", (): void => {
   it("carries every relationship with the body that identified it", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const related: RelatedBill[] = await getRelatedBills(ROUTE);
+    const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
     expect(related[0]?.relationships).toEqual([{ type: "Related bill", identifiedBy: "CRS" }]);
     // An unattributed relationship is kept rather than dropped — the claim is still on the record, and the view simply
@@ -108,13 +109,13 @@ describe("getRelatedBills", (): void => {
   it("keeps a related measure sitting in a different Congress from the bill pointing at it", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    expect((await getRelatedBills(ROUTE))[2]?.congress).toBe(118);
+    expect((await getRelatedBills(ROUTE)).entries[2]?.congress).toBe(118);
   });
 
   it("carries a latest action only when it has text to show", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const related: RelatedBill[] = await getRelatedBills(ROUTE);
+    const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
     expect(related[0]?.latestAction).toEqual({
       date: "2026-04-21",
@@ -140,7 +141,7 @@ describe("getRelatedBills", (): void => {
       ),
     );
 
-    const related: RelatedBill[] = await getRelatedBills(ROUTE);
+    const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
     expect(related.map((measure: RelatedBill): string => measure.title)).toEqual(["Complete Act"]);
   });
@@ -155,7 +156,7 @@ describe("getRelatedBills", (): void => {
         ),
     );
 
-    expect((await getRelatedBills(ROUTE))[0]?.relationships).toEqual([]);
+    expect((await getRelatedBills(ROUTE)).entries[0]?.relationships).toEqual([]);
   });
 
   it("drops a relationship that names no type, since an attribution alone says nothing", async (): Promise<void> => {
@@ -176,7 +177,7 @@ describe("getRelatedBills", (): void => {
       ),
     );
 
-    expect((await getRelatedBills(ROUTE))[0]?.relationships).toEqual([
+    expect((await getRelatedBills(ROUTE)).entries[0]?.relationships).toEqual([
       { type: "Related bill", identifiedBy: undefined },
     ]);
   });
@@ -186,7 +187,7 @@ describe("getRelatedBills", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getRelatedBills(ROUTE)).toEqual([]);
+    expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -194,22 +195,26 @@ describe("getRelatedBills", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getRelatedBills({ congress: "119", type: "notatype", number: "1" })).toEqual([]);
+    expect(await getRelatedBills({ congress: "119", type: "notatype", number: "1" })).toEqual({
+      entries: [],
+      unavailable: false,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("treats a 404 and an outage alike, since neither leaves a companion to show", async (): Promise<void> => {
-    // Stubbed rather than merely tolerated: the two halves return the same empty list but log differently — a 404 is an
-    // answer and stays quiet, an outage is not and is reported — and asserting that here is what keeps the server log
-    // out of this suite's output, where it reads like a failure in a passing run.
+  it("separates a 404 from an outage, since only one of them says the bill has no companion", async (): Promise<void> => {
+    // Stubbed rather than merely tolerated: the two halves both return no measures but differ in every other way — a
+    // 404 is an answer, stays quiet, and licenses the page's "Congress.gov records no measure as related to this one";
+    // an outage is not an answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of
+    // this suite's output, where it reads like a failure in a passing run.
     const logged = vi.spyOn(console, "error").mockImplementation((): void => {});
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
-    expect(await getRelatedBills(ROUTE)).toEqual([]);
+    expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    expect(await getRelatedBills(ROUTE)).toEqual([]);
+    expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });
 });

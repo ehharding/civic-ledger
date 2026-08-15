@@ -16,11 +16,29 @@ import type {
   LegislativeBill,
   RelatedBill,
 } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import type { BillCommittee } from "@/lib/congress/committees/model";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 import { readerText } from "@/test/reader-text";
 
 const bill: LegislativeBill = firstPreviewBill;
+
+/**
+ * Wraps a collection as an *answered* request, which is what all but the unavailable-state cases below mean by an empty
+ * list.
+ *
+ * Answered is the default here because it is the assertion nearly every test in this file is making: given these rows,
+ * render this. The cases that mean the other thing say so explicitly with {@link unanswered}, and the difference
+ * between the two is the whole point of the type — @see BillSubResource.
+ */
+function sub<Entry>(entries: Entry[]): BillSubResource<Entry> {
+  return { entries, unavailable: false };
+}
+
+/** An empty collection whose request failed, for the cases that assert a section refuses to claim an absence. */
+function unanswered<Entry>(): BillSubResource<Entry> {
+  return { entries: [], unavailable: true };
+}
 
 const summaryA: BillSummary = {
   versionCode: "00",
@@ -54,14 +72,14 @@ describe("BillDetail", (): void => {
     };
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={withSponsor}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -75,14 +93,14 @@ describe("BillDetail", (): void => {
     const withSponsor: LegislativeBill = { ...bill, cosponsorTally: { current: 1 } };
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={withSponsor}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -96,14 +114,14 @@ describe("BillDetail", (): void => {
     const withoutSponsor: LegislativeBill = { ...bill, sponsor: undefined, cosponsorTally: undefined };
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={withoutSponsor}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -117,14 +135,14 @@ describe("BillDetail", (): void => {
   it("renders the live summary's sanitized HTML with CRS attribution", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[summaryB]}
-        textVersions={[]}
+        summaries={sub([summaryB])}
+        textVersions={sub([])}
       />,
     );
 
@@ -135,14 +153,14 @@ describe("BillDetail", (): void => {
   it("labels a preview summary as illustrative rather than crediting CRS", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="preview"
-        summaries={[summaryA]}
-        textVersions={[]}
+        summaries={sub([summaryA])}
+        textVersions={sub([])}
       />,
     );
 
@@ -153,14 +171,14 @@ describe("BillDetail", (): void => {
   it("notes there are more summaries on file when a bill has more than one", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[summaryB, summaryA]}
-        textVersions={[]}
+        summaries={sub([summaryB, summaryA])}
+        textVersions={sub([])}
       />,
     );
 
@@ -172,14 +190,14 @@ describe("BillDetail", (): void => {
   it("credits Congress.gov with a collection's size when the record published one", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={{ ...bill, collectionCounts: { summaries: 2 } }}
         source="live"
-        summaries={[summaryB, summaryA]}
-        textVersions={[]}
+        summaries={sub([summaryB, summaryA])}
+        textVersions={sub([])}
       />,
     );
 
@@ -191,14 +209,14 @@ describe("BillDetail", (): void => {
   it("names both figures when fewer records are shown than the record publishes", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={{ ...bill, collectionCounts: { summaries: 5 } }}
         source="live"
-        summaries={[summaryB, summaryA]}
-        textVersions={[]}
+        summaries={sub([summaryB, summaryA])}
+        textVersions={sub([])}
       />,
     );
 
@@ -214,14 +232,14 @@ describe("BillDetail", (): void => {
   it("offers earlier summaries in a collapsed disclosure, without hiding the newest one", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[summaryB, summaryA]}
-        textVersions={[]}
+        summaries={sub([summaryB, summaryA])}
+        textVersions={sub([])}
       />,
     );
 
@@ -234,14 +252,14 @@ describe("BillDetail", (): void => {
   it("shows no disclosure when a bill has only one summary", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[summaryB]}
-        textVersions={[]}
+        summaries={sub([summaryB])}
+        textVersions={sub([])}
       />,
     );
 
@@ -255,14 +273,14 @@ describe("BillDetail", (): void => {
     };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={withBioguide}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -277,14 +295,14 @@ describe("BillDetail", (): void => {
     const withoutBioguide: LegislativeBill = { ...bill, sponsor: { fullName: "Rep. Test, Sample A. [D-ZZ-1]" } };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={withoutBioguide}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -294,14 +312,14 @@ describe("BillDetail", (): void => {
   it("shows the date the bill was introduced", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -311,14 +329,14 @@ describe("BillDetail", (): void => {
   it("doesn't show the multi-summary note when there's only one summary", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[summaryB]}
-        textVersions={[]}
+        summaries={sub([summaryB])}
+        textVersions={sub([])}
       />,
     );
 
@@ -328,14 +346,14 @@ describe("BillDetail", (): void => {
   it("shows a live-specific empty state when no summary has been published", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -347,14 +365,14 @@ describe("BillDetail", (): void => {
   it("shows a preview-specific empty state for the summary section", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -364,14 +382,14 @@ describe("BillDetail", (): void => {
   it("lists each text version's formats as links to the official record", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[textVersion]}
+        summaries={sub([])}
+        textVersions={sub([textVersion])}
       />,
     );
 
@@ -384,14 +402,14 @@ describe("BillDetail", (): void => {
   it("shows a live-specific empty state when no text version has been published", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -401,14 +419,14 @@ describe("BillDetail", (): void => {
   it("shows a preview-specific empty state for the full-text section", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -434,14 +452,14 @@ describe("BillDetail with a sparse record", (): void => {
   it("omits the policy area, introduced date, and action date when the record carries none", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bare}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -457,14 +475,14 @@ describe("BillDetail with a sparse record", (): void => {
   it("captions an undated summary without a trailing comma where the date would be", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[{ versionCode: "00", actionDesc: "Introduced in House", html: "<p>Body.</p>" }]}
-        textVersions={[]}
+        summaries={sub([{ versionCode: "00", actionDesc: "Introduced in House", html: "<p>Body.</p>" }])}
+        textVersions={sub([])}
       />,
     );
 
@@ -474,14 +492,16 @@ describe("BillDetail with a sparse record", (): void => {
   it("lists an undated text version by type alone", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[{ type: "Introduced in House", formats: [{ type: "PDF", url: "https://example.test/a.pdf" }] }]}
+        summaries={sub([])}
+        textVersions={sub([
+          { type: "Introduced in House", formats: [{ type: "PDF", url: "https://example.test/a.pdf" }] },
+        ])}
       />,
     );
 
@@ -494,17 +514,17 @@ describe("BillDetail with a sparse record", (): void => {
     // of them silently.
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[
+        summaries={sub([
           { versionCode: "00", actionDesc: "Reported to House", html: "<p>Newest.</p>" },
           { versionCode: "00", actionDesc: "Introduced in House", html: "<p>Earlier.</p>" },
-        ]}
-        textVersions={[]}
+        ])}
+        textVersions={sub([])}
       />,
     );
 
@@ -515,17 +535,17 @@ describe("BillDetail with a sparse record", (): void => {
   it("keys multiple undated text versions by position rather than collapsing them", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[
+        summaries={sub([])}
+        textVersions={sub([
           { type: "Introduced in House", formats: [{ type: "PDF", url: "https://example.test/a.pdf" }] },
           { type: "Reported in House", formats: [{ type: "PDF", url: "https://example.test/b.pdf" }] },
-        ]}
+        ])}
       />,
     );
 
@@ -561,14 +581,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("counts the actions and lists them all", (): void => {
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[passage, referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([passage, referral])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -584,14 +604,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("uses the singular for a bill with exactly one action", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([referral])}
+        committees={sub([])}
         bill={{ ...bill, collectionCounts: { actions: 1 } }}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -602,14 +622,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("claims only the dedup for recorded votes, which carry no published count", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[passage, referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([passage, referral])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -623,14 +643,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("links a recorded vote to the chamber's own tally rather than printing a count", (): void => {
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[passage, referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([passage, referral])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -659,14 +679,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[senate]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([senate])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -676,19 +696,39 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("explains a bill with no recorded vote instead of leaving the section blank", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([referral])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
     // A bill with no roll call is the ordinary case, not a gap in the data, and the copy has to say which.
     expect(screen.getByText(/No recorded vote appears in this bill/)).toBeInTheDocument();
+  });
+
+  it("declines to call a bill unvoted when the action history it would search never loaded", (): void => {
+    render(
+      <BillDetail
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={unanswered()}
+        committees={sub([])}
+        bill={bill}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    // This section is derived rather than fetched, so it inherits the action history's uncertainty: with nothing to
+    // search, "no recorded vote appears in this bill's actions" describes an empty search, not a quiet bill.
+    expect(screen.getByText(/cannot say whether any vote was taken on this bill/)).toBeInTheDocument();
+    expect(screen.queryByText(/No recorded vote appears in this bill/)).not.toBeInTheDocument();
   });
 
   it("prints an undated roll call by number alone", (): void => {
@@ -700,14 +740,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[undated]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([undated])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -717,14 +757,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("omits the dateline for an undated action rather than printing an empty one", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[{ text: "Introduced in House", recordedVotes: [] }]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([{ text: "Introduced in House", recordedVotes: [] }])}
         bill={bill}
-        committees={[]}
+        committees={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -735,14 +775,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("says the history and votes are unavailable rather than absent when the fetch found nothing", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -755,14 +795,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     // could invent — so both sections say they are waiting on live data rather than reporting "none".
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -785,14 +825,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[passage]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([passage])}
+        committees={sub([])}
         bill={passedThenReferred}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -803,14 +843,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     const inCommittee: LegislativeBill = { ...bill, stage: "committee" };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[referral]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([referral])}
+        committees={sub([])}
         bill={inCommittee}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -825,14 +865,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={enacted}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -843,14 +883,14 @@ describe("BillDetail action history and recorded votes", (): void => {
   it("prints no law chip for a bill the record names none for", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -863,14 +903,14 @@ describe("BillDetail action history and recorded votes", (): void => {
     const enacted: LegislativeBill = { ...bill, stage: "law", enactedLaw: { type: "Public Law", number: "119-21" } };
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[passage]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([passage])}
+        committees={sub([])}
         bill={enacted}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -900,14 +940,14 @@ describe("BillDetail committees of referral", (): void => {
   it("links each committee inward, to this app's own page for it", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
         bill={bill}
-        committees={[transportation, agriculture]}
+        committees={sub([transportation, agriculture])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -926,14 +966,14 @@ describe("BillDetail committees of referral", (): void => {
   it("prints the relationship Congress.gov recorded, verbatim", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
         bill={bill}
-        committees={[transportation]}
+        committees={sub([transportation])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -944,14 +984,14 @@ describe("BillDetail committees of referral", (): void => {
   it("omits the activity line entirely when the record named nothing printable", (): void => {
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
         bill={bill}
-        committees={[agriculture]}
+        committees={sub([agriculture])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -961,14 +1001,14 @@ describe("BillDetail committees of referral", (): void => {
   it("keeps the publisher's order rather than sorting the committees by name", (): void => {
     const { container } = render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
         bill={bill}
-        committees={[transportation, agriculture]}
+        committees={sub([transportation, agriculture])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -983,28 +1023,28 @@ describe("BillDetail committees of referral", (): void => {
   it("distinguishes a bill with no referral from a preview record that has none yet", (): void => {
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(screen.getByText(/No committee referral appears on this bill/)).toBeInTheDocument();
 
     render(
       <BillDetail
-        cosponsors={[]}
-        related={[]}
-        actions={[]}
-        committees={[]}
+        cosponsors={sub([])}
+        related={sub([])}
+        actions={sub([])}
+        committees={sub([])}
         bill={bill}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(
@@ -1041,14 +1081,14 @@ describe("BillDetail cosponsors", (): void => {
   it("links each cosponsor to their own member page, closing the one-way relationship", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1061,14 +1101,14 @@ describe("BillDetail cosponsors", (): void => {
   it("marks the members who were on the bill at introduction, from the record's own flag", (): void => {
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1082,14 +1122,14 @@ describe("BillDetail cosponsors", (): void => {
   it("tints each row by party, reading the one-letter code the cosponsor record uses", (): void => {
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1102,14 +1142,14 @@ describe("BillDetail cosponsors", (): void => {
   it("renders a cosponsor with no Bioguide ID as plain text rather than a link to nothing", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[cosponsor({ bioguideId: undefined, fullName: "Rep. Unlinkable, Sample [I-ZZ-1]" })]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([cosponsor({ bioguideId: undefined, fullName: "Rep. Unlinkable, Sample [I-ZZ-1]" })])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1120,14 +1160,14 @@ describe("BillDetail cosponsors", (): void => {
   it("marks the rare cosponsor who took their name off, with the date they did", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[cosponsor({ withdrawnDate: "2025-05-01" })]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([cosponsor({ withdrawnDate: "2025-05-01" })])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1137,14 +1177,14 @@ describe("BillDetail cosponsors", (): void => {
   it("omits the sponsorship date line when the record carries no date", (): void => {
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[cosponsor({ sponsorshipDate: undefined })]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([cosponsor({ sponsorshipDate: undefined })])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1159,14 +1199,14 @@ describe("BillDetail cosponsors", (): void => {
     );
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={many}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub(many)}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1181,14 +1221,14 @@ describe("BillDetail cosponsors", (): void => {
   it("offers no disclosure when everything already fits", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1198,14 +1238,14 @@ describe("BillDetail cosponsors", (): void => {
   it("states that names are missing from the list when the published figures say some withdrew", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={{ ...bill, cosponsorTally: { current: 2, includingWithdrawn: 4 } }}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1217,14 +1257,14 @@ describe("BillDetail cosponsors", (): void => {
     // show. Passing it through would print "Congress.gov records 12 cosponsors" over invented names.
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={{ ...bill, cosponsorTally: { current: 12, includingWithdrawn: 14 } }}
-        committees={[]}
-        cosponsors={[original, later]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([original, later])}
+        related={sub([])}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1237,28 +1277,28 @@ describe("BillDetail cosponsors", (): void => {
   it("distinguishes a bill nobody cosponsored from a preview record that has none yet", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(screen.getByText(/No member has cosponsored this bill/)).toBeInTheDocument();
 
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(screen.getByText(/Cosponsors appear here once live Congress.gov data is connected/)).toBeInTheDocument();
@@ -1278,14 +1318,14 @@ describe("BillDetail related measures", (): void => {
   it("links each related measure to its own page here rather than out to Congress.gov", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[companion]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([companion])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1296,14 +1336,14 @@ describe("BillDetail related measures", (): void => {
   it("names the body that identified the relationship, since relatedness is a judgment", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[companion]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([companion])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1313,14 +1353,14 @@ describe("BillDetail related measures", (): void => {
   it("prints an unattributed relationship without inventing a source for it", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[{ ...companion, relationships: [{ type: "Procedurally-related" }] }]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([{ ...companion, relationships: [{ type: "Procedurally-related" }] }])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1330,14 +1370,14 @@ describe("BillDetail related measures", (): void => {
   it("omits the relationship line entirely when the record named none", (): void => {
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[{ ...companion, relationships: [] }]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([{ ...companion, relationships: [] }])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1349,14 +1389,14 @@ describe("BillDetail related measures", (): void => {
   it("omits the latest action when the related record carries none", (): void => {
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[{ ...companion, latestAction: undefined }]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([{ ...companion, latestAction: undefined }])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1366,14 +1406,14 @@ describe("BillDetail related measures", (): void => {
   it("names the Congress a related measure sits in, which need not be this bill's", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[{ ...companion, congress: 118 }]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([{ ...companion, congress: 118 }])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1387,14 +1427,14 @@ describe("BillDetail related measures", (): void => {
     );
     const { container } = render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={many}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub(many)}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
 
@@ -1408,32 +1448,68 @@ describe("BillDetail related measures", (): void => {
   it("distinguishes a bill with no companion from a preview record that has none yet", (): void => {
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
         source="live"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(screen.getByText(/Congress.gov records no measure as related to this one/)).toBeInTheDocument();
 
     render(
       <BillDetail
-        actions={[]}
+        actions={sub([])}
         bill={bill}
-        committees={[]}
-        cosponsors={[]}
-        related={[]}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
         source="preview"
-        summaries={[]}
-        textVersions={[]}
+        summaries={sub([])}
+        textVersions={sub([])}
       />,
     );
     expect(
       screen.getByText(/Related measures appear here once live Congress.gov data is connected/),
     ).toBeInTheDocument();
+  });
+
+  it("makes no claim about the record in any section whose request went unanswered", (): void => {
+    // The regression guard for this file's whole reason to carry `BillSubResource`. When the bill itself resolves from
+    // the cached list snapshot but its six sub-resource requests fail, the bill carries no `collectionCounts` to check
+    // an empty list against — and every one of these sections would otherwise print a confident,
+    // Congress.gov-attributed sentence about a record the app never read. `source` is "live" precisely because that is
+    // the state that used to license those sentences.
+    render(
+      <BillDetail
+        actions={unanswered()}
+        bill={bill}
+        committees={unanswered()}
+        cosponsors={unanswered()}
+        related={unanswered()}
+        source="live"
+        summaries={unanswered()}
+        textVersions={unanswered()}
+      />,
+    );
+
+    for (const claim of [
+      /No committee referral appears/,
+      /No member has cosponsored this bill/,
+      /No action history could be read/,
+      /hasn.t published a summary for this bill yet/,
+      /Congress.gov hasn.t published bill text/,
+      /Congress.gov records no measure as related to this one/,
+      /No recorded vote appears/,
+    ]) {
+      expect(screen.queryByText(claim)).not.toBeInTheDocument();
+    }
+
+    // Seven sections, each saying what it cannot vouch for rather than saying nothing — an unexplained empty panel
+    // reads as a bug in this app, which is the failure mode `EmptySectionNote` exists to prevent.
+    expect(screen.getAllByText(/Congress.gov did not answer this request/)).toHaveLength(7);
   });
 });

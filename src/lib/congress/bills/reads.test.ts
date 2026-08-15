@@ -12,6 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type BillLookupResult,
   type BillSearchResult,
@@ -128,9 +129,9 @@ describe("bill sub-resources", (): void => {
     vi.stubGlobal("fetch", fetchMock);
 
     for (const route of MALFORMED_ROUTES) {
-      expect(await getBillSummaries(route), JSON.stringify(route)).toEqual([]);
-      expect(await getBillTextVersions(route), JSON.stringify(route)).toEqual([]);
-      expect(await getBillActions(route), JSON.stringify(route)).toEqual([]);
+      expect(await getBillSummaries(route), JSON.stringify(route)).toEqual({ entries: [], unavailable: false });
+      expect(await getBillTextVersions(route), JSON.stringify(route)).toEqual({ entries: [], unavailable: false });
+      expect(await getBillActions(route), JSON.stringify(route)).toEqual({ entries: [], unavailable: false });
     }
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -156,7 +157,7 @@ describe("getBillActions", (): void => {
       ),
     );
 
-    const actions: BillAction[] = await getBillActions(route);
+    const { entries: actions }: BillSubResource<BillAction> = await getBillActions(route);
 
     expect(actions).toHaveLength(3);
     expect(actions[0]?.date).toBe("2025-01-23");
@@ -187,7 +188,7 @@ describe("getBillActions", (): void => {
       ),
     );
 
-    const actions: BillAction[] = await getBillActions(route);
+    const { entries: actions }: BillSubResource<BillAction> = await getBillActions(route);
 
     expect(actions[0]?.recordedVotes).toEqual([
       {
@@ -201,13 +202,14 @@ describe("getBillActions", (): void => {
     ]);
   });
 
-  it("reports an empty history rather than an error when the request fails", async (): Promise<void> => {
-    // The page renders this as "no action history to show", which is the honest state of a bill whose actions could
-    // not be read — and, critically, the stepper then falls back to the prose classifier rather than to "introduced".
+  it("flags an unread history as unavailable rather than reporting it as empty", async (): Promise<void> => {
+    // Never an error — but never a silent empty list either. The page words an unread history differently from a bill
+    // that genuinely has no actions, and this flag is the only thing that lets it: the two are the same zero rows. The
+    // stepper meanwhile falls back to the prose classifier rather than to "introduced".
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation((): void => {});
 
-    expect(await getBillActions(route)).toEqual([]);
+    expect(await getBillActions(route)).toEqual({ entries: [], unavailable: true });
   });
 
   it("returns nothing in preview mode, since fixtures fabricate no action record", async (): Promise<void> => {
@@ -215,7 +217,7 @@ describe("getBillActions", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getBillActions(route)).toEqual([]);
+    expect(await getBillActions(route)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

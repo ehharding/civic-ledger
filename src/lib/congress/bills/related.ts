@@ -1,5 +1,5 @@
 import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
-import { fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
+import { type BillSubResource, fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type CongressApiRelatedBill,
   type CongressApiRelatedBillsResponse,
@@ -26,10 +26,15 @@ import { mapRelatedBill } from "@/lib/congress/upstream/mappers";
  * omitted and the page's copy says the list is in Congress.gov's own order rather than implying either end is the most
  * significant or the most recent.
  *
- * Holds the adapter's two standing invariants: it never throws, and an empty array is rendered as "none on the record",
- * which is both the failure state and the ordinary state of most bills. The bill's own record publishes the count, so a
- * page that fetched nothing beside a published figure of thirty-eight states the gap rather than claiming the record is
- * empty. @see BillCollectionCounts
+ * Holds the adapter's two standing invariants: it never throws, and an unanswered request is reported as one rather
+ * than as an empty collection. "Congress.gov records no measure as related to this one" is the ordinary state of most
+ * bills and it is also, worded that way, a claim — so a request that failed does not get to make it. @see
+ * BillSubResource.
+ *
+ * That is the primary guard rather than the only one: where the detail endpoint published a count, the section states
+ * both figures, so a page showing nothing beside a published thirty-eight names the gap on its own.
+ * @see BillCollectionCounts — which is absent whenever the bill itself resolved from the list endpoint, and so cannot
+ * be the only thing standing between a failed fetch and a false sentence.
  *
  * @see sub-resource.ts for the transport, guard, and caching policy this shares with `/summaries` and `/text`.
  */
@@ -38,9 +43,10 @@ import { mapRelatedBill } from "@/lib/congress/upstream/mappers";
  * Fetches every measure Congress.gov records as related to this bill.
  *
  * @param input - The bill's route params.
- * @returns The related measures in the publisher's own order. Always empty in preview mode, on a 404, and on failure.
+ * @returns The related measures in the publisher's own order. Empty and answered in preview mode and on a 404; empty
+ *   and flagged unavailable on failure.
  */
-export async function getRelatedBills(input: BillRouteParams): Promise<RelatedBill[]> {
+export async function getRelatedBills(input: BillRouteParams): Promise<BillSubResource<RelatedBill>> {
   return fetchBillSubResource(input, {
     path: "relatedbills",
     schema: congressApiRelatedBillsResponseSchema,

@@ -12,6 +12,10 @@
  * itself. That is what keeps `upstream/http.ts` and `bills/sub-resource.ts` off this surface — the key reader, the
  * cache window, and the request helpers are the transport those guarantees are built out of rather than reads that hold
  * them, so the modules that need them import them directly.
+ *
+ * `BillSubResource` is the one name from `sub-resource.ts` that does belong here, and it is not an exception to that
+ * rule but an instance of it: it is the *shape* six of the reads below return, so a caller typing what it received
+ * cannot get at it any other way. The function that produces it stays unexported, like the rest of the transport.
  */
 export { getBillCommittees } from "@/lib/congress/bills/committees";
 export { getBillCosponsors } from "@/lib/congress/bills/cosponsors";
@@ -28,6 +32,7 @@ export {
   getSearchResults,
 } from "@/lib/congress/bills/reads";
 export { getRelatedBills } from "@/lib/congress/bills/related";
+export type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 export { getCommitteeRecords } from "@/lib/congress/committees/activity";
 export {
   buildCommitteeDirectory,

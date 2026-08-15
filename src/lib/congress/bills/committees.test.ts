@@ -8,6 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BillRouteParams } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCommittees } from "@/lib/congress/client";
 import type { BillCommittee } from "@/lib/congress/committees/model";
 
@@ -70,7 +71,7 @@ describe("getBillCommittees", (): void => {
   it("keeps Congress.gov's order, which puts the committee of primary jurisdiction first", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const committees: BillCommittee[] = await getBillCommittees(ROUTE);
+    const { entries: committees }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
     // Not alphabetical — "Agriculture" would sort first, and sorting it there would assert something false about which
     // committee held the bill.
@@ -80,7 +81,9 @@ describe("getBillCommittees", (): void => {
   it("lower-cases the system code, so an inward link matches every other link to that committee", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const [first]: BillCommittee[] = await getBillCommittees(ROUTE);
+    const {
+      entries: [first],
+    }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
     expect(first?.systemCode).toBe("hspw00");
     expect(first?.chamber).toBe("house");
@@ -90,7 +93,9 @@ describe("getBillCommittees", (): void => {
   it("drops the activity Congress.gov names 'Unknown' rather than printing a non-answer", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const [first]: BillCommittee[] = await getBillCommittees(ROUTE);
+    const {
+      entries: [first],
+    }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
     expect(first?.activities).toEqual([{ name: "Referred To", date: undefined }]);
   });
@@ -98,7 +103,9 @@ describe("getBillCommittees", (): void => {
   it("sorts subcommittees alphabetically, where the publisher's order carries nothing", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const [first]: BillCommittee[] = await getBillCommittees(ROUTE);
+    const {
+      entries: [first],
+    }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
     expect(first?.subcommittees.map((sub): string => sub.name)).toEqual([
       "Aviation Subcommittee",
@@ -119,7 +126,7 @@ describe("getBillCommittees", (): void => {
       ),
     );
 
-    const committees: BillCommittee[] = await getBillCommittees(ROUTE);
+    const { entries: committees }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
     expect(committees.map((committee: BillCommittee): string => committee.systemCode)).toEqual(["hsag00"]);
   });
@@ -129,7 +136,7 @@ describe("getBillCommittees", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getBillCommittees(ROUTE)).toEqual([]);
+    expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -137,22 +144,26 @@ describe("getBillCommittees", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getBillCommittees({ congress: "119", type: "notatype", number: "1" })).toEqual([]);
+    expect(await getBillCommittees({ congress: "119", type: "notatype", number: "1" })).toEqual({
+      entries: [],
+      unavailable: false,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("treats a 404 and an outage alike, since neither leaves a referral to show", async (): Promise<void> => {
-    // Stubbed rather than merely tolerated: the two halves return the same empty list but log differently — a 404 is an
-    // answer and stays quiet, an outage is not and is reported — and asserting that here is what keeps the server log
-    // out of this suite's output, where it reads like a failure in a passing run.
+  it("separates a 404 from an outage, since only one of them says the bill was never referred", async (): Promise<void> => {
+    // Stubbed rather than merely tolerated: the two halves both return no referrals but differ in every other way — a
+    // 404 is an answer, stays quiet, and licenses the page's "no committee referral appears on this bill's record"; an
+    // outage is not an answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of
+    // this suite's output, where it reads like a failure in a passing run.
     const logged = vi.spyOn(console, "error").mockImplementation((): void => {});
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
-    expect(await getBillCommittees(ROUTE)).toEqual([]);
+    expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    expect(await getBillCommittees(ROUTE)).toEqual([]);
+    expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });
 });

@@ -80,13 +80,26 @@ upstream read fails. Preview content is fictional and is never presented as live
 
 - **An empty section says which kind of empty it is, and `EmptySectionNote` is where that is decided.** Ten sections
   across the bill, member, and committee pages can come back with nothing to list, and the sentence each prints is not a
-  wording choice. On preview data it says the section is waiting for live records; on live data it says why the absence
-  is ordinary — most bills have no companion measure, most questions are settled by voice vote, a resolution taken up on
-  the floor never acquires a referral. Getting that backwards is the same error as above in a quieter register: "the
-  Congressional Research Service hasn't published a summary" printed over a fixture credits a real institution with the
-  emptiness of invented content. One component holds the branch for all ten, so the rule has a single enforcement point
-  rather than ten chances to be spelled differently, and `src/components/ui/empty-section-note.test.tsx` pins both
-  sides.
+  wording choice. When the request failed it says so and claims nothing else; on preview data it says the section is
+  waiting for live records; on live data it says why the absence is ordinary — most bills have no companion measure,
+  most questions are settled by voice vote, a resolution taken up on the floor never acquires a referral. Getting that
+  backwards is the same error as above in a quieter register: "the Congressional Research Service hasn't published a
+  summary" printed over a fixture credits a real institution with the emptiness of invented content. One component holds
+  the branch for all ten, so the rule has a single enforcement point rather than ten chances to be spelled differently,
+  and `src/components/ui/empty-section-note.test.tsx` pins all three sides.
+
+- **An unanswered request is never rendered as an answer.** The failure branch above needs information the call site
+  does not have: an empty collection and a request that never resolved are both a list of length zero. So the six
+  collections on the bill page travel as `BillSubResource` — the rows plus whether Congress.gov actually answered — and
+  the committee page's record collections carry the same flag as `unavailable`. A 404 deliberately does not set it: a
+  bill with no summaries yet has no summaries resource, and an empty list is the true answer rather than an unreported
+  one.
+
+  The bill's own published `collectionCounts` are a second guard rather than this one, and they do not cover it. They
+  let a section state both figures — "Congress.gov records 38 measures on this bill; this page shows 0" — but they come
+  from the *detail* endpoint, and the bill page reaches its record from the cached list snapshot whenever that endpoint
+  is the thing that failed. In exactly the state where the sub-resource requests are most likely to be failing too,
+  there is no count to check them against, which is why the flag rather than the count is the rule.
 
 ## What the Chamber Diagram Claims
 

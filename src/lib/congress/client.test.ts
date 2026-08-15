@@ -5,6 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type BillLookupResult,
   type BillSearchResult,
@@ -285,7 +286,7 @@ describe("getBillSummaries", (): void => {
     delete process.env.CONGRESS_API_KEY;
 
     const target: LegislativeBill = firstPreviewBill;
-    const summaries: BillSummary[] = await getBillSummaries({
+    const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
       congress: String(target.congress),
       type: target.type,
       number: target.number,
@@ -299,7 +300,11 @@ describe("getBillSummaries", (): void => {
   it("returns an empty list in preview mode for a bill with no fixture summary", async (): Promise<void> => {
     delete process.env.CONGRESS_API_KEY;
 
-    const summaries: BillSummary[] = await getBillSummaries({ congress: "50", type: "hr", number: "1" });
+    const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
+      congress: "50",
+      type: "hr",
+      number: "1",
+    });
 
     expect(summaries).toEqual([]);
   });
@@ -328,7 +333,11 @@ describe("getBillSummaries", (): void => {
       ),
     );
 
-    const summaries: BillSummary[] = await getBillSummaries({ congress: "117", type: "hr", number: "3076" });
+    const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
+      congress: "117",
+      type: "hr",
+      number: "3076",
+    });
 
     expect(summaries).toHaveLength(2);
     expect(summaries[0]).toMatchObject({ actionDesc: "Public Law", actionDate: "2022-04-06" });
@@ -340,7 +349,11 @@ describe("getBillSummaries", (): void => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
-    const summaries: BillSummary[] = await getBillSummaries({ congress: "119", type: "hr", number: "999999" });
+    const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
+      congress: "119",
+      type: "hr",
+      number: "999999",
+    });
 
     expect(summaries).toEqual([]);
   });
@@ -350,7 +363,11 @@ describe("getBillSummaries", (): void => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation((): void => {});
 
-    const summaries: BillSummary[] = await getBillSummaries({ congress: "117", type: "hr", number: "3076" });
+    const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
+      congress: "117",
+      type: "hr",
+      number: "3076",
+    });
 
     expect(summaries).toEqual([]);
   });
@@ -361,7 +378,7 @@ describe("getBillTextVersions", (): void => {
     delete process.env.CONGRESS_API_KEY;
 
     const target: LegislativeBill = firstPreviewBill;
-    const versions: BillTextVersion[] = await getBillTextVersions({
+    const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
       congress: String(target.congress),
       type: target.type,
       number: target.number,
@@ -396,7 +413,11 @@ describe("getBillTextVersions", (): void => {
       ),
     );
 
-    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "117", type: "hr", number: "3076" });
+    const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
+      congress: "117",
+      type: "hr",
+      number: "3076",
+    });
 
     expect(versions).toHaveLength(2);
     expect(versions[0]?.type).toBe("Engrossed in House");
@@ -408,7 +429,11 @@ describe("getBillTextVersions", (): void => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
-    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "119", type: "hr", number: "999999" });
+    const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
+      congress: "119",
+      type: "hr",
+      number: "999999",
+    });
 
     expect(versions).toEqual([]);
   });
@@ -418,7 +443,11 @@ describe("getBillTextVersions", (): void => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     vi.spyOn(console, "error").mockImplementation((): void => {});
 
-    const versions: BillTextVersion[] = await getBillTextVersions({ congress: "117", type: "hr", number: "3076" });
+    const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
+      congress: "117",
+      type: "hr",
+      number: "3076",
+    });
 
     expect(versions).toEqual([]);
   });

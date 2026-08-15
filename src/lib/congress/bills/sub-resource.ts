@@ -55,6 +55,41 @@ export function requestBillDetail(
 }
 
 /**
+ * One sub-resource collection, and whether the app actually got an answer about it.
+ *
+ * The two are carried together on one object for the adapter's second standing invariant — provenance travels with the
+ * data — because the alternative is what this helper used to do: return a bare array and let six sections render an
+ * empty one as a fact about Congress. An empty list is a claim ("no member has cosponsored this bill"); an unanswered
+ * request is not, and a page that cannot tell them apart states the first whenever the second happens.
+ *
+ * This is the same distinction `committees/activity.ts` keeps for a committee's record collections, spelled the same
+ * way — @see FetchedRecords — and for the same reason its `emptyCopy` gives failure its own sentence.
+ *
+ * @typeParam Entry - The app's mapped entry type for this collection.
+ */
+export type BillSubResource<Entry> = {
+  entries: Entry[];
+  /**
+   * Congress.gov did not answer, so `entries` being empty says nothing about the record.
+   *
+   * A 404 is deliberately *not* this: a bill with no summaries yet has no summaries resource, and an empty collection
+   * is the true answer rather than an unreported one. Only an outright failure — a 5xx, a timeout, a dropped
+   * connection, an unparseable payload — sets this.
+   */
+  unavailable: boolean;
+};
+
+/**
+ * An answered request that found nothing, for the paths that resolve without reaching upstream at all.
+ *
+ * A function rather than a shared constant because the value is generic in `Entry` and holds a mutable array; one
+ * frozen instance would either have to be cast at each use or be handed out for a caller to append to.
+ */
+function answeredEmpty<Entry>(): BillSubResource<Entry> {
+  return { entries: [], unavailable: false };
+}
+
+/**
  * Fetches one of a bill's sub-resources and maps it into the app's model.
  *
  * @typeParam Payload - The validated response shape for this sub-resource.
@@ -64,8 +99,10 @@ export function requestBillDetail(
  * @param config - The sub-resource's path suffix, schema, the collection to read off the payload, its entry mapper, and
  *   optionally the date field to order by. Omitting `dateKey` keeps the publisher's own order, which is the right
  *   choice wherever that order carries meaning this app did not establish and could not restate.
- * @returns The mapped entries. Always an empty array when no key is configured, on a 404, or on failure — every caller
- *   renders that as "nothing published yet", which is also a real and common state for a newly introduced bill.
+ * @returns The mapped entries, and whether the request that should have produced them failed. Empty and *answered* when
+ *   no key is configured, when the route params are malformed, and on a 404 — a caller renders those as "nothing
+ *   published yet", which is a real and common state for a newly introduced bill. Empty and *unanswered* on failure,
+ *   which is not that state and must not be worded as it.
  */
 export async function fetchBillSubResource<Payload, Raw, Entry>(
   input: BillRouteParams,
@@ -76,12 +113,12 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
     map: (entry: Raw) => Entry | null;
     dateKey?: keyof Entry;
   },
-): Promise<Entry[]> {
+): Promise<BillSubResource<Entry>> {
   const apiKey: string | undefined = getCongressApiKey();
-  if (!apiKey) return [];
+  if (!apiKey) return answeredEmpty();
 
   const route: NormalizedBillRoute | null = normalizeBillRouteParams(input);
-  if (!route) return [];
+  if (!route) return answeredEmpty();
 
   // The max page size, requested explicitly so a single call covers the rare bill with more than the default 20.
   const url: URL = buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}/${config.path}`, apiKey, {
@@ -95,9 +132,12 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
     `bill ${config.path} for ${route.type.toUpperCase()} ${route.number}`,
   );
 
-  if (result.outcome !== "ok") return [];
+  if (result.outcome !== "ok") return { entries: [], unavailable: result.outcome === "failed" };
 
   const entries: Entry[] = mapUsable(config.select(result.data), config.map);
 
-  return config.dateKey === undefined ? entries : sortByDateDesc(entries, config.dateKey);
+  return {
+    entries: config.dateKey === undefined ? entries : sortByDateDesc(entries, config.dateKey),
+    unavailable: false,
+  };
 }

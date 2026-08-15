@@ -10,7 +10,7 @@ import {
 } from "@/lib/congress/bills/model";
 import { sanitizeSummaryHtml } from "@/lib/congress/bills/sanitize-summary";
 import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/bills/search";
-import { fetchBillSubResource, requestBillDetail } from "@/lib/congress/bills/sub-resource";
+import { type BillSubResource, fetchBillSubResource, requestBillDetail } from "@/lib/congress/bills/sub-resource";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import {
@@ -276,21 +276,25 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
  *
  * @param input - The bill's route params.
  * @returns Every summary on file, newest first. In preview mode this is a single clearly labeled fictional summary (see
- *   `previewSummaries`), or an empty array for a fixture without one.
+ *   `previewSummaries`), or an empty array for a fixture without one. Empty and flagged unavailable on failure, so the
+ *   section never credits the Congressional Research Service with not having written something. @see BillSubResource.
  */
-export async function getBillSummaries(input: BillRouteParams): Promise<BillSummary[]> {
+export async function getBillSummaries(input: BillRouteParams): Promise<BillSubResource<BillSummary>> {
   if (!getCongressApiKey()) {
     const text: string | undefined = previewSummaries[billIdentityKey(input)];
-    if (!text) return [];
+    if (!text) return { entries: [], unavailable: false };
 
-    return [
-      {
-        versionCode: "00",
-        actionDesc: "Preview Summary",
-        actionDate: findPreviewBill(input)?.introducedDate,
-        html: sanitizeSummaryHtml(`<p>${text}</p>`),
-      },
-    ];
+    return {
+      entries: [
+        {
+          versionCode: "00",
+          actionDesc: "Preview Summary",
+          actionDate: findPreviewBill(input)?.introducedDate,
+          html: sanitizeSummaryHtml(`<p>${text}</p>`),
+        },
+      ],
+      unavailable: false,
+    };
   }
 
   return fetchBillSubResource(input, {
@@ -317,10 +321,12 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSumm
  * where repetition would read as two separate roll calls. @see collectRecordedVotes.
  *
  * @param input - The bill's route params.
- * @returns Every action on file, newest first. Always empty in preview mode, and on any failure — the page renders that
- *   as "no action history to show", which is also the honest state of a bill whose actions could not be read.
+ * @returns Every action on file, newest first. Empty and answered in preview mode and on a 404; empty and flagged
+ *   unavailable on failure. The distinction reaches further here than in the other collections: the stage stepper and
+ *   the recorded-vote panel are both derived from these actions, so an unread history is a page that cannot say where
+ *   the bill is *or* whether anyone voted on it. @see BillSubResource.
  */
-export async function getBillActions(input: BillRouteParams): Promise<BillAction[]> {
+export async function getBillActions(input: BillRouteParams): Promise<BillSubResource<BillAction>> {
   return fetchBillSubResource(input, {
     path: "actions",
     schema: congressApiActionsResponseSchema,
@@ -339,9 +345,10 @@ export async function getBillActions(input: BillRouteParams): Promise<BillAction
  *
  * @param input - The bill's route params.
  * @returns Every text version on file, newest first. Always empty in preview mode — deliberately, since fixtures don't
- *   fabricate links to specific documents that don't exist.
+ *   fabricate links to specific documents that don't exist. Empty and flagged unavailable on failure. @see
+ *   BillSubResource.
  */
-export async function getBillTextVersions(input: BillRouteParams): Promise<BillTextVersion[]> {
+export async function getBillTextVersions(input: BillRouteParams): Promise<BillSubResource<BillTextVersion>> {
   return fetchBillSubResource(input, {
     path: "text",
     schema: congressApiTextResponseSchema,

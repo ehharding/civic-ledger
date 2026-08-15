@@ -9,6 +9,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BillCosponsor, BillRouteParams } from "@/lib/congress/bills/model";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCosponsors } from "@/lib/congress/client";
 import { previewCosponsors } from "@/lib/congress/upstream/fixtures";
 
@@ -88,7 +89,7 @@ describe("getBillCosponsors", (): void => {
   it("keeps Congress.gov's chronological order rather than sorting by date or name", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const cosponsors: BillCosponsor[] = await getBillCosponsors(ROUTE);
+    const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
     // Neither alphabetical ("Bergman, Lamborn, Miller-Meeks, Pappas") nor newest-first, both of which would throw away
     // the sequence in which the bill actually gathered its support.
@@ -103,7 +104,7 @@ describe("getBillCosponsors", (): void => {
   it("reads the original-cosponsor flag from the record rather than comparing dates", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const cosponsors: BillCosponsor[] = await getBillCosponsors(ROUTE);
+    const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
     expect(cosponsors.map((cosponsor: BillCosponsor): boolean => cosponsor.isOriginal)).toEqual([
       true,
@@ -116,7 +117,7 @@ describe("getBillCosponsors", (): void => {
   it("carries the withdrawal date on the rare row that has one", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
-    const cosponsors: BillCosponsor[] = await getBillCosponsors(ROUTE);
+    const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
     expect(cosponsors[3]?.withdrawnDate).toBe("2023-05-01");
     expect(cosponsors[0]?.withdrawnDate).toBeUndefined();
@@ -132,7 +133,7 @@ describe("getBillCosponsors", (): void => {
       ),
     );
 
-    const cosponsors: BillCosponsor[] = await getBillCosponsors(ROUTE);
+    const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
     // The first survives without an id — only its link is lost. The second has no name at all and is not a row.
     expect(cosponsors).toHaveLength(1);
@@ -146,7 +147,7 @@ describe("getBillCosponsors", (): void => {
       vi.fn().mockResolvedValue(jsonResponse({ cosponsors: [{ fullName: "Rep. Nobody, Sample [D-ZZ-1]" }] })),
     );
 
-    expect((await getBillCosponsors(ROUTE))[0]?.isOriginal).toBe(false);
+    expect((await getBillCosponsors(ROUTE)).entries[0]?.isOriginal).toBe(false);
   });
 
   it("serves the labeled fixture without requesting when no key is configured", async (): Promise<void> => {
@@ -156,9 +157,10 @@ describe("getBillCosponsors", (): void => {
 
     // The static demo is the only build a UI reviewer can see, so the no-key path shows this section working rather
     // than showing its empty state. @see previewCosponsors.
-    expect(await getBillCosponsors({ congress: "119", type: "hr", number: "284" })).toEqual(
-      previewCosponsors["119-HR-284"],
-    );
+    expect(await getBillCosponsors({ congress: "119", type: "hr", number: "284" })).toEqual({
+      entries: previewCosponsors["119-HR-284"],
+      unavailable: false,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -167,7 +169,7 @@ describe("getBillCosponsors", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getBillCosponsors(ROUTE)).toEqual([]);
+    expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -186,22 +188,26 @@ describe("getBillCosponsors", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    expect(await getBillCosponsors({ congress: "119", type: "notatype", number: "1" })).toEqual([]);
+    expect(await getBillCosponsors({ congress: "119", type: "notatype", number: "1" })).toEqual({
+      entries: [],
+      unavailable: false,
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("treats a 404 and an outage alike, since neither leaves a name to show", async (): Promise<void> => {
-    // Stubbed rather than merely tolerated: the two halves return the same empty list but log differently — a 404 is an
-    // answer and stays quiet, an outage is not and is reported — and asserting that here is what keeps the server log
-    // out of this suite's output, where it reads like a failure in a passing run.
+  it("separates a 404 from an outage, since only one of them says nobody signed on", async (): Promise<void> => {
+    // Stubbed rather than merely tolerated: the two halves both return no names but differ in every other way — a 404
+    // is an answer, stays quiet, and licenses the page's "no member has cosponsored this bill"; an outage is not an
+    // answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of this suite's
+    // output, where it reads like a failure in a passing run.
     const logged = vi.spyOn(console, "error").mockImplementation((): void => {});
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
-    expect(await getBillCosponsors(ROUTE)).toEqual([]);
+    expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    expect(await getBillCosponsors(ROUTE)).toEqual([]);
+    expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });
 });

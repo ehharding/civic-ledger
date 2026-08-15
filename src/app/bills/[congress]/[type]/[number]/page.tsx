@@ -15,6 +15,7 @@ import type {
 } from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
+  type BillSubResource,
   getBillActions,
   getBillById,
   getBillCommittees,
@@ -88,6 +89,11 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
  * versions, its action history, its committee referrals, its cosponsors, and the measures it is related to are
  * independent reads, so all seven go out together rather than in sequence.
  *
+ * Independent in their failures, too, which is why the six collections arrive as {@link BillSubResource}s rather than
+ * as bare arrays: the bill itself can resolve from the cached list snapshot while a sub-resource request fails, and in
+ * that state the bill carries no `collectionCounts` to check an empty list against. Each collection therefore says for
+ * itself whether it was answered. @see EmptySectionNote for what the page does with that.
+ *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
  */
@@ -95,12 +101,12 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
   const route: BillRouteParams = await params;
   const [{ bill, source, notice, retrievedAt }, summaries, textVersions, actions, committees, cosponsors, related]: [
     BillLookupResult,
-    BillSummary[],
-    BillTextVersion[],
-    BillAction[],
-    BillCommittee[],
-    BillCosponsor[],
-    RelatedBill[],
+    BillSubResource<BillSummary>,
+    BillSubResource<BillTextVersion>,
+    BillSubResource<BillAction>,
+    BillSubResource<BillCommittee>,
+    BillSubResource<BillCosponsor>,
+    BillSubResource<RelatedBill>,
   ] = await Promise.all([
     getBillById(route),
     getBillSummaries(route),

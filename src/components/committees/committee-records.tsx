@@ -3,7 +3,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { JSX } from "react";
 
-import { previewPendingCopy } from "@/components/ui/empty-section-note";
+import { previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
 import { billHref } from "@/lib/bill-route";
 import { committeeHref, committeeRecordsHref } from "@/lib/committee-route";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees/model";
@@ -449,7 +449,7 @@ function RecordsPager({
  */
 function emptyCopy(options: { kind: CommitteeRecordKind; unavailable: boolean; isPreview: boolean }): string {
   if (options.unavailable) {
-    return "These records are temporarily unavailable. Congress.gov did not answer this request, so this page cannot say whether the committee has any.";
+    return unavailableCopy("These records are", "the committee has any");
   }
 
   if (options.isPreview) {

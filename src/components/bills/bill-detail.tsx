@@ -8,7 +8,7 @@ import { GlossaryProse } from "@/components/learn/glossary-prose";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { DetailPanel } from "@/components/ui/detail-panel";
-import { EmptySectionNote, previewPendingCopy } from "@/components/ui/empty-section-note";
+import { EmptySectionNote, previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
 import { OutboundLink } from "@/components/ui/outbound-link";
 import { billHref } from "@/lib/bill-route";
 import { committeeHref } from "@/lib/committee-route";
@@ -33,6 +33,7 @@ import {
   type RelatedBillRelationship,
 } from "@/lib/congress/bills/model";
 import { resolveBillStage } from "@/lib/congress/bills/stage";
+import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import type { BillCommittee, BillCommitteeActivity, BillSubcommittee } from "@/lib/congress/committees/model";
 import { normalizePartyCode, type PartyGroup, partyTintClass } from "@/lib/congress/members/model";
 import { collectRecordedVotes } from "@/lib/congress/upstream/mappers";
@@ -49,22 +50,30 @@ type BillDetailProps = {
   notice?: string;
   /** When this bill's data was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
+  /**
+   * The six collections fetched alongside the bill, each carrying whether its own request was answered.
+   *
+   * They arrive as {@link BillSubResource}s rather than as bare arrays because every one of these sections prints a
+   * sentence when its list is empty, and five of those sentences are assertions about the congressional record — "no
+   * member has cosponsored this bill", "Congress.gov records no measure as related to this one". A list of length zero
+   * is not enough to license any of them, and it is all a bare array can say.
+   */
   /** Every CRS summary on file for this bill, most recent first. */
-  summaries: BillSummary[];
+  summaries: BillSubResource<BillSummary>;
   /** Every official text version on file for this bill, most recent first. */
-  textVersions: BillTextVersion[];
+  textVersions: BillSubResource<BillTextVersion>;
   /** The bill's full action history, most recent first. Empty in preview mode and whenever the fetch failed. */
-  actions: BillAction[];
+  actions: BillSubResource<BillAction>;
   /** Every committee that held this bill, in Congress.gov's own order. Empty in preview mode and on failure. */
-  committees: BillCommittee[];
+  committees: BillSubResource<BillCommittee>;
   /**
    * Everyone currently signed on, in the publisher's chronological order. Empty on failure, and in preview mode holds
    * the labeled fixture cosponsors rather than nothing.
    * @see previewCosponsors
    */
-  cosponsors: BillCosponsor[];
+  cosponsors: BillSubResource<BillCosponsor>;
   /** Every measure recorded as related to this one, in the publisher's order. Empty in preview mode and on failure. */
-  related: RelatedBill[];
+  related: BillSubResource<RelatedBill>;
 };
 
 /**
@@ -393,9 +402,16 @@ function CommitteeReferrals({ committees }: { committees: BillCommittee[] }): JS
  * what this reads. So both appear, on the same footing.
  *
  * @param votes - Every distinct recorded vote on the bill, most recent first.
- * @returns The vote list, or a line saying none is on the record.
+ * @param unavailable - Whether the action history these were read from failed to load. This section is derived rather
+ *   than fetched, so it inherits its uncertainty: with no actions to search, "no recorded vote appears in this bill's
+ *   actions" describes an empty search rather than a quiet bill, and the two are not the same sentence.
+ * @returns The vote list, a line saying the record could not be read, or a line saying none is on it.
  */
-function RecordedVotes({ votes }: { votes: RecordedVote[] }): JSX.Element {
+function RecordedVotes({ votes, unavailable }: { votes: RecordedVote[]; unavailable: boolean }): JSX.Element {
+  if (votes.length === 0 && unavailable) {
+    return <p className="muted-copy">{unavailableCopy("Recorded votes are", "any vote was taken on this bill")}</p>;
+  }
+
   if (votes.length === 0) {
     return (
       <p className="muted-copy">
@@ -538,13 +554,22 @@ export function BillDetail({
   source,
   notice,
   retrievedAt,
-  summaries,
-  textVersions,
-  actions,
-  committees,
-  cosponsors,
-  related,
+  summaries: summariesResult,
+  textVersions: textVersionsResult,
+  actions: actionsResult,
+  committees: committeesResult,
+  cosponsors: cosponsorsResult,
+  related: relatedResult,
 }: BillDetailProps): JSX.Element {
+  // Unwrapped once here so the markup below reads in rows and lists rather than in `.entries` — the flag is only ever
+  // consulted at the one place each collection words its own emptiness.
+  const { entries: summaries, unavailable: summariesUnavailable } = summariesResult;
+  const { entries: textVersions, unavailable: textVersionsUnavailable } = textVersionsResult;
+  const { entries: actions, unavailable: actionsUnavailable } = actionsResult;
+  const { entries: committees, unavailable: committeesUnavailable } = committeesResult;
+  const { entries: cosponsors, unavailable: cosponsorsUnavailable } = cosponsorsResult;
+  const { entries: related, unavailable: relatedUnavailable } = relatedResult;
+
   const [summary, ...earlierSummaries]: BillSummary[] = summaries;
   const votes: RecordedVote[] = collectRecordedVotes(actions);
   // The action history is the better authority on where a bill has got to: `bill.stage` was read off one line of prose,
@@ -647,6 +672,9 @@ export function BillDetail({
               absence="No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."
               previewLead="Committees of referral appear"
               source={source}
+              unavailable={committeesUnavailable}
+              unavailableLead="Committees of referral are"
+              unavailableSubject="this bill was referred to any"
             />
           )}
         </DetailPanel>
@@ -670,6 +698,9 @@ export function BillDetail({
               absence="No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."
               previewLead="Cosponsors appear"
               source={source}
+              unavailable={cosponsorsUnavailable}
+              unavailableLead="Cosponsors are"
+              unavailableSubject="anyone signed on to this bill"
             />
           )}
         </DetailPanel>
@@ -692,6 +723,9 @@ export function BillDetail({
               absence="No action history could be read for this bill."
               previewLead="The action history appears"
               source={source}
+              unavailable={actionsUnavailable}
+              unavailableLead="The action history is"
+              unavailableSubject="anything has happened to this bill"
             />
           )}
           <ActionHistory actions={actions} />
@@ -707,7 +741,7 @@ export function BillDetail({
           {source === "preview" ? (
             <p className="muted-copy">{previewPendingCopy("Recorded votes appear")}</p>
           ) : (
-            <RecordedVotes votes={votes} />
+            <RecordedVotes votes={votes} unavailable={actionsUnavailable} />
           )}
         </DetailPanel>
       </div>
@@ -756,6 +790,9 @@ export function BillDetail({
               absence="The Congressional Research Service hasn't published a summary for this bill yet."
               previewLead="Summaries appear"
               source={source}
+              unavailable={summariesUnavailable}
+              unavailableLead="Summaries are"
+              unavailableSubject="the Congressional Research Service has written one"
             />
           )}
         </DetailPanel>
@@ -808,6 +845,9 @@ export function BillDetail({
               absence="Congress.gov hasn't published bill text for this record yet."
               previewLead="Full-text links appear"
               source={source}
+              unavailable={textVersionsUnavailable}
+              unavailableLead="Full-text links are"
+              unavailableSubject="Congress.gov has published any text for this bill"
             />
           )}
         </DetailPanel>
@@ -837,6 +877,9 @@ export function BillDetail({
               absence="Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."
               previewLead="Related measures appear"
               source={source}
+              unavailable={relatedUnavailable}
+              unavailableLead="Related measures are"
+              unavailableSubject="any measure is recorded as related to this one"
             />
           )}
         </DetailPanel>

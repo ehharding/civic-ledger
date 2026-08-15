@@ -1,5 +1,5 @@
 import { type BillCosponsor, type BillRouteParams, billIdentityKey } from "@/lib/congress/bills/model";
-import { fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
+import { type BillSubResource, fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type CongressApiCosponsor,
   type CongressApiCosponsorsResponse,
@@ -26,11 +26,15 @@ import { mapBillCosponsor } from "@/lib/congress/upstream/mappers";
  * member's effectiveness, and neither the model nor the page ranks, scores, or aggregates on it.
  * @see docs/data-policy.md
  *
- * Holds the adapter's two standing invariants: it never throws, and the empty array it returns on failure is one the
- * page renders in the same words it uses for a bill nobody cosponsored — which is an ordinary state, and the state of
- * every bill introduced in the last few minutes. Where the difference matters, the published count says so: the bill's
- * own record carries the tally, so a page showing no names beside a count of forty states the gap rather than implying
- * the record is empty. @see BillCosponsorTally
+ * Holds the adapter's two standing invariants: it never throws, and an unanswered request is reported as one rather
+ * than as an empty collection. "No member has cosponsored this bill" is an ordinary state — it is the state of every
+ * bill introduced in the last few minutes — and it is also a claim about the record, which a request that never
+ * resolved has not earned. @see BillSubResource.
+ *
+ * That is the primary guard rather than the only one: where the detail endpoint published a tally, the section states
+ * it, so a page showing no names beside a count of forty names the gap on its own. @see BillCosponsorTally — which is
+ * absent whenever the bill itself resolved from the list endpoint, and so cannot be the only thing standing between a
+ * failed fetch and a false sentence.
  *
  * @see sub-resource.ts for the transport, guard, and caching policy this shares with `/summaries` and `/text`.
  */
@@ -40,15 +44,17 @@ import { mapBillCosponsor } from "@/lib/congress/upstream/mappers";
  *
  * @param input - The bill's route params.
  * @returns The cosponsors in Congress.gov's own chronological order, original cosponsors first. Without a key, the
- *   labeled preview cosponsors for that fixture — or an empty list for a fixture that has none. Empty on a 404 and on
- *   failure.
+ *   labeled preview cosponsors for that fixture — or an empty list for a fixture that has none. Empty and answered on a
+ *   404; empty and flagged unavailable on failure.
  */
-export async function getBillCosponsors(input: BillRouteParams): Promise<BillCosponsor[]> {
+export async function getBillCosponsors(input: BillRouteParams): Promise<BillSubResource<BillCosponsor>> {
   // Mirrors `getBillSummaries`: the no-key path serves the labeled fixture rather than nothing, so the static demo
   // shows this section working instead of showing its empty state. What it must not do is let the *count* sentence
   // credit Congress.gov for a fictional bill — the section drops the published figure in preview mode instead.
   // @see previewCosponsors, and CosponsorList.
-  if (!getCongressApiKey()) return previewCosponsors[billIdentityKey(input)] ?? [];
+  if (!getCongressApiKey()) {
+    return { entries: previewCosponsors[billIdentityKey(input)] ?? [], unavailable: false };
+  }
 
   return fetchBillSubResource(input, {
     path: "cosponsors",
