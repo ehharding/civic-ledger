@@ -39,7 +39,7 @@ concurrency:
 # working, not a bug to route around. Bumping is a normal pull request; check the publish date first, and watch for a
 # CLI major, which is where `vercel build`'s output layout moves.
 env:
-  VERCEL_CLI: vercel@58.9.5
+  VERCEL_CLI: vercel@58.11.0
 
 jobs:
   deploy:
