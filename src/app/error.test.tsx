@@ -16,7 +16,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * component hands the error over at all. What the report may then *carry* is `sentry-options.test.ts`'s subject.
  */
 const captureException = vi.fn();
-vi.mock("@sentry/nextjs", () => ({ captureException: (error: unknown): void => captureException(error) }));
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (error: unknown): void => captureException(error),
+  // `log.ts` reaches into this by level. Stubbed rather than omitted because omitting it would leave the logger's own
+  // "never throw inside someone else's error path" guard swallowing a `TypeError` on every test in this file — a
+  // passing suite that exercised none of the logging it is here to check.
+  logger: { warn: (): void => {}, error: (): void => {} },
+}));
 
 import AppError from "@/app/error";
 
@@ -61,7 +67,23 @@ describe("AppError", (): void => {
     const error: Error & { digest?: string } = leakyError();
     render(<AppError error={error} reset={(): void => {}} />);
 
-    expect(console.error).toHaveBeenCalledWith("[error-boundary]", error);
+    expect(console.error).toHaveBeenCalledWith(
+      "[civic-ledger] Error boundary caught a render failure",
+      expect.objectContaining({ event: "error-boundary.caught", digest: "1234567890" }),
+    );
+  });
+
+  it("strips the API key from the line it logs, which the raw `console.error` it replaced did not", (): void => {
+    // The reason this boundary logs through `log.ts` at all. `redact.ts` was wired into Sentry's callbacks only, so the
+    // console — a real sink, and on a managed host a third-party one — was the single path out of this process with no
+    // redaction on it. The error this suite throws is the exact shape that made that a leak rather than a tidiness
+    // problem: a URL with the credential still on it.
+    render(<AppError error={leakyError()} reset={(): void => {}} />);
+
+    const [, attributes] = vi.mocked(console.error).mock.calls[0] as [string, { cause?: string }];
+
+    expect(attributes.cause).toContain("api_key=[redacted]");
+    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
   });
 
   it("reports the error to Sentry, so a failure nobody saw is still a failure someone hears about", (): void => {
@@ -90,7 +112,10 @@ describe("AppError", (): void => {
     rerender(<AppError error={second} reset={(): void => {}} />);
 
     expect(console.error).toHaveBeenCalledTimes(2);
-    expect(console.error).toHaveBeenLastCalledWith("[error-boundary]", second);
+    expect(console.error).toHaveBeenLastCalledWith(
+      "[civic-ledger] Error boundary caught a render failure",
+      expect.objectContaining({ cause: "Error: A different failure", digest: "none" }),
+    );
     expect(captureException).toHaveBeenLastCalledWith(second);
   });
 });

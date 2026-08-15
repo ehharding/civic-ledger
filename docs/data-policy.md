@@ -432,6 +432,13 @@ The static GitHub Pages demo ships neither collector — see
 Sentry reports crashes and upstream failures, and it is held to the rule above rather than exempted from it. Left on its
 defaults it would break that rule outright, which is why this section exists.
 
+The rule covers `console` too, and that took a change to be true. The redaction below was wired into Sentry's callbacks
+and nowhere else, which left every `console.error` in the app as the one path out of this process with nothing scrubbing
+it — including the one in `requestCongressJson`, whose argument is a caught error that can be carrying a Congress.gov
+URL with the key still on it. On a managed host a function log is a third-party sink like any other, so the promise this
+document makes applies to it. Every log line is now built in `src/lib/observability/log.ts`, redacted there, and written
+to both sinks from one place.
+
 Sentry's own documentation is explicit: with `sendDefaultPii` off and every other default in place, "the full request
 URL of outgoing and incoming HTTP requests is always sent," query string included. In this app that sentence describes
 two separate leaks that happen to have one fix:
@@ -450,9 +457,13 @@ someone edits one of them.
 What the error tracker is allowed to collect is set in `src/lib/observability/sentry-options.ts`, in code rather than in
 a Sentry project setting: query params, request and response headers, cookies, request bodies, user info, and captured
 local variables are all refused outright. The redaction callbacks then run over every event as a backstop, so a field a
-future SDK version adds is covered before anyone here has heard of it. Local variables get both treatments because the
-key can reach a stack frame with no `api_key=` prefix for a pattern to find — so the redactor also strips the key's
-literal value, which is the pass that makes this airtight rather than merely careful.
+future SDK version adds is covered before anyone here has heard of it. There are four of them, not three — `beforeSend`,
+`beforeSendTransaction`, `beforeBreadcrumb`, and `beforeSendLog` — because structured logs are a separate pipeline that
+the first three do not touch. Turning logs on without the fourth would open an exit from this process that none of the
+scrubbing above covers, and would open it quietly, since a log body looks like text nobody put a URL in until someone
+does. Local variables get both treatments because the key can reach a stack frame with no `api_key=` prefix for a
+pattern to find — so the redactor also strips the key's literal value, which is the pass that makes this airtight rather
+than merely careful.
 
 **No Session Replay.** It is the SDK's headline feature and the wrong feature for this product: it records the DOM, and
 the DOM here is the congressional record a reader was reading plus whatever they typed into a search box. Adding it

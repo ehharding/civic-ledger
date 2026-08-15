@@ -2,6 +2,7 @@ import type { ZodType } from "zod";
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/bills/model";
 import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import { isBioguideId } from "@/lib/congress/members/model";
+import { logError, logWarning } from "@/lib/observability/log";
 
 /**
  * The transport layer shared by every Congress.gov read in this app: key access, URL construction, caching policy, one
@@ -128,9 +129,15 @@ export type CongressRequestResult<Payload> =
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags for the request.
  * @param schema - The Zod schema for this endpoint (see `api-schema.ts`).
- * @param context - Short label used in the server-side log line when something goes wrong (e.g., `"bill summaries"`).
+ * @param context - Short label identifying the caller in a log line (e.g., `"bill summaries"`), recorded as a
+ *   structured attribute rather than interpolated into the message, so an incident can be filtered to one endpoint.
  * @returns `{ outcome: "ok", data }` with the validated payload, `{ outcome: "not-found" }` for a 404, or
  *   `{ outcome: "failed" }` for anything else.
+ *
+ * Every `failed` outcome is logged before it is returned, at a level that reflects which kind of failure it was — and
+ * that logging is the *only* report these failures produce, because this function's contract is that it never throws.
+ * A Congress.gov outage therefore reaches no error boundary and no `onRequestError`; it reaches Sentry as a structured
+ * log or not at all. @see src/lib/observability/log.ts.
  */
 export async function requestCongressJson<Payload>(
   url: URL,
@@ -138,21 +145,80 @@ export async function requestCongressJson<Payload>(
   schema: ZodType<Payload>,
   context: string,
 ): Promise<CongressRequestResult<Payload>> {
+  // The one place in this app that holds the key *and* reports a failure, so the one place that has to declare it. The
+  // same arrangement `sentry.server.config.ts` makes with `sentryInitOptions`. @see LogDetails.secrets.
+  const secrets: readonly string[] = [getCongressApiKey() ?? ""];
+
   try {
     const response: Response = await fetchCongressGov(url, tags);
 
     if (response.status === 404) return { outcome: "not-found" };
-    if (!response.ok) throw new Error(`Congress.gov responded with ${response.status}`);
+
+    if (!response.ok) {
+      // Weather, not a defect: Congress.gov is rate-limiting, briefly down, or refusing a key. The reader gets degraded
+      // content either way, and what an operator needs is the count and the status code, not a stack.
+      logWarning("Congress.gov request failed", {
+        attributes: { event: "congress.request-failed", reason: "http-status", context, status: response.status },
+        secrets,
+      });
+      return { outcome: "failed" };
+    }
 
     const parsed = schema.safeParse(await response.json());
-    if (!parsed.success) throw new Error("Congress.gov returned an unrecognized payload shape");
+    if (!parsed.success) {
+      // A defect, and the one upstream failure that is: a 200 whose body no longer matches `api-schema.ts` means either
+      // Congress.gov changed its contract or this app reads it wrongly. Nothing retries its way out of that, and the
+      // symptom without a report is a section of a page that is permanently and silently empty.
+      logError("Congress.gov returned an unrecognized payload shape", {
+        attributes: {
+          event: "congress.request-failed",
+          reason: "schema-mismatch",
+          context,
+          // The failing field paths, not the payload. `["bills", 0, "latestAction"]` is what makes this actionable
+          // without shipping a response body to a third party to get it.
+          paths: describeSchemaIssues(parsed.error.issues),
+        },
+        secrets,
+      });
+      return { outcome: "failed" };
+    }
 
     return { outcome: "ok", data: parsed.data };
   } catch (error) {
-    // Logged, never rendered: the caller decides what a person sees, and it is never an upstream error message.
-    console.error(`[congress] Request failed (${context}):`, error);
+    // Transport: a timeout from `REQUEST_TIMEOUT_MS`, a dropped connection, a DNS failure, or a body that was not JSON.
+    // `describeCause` walks the `cause` chain, which is what separates a useful line here from `TypeError: fetch
+    // failed` — Node's `fetch` keeps the actual diagnosis one level down.
+    logWarning("Congress.gov request failed", {
+      attributes: { event: "congress.request-failed", reason: "transport", context },
+      cause: error,
+      secrets,
+    });
     return { outcome: "failed" };
   }
+}
+
+/** How many schema issue paths a single log line carries. A drifted payload fails the same way in every record. */
+const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
+
+/**
+ * Summarizes a Zod failure as the field paths that failed, and nothing else.
+ *
+ * The whole `ZodError` is the wrong thing to log twice over: it is long enough to bury the line it is on, and its
+ * issues can quote the received value — a Congress.gov response body, which is a public record and still not something
+ * this app forwards wholesale to an error tracker to answer a question the paths already answer.
+ *
+ * @param issues - The issues from a failed `safeParse`.
+ * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated. The root is spelled `(root)`, since
+ *   an empty path — which is what a wholly wrong top-level shape produces — would otherwise render as an empty string
+ *   and read as a missing value rather than as the finding it is.
+ */
+function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): string {
+  return issues
+    .slice(0, MAX_REPORTED_SCHEMA_ISSUES)
+    .map((issue: { path: PropertyKey[] }): string =>
+      issue.path.length === 0 ? "(root)" : issue.path.map(String).join("."),
+    )
+    .join(", ");
 }
 
 /** Cache tag shared by every bill *list* request, regardless of which Congress or page it asks for. */

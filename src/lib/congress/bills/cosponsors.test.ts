@@ -199,8 +199,10 @@ describe("getBillCosponsors", (): void => {
     // Stubbed rather than merely tolerated: the two halves both return no names but differ in every other way — a 404
     // is an answer, stays quiet, and licenses the page's "no member has cosponsored this bill"; an outage is not an
     // answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of this suite's
-    // output, where it reads like a failure in a passing run.
-    const logged = vi.spyOn(console, "error").mockImplementation((): void => {});
+    // output, where it reads like a failure in a passing run. Transport failures log at `warn`, not `error`: a dropped
+    // connection is weather, and `error` is reserved for the payload-shape mismatch that means someone has to change
+    // code. @see src/lib/observability/log.ts.
+    const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: false });

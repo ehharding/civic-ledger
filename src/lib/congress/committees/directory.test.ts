@@ -304,7 +304,6 @@ describe("getCommitteeDirectory", (): void => {
   });
 
   it("falls back to preview on an upstream failure rather than throwing", async (): Promise<void> => {
-    vi.spyOn(console, "error").mockImplementation((): void => undefined);
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
 
     await expect(getCommitteeDirectory(119)).resolves.toMatchObject({ source: "preview" });
@@ -385,7 +384,6 @@ describe("getCommitteeProfile", (): void => {
    * distinguishes this branch from a genuine 404 for anything downstream that reads it.
    */
   it("falls back to the preview path on an upstream failure rather than reporting a 404", async (): Promise<void> => {
-    vi.spyOn(console, "error").mockImplementation((): void => undefined);
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
@@ -479,7 +477,6 @@ describe("getCommitteeDirectory pagination", (): void => {
   it("returns what did arrive when a later page fails, rather than dropping the whole directory", async (): Promise<void> => {
     // A directory missing its tail is still a usable directory, and it is labeled live either way — only the *first*
     // page failing is grounds for falling back.
-    vi.spyOn(console, "error").mockImplementation((): void => {});
     stubPagedList(
       { committees: [liveCommittee()], pagination: { count: 300 } },
       (): Promise<Response> => Promise.reject(new Error("upstream unavailable")),

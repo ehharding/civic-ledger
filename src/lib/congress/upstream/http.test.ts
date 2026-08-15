@@ -298,16 +298,45 @@ describe("request timeout", (): void => {
 
     expect(result).toEqual({ outcome: "failed" });
     // Logged, never rendered — the caller decides what a person sees, and it is never an upstream error message.
-    expect(consoleError).toHaveBeenCalled();
+    // At `error` rather than `warn`, and that distinction is the point: a 503 is weather, but a 200 whose body no
+    // longer matches the schema means Congress.gov changed its contract or this app reads it wrongly, and nothing
+    // retries its way out of either. Without a report the symptom is a page section that is permanently, silently
+    // empty. @see src/lib/observability/log.ts.
+    expect(consoleError).toHaveBeenCalledWith(
+      "[civic-ledger] Congress.gov returned an unrecognized payload shape",
+      // The failing field path, not the payload: enough to find the drift, without forwarding a response body to a
+      // third party to get it.
+      expect.objectContaining({ reason: "schema-mismatch", context: "bill list", paths: "bills" }),
+    );
     consoleError.mockRestore();
   });
 
-  it("reports a timed-out request as failed, not as not-found, so the caller falls back rather than 404s", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError")),
-    );
+  it("names the root when the whole payload is the wrong shape, rather than logging an empty path", async (): Promise<void> => {
+    // An empty Zod path is what a wholly wrong top-level value produces, and it would otherwise render as an empty
+    // string — which reads as a missing field rather than as the finding it is.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(["not", "an", "object"]))));
     const consoleError = vi.spyOn(console, "error").mockImplementation((): void => undefined);
+
+    const result: CongressRequestResult<{ bills: unknown[] }> = await requestCongressJson(
+      buildCongressUrl("/bill/119", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      z.object({ bills: z.array(z.unknown()) }),
+      "bill list",
+    );
+
+    expect(result).toEqual({ outcome: "failed" });
+    expect(consoleError).toHaveBeenCalledWith(
+      "[civic-ledger] Congress.gov returned an unrecognized payload shape",
+      expect.objectContaining({ paths: "(root)" }),
+    );
+    consoleError.mockRestore();
+  });
+
+  it("logs a non-404 status as weather, with the code, rather than as a defect", async (): Promise<void> => {
+    // The commonest real failure — Congress.gov rate-limiting or briefly down. It is counted, not filed as an issue: a
+    // search sweep fans out one request per Congress, so an outage produces these by the hundred.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 503 })));
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
 
     const result: CongressRequestResult<unknown> = await requestCongressJson(
       buildCongressUrl("/bill/119", "test-key"),
@@ -317,7 +346,57 @@ describe("request timeout", (): void => {
     );
 
     expect(result).toEqual({ outcome: "failed" });
-    consoleError.mockRestore();
+    expect(consoleWarn).toHaveBeenCalledWith(
+      "[civic-ledger] Congress.gov request failed",
+      expect.objectContaining({ reason: "http-status", status: 503, context: "bill list" }),
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it("never lets the API key reach the log line, on the one path that carries a URL holding it", async (): Promise<void> => {
+    // The reason `requestCongressJson` passes `secrets` at all. Before `log.ts` this line was a bare `console.error`
+    // with the caught error interpolated into it, and a function log on a managed host is a third-party sink like any
+    // other — so `docs/data-policy.md`'s rule applied to it and nothing enforced it.
+    vi.stubEnv("CONGRESS_API_KEY", "SUPER-SECRET-KEY");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED https://api.congress.gov/v3?api_key=SUPER-SECRET-KEY")),
+    );
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
+
+    await requestCongressJson(
+      buildCongressUrl("/bill/119", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      z.unknown(),
+      "bill list",
+    );
+
+    const [, attributes] = consoleWarn.mock.calls[0] as [string, { cause?: string }];
+
+    expect(attributes.cause).toContain("api_key=[redacted]");
+    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
+
+    consoleWarn.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  it("reports a timed-out request as failed, not as not-found, so the caller falls back rather than 404s", async (): Promise<void> => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError")),
+    );
+    // `warn`, like every other transport failure: a stalled socket is weather. @see src/lib/observability/log.ts.
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
+
+    const result: CongressRequestResult<unknown> = await requestCongressJson(
+      buildCongressUrl("/bill/119", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      z.unknown(),
+      "bill list",
+    );
+
+    expect(result).toEqual({ outcome: "failed" });
+    consoleWarn.mockRestore();
   });
 });
 

@@ -421,7 +421,6 @@ describe("getCommitteeRecords paging", (): void => {
 describe("getCommitteeRecords when the request doesn't succeed", (): void => {
   it("distinguishes an unavailable collection from an empty one", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
@@ -451,7 +450,6 @@ describe("getCommitteeRecords when the request doesn't succeed", (): void => {
 
   it("falls back to the profile's count when the request could not report one", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
-    vi.spyOn(console, "error").mockImplementation((): void => undefined);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",

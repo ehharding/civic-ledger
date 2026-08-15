@@ -25,6 +25,29 @@ export default defineConfig({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["./vitest.setup.ts"],
+
+    /**
+     * Hides this app's own log lines from the run's output, and only those.
+     *
+     * A large part of this suite exists to prove that an upstream failure *degrades* rather than crashes — every
+     * "falls back to preview data", "reports the outage as unavailable", and "returns what the surviving Congresses
+     * found" test drives `requestCongressJson` through a rejected `fetch` on purpose. Each of those now writes a
+     * deliberate `[civic-ledger] …` line, so a fully passing run printed about fifty of them, in six-line object
+     * dumps, interleaved with the results. That is the specific kind of noise that teaches you to stop reading test
+     * output — and the lines are worthless here, since the assertion beside them already proves the failure was
+     * handled.
+     *
+     * Suppressed at the reporter rather than by stubbing `console` in `vitest.setup.ts`, which is the tempting fix and
+     * the wrong one. This hook only decides what gets *printed*: `console.warn` and `console.error` still behave
+     * normally inside a test, so the suites that assert on a log line — `log.test.ts`, `http.test.ts`, the three
+     * `unavailable` tests — keep working against the real thing rather than against the harness.
+     *
+     * Prefix-matched rather than blanket-silenced, deliberately. Dropping every `stderr` would also drop React's "not
+     * wrapped in act(…)" warnings and any genuinely unexpected error a test provokes, which are exactly the lines worth
+     * seeing. @see LOG_PREFIX in src/lib/observability/log.ts, whose value this mirrors — the assertions in
+     * `log.test.ts` pin the same string, so a change there fails a test rather than quietly un-hiding this.
+     */
+    onConsoleLog: (log: string): boolean | undefined => (log.startsWith("[civic-ledger]") ? false : undefined),
     coverage: {
       provider: "v8",
       // `text` for the terminal, `html` to browse a file line by line, `lcov` so CI and editors can read it.

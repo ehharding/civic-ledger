@@ -95,7 +95,6 @@ describe("getBillById", (): void => {
     // Both the direct lookup and the snapshot request fail, so the only thing left is the labeled fixture set — and the
     // result must say `preview`, because that is what it is.
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
@@ -105,7 +104,6 @@ describe("getBillById", (): void => {
 
   it("reports nothing found when a transient failure leaves no fixture to fall back to either", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "424242" });
 
@@ -117,7 +115,6 @@ describe("getBillById", (): void => {
 describe("getMoreBills", (): void => {
   it("returns an empty page when the request fails, so the UI simply stops offering more", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     expect(await getMoreBills(20)).toEqual([]);
   });
@@ -207,7 +204,6 @@ describe("getBillActions", (): void => {
     // that genuinely has no actions, and this flag is the only thing that lets it: the two are the same zero rows. The
     // stepper meanwhile falls back to the prose classifier rather than to "introduced".
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     expect(await getBillActions(route)).toEqual({ entries: [], unavailable: true });
   });
@@ -238,7 +234,6 @@ describe("getSearchResults", (): void => {
 
   it("returns what the surviving Congresses found when one of them drops out", async (): Promise<void> => {
     // A single stalled or failing Congress must not hold the whole sweep hostage — it simply contributes nothing.
-    vi.spyOn(console, "error").mockImplementation((): void => {});
     stubSweep(
       [
         {

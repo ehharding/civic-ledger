@@ -223,9 +223,8 @@ describe("getMemberDirectory with an API key", (): void => {
 
   it("falls back to placeholders when the roster can't be read, rather than showing an empty directory", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
-    // The adapter logs upstream failures by design; this one is deliberate, so it shouldn't look like a real fault in
-    // the test output.
-    vi.spyOn(console, "error").mockImplementation((): void => {});
+    // The adapter logs this failure by design, and it is deliberate here, so it should not read as a real fault in the
+    // run's output. Kept out of it by `onConsoleLog` in vitest.config.mts rather than by a spy in every such test.
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "boom" }, 500));
 
     const result: MemberDirectoryResult = await getMemberDirectory(119);

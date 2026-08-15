@@ -11,7 +11,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** @see error.test.tsx, which mocks the SDK for the same reason: the subject is the handoff, not what Sentry does. */
 const captureException = vi.fn();
-vi.mock("@sentry/nextjs", () => ({ captureException: (error: unknown): void => captureException(error) }));
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (error: unknown): void => captureException(error),
+  logger: { warn: (): void => {}, error: (): void => {} },
+}));
 
 import GlobalError from "@/app/global-error";
 
@@ -55,7 +58,23 @@ describe("GlobalError", (): void => {
     render(<GlobalError error={error} />);
 
     expect(captureException).toHaveBeenCalledWith(error);
-    expect(console.error).toHaveBeenCalledWith("[global-error-boundary]", error);
+    expect(console.error).toHaveBeenCalledWith(
+      "[civic-ledger] Global error boundary caught a root-layout failure",
+      // `boundary` is what separates this from the segment boundary in a log query. Both write the same `event`, and
+      // "the root layout failed" is a categorically worse fact than "a segment did" — so it has to be filterable.
+      expect.objectContaining({ event: "error-boundary.caught", boundary: "global", digest: "1234567890" }),
+    );
+  });
+
+  it("strips the API key from the line it logs", (): void => {
+    // @see error.test.tsx. The same guarantee, asserted separately, because this boundary is the one that runs when the
+    // thing that threw was the layout — the case likeliest to be holding a half-built upstream URL when it did.
+    render(<GlobalError error={leakyError()} />);
+
+    const [, attributes] = vi.mocked(console.error).mock.calls[0] as [string, { cause?: string }];
+
+    expect(attributes.cause).toContain("api_key=[redacted]");
+    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
   });
 
   it("offers a way out that does not depend on whatever just broke", (): void => {

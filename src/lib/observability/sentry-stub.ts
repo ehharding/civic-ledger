@@ -36,3 +36,23 @@ export function captureRequestError(): undefined {
 export function captureRouterTransitionStart(): undefined {
   return undefined;
 }
+
+/**
+ * Stands in for `Sentry.logger`, which `log.ts` calls on every warning and error.
+ *
+ * An object rather than a pair of functions, because that is the shape the real export has and `log.ts` reaches into it
+ * by level (`Sentry.logger[level]`).
+ *
+ * This is the one export here whose absence would *not* announce itself. The rest of this file is imported by name, so
+ * dropping one breaks the static-export bundle; `log.ts` uses a namespace import and an indexed access, which resolves
+ * to `undefined` and is then swallowed by that module's "logging must never throw" guard — a demo that reports nothing
+ * and says nothing about it. `sentry-stub.test.ts` pins the key set for exactly that reason: the check has to be a test
+ * here, because the build cannot be one.
+ *
+ * The demo build reaches this on any upstream failure, so unlike the rest of the file it sits on a genuinely hot
+ * path — and it stays a no-op there for the same reason the demo ships no DSN: there is nothing to report to.
+ */
+export const logger: { warn: () => undefined; error: () => undefined } = {
+  warn: (): undefined => undefined,
+  error: (): undefined => undefined,
+};

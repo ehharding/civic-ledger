@@ -4,6 +4,8 @@ import * as Sentry from "@sentry/nextjs";
 import type { JSX } from "react";
 import { useEffect } from "react";
 
+import { logError } from "@/lib/observability/log";
+
 /**
  * The app's error boundary.
  *
@@ -29,7 +31,13 @@ export default function AppError({
   reset: () => void;
 }): JSX.Element {
   useEffect((): void => {
-    console.error("[error-boundary]", error);
+    // Both, and in this order. `logError` records the fact with a `digest` an operator can match against the server log
+    // line for the same failure; `captureException` files the stack that makes it fixable. A render crash is exactly
+    // the case where the issue stream is the right destination — unlike an upstream failure, it is rare and novel.
+    logError("Error boundary caught a render failure", {
+      attributes: { event: "error-boundary.caught", digest: error.digest ?? "none" },
+      cause: error,
+    });
     Sentry.captureException(error);
   }, [error]);
 

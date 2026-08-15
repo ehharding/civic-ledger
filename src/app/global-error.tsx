@@ -4,6 +4,8 @@ import * as Sentry from "@sentry/nextjs";
 import type { JSX } from "react";
 import { useEffect } from "react";
 
+import { logError } from "@/lib/observability/log";
+
 import "./globals.css";
 
 /**
@@ -31,7 +33,12 @@ import "./globals.css";
  */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }): JSX.Element {
   useEffect((): void => {
-    console.error("[global-error-boundary]", error);
+    // @see error.tsx for why both. The `boundary` attribute is what separates the two in a query — reaching this one
+    // means the root layout itself failed, which is a categorically worse fact than a failed segment.
+    logError("Global error boundary caught a root-layout failure", {
+      attributes: { event: "error-boundary.caught", boundary: "global", digest: error.digest ?? "none" },
+      cause: error,
+    });
     Sentry.captureException(error);
   }, [error]);
 

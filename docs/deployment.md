@@ -54,6 +54,19 @@ runtime (`src/instrumentation.ts`, which imports `src/sentry.server.config.ts` a
 four are thin — the configuration itself lives in `src/lib/observability/sentry-options.ts`, which is where to look and
 where to change things.
 
+**Two channels, and the distinction matters when reading an incident.** *Issues* are crashes: something threw, an error
+boundary caught it, and there is a stack trace. *Logs* are handled failures, which in this app means almost
+everything — `requestCongressJson` turns every upstream failure into `{ outcome: "failed" }` so a page degrades instead
+of crashing, which means a Congress.gov outage throws nothing, reaches no error boundary, and appears **only** as
+structured logs. An empty issue stream during an outage is the system working; the logs are where to look. They carry an
+`event` attribute (`congress.request-failed`, `error-boundary.caught`) and a `reason` (`http-status`, `schema-mismatch`,
+`transport`) to filter on.
+
+`reason: "schema-mismatch"` is the one worth alerting on. It is logged at `error` where the others are `warn`, because
+it means a 200 whose body no longer matches `src/lib/congress/upstream/api-schema.ts` — Congress.gov changed its
+contract, or this app reads it wrongly — and nothing retries its way out of that. Its symptom without a report is a page
+section that is permanently and silently empty.
+
 **Read [An Error Report Names a Page, Never a Query](data-policy.md#an-error-report-names-a-page-never-a-query) before
 changing any of it.** Sentry's defaults would send both the Congress.gov API key and the reader's search terms, and the
 code that prevents that is not optional.

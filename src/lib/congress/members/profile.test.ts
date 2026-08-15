@@ -160,7 +160,6 @@ describe("getMemberProfile with an API key", (): void => {
   it("falls back to labeled placeholders when the request fails outright", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const result: MemberProfileResult = await getMemberProfile("L000174");
 
@@ -171,7 +170,6 @@ describe("getMemberProfile with an API key", (): void => {
 
   it("still returns the profile when only the legislation lists fail", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
-    vi.spyOn(console, "error").mockImplementation((): void => {});
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: URL): Promise<Response> => {

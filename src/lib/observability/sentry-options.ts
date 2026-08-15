@@ -15,11 +15,12 @@ import { redactEvent } from "@/lib/observability/redact";
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
 
 /**
- * The three redaction callbacks, each recovered from the options bag for the same reason as {@link SentryInitOptions}.
+ * The four redaction callbacks, each recovered from the options bag for the same reason as {@link SentryInitOptions}.
  */
 type BeforeSend = NonNullable<SentryInitOptions["beforeSend"]>;
 type BeforeSendTransaction = NonNullable<SentryInitOptions["beforeSendTransaction"]>;
 type BeforeBreadcrumb = NonNullable<SentryInitOptions["beforeBreadcrumb"]>;
+type BeforeSendLog = NonNullable<SentryInitOptions["beforeSendLog"]>;
 
 /**
  * The single `Sentry.init` configuration, shared by all three runtimes.
@@ -128,9 +129,28 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     tracesSampleRate: getTracesSampleRate(),
 
     /**
+     * Structured logs, which is how this app reports the failure it has the most of.
+     *
+     * `requestCongressJson` handles every upstream failure and returns `{ outcome: "failed" }` so a page degrades
+     * instead of crashing — which means a Congress.gov outage throws nothing, reaches no error boundary, and without
+     * this is invisible to Sentry entirely. @see log.ts, which explains why those arrive as logs rather than as
+     * exceptions, and why that is the difference between an issue stream and a quota fire during an outage.
+     *
+     * Sampling is deliberately not applied. The tracing rate above can drop nine spans in ten because the tenth answers
+     * the same question; a dropped error log is a failure nobody can count.
+     *
+     * **No `consoleLoggingIntegration`, deliberately.** The SDK offers to forward every `console.*` call in the process
+     * as a log, which sounds like what `log.ts` does and is not: that sweep includes Next's, React's, and every
+     * dependency's console output, none of it redacted by anything here, and it would arrive as a second copy of the
+     * lines `log.ts` already sends. The app logs through one boundary on purpose, so that what leaves it is reviewable
+     * in a diff rather than inherited from whatever a dependency decided to print.
+     */
+    enableLogs: true,
+
+    /**
      * What the SDK is allowed to gather before any of this app's own code sees it.
      *
-     * This block and the three callbacks below do overlapping work, deliberately. This one is the SDK's own switch,
+     * This block and the four callbacks below do overlapping work, deliberately. This one is the SDK's own switch,
      * which means it is honored by collection paths this app's callbacks may not be able to reach; the callbacks are
      * the backstop that still holds if a future version adds a field this block does not name. A leaked Congress.gov
      * key is not a defect worth being elegant about.
@@ -166,11 +186,19 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     /**
      * The backstop. @see redact.ts for what each of these removes and why.
      *
-     * All three are pure functions of their input and never throw: they run inside the SDK's own dispatch, where an
+     * All four are pure functions of their input and never throw: they run inside the SDK's own dispatch, where an
      * exception would be a crash in the error handler rather than a dropped field.
+     *
+     * `beforeSendLog` is the one to keep in step with the others. It is a separate hook on a separate
+     * pipeline — enabling `enableLogs` without it would open a fourth exit from this process that none of the redaction
+     * above covers, and it would open it quietly, since a log body looks like text nobody put a URL in until someone
+     * does. `log.ts` already redacts its own lines, so this is the same belt-and-braces arrangement as `dataCollection`
+     * and the callbacks: the module-level pass is what runs, and this is what still holds when a future caller forgets
+     * it.
      */
     beforeSend: ((event) => redactEvent(event, secrets)) satisfies BeforeSend,
     beforeSendTransaction: ((event) => redactEvent(event, secrets)) satisfies BeforeSendTransaction,
     beforeBreadcrumb: ((breadcrumb) => redactEvent(breadcrumb, secrets)) satisfies BeforeBreadcrumb,
+    beforeSendLog: ((log) => redactEvent(log, secrets)) satisfies BeforeSendLog,
   };
 }

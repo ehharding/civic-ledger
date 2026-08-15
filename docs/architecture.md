@@ -55,7 +55,7 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | `src/lib/glossary.ts`         | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
 | `src/lib/lessons.ts`          | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |
 | `src/lib/metadata.ts`         | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
-| `src/lib/observability`       | What a report may carry off this machine              | Never the API key; never the reader's query string.               |
+| `src/lib/observability`       | What a report or log may carry off this machine       | Never the API key; never the reader's query string; one boundary. |
 | `src/lib/search-params.ts`    | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
 | `src/lib/congress`            | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
 

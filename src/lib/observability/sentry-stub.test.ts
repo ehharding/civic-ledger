@@ -14,6 +14,7 @@ import {
   captureRequestError,
   captureRouterTransitionStart,
   init,
+  logger,
 } from "@/lib/observability/sentry-stub";
 
 describe("sentry-stub", (): void => {
@@ -33,5 +34,19 @@ describe("sentry-stub", (): void => {
 
   it("stands in for Sentry.captureRouterTransitionStart, which instrumentation-client.ts re-exports", (): void => {
     expect(captureRouterTransitionStart()).toBeUndefined();
+  });
+
+  it("stands in for Sentry.logger, which log.ts calls on every warning and error", (): void => {
+    // Reached by name rather than destructured, because `log.ts` indexes into it (`Sentry.logger[level]`) — so the
+    // shape being stubbed is an object with these two keys, not two loose functions.
+    expect(logger.warn()).toBeUndefined();
+    expect(logger.error()).toBeUndefined();
+  });
+
+  it("stubs only the two log levels this app emits, so a third becomes a build failure rather than a silence", (): void => {
+    // The whole reason this file is a hand-written list instead of a proxy. A demo build calling `logger.info` should
+    // break the static-export job on CI, where someone reads the output — not no-op in a deployed page, where nobody
+    // does. @see the module comment.
+    expect(Object.keys(logger).toSorted()).toEqual(["error", "warn"]);
   });
 });

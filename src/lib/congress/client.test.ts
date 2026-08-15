@@ -106,7 +106,6 @@ describe("getCongressSnapshot", (): void => {
   it("falls back to preview data when the upstream request fails", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const snapshot: CongressSnapshot = await getCongressSnapshot();
 
@@ -219,7 +218,6 @@ describe("getBillById", (): void => {
   it("falls back to a snapshot search and reports that source when the direct lookup throws", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const target: LegislativeBill = firstPreviewBill;
     const result: BillLookupResult = await getBillById({
@@ -361,7 +359,6 @@ describe("getBillSummaries", (): void => {
   it("returns an empty list when the upstream request fails", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
       congress: "117",
@@ -441,7 +438,6 @@ describe("getBillTextVersions", (): void => {
   it("returns an empty list when the upstream request fails", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    vi.spyOn(console, "error").mockImplementation((): void => {});
 
     const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
       congress: "117",
@@ -765,7 +761,6 @@ describe("getCongressComposition", (): void => {
 
   it("falls back to placeholder seats when the upstream request fails", async (): Promise<void> => {
     process.env.CONGRESS_API_KEY = "test-key";
-    vi.spyOn(console, "error").mockImplementation((): void => {});
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
 
     const composition: CongressComposition = await getCongressComposition(119);

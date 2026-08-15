@@ -185,6 +185,32 @@ describe("sentryInitOptions", (): void => {
     expect(JSON.stringify(sent)).not.toContain(KEY);
   });
 
+  it("turns structured logs on, which is the only way the app's commonest failure is reported at all", (): void => {
+    // `requestCongressJson` handles every upstream failure and returns `{ outcome: "failed" }` rather than throwing, so
+    // a Congress.gov outage reaches no error boundary and no `onRequestError`. Off, this option makes that failure
+    // invisible to Sentry entirely. @see src/lib/observability/log.ts.
+    expect(sentryInitOptions().enableLogs).toBe(true);
+  });
+
+  it("redacts a log before it is sent, which is a fourth pipeline and a fourth hook", (): void => {
+    // The assertion that keeps `enableLogs` from being a leak. `beforeSend` and friends do not run over logs: enabling
+    // logs without this would open an exit from the process that none of the redaction above covers.
+    const log = {
+      level: "error",
+      message: `Failed while calling https://api.congress.gov/v3?api_key=${KEY}`,
+      attributes: { detail: `key was ${KEY}`, url: "/members?party=republican&state=Ohio" },
+    };
+
+    // biome-ignore lint/suspicious/noExplicitAny: as above.
+    const sent = sentryInitOptions([KEY]).beforeSendLog?.(log as any);
+
+    expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).toContain(REDACTED);
+
+    // The same cut every other layer makes: a report names a page, never a query.
+    expect(JSON.stringify(sent)).not.toContain("party=republican");
+  });
+
   it("still strips a key by pattern when no literal secret was passed, as in the browser", (): void => {
     // The client bundle has never held the key and passes no secrets; the pattern pass is all it has, and it is enough
     // for anything shaped like a Congress.gov URL.
