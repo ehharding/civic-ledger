@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+
 import type { BillRouteParams } from "@/lib/congress/bills/model";
 import { type CongressApiDetailResponse, congressApiDetailResponseSchema } from "@/lib/congress/upstream/api-schema";
 import {

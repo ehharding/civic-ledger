@@ -13,9 +13,13 @@
  * whole contract, and it is the only place the order is stated.
  *
  *   tokens     — custom properties only; no selectors that paint anything
- *   base       — the reset, bare element styles, and the shared .surface-card recipe
+ *   base       — the reset, bare element styles, and the small global utilities; no component classes
  *   components — one layer per file below, all of them peers; a rule here never needs to out-specify a sibling
  *   overrides  — breakpoints, and only breakpoints
+ *
+ * The shared card surface is a `components` rule, in surfaces.css, and is imported ahead of the six files whose
+ * components wear it so each can still specialize. It is a selector list rather than a class the markup opts
+ * into — @see that file's header for why, since the choice is the reason `base` holds no component recipe of any kind.
  *
  * A practical consequence worth knowing before you debug something here: an unlayered rule beats *every* layer. If a
  * stray rule lands outside these files (a <style> tag, a third-party stylesheet) it will win against all of the below

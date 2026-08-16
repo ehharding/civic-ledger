@@ -11,6 +11,7 @@ import { render, screen } from "@testing-library/react";
 import type React from "react";
 import type { JSX } from "react";
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import type { CongressComposition } from "@/lib/congress/members/model";
 

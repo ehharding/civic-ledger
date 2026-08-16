@@ -7,6 +7,7 @@
  * `identifiedBy` and one that arrived with it are different claims — and the page prints the difference.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getRelatedBills } from "@/lib/congress/client";

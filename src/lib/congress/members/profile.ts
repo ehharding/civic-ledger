@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+
 import { type CongressSnapshot, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/bills/model";
 import type { MemberProfile } from "@/lib/congress/members/model";
 import {

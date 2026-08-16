@@ -12,6 +12,7 @@
  * `searchParams` can take that a `URLSearchParams` cannot, and so the one this module genuinely has to decide about.
  */
 import { afterEach, describe, expect, it } from "vitest";
+
 import { DEFAULT_BILL_DIRECTORY_QUERY } from "@/lib/congress/bills/search";
 import { DEFAULT_COMMITTEE_DIRECTORY_QUERY } from "@/lib/congress/committees/filter";
 import { DEFAULT_COMMITTEE_RECORDS_QUERY } from "@/lib/congress/committees/records";

@@ -1,4 +1,5 @@
 import type { ZodType } from "zod";
+
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/bills/model";
 import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import { isBioguideId } from "@/lib/congress/members/model";

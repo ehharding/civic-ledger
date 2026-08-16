@@ -37,7 +37,7 @@ above, that is a strong signal it is a code comment.
 
 ## Style
 
-- Wrap at 120 columns, matching `biome.json`'s `lineWidth`.
+- Wrap at 120 columns, matching `biome.jsonc`'s `lineWidth`.
 - Link to files with backticked paths (`` `src/lib/congress/upstream/http.ts` ``) and to documents with Markdown links.
 - Name the constant, function, or file that enforces a rule. A rule with no named enforcement point is a wish.
 - State costs and limits explicitly. A tradeoff written down is a tradeoff someone else does not have to rediscover.

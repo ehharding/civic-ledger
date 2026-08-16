@@ -1,6 +1,7 @@
 import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
+
 import { CommitteeRecordsSection } from "@/components/committees/committee-records";
 import { SiteShell } from "@/components/layout/site-shell";
 import { CalloutCard } from "@/components/ui/callout-card";

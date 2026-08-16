@@ -8,6 +8,7 @@
  * it in a way that still looks like a working feature.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BillCosponsor, BillRouteParams } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCosponsors } from "@/lib/congress/client";

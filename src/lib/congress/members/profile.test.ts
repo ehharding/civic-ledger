@@ -4,6 +4,7 @@
  * Congress.gov, and the distinction between "no such member" (404) and "temporarily unavailable" (anything else).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMemberProfile, type MemberProfileResult } from "@/lib/congress/client";
 import type { MemberProfile } from "@/lib/congress/members/model";

@@ -113,7 +113,9 @@ default — a few current positions, so they don't have to be relitigated per pu
 
 ## Code Conventions
 
-- Biome is the formatter and linter; `lineWidth` is 120 and applies to prose in Markdown too.
+- Biome is the formatter and linter; `lineWidth` is 120 and applies to prose in Markdown too. `pnpm lint` is the check
+  and `pnpm format` is its fix — the latter runs `biome check --write`, not `biome format --write`, so it applies
+  everything `pnpm lint` can fail on rather than only the whitespace half of it.
 - Prefer a doc comment that explains *why* over one that restates the signature. The comment density in
   `src/lib/congress/` is the house style.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
@@ -123,7 +125,9 @@ default — a few current positions, so they don't have to be relitigated per pu
   it reads, into the browser bundle.
 - Import with the `@/` alias, never a relative path. It is what let the adapter and the component tree be regrouped
   into folders without touching a single import statement, and it keeps a module's imports readable in a diff that
-  doesn't say which directory the file is in.
+  doesn't say which directory the file is in. The grouping — Node builtins, then packages, a blank line, then this
+  app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so `pnpm lint` reports a run-together
+  block and `pnpm format` fixes it.
 - A new file goes in the folder named for its *subject*, not for whoever calls it — `src/components/bills/` for
   anything that draws a bill, `src/lib/congress/members/` for anything that knows what a member is. Two exceptions,
   both stated in [Architecture](docs/architecture.md): `src/components/ui/` is for pieces that could render a record

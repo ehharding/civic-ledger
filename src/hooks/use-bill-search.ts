@@ -1,6 +1,7 @@
 "use client";
 
 import { type RefObject, useEffect, useRef, useState } from "react";
+
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { matchesQuery } from "@/lib/congress/bills/search";
 

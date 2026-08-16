@@ -4,6 +4,7 @@
  * found" (404) and "temporarily unavailable" (any other failure).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {

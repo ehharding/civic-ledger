@@ -4,6 +4,7 @@
  * that the latest action is frequently not the most advanced one.
  */
 import { describe, expect, it } from "vitest";
+
 import type { BillAction } from "@/lib/congress/bills/model";
 import { inferBillStage, inferStageFromActions, resolveBillStage } from "@/lib/congress/bills/stage";
 

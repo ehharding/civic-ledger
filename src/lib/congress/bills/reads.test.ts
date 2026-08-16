@@ -11,6 +11,7 @@
  * while labeling it `live` after the live lookup failed is a worse bug than a page that fails to render at all.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {

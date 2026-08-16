@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import {
   billDirectoryQueryString,

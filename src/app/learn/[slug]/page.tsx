@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { JSX } from "react";
+
 import { SiteShell } from "@/components/layout/site-shell";
 import { LessonArticle } from "@/components/learn/lesson-article";
 import { lessonHref } from "@/lib/lesson-route";

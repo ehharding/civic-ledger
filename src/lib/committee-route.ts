@@ -1,4 +1,5 @@
 import type { Route } from "next";
+
 import type { CommitteeChamber } from "@/lib/congress/committees/model";
 import { type CommitteeRecordsQuery, committeeRecordsQueryString } from "@/lib/congress/committees/records";
 

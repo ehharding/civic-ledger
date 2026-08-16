@@ -50,14 +50,16 @@ type BillDetailProps = {
   notice?: string;
   /** When this bill's data was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
-  /**
-   * The six collections fetched alongside the bill, each carrying whether its own request was answered.
-   *
-   * They arrive as {@link BillSubResource}s rather than as bare arrays because every one of these sections prints a
-   * sentence when its list is empty, and five of those sentences are assertions about the congressional record — "no
-   * member has cosponsored this bill", "Congress.gov records no measure as related to this one". A list of length zero
-   * is not enough to license any of them, and it is all a bare array can say.
-   */
+  // The six collections fetched alongside the bill, each carrying whether its own request was answered.
+  //
+  // They arrive as `BillSubResource`s rather than as bare arrays because every one of these sections prints a sentence
+  // when its list is empty, and five of those sentences are assertions about the congressional record — "no member has
+  // cosponsored this bill", "Congress.gov records no measure as related to this one". A list of length zero is not
+  // enough to license any of them, and it is all a bare array can say.
+  //
+  // A line comment rather than a doc comment on purpose: it describes the six fields below as a group, and a `/** */`
+  // here would attach to `summaries` alone — where the field's own doc comment immediately replaces it, so the
+  // paragraph would reach no reader hovering any of the six.
   /** Every CRS summary on file for this bill, most recent first. */
   summaries: BillSubResource<BillSummary>;
   /** Every official text version on file for this bill, most recent first. */

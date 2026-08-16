@@ -1,6 +1,7 @@
 "use client";
 
 import { type JSX, useCallback, useMemo, useState } from "react";
+
 import { MemberCard } from "@/components/members/member-card";
 import {
   ClearFiltersButton,

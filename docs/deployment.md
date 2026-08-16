@@ -32,7 +32,12 @@ server-side, and dynamic routes, ISR, and the future `saved_bills`/auth work all
    variables → Actions**. This is *not* the Vercel dashboard's environment variables, which is a separate place — see
    the next step.
 3. Set `CONGRESS_API_KEY` (and `DATABASE_URL`, once persistence lands) as encrypted environment variables **in the
-   Vercel project settings**, not as GitHub secrets, so the key never appears in Action logs.
+   Vercel project settings**, not as GitHub secrets, so the key never appears in Action logs. Set `NEXT_PUBLIC_SITE_URL`
+   there too, to the origin the site is actually served from, with no trailing slash. It is the only variable here whose
+   absence is invisible: `getSiteUrl` (`src/lib/site.ts`) falls back to Vercel's injected `*.vercel.app` hostname, so a
+   custom-domain deployment without it renders perfectly while every canonical URL, sitemap entry, and share card names
+   a host the reader did not visit. Leave it unset on preview deployments, where the per-deployment fallback is the
+   correct answer.
 4. Push to `main` for a production deploy. Pull requests get a preview deployment with a URL comment.
 5. Turn on **Web Analytics** and **Speed Insights** in the Vercel project (their respective tabs). The client code is
    already in place; until they are enabled the injected scripts have nothing to report to, which is harmless. Nothing
@@ -41,8 +46,17 @@ server-side, and dynamic routes, ISR, and the future `saved_bills`/auth work all
    deployments for the connected branch).
 
 Step 6 is not optional housekeeping. Vercel enables Git auto-deploy by default the moment a repo is imported, and it
-builds independently of the workflow above. Left on, every push deploys twice from two separate pipelines — only one of
-which is gated on `pnpm check` passing first. `deploy-vercel.yml` is the single source of truth for what ships.
+builds independently of the workflow above. Left on, every push deploys twice from two pipelines that do not build the
+same thing: the workflow runs `vercel build` inside the GitHub runner, where the three `SENTRY_*` values live, so it is
+the only one of the two that uploads source maps — and it is the one whose build a reviewer can read the log of.
+`deploy-vercel.yml` is the single source of truth for what ships.
+
+**Neither pipeline waits for `pnpm check`.** `ci.yml` and `deploy-vercel.yml` are separate workflows on the same
+triggers, so they run in parallel and a deploy can finish while the quality job is still going — or after it has gone
+red. What CI gives you is a failing check on the commit, not a block on the deploy; branch protection on `main` is what
+turns that check into a gate, and it belongs in the repository's settings rather than in a workflow file. This paragraph
+is here because the alternative — a reader assuming the workflow is gated because a deploy workflow usually is — is a
+wrong assumption this file would otherwise have invited.
 
 Any other Node-capable host (Railway, Render, Fly.io, a plain VPS) works the same way. Vercel is just the path with an
 official GitHub Action and zero server config.
@@ -203,7 +217,7 @@ both of which split one gate across two places to save a couple of kilobytes on 
 a preview. The trade goes the other way, deliberately, and this paragraph is the record of it rather than a silence
 someone else has to rediscover.
 
-Sentry is the case where the same arithmetic comes out the other way, stated here so the two do not read as inconistent.
-The SDK is roughly 65 KB gzipped against the collectors' 7 KB — close to a third of the demo's JavaScript, on a page
-whose entire purpose is to load quickly for someone glancing at a portfolio link. At ten times the cost, the bundler
-alias earns the second place it has to be configured.
+Sentry is the case where the same arithmetic comes out the other way, stated here so the two do not read as
+inconsistent. The SDK is roughly 65 KB gzipped against the collectors' 7 KB — close to a third of the demo's JavaScript,
+on a page whose entire purpose is to load quickly for someone glancing at a portfolio link. At ten times the cost, the
+bundler alias earns the second place it has to be configured.

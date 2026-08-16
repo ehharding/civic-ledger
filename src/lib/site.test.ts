@@ -64,4 +64,27 @@ describe("getSiteUrl", (): void => {
 
     expect(getSiteUrl()).toBe("https://deployment.vercel.app");
   });
+
+  it("drops a trailing slash, which is what copying a site root out of an address bar gives you", (): void => {
+    process.env.NEXT_PUBLIC_SITE_URL = "https://civic-ledger.org/";
+
+    expect(getSiteUrl()).toBe("https://civic-ledger.org");
+  });
+
+  it("drops a trailing slash from either Vercel-injected variable too", (): void => {
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "project.vercel.app/";
+    expect(getSiteUrl()).toBe("https://project.vercel.app");
+
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    process.env.VERCEL_URL = "deployment.vercel.app/";
+    expect(getSiteUrl()).toBe("https://deployment.vercel.app");
+  });
+
+  it("leaves the concatenating callers a base they can append a rooted path to", (): void => {
+    // The actual failure this guards. `robots.ts` and `sitemap.ts` both build URLs by concatenation, so a base with a
+    // trailing slash silently emits `//sitemap.xml` — a path a crawler reads as distinct from the one served.
+    process.env.NEXT_PUBLIC_SITE_URL = "https://civic-ledger.org///";
+
+    expect(`${getSiteUrl()}/sitemap.xml`).toBe("https://civic-ledger.org/sitemap.xml");
+  });
 });
