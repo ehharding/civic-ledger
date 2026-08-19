@@ -618,11 +618,459 @@ function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
 }
 
 /**
+ * What every record section on this page needs to word itself.
+ *
+ * The three fields travel together because the sections' emptiness copy depends on all three at once: what arrived,
+ * whether the request that would have carried more was answered, and whether this record is live or preview. Stated
+ * once here rather than restated in eight prop types, so a section cannot accidentally be given two of the three.
+ *
+ * @typeParam Item - The record type the section lists.
+ */
+type BillSectionProps<Item> = {
+  /** The collection, carrying whether its own request was answered. @see BillSubResource */
+  resource: BillSubResource<Item>;
+  /** Congress.gov's own count for the whole collection, when it published one. @see describeBillCollection */
+  published?: number;
+  /** Whether this record is live Congress.gov data or a labeled preview fixture. */
+  source: CongressSnapshot["source"];
+};
+
+/**
+ * The bill's identity: citation, title, and the facts that qualify it.
+ *
+ * Split out from the page body because it is the one section that is *not* a record collection — everything below it
+ * lists something Congress.gov publishes alongside the bill, while this states what the bill is.
+ *
+ * @param bill - The record being shown.
+ * @param stage - The stage resolved from the action history, which the label reads from rather than from `bill.stage`.
+ *   @see resolveBillStage
+ * @returns The hero section.
+ */
+function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillStage }): JSX.Element {
+  return (
+    <section className="bill-detail-hero" aria-labelledby="bill-title">
+      <p className="eyebrow">
+        {bill.type} {bill.number} · {formatOrdinal(bill.congress)} Congress
+      </p>
+      <h1 id="bill-title">{bill.title}</h1>
+      <div className="bill-detail-meta">
+        <span className="stage-label">{billStageLabels[stage]}</span>
+        {/* The citation Congress.gov publishes on the record itself, not one this app assembled from a stage. It is
+            the one thing on this page that settles what became of the bill outright, so it sits beside the stage
+            cue — which is explicitly an orientation aid — rather than somewhere further down. */}
+        {bill.enactedLaw ? <span className="law-label">{formatEnactedLaw(bill.enactedLaw)}</span> : null}
+        {bill.policyArea ? <span>{bill.policyArea}</span> : null}
+        <span>Origin: {bill.originChamber}</span>
+        {bill.introducedDate ? <span>Introduced {formatDate(bill.introducedDate)}</span> : null}
+        {bill.sponsor ? (
+          <span>
+            Sponsor:{" "}
+            {bill.sponsor.bioguideId ? (
+              // Links inward rather than straight out to the Biographical Directory: the sponsor's own page collects
+              // their seat, service record, and the rest of what they've introduced — and carries the official
+              // biography link onward, so nothing is lost by making this the first stop instead of the last.
+              <Link className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
+                {bill.sponsor.fullName}
+              </Link>
+            ) : (
+              bill.sponsor.fullName
+            )}
+          </span>
+        ) : null}
+        {typeof bill.cosponsorTally?.current === "number" ? (
+          <span>
+            {bill.cosponsorTally.current} <GlossaryProse text={pluralize(bill.cosponsorTally.current, "Cosponsor")} />
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The stepper, with the standing caveat that it is an orientation aid rather than a legal status.
+ *
+ * @param stage - The stage resolved from the action history. @see resolveBillStage
+ * @returns The journey panel.
+ */
+function JourneyPanel({ stage }: { stage: BillStage }): JSX.Element {
+  return (
+    <DetailPanel headingId="journey-heading" kicker="How This Moves" heading="The Bill’s Journey">
+      <p className="muted-copy">
+        This is an orientation aid, not an official legal status. Read the latest action and primary source alongside
+        it.
+      </p>
+      <BillJourney stage={stage} compact={false} />
+    </DetailPanel>
+  );
+}
+
+/**
+ * The most recent line of Congress's own record, and the link out to it.
+ *
+ * @param bill - The record being shown.
+ * @returns The latest-action panel.
+ */
+function LatestActionPanel({ bill }: { bill: LegislativeBill }): JSX.Element {
+  return (
+    <DetailPanel
+      accent
+      as="aside"
+      heading="What Happened Most Recently"
+      headingId="next-heading"
+      kicker="Latest Action"
+    >
+      {/* The one line on this page written in Congress's own voice rather than this app's — "Referred to the Committee
+          on…", "Passed Senate without amendment" — which makes it the place a reader is most likely to hit a word they
+          don't have. @see GlossaryProse. */}
+      <p className="latest-action-copy">
+        <GlossaryProse text={bill.latestAction.text} />
+      </p>
+      {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
+      <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
+    </DetailPanel>
+  );
+}
+
+/**
+ * Every committee the bill was referred to, in Congress.gov's own order.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The committees panel.
+ */
+function CommitteesPanel({ resource, published, source }: BillSectionProps<BillCommittee>): JSX.Element {
+  const { entries: committees, unavailable } = resource;
+
+  return (
+    <DetailPanel headingId="committees-heading" kicker="Who Has Held It" heading="Committees of Referral">
+      {committees.length > 0 ? (
+        <>
+          <p className="muted-copy">
+            {describeBillCollection({ shown: committees.length, published, noun: "committee" })} They are listed in
+            Congress.gov’s own order — the committee of primary jurisdiction first. Each links to its record here. Most
+            bills referred to a committee never leave it, so a referral says where a bill went, not how it fared.
+          </p>
+          <CommitteeReferrals committees={committees} />
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."
+          previewLead="Committees of referral appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Committees of referral are"
+          unavailableSubject="this bill was referred to any"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * Everyone who signed on after the sponsor.
+ *
+ * @param props - @see BillSectionProps, plus the publisher's own tally.
+ * @returns The cosponsors panel.
+ */
+function CosponsorsPanel({
+  resource,
+  source,
+  tally,
+}: Omit<BillSectionProps<BillCosponsor>, "published"> & { tally?: BillCosponsorTally }): JSX.Element {
+  const { entries: cosponsors, unavailable } = resource;
+
+  return (
+    <DetailPanel headingId="cosponsors-heading" kicker="Who Else Put Their Name To It" heading="Cosponsors">
+      {cosponsors.length > 0 ? (
+        <>
+          <CosponsorList cosponsors={cosponsors} source={source} tally={tally} />
+          <p className="muted-copy">
+            Cosponsoring records that a member supported introducing a measure. It is not a vote, not a prediction, and
+            not a ranking — most cosponsored bills never reach a floor.
+          </p>
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."
+          previewLead="Cosponsors appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Cosponsors are"
+          unavailableSubject="anyone signed on to this bill"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * Every step logged on the bill, newest first.
+ *
+ * The one section whose list renders whether or not the note above it does: {@link ActionHistory} returns `null` for an
+ * empty history, so the empty note and the list are siblings rather than two branches of a conditional.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The action-history panel.
+ */
+function ActionsPanel({ resource, published, source }: BillSectionProps<BillAction>): JSX.Element {
+  const { entries: actions, unavailable } = resource;
+
+  return (
+    <DetailPanel headingId="actions-heading" kicker="Every Step on the Record" heading="What Congress Actually Did">
+      {actions.length > 0 ? (
+        <p className="muted-copy">
+          {describeBillCollection({ shown: actions.length, published, noun: "action" })} The same moment is often logged
+          twice, by the chamber’s floor record and by the Library of Congress — both are kept here rather than merged.
+        </p>
+      ) : (
+        <EmptySectionNote
+          absence="No action history could be read for this bill."
+          previewLead="The action history appears"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="The action history is"
+          unavailableSubject="anything has happened to this bill"
+        />
+      )}
+      <ActionHistory actions={actions} />
+    </DetailPanel>
+  );
+}
+
+/**
+ * The roll calls found in the action history.
+ *
+ * Reads from the actions rather than from a collection of its own, which is why this takes the action resource: a
+ * recorded vote reaches this app only as a link hanging off the action that produced it. @see collectRecordedVotes
+ *
+ * @param props - @see BillSectionProps
+ * @returns The recorded-votes panel.
+ */
+function RecordedVotesPanel({ resource, source }: Omit<BillSectionProps<BillAction>, "published">): JSX.Element {
+  return (
+    <DetailPanel
+      accent
+      as="aside"
+      heading="Recorded Votes"
+      headingId="votes-heading"
+      kicker="Where Names Went on the Record"
+    >
+      {source === "preview" ? (
+        <p className="muted-copy">{previewPendingCopy("Recorded votes appear")}</p>
+      ) : (
+        <RecordedVotes votes={collectRecordedVotes(resource.entries)} unavailable={resource.unavailable} />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * Every amendment offered to the bill.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The amendments panel.
+ */
+function AmendmentsPanel({ resource, published, source }: BillSectionProps<BillAmendment>): JSX.Element {
+  const { entries: amendments, unavailable } = resource;
+  const withPurpose: number = amendments.filter(
+    (amendment: BillAmendment): boolean => amendment.purpose !== undefined,
+  ).length;
+
+  return (
+    <DetailPanel headingId="amendments-heading" kicker="What Was Proposed to Change It" heading="Amendments">
+      {amendments.length > 0 ? (
+        <>
+          <p className="muted-copy">
+            {describeBillCollection({ shown: amendments.length, published, noun: "amendment" })}{" "}
+            {describeAmendmentDetail(withPurpose, amendments.length)} They are in Congress.gov’s own order, which the
+            API documents no meaning for, so neither end of this list is the most recent. An amendment being offered is
+            not an amendment being adopted — most are never voted on.
+          </p>
+          <AmendmentList amendments={amendments} />
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="No amendment was offered to this bill. Most bills never reach a stage where one could be, so this is an ordinary state rather than a gap."
+          previewLead="Amendments appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Amendments are"
+          unavailableSubject="any amendment was offered to this bill"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * The CRS summaries: the most recent one in full, with the earlier ones behind a disclosure.
+ *
+ * Earlier summaries are kept rather than dropped: one isn't stale, it's an accurate description of a real earlier
+ * version of the bill, and comparing the two is one of the clearest ways to see what a chamber actually changed.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The summary panel.
+ */
+function SummariesPanel({ resource, published, source }: BillSectionProps<BillSummary>): JSX.Element {
+  const { entries: summaries, unavailable } = resource;
+  const [summary, ...earlierSummaries]: BillSummary[] = summaries;
+
+  return (
+    <DetailPanel headingId="summary-heading" kicker="In Plain English" heading="What This Bill Would Do">
+      {summary ? (
+        <>
+          <SummaryCaption summary={summary} source={source} />
+          <SummaryBody summary={summary} />
+          {earlierSummaries.length > 0 ? (
+            <>
+              <p className="muted-copy">
+                {describeBillCollection({
+                  shown: summaries.length,
+                  published,
+                  noun: "Congressional Research Service summary",
+                  pluralNoun: "Congressional Research Service summaries",
+                })}{" "}
+                The one above is the most recent; earlier ones may describe an earlier version of the text.
+              </p>
+              <details className="summary-history">
+                <summary className="summary-history__toggle">
+                  Read the {earlierSummaries.length} Earlier{" "}
+                  {pluralize(earlierSummaries.length, "Summary", "Summaries")}
+                </summary>
+                <ol className="summary-history__list">
+                  {earlierSummaries.map(
+                    (earlier: BillSummary): JSX.Element => (
+                      <li key={`${earlier.versionCode}-${earlier.actionDate ?? earlier.actionDesc}`}>
+                        <SummaryCaption summary={earlier} source={source} />
+                        <SummaryBody summary={earlier} />
+                      </li>
+                    ),
+                  )}
+                </ol>
+              </details>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="The Congressional Research Service hasn't published a summary for this bill yet."
+          previewLead="Summaries appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Summaries are"
+          unavailableSubject="the Congressional Research Service has written one"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * Every official rendering of the bill's text, linked to Congress.gov rather than re-hosted.
+ *
+ * The collection where a gap between the published figure and the shown one is most expected:
+ * `mapCongressTextVersion` drops a version carrying no linkable rendering, since a heading with nothing behind it is
+ * not a row. Naming both figures is what keeps that drop from reading as the record being shorter than it is.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The full-text panel.
+ */
+function TextVersionsPanel({ resource, published, source }: BillSectionProps<BillTextVersion>): JSX.Element {
+  const { entries: textVersions, unavailable } = resource;
+
+  return (
+    <DetailPanel accent as="aside" heading="Read the Full Text" headingId="fulltext-heading" kicker="Primary Source">
+      {textVersions.length > 0 ? (
+        <>
+          <p className="muted-copy">
+            {describeBillCollection({ shown: textVersions.length, published, noun: "text version" })} Each links to
+            Congress.gov’s own documents rather than to text re-hosted here.
+          </p>
+          <ul className="text-version-list">
+            {textVersions.map(
+              (version: BillTextVersion, index: number): JSX.Element => (
+                <li key={`${version.type}-${version.date ?? index}`}>
+                  <p className="text-version-list__type">
+                    {version.type}
+                    {version.date ? ` · ${formatDate(version.date)}` : ""}
+                  </p>
+                  <div className="text-version-list__formats">
+                    {version.formats.map(
+                      (format: BillTextFormat): JSX.Element => (
+                        <OutboundLink key={format.url} href={format.url} iconSize={13}>
+                          {format.type}
+                        </OutboundLink>
+                      ),
+                    )}
+                  </div>
+                </li>
+              ),
+            )}
+          </ul>
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="Congress.gov hasn't published bill text for this record yet."
+          previewLead="Full-text links appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Full-text links are"
+          unavailableSubject="Congress.gov has published any text for this bill"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
+ * The measures Congress.gov records as related to this one.
+ *
+ * @param props - @see BillSectionProps
+ * @returns The related-measures panel.
+ */
+function RelatedPanel({ resource, published, source }: BillSectionProps<RelatedBill>): JSX.Element {
+  const { entries: related, unavailable } = resource;
+
+  return (
+    <DetailPanel headingId="related-heading" kicker="Elsewhere in Congress" heading="Related Measures">
+      {related.length > 0 ? (
+        <>
+          <p className="muted-copy">
+            {describeBillCollection({ shown: related.length, published, noun: "related measure" })} Each is listed with
+            the body that identified the relationship — the Congressional Research Service, the House, or the Senate —
+            because relating two measures is a judgment someone made rather than something the bills themselves record.
+            They are in Congress.gov’s own order, which the API documents no meaning for, so neither end of this list is
+            the most significant.
+          </p>
+          <RelatedBillList related={related} />
+        </>
+      ) : (
+        <EmptySectionNote
+          absence="Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."
+          previewLead="Related measures appear"
+          source={source}
+          unavailable={unavailable}
+          unavailableLead="Related measures are"
+          unavailableSubject="any measure is recorded as related to this one"
+        />
+      )}
+    </DetailPanel>
+  );
+}
+
+/**
  * Full bill record page.
  *
  * Purely presentational: every value is resolved by the route (`page.tsx`) and passed in, so this component has no
  * fetching, no environment access, and nothing that behaves differently between a live and a preview render except the
  * wording it chooses.
+ *
+ * The body is deliberately an *outline* rather than the page's markup: each record section is one of the panel
+ * components above, so what stays here is the order the sections read in and which of them share a row. That order is
+ * the part worth being able to see at a glance — the cosponsors sit between the committees that held the bill and the
+ * actions taken on it because they answer the question the hero's sponsor line opens and cannot close; the amendments
+ * sit directly under the action history because that is where a reader first meets one, as a sentence naming a number;
+ * and the related measures come last because they are the only section that points off this bill entirely.
  *
  * @param props - @see BillDetailProps
  * @returns The hero (identity, stage, sponsor and cosponsor meta), the `BillJourney` stepper, the latest action with a
@@ -633,30 +1081,19 @@ export function BillDetail({
   source,
   notice,
   retrievedAt,
-  summaries: summariesResult,
-  textVersions: textVersionsResult,
-  actions: actionsResult,
-  committees: committeesResult,
-  cosponsors: cosponsorsResult,
-  related: relatedResult,
-  amendments: amendmentsResult,
+  summaries,
+  textVersions,
+  actions,
+  committees,
+  cosponsors,
+  related,
+  amendments,
 }: BillDetailProps): JSX.Element {
-  // Unwrapped once here so the markup below reads in rows and lists rather than in `.entries` — the flag is only ever
-  // consulted at the one place each collection words its own emptiness.
-  const { entries: summaries, unavailable: summariesUnavailable } = summariesResult;
-  const { entries: textVersions, unavailable: textVersionsUnavailable } = textVersionsResult;
-  const { entries: actions, unavailable: actionsUnavailable } = actionsResult;
-  const { entries: committees, unavailable: committeesUnavailable } = committeesResult;
-  const { entries: cosponsors, unavailable: cosponsorsUnavailable } = cosponsorsResult;
-  const { entries: related, unavailable: relatedUnavailable } = relatedResult;
-  const { entries: amendments, unavailable: amendmentsUnavailable } = amendmentsResult;
-
-  const [summary, ...earlierSummaries]: BillSummary[] = summaries;
-  const votes: RecordedVote[] = collectRecordedVotes(actions);
   // The action history is the better authority on where a bill has got to: `bill.stage` was read off one line of prose,
   // and the latest action of a bill that has passed one chamber usually describes a referral in the other.
   // @see resolveBillStage.
-  const stage: BillStage = resolveBillStage(bill.stage, actions);
+  const stage: BillStage = resolveBillStage(bill.stage, actions.entries);
+  const counts: LegislativeBill["collectionCounts"] = bill.collectionCounts;
 
   return (
     <SiteShell>
@@ -666,340 +1103,39 @@ export function BillDetail({
         </Link>
       </div>
 
-      <section className="bill-detail-hero" aria-labelledby="bill-title">
-        <p className="eyebrow">
-          {bill.type} {bill.number} · {formatOrdinal(bill.congress)} Congress
-        </p>
-        <h1 id="bill-title">{bill.title}</h1>
-        <div className="bill-detail-meta">
-          <span className="stage-label">{billStageLabels[stage]}</span>
-          {/* The citation Congress.gov publishes on the record itself, not one this app assembled from a stage. It is
-              the one thing on this page that settles what became of the bill outright, so it sits beside the stage
-              cue — which is explicitly an orientation aid — rather than somewhere further down. */}
-          {bill.enactedLaw ? <span className="law-label">{formatEnactedLaw(bill.enactedLaw)}</span> : null}
-          {bill.policyArea ? <span>{bill.policyArea}</span> : null}
-          <span>Origin: {bill.originChamber}</span>
-          {bill.introducedDate ? <span>Introduced {formatDate(bill.introducedDate)}</span> : null}
-          {bill.sponsor ? (
-            <span>
-              Sponsor:{" "}
-              {bill.sponsor.bioguideId ? (
-                // Links inward rather than straight out to the Biographical Directory: the sponsor's own page collects
-                // their seat, service record, and the rest of what they've introduced — and carries the official
-                // biography link onward, so nothing is lost by making this the first stop instead of the last.
-                <Link className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
-                  {bill.sponsor.fullName}
-                </Link>
-              ) : (
-                bill.sponsor.fullName
-              )}
-            </span>
-          ) : null}
-          {typeof bill.cosponsorTally?.current === "number" ? (
-            <span>
-              {bill.cosponsorTally.current} <GlossaryProse text={pluralize(bill.cosponsorTally.current, "Cosponsor")} />
-            </span>
-          ) : null}
-        </div>
-      </section>
+      <BillHero bill={bill} stage={stage} />
 
       <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
 
       <div className="detail-grid">
-        <DetailPanel headingId="journey-heading" kicker="How This Moves" heading="The Bill’s Journey">
-          <p className="muted-copy">
-            This is an orientation aid, not an official legal status. Read the latest action and primary source
-            alongside it.
-          </p>
-          <BillJourney stage={stage} compact={false} />
-        </DetailPanel>
-
-        <DetailPanel
-          accent
-          as="aside"
-          heading="What Happened Most Recently"
-          headingId="next-heading"
-          kicker="Latest Action"
-        >
-          {/* The one line on this page written in Congress's own voice rather than this app's — "Referred to the
-              Committee on…", "Passed Senate without amendment" — which makes it the place a reader is most likely to
-              hit a word they don't have. @see GlossaryProse. */}
-          <p className="latest-action-copy">
-            <GlossaryProse text={bill.latestAction.text} />
-          </p>
-          {bill.latestAction.date ? <p className="date-label">Recorded {formatDate(bill.latestAction.date)}</p> : null}
-          <OutboundLink href={bill.officialUrl}>Open the Official Record</OutboundLink>
-        </DetailPanel>
+        <JourneyPanel stage={stage} />
+        <LatestActionPanel bill={bill} />
       </div>
 
       <div className="detail-grid detail-grid--single">
-        <DetailPanel headingId="committees-heading" kicker="Who Has Held It" heading="Committees of Referral">
-          {committees.length > 0 ? (
-            <>
-              <p className="muted-copy">
-                {describeBillCollection({
-                  shown: committees.length,
-                  published: bill.collectionCounts?.committees,
-                  noun: "committee",
-                })}{" "}
-                They are listed in Congress.gov’s own order — the committee of primary jurisdiction first. Each links to
-                its record here. Most bills referred to a committee never leave it, so a referral says where a bill
-                went, not how it fared.
-              </p>
-              <CommitteeReferrals committees={committees} />
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="No committee referral appears on this bill’s record. A resolution taken up directly on the floor never acquires one, so this is an ordinary state rather than a gap."
-              previewLead="Committees of referral appear"
-              source={source}
-              unavailable={committeesUnavailable}
-              unavailableLead="Committees of referral are"
-              unavailableSubject="this bill was referred to any"
-            />
-          )}
-        </DetailPanel>
+        <CommitteesPanel published={counts?.committees} resource={committees} source={source} />
       </div>
 
-      {/* Sits here, between the committees that held the bill and the actions taken on it, because it answers the
-          question the hero's sponsor line opens and cannot close: one name introduced this, and these are the others
-          who put theirs to it. */}
       <div className="detail-grid detail-grid--single">
-        <DetailPanel headingId="cosponsors-heading" kicker="Who Else Put Their Name To It" heading="Cosponsors">
-          {cosponsors.length > 0 ? (
-            <>
-              <CosponsorList cosponsors={cosponsors} source={source} tally={bill.cosponsorTally} />
-              <p className="muted-copy">
-                Cosponsoring records that a member supported introducing a measure. It is not a vote, not a prediction,
-                and not a ranking — most cosponsored bills never reach a floor.
-              </p>
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="No member has cosponsored this bill. A measure can move through Congress on its sponsor’s name alone, so this is an ordinary state rather than a gap."
-              previewLead="Cosponsors appear"
-              source={source}
-              unavailable={cosponsorsUnavailable}
-              unavailableLead="Cosponsors are"
-              unavailableSubject="anyone signed on to this bill"
-            />
-          )}
-        </DetailPanel>
+        <CosponsorsPanel resource={cosponsors} source={source} tally={bill.cosponsorTally} />
       </div>
 
       <div className="detail-grid">
-        <DetailPanel headingId="actions-heading" kicker="Every Step on the Record" heading="What Congress Actually Did">
-          {actions.length > 0 ? (
-            <p className="muted-copy">
-              {describeBillCollection({
-                shown: actions.length,
-                published: bill.collectionCounts?.actions,
-                noun: "action",
-              })}{" "}
-              The same moment is often logged twice, by the chamber’s floor record and by the Library of Congress — both
-              are kept here rather than merged.
-            </p>
-          ) : (
-            <EmptySectionNote
-              absence="No action history could be read for this bill."
-              previewLead="The action history appears"
-              source={source}
-              unavailable={actionsUnavailable}
-              unavailableLead="The action history is"
-              unavailableSubject="anything has happened to this bill"
-            />
-          )}
-          <ActionHistory actions={actions} />
-        </DetailPanel>
-
-        <DetailPanel
-          accent
-          as="aside"
-          heading="Recorded Votes"
-          headingId="votes-heading"
-          kicker="Where Names Went on the Record"
-        >
-          {source === "preview" ? (
-            <p className="muted-copy">{previewPendingCopy("Recorded votes appear")}</p>
-          ) : (
-            <RecordedVotes votes={votes} unavailable={actionsUnavailable} />
-          )}
-        </DetailPanel>
+        <ActionsPanel published={counts?.actions} resource={actions} source={source} />
+        <RecordedVotesPanel resource={actions} source={source} />
       </div>
 
-      {/* Directly under the action history, which is where a reader meets these first: an amendment vote appears there
-          as a sentence naming a number ("On agreeing to the Lee (NV) amendment (A009)…"), and this is the section that
-          turns that number into a record they can open. */}
       <div className="detail-grid detail-grid--single">
-        <DetailPanel headingId="amendments-heading" kicker="What Was Proposed to Change It" heading="Amendments">
-          {amendments.length > 0 ? (
-            <>
-              <p className="muted-copy">
-                {describeBillCollection({
-                  shown: amendments.length,
-                  published: bill.collectionCounts?.amendments,
-                  noun: "amendment",
-                })}{" "}
-                {describeAmendmentDetail(
-                  amendments.filter((amendment: BillAmendment): boolean => amendment.purpose !== undefined).length,
-                  amendments.length,
-                )}{" "}
-                They are in Congress.gov’s own order, which the API documents no meaning for, so neither end of this
-                list is the most recent. An amendment being offered is not an amendment being adopted — most are never
-                voted on.
-              </p>
-              <AmendmentList amendments={amendments} />
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="No amendment was offered to this bill. Most bills never reach a stage where one could be, so this is an ordinary state rather than a gap."
-              previewLead="Amendments appear"
-              source={source}
-              unavailable={amendmentsUnavailable}
-              unavailableLead="Amendments are"
-              unavailableSubject="any amendment was offered to this bill"
-            />
-          )}
-        </DetailPanel>
+        <AmendmentsPanel published={counts?.amendments} resource={amendments} source={source} />
       </div>
 
       <div className="detail-grid">
-        <DetailPanel headingId="summary-heading" kicker="In Plain English" heading="What This Bill Would Do">
-          {summary ? (
-            <>
-              <SummaryCaption summary={summary} source={source} />
-              <SummaryBody summary={summary} />
-              {earlierSummaries.length > 0 ? (
-                <>
-                  <p className="muted-copy">
-                    {describeBillCollection({
-                      shown: summaries.length,
-                      published: bill.collectionCounts?.summaries,
-                      noun: "Congressional Research Service summary",
-                      pluralNoun: "Congressional Research Service summaries",
-                    })}{" "}
-                    The one above is the most recent; earlier ones may describe an earlier version of the text.
-                  </p>
-                  {/* Kept collapsed rather than dropped: an earlier summary isn't stale, it's an accurate description
-                      of a real earlier version of the bill, and comparing the two is one of the clearest ways to see
-                      what a chamber actually changed. */}
-                  <details className="summary-history">
-                    <summary className="summary-history__toggle">
-                      Read the {earlierSummaries.length} Earlier{" "}
-                      {pluralize(earlierSummaries.length, "Summary", "Summaries")}
-                    </summary>
-                    <ol className="summary-history__list">
-                      {earlierSummaries.map(
-                        (earlier: BillSummary): JSX.Element => (
-                          <li key={`${earlier.versionCode}-${earlier.actionDate ?? earlier.actionDesc}`}>
-                            <SummaryCaption summary={earlier} source={source} />
-                            <SummaryBody summary={earlier} />
-                          </li>
-                        ),
-                      )}
-                    </ol>
-                  </details>
-                </>
-              ) : null}
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="The Congressional Research Service hasn't published a summary for this bill yet."
-              previewLead="Summaries appear"
-              source={source}
-              unavailable={summariesUnavailable}
-              unavailableLead="Summaries are"
-              unavailableSubject="the Congressional Research Service has written one"
-            />
-          )}
-        </DetailPanel>
-
-        <DetailPanel
-          accent
-          as="aside"
-          heading="Read the Full Text"
-          headingId="fulltext-heading"
-          kicker="Primary Source"
-        >
-          {textVersions.length > 0 ? (
-            <>
-              {/* The collection where a gap between the published figure and the shown one is most expected:
-                  `mapCongressTextVersion` drops a version carrying no linkable rendering, since a heading with nothing
-                  behind it is not a row. Naming both figures is what keeps that drop from reading as the record being
-                  shorter than it is. */}
-              <p className="muted-copy">
-                {describeBillCollection({
-                  shown: textVersions.length,
-                  published: bill.collectionCounts?.textVersions,
-                  noun: "text version",
-                })}{" "}
-                Each links to Congress.gov’s own documents rather than to text re-hosted here.
-              </p>
-              <ul className="text-version-list">
-                {textVersions.map(
-                  (version: BillTextVersion, index: number): JSX.Element => (
-                    <li key={`${version.type}-${version.date ?? index}`}>
-                      <p className="text-version-list__type">
-                        {version.type}
-                        {version.date ? ` · ${formatDate(version.date)}` : ""}
-                      </p>
-                      <div className="text-version-list__formats">
-                        {version.formats.map(
-                          (format: BillTextFormat): JSX.Element => (
-                            <OutboundLink key={format.url} href={format.url} iconSize={13}>
-                              {format.type}
-                            </OutboundLink>
-                          ),
-                        )}
-                      </div>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="Congress.gov hasn't published bill text for this record yet."
-              previewLead="Full-text links appear"
-              source={source}
-              unavailable={textVersionsUnavailable}
-              unavailableLead="Full-text links are"
-              unavailableSubject="Congress.gov has published any text for this bill"
-            />
-          )}
-        </DetailPanel>
+        <SummariesPanel published={counts?.summaries} resource={summaries} source={source} />
+        <TextVersionsPanel published={counts?.textVersions} resource={textVersions} source={source} />
       </div>
 
-      {/* Last of the record sections, and outward-facing on purpose: everything above is about this bill, and this is
-          where a reader leaves it for the companion measure in the other chamber. */}
       <div className="detail-grid detail-grid--single">
-        <DetailPanel headingId="related-heading" kicker="Elsewhere in Congress" heading="Related Measures">
-          {related.length > 0 ? (
-            <>
-              <p className="muted-copy">
-                {describeBillCollection({
-                  shown: related.length,
-                  published: bill.collectionCounts?.relatedBills,
-                  noun: "related measure",
-                })}{" "}
-                Each is listed with the body that identified the relationship — the Congressional Research Service, the
-                House, or the Senate — because relating two measures is a judgment someone made rather than something
-                the bills themselves record. They are in Congress.gov’s own order, which the API documents no meaning
-                for, so neither end of this list is the most significant.
-              </p>
-              <RelatedBillList related={related} />
-            </>
-          ) : (
-            <EmptySectionNote
-              absence="Congress.gov records no measure as related to this one. Most bills have no companion, so this is an ordinary state rather than a gap."
-              previewLead="Related measures appear"
-              source={source}
-              unavailable={relatedUnavailable}
-              unavailableLead="Related measures are"
-              unavailableSubject="any measure is recorded as related to this one"
-            />
-          )}
-        </DetailPanel>
+        <RelatedPanel published={counts?.relatedBills} resource={related} source={source} />
       </div>
 
       <CalloutCard

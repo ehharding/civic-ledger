@@ -65,12 +65,13 @@ upstream read fails. Preview content is fictional and is never presented as live
 - **No placeholder has a face.** The member directory shows portraits, which makes this the sharpest form of the rule
   above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a photograph
   is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from every fixture
-  and `member-directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
+  and `src/lib/congress/members/directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
 - **Preview cosponsors reuse the placeholder members and widen the fiction by nobody.** The no-key build serves fixture
   cosponsors so the static demo — the only build a UI reviewer can see — shows that section working rather than showing
   its empty state. Every name in `previewCosponsors` is one of the seven placeholder people the fixtures already name as
   sponsors: each already has a preview page, and each carries a `PREVIEW-n` id that deliberately fails `isBioguideId`.
-  `bill-cosponsors.test.ts` asserts that membership rather than leaving it to whoever edits the fixtures next.
+  `src/lib/congress/bills/cosponsors.test.ts` asserts that membership rather than leaving it to whoever edits the
+  fixtures next.
 - **A preview record never credits Congress.gov with a count.** This is sharper for cosponsors than for any other
   collection, because a fixture bill genuinely *does* carry a cosponsor tally — the fixtures set one so the bill hero's
   meta row has a number to show. Passing it into the section's count sentence would print "Congress.gov records 12
