@@ -2,10 +2,10 @@
  * Covers the learning-module registry's invariants.
  *
  * These are content tests, which is unusual — but the rules in `lessons.ts`'s module comment are the reason
- * `docs/roadmap.md` allowed a second and third module at all, and a rule with no enforcement point is a wish. What is
- * pinned here is not the prose (that changes) but the properties every module has to keep: it cites primary sources, it
- * says what it leaves out, its steps are numbered from a single list, and the lifecycle module still walks the same
- * five stages the rest of the app draws.
+ * `docs/roadmap.md` allowed a second, third, and fourth module at all, and a rule with no enforcement point is a wish.
+ * What is pinned here is not the prose (that changes) but the properties every module has to keep: it cites primary
+ * sources, it says what it leaves out, its steps are numbered from a single list, and the lifecycle module still walks
+ * the same five stages the rest of the app draws.
  */
 import { describe, expect, it } from "vitest";
 
@@ -22,16 +22,17 @@ const ALLOWED_SOURCE_HOSTS: readonly string[] = [
 ];
 
 describe("lessons", (): void => {
-  it("ships the three modules the roadmap named, in reading order", (): void => {
+  it("ships the four modules the roadmap named, in reading order", (): void => {
     expect(lessons.map((lesson: Lesson): string => lesson.slug)).toEqual([
       "how-a-bill-becomes-law",
       "what-committees-do",
       "how-congress-votes",
+      "how-an-amendment-changes-a-bill",
     ]);
   });
 
   it("numbers every lesson by its position, so no two can claim the same number", (): void => {
-    expect(lessons.map(lessonNumber)).toEqual([1, 2, 3]);
+    expect(lessons.map(lessonNumber)).toEqual([1, 2, 3, 4]);
   });
 
   it("gives every lesson steps, limits, and sources", (): void => {
@@ -99,7 +100,7 @@ describe("the bill-lifecycle module", (): void => {
   });
 });
 
-describe("the committee and voting modules", (): void => {
+describe("the three modules that are not the lifecycle", (): void => {
   it("pin the stepper only where a step really is a stage", (): void => {
     // A "you are here" cue, not a second diagram of the process — one step each. @see LessonStep.
     for (const lesson of lessons.slice(1)) {
@@ -124,6 +125,25 @@ describe("the committee and voting modules", (): void => {
   it("says outright that this app publishes no committee roster", (): void => {
     const committees: Lesson = lessons[1] as Lesson;
     expect(committees.limits.join(" ")).toMatch(/roster/i);
+  });
+
+  it("draws the amendment line where it actually falls, in both directions", (): void => {
+    // The same standard the voting module is held to, and the sharp case for this module: the bill page *does* name
+    // every amendment offered and *does* print a latest action for the few entries that carry one, so a limits list
+    // claiming the app shows nothing would send a reader away from something that is on the page. It has to say which
+    // half is missing rather than that the whole is.
+    const amendments: Lesson = lessons[3] as Lesson;
+    const limits: string = amendments.limits.join(" ");
+
+    expect(limits).toMatch(/names every amendment offered to it/i);
+    expect(limits).toMatch(/latest action/i);
+    // The genuinely out-of-reach parts, which is what a limits list is for.
+    expect(limits).toMatch(/publishes no sponsor/i);
+    expect(limits).toMatch(/250-record page/i);
+  });
+
+  it("refuses to infer an amendment's sponsor, the same refusal the committee module makes about a roster", (): void => {
+    expect((lessons[3] as Lesson).limits.join(" ")).toMatch(/will not infer/i);
   });
 });
 

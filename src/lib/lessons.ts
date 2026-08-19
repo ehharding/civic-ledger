@@ -72,7 +72,11 @@ export type LessonNext = {
 };
 
 /** The slugs `/learn/[slug]` serves. A closed union so a mistyped slug is a type error rather than a 404. */
-export type LessonSlug = "how-a-bill-becomes-law" | "what-committees-do" | "how-congress-votes";
+export type LessonSlug =
+  | "how-a-bill-becomes-law"
+  | "what-committees-do"
+  | "how-congress-votes"
+  | "how-an-amendment-changes-a-bill";
 
 /** One learning module, in full. @see the module comment for the rules every one of these holds. */
 export type Lesson = {
@@ -110,6 +114,19 @@ const HOUSE_IN_COMMITTEE: LessonSource = {
   title: "In Committee",
   publisher: "house.gov",
   href: "https://www.house.gov/the-house-explained/the-legislative-process/in-committee",
+};
+
+/** The two pages the voting module cites that the amendment module needs too. @see HOUSE_IN_COMMITTEE. */
+const HOUSE_FLOOR: LessonSource = {
+  title: "House Floor",
+  publisher: "house.gov",
+  href: "https://www.house.gov/the-house-explained/the-legislative-process/house-floor",
+};
+
+const SENATE_FILIBUSTERS_CLOTURE: LessonSource = {
+  title: "About Filibusters and Cloture",
+  publisher: "U.S. Senate",
+  href: "https://www.senate.gov/about/powers-procedures/filibusters-cloture.htm",
 };
 
 const CONSTITUTION_TRANSCRIPT: LessonSource = {
@@ -166,10 +183,14 @@ const billLifecycleSteps: LessonStep[] = billStages.map(
  * The order is the lesson numbering: a module's position here is what the hub prints as "Lesson 2" and what its own
  * page prints in its eyebrow, so the number is never written down anywhere it can disagree with the sequence.
  *
- * The sequence itself is an argument. The lifecycle comes first because it is the frame the other two sit inside.
+ * The sequence itself is an argument. The lifecycle comes first because it is the frame the other three sit inside.
  * Committees come second because that is where the large majority of bills actually end, which the first lesson states
- * and does not explain. Voting comes last because it is the one most likely to be read for a specific bill, and it is
+ * and does not explain. Voting comes third because it is the one most likely to be read for a specific bill, and it is
  * the most honest to read *after* knowing how little of the process is settled by a vote at all.
+ *
+ * Amendments come last because they presume all three. The first lesson's own limits list names them as the thing it
+ * folded away — everything the two chambers traded to reach identical text happens inside its single "Passed a Chamber"
+ * step — so this module is that admission paid off, and it cannot be read before the step it is unpacking.
  */
 export const lessons: readonly Lesson[] = [
   {
@@ -187,7 +208,8 @@ export const lessons: readonly Lesson[] = [
       "A veto is not a stage of its own here. Congress can override one with a two-thirds vote in both chambers, and " +
         "a bill the President neither signs nor returns before Congress adjourns fails without a veto ever being cast.",
       "The two chambers rarely pass identical text on the first try. Amendments traded back and forth — and the " +
-        "conference committees that sometimes settle them — all happen inside the single step labeled “Passed a Chamber.”",
+        "conference committees that sometimes settle them — all happen inside the single step labeled “Passed a " +
+        "Chamber.”",
       "The stage shown on a bill page is inferred from the wording of its latest action, not read from a legal " +
         "determination. It can orient you; the official record decides.",
     ],
@@ -369,24 +391,115 @@ export const lessons: readonly Lesson[] = [
         publisher: "U.S. Senate",
         href: "https://www.senate.gov/about/powers-procedures/voting.htm",
       },
-      {
-        title: "About Filibusters and Cloture",
-        publisher: "U.S. Senate",
-        href: "https://www.senate.gov/about/powers-procedures/filibusters-cloture.htm",
-      },
+      SENATE_FILIBUSTERS_CLOTURE,
       { title: "Roll Call Votes", publisher: "U.S. Senate", href: "https://www.senate.gov/legislative/votes_new.htm" },
       { title: "Roll Call Votes", publisher: "Office of the Clerk, U.S. House", href: "https://clerk.house.gov/Votes" },
-      {
-        title: "House Floor",
-        publisher: "house.gov",
-        href: "https://www.house.gov/the-house-explained/the-legislative-process/house-floor",
-      },
+      HOUSE_FLOOR,
       CONSTITUTION_TRANSCRIPT,
     ],
     next: {
       kicker: "See What the Record Does Say",
       heading: "A Bill's Own Page Names Every Recorded Vote Taken on It.",
       body: "Open a bill and read its action history — then follow each roll call to the chamber's own tally for the numbers.",
+      href: "/bills" as Route,
+      linkLabel: "Explore Bills",
+    },
+  },
+  {
+    slug: "how-an-amendment-changes-a-bill",
+    title: "How an Amendment Changes a Bill",
+    // Kept to a few words for the display clamp `PageHeader` uses, like the committee module's. The full claim is in
+    // `summary` and `intro`, which are set at reading size.
+    heading: "The Text Is Not Fixed.",
+    summary:
+      "Markup, floor amendments, second-degree amendments, and the trading between chambers — how a bill's text" +
+      "changes between introduction and passage.",
+    intro:
+      "A bill's number stays the same from introduction to enactment; its text very often does not. Amendments are " +
+      "how that happens, and they are the part of the process a bill's own record shows least of.",
+    stepNoun: "Step",
+    steps: [
+      {
+        id: "what-an-amendment-is",
+        heading: "A Change to Something Already Pending",
+        copy:
+          "An amendment is a proposal to change the text of a measure that is already before a committee or a " +
+          "chamber. It is offered by a member, it gets a number of its own — S.Amdt. 2849, H.Amdt. 74 — and it has " +
+          "its own record, separate from the bill's. Offering one is not passing one: most amendments are never " +
+          "voted on, and a bill's record lists the ones offered to it without saying which of them changed anything.",
+      },
+      {
+        id: "in-markup",
+        heading: "Most Changes Happen in Committee",
+        copy:
+          "The markup is where a bill is most likely to be rewritten, and where the fewest people are watching. A " +
+          "committee can amend a section, strike one, or replace the entire text with a substitute — an amendment " +
+          "that swaps out everything after the enacting clause. A bill reported out of committee is frequently not " +
+          "the bill that went in, which is why the earlier summaries on a bill's page are worth reading rather than " +
+          "skipping.",
+      },
+      {
+        id: "on-the-floor",
+        heading: "On the Floor, Under Different Rules",
+        copy:
+          "The two chambers handle floor amendments almost oppositely. In the House, the Rules Committee usually " +
+          "decides in advance which amendments may even be offered, and an amendment must generally be germane to " +
+          "the bill. The Senate has no such gatekeeper for most bills and no general germaneness requirement, which " +
+          "is how a provision on an unrelated subject can be attached to a measure there. After cloture, the Senate " +
+          "requires germaneness too.",
+        stage: "chamber",
+      },
+      {
+        id: "amendments-to-amendments",
+        heading: "Amendments to Amendments",
+        copy:
+          "An amendment can itself be amended. A second-degree amendment changes the pending amendment rather than " +
+          "the bill, and both chambers cap how deep this can go — which is a procedural rule with real strategic " +
+          "weight, since filling the available slots is a recognized way to keep anyone else from offering anything.",
+      },
+      {
+        id: "between-the-chambers",
+        heading: "Traded Between the Chambers",
+        copy:
+          "Both chambers must pass identical text. When the second chamber amends what the first one sent, the " +
+          "measure goes back — each chamber accepting, rejecting, or further amending the other's changes, sometimes " +
+          "several times over. A conference committee can be appointed to settle the difference instead. This is the " +
+          "whole of what the lifecycle module folds into the words “Passed a Chamber.”",
+      },
+    ],
+    limitsHeading: "What This App Cannot Tell You About an Amendment",
+    limits: [
+      "Whether it was adopted. A bill's page names every amendment offered to it and links each one's own record, " +
+        "and for the small share of entries where Congress.gov publishes a latest action, that line is printed too. " +
+        "For the rest — the large majority — the disposition is on the amendment's own record, not on the bill's.",
+      "What it actually says. The amendment's text is published on its own record at Congress.gov, and this app " +
+        "links there rather than re-hosting it, the same way it treats a bill's own text.",
+      "Who offered it. Congress.gov's bill-level amendment collection publishes no sponsor for its entries, and this " +
+        "project will not infer one — so an amendment is named here without being attributed to anyone.",
+      "Every amendment, on the most amended bills. This app reads one 250-record page, and a reconciliation bill can " +
+        "draw twice that. Where the published count is higher than the number of rows, the page states both figures " +
+        "rather than presenting its own shorter list as the whole record.",
+    ],
+    sources: [
+      HOUSE_IN_COMMITTEE,
+      HOUSE_FLOOR,
+      {
+        title: "To the Senate",
+        publisher: "house.gov",
+        href: "https://www.house.gov/the-house-explained/the-legislative-process/to-the-senate",
+      },
+      {
+        title: "About Senate Rules",
+        publisher: "U.S. Senate",
+        href: "https://www.senate.gov/about/powers-procedures/rules.htm",
+      },
+      SENATE_FILIBUSTERS_CLOTURE,
+      CONSTITUTION_TRANSCRIPT,
+    ],
+    next: {
+      kicker: "See What Was Offered",
+      heading: "A Bill's Own Page Names Every Amendment Offered to It.",
+      body: "Open a heavily amended bill and read its amendments section — each row links to that amendment's own record at Congress.gov.",
       href: "/bills" as Route,
       linkLabel: "Explore Bills",
     },

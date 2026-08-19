@@ -6,7 +6,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SiteShell } from "@/components/layout/site-shell";
 import { LessonIndex } from "@/components/learn/lesson-index";
 import { CalloutCard } from "@/components/ui/callout-card";
+import { formatSpelledCount } from "@/lib/format";
 import { type GlossaryTerm, glossary, glossaryEntryId } from "@/lib/glossary";
+import { lessons } from "@/lib/lessons";
 import { pageMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = pageMetadata({
@@ -39,7 +41,9 @@ export default function LearnPage(): JSX.Element {
       <section className="section-heading" aria-labelledby="lessons-heading">
         <div>
           <p className="section-kicker">Lessons</p>
-          <h2 id="lessons-heading">Three Walkthroughs, Each Citing Its Sources.</h2>
+          {/* The count is derived from the registry rather than typed, so a module added to `lessons` cannot leave
+              this heading confidently wrong about how many there are. @see formatSpelledCount. */}
+          <h2 id="lessons-heading">{formatSpelledCount(lessons.length)} Walkthroughs, Each Citing Its Sources.</h2>
         </div>
       </section>
 

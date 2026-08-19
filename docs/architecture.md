@@ -101,6 +101,7 @@ committees, `committees/model.ts` is what a committee *is*, and neither name has
 | `bills/committees.ts`       | Which committees held a bill, and what each of them did with it.              |
 | `bills/cosponsors.ts`       | Who put their name to a bill they did not introduce.                          |
 | `bills/related.ts`          | The other measures a bill is recorded as related to, and who said so.         |
+| `bills/amendments.ts`       | The amendments offered to a bill — mostly citations, and honest about that.   |
 | `bills/search.ts`           | The bill directory's matching, citation parsing, and URL rules. Pure.         |
 | `bills/stage.ts`            | The stage cue: from the record where it says, from codes or prose otherwise.  |
 | `bills/sanitize-summary.ts` | The allow-listed CRS summary sanitizer. Builds output; never patches input.   |
@@ -217,7 +218,8 @@ fixtures rather than sent upstream.
 ### A Bill's Committees, and Why That Direction Is the Cheap One
 
 `/bills/[congress]/[type]/[number]` reads `/v3/bill/{congress}/{type}/{number}/committees` alongside the bill itself,
-its summaries, its text versions, and its actions — five independent reads, issued together.
+its summaries, its text versions, its actions, its cosponsors, its related measures, and its amendments — eight
+independent reads, issued together.
 
 This is the mirror image of the committee page's referral list below, and it is the far cheaper direction. Asking a
 *committee* which bills it handled costs one request for the referrals plus one bill lookup per row, because that
@@ -239,6 +241,38 @@ like a working feature. Subcommittees *are* sorted alphabetically, because their
 two or three of them beside one real activity. Printing it tells a reader nothing and reads as a gap in this app rather
 than in the record. Nothing is renamed or reinterpreted; what is declined is the printing of a non-answer, and a
 committee that named none of its activities still appears, with no activity line at all.
+
+### A Bill's Amendments Are a List of References, Not of Descriptions
+
+`bills/amendments.ts` reads `/v3/bill/{congress}/{type}/{number}/amendments`, and the shape of that payload is the whole
+design constraint. Every entry carries `congress`, `type`, and `number`. Roughly one in fifteen carries a `purpose` or a
+`latestAction`, and fewer than one in fifty carries a `description` — measured across the two most amended bills in
+recent Congresses, HR 1 of the 119th (493 amendments) and HR 3684 of the 117th (539).
+
+Three consequences follow, and each is a decision rather than an accident.
+
+**The completeness bar is identity alone.** `mapRelatedBill` drops a measure with no title, because the title *is* the
+row. `mapBillAmendment` drops nothing but an entry it could not cite or link, because an amendment's row is labeled by
+its own citation. Applying the related-measures bar here would discard fourteen entries in fifteen and leave the section
+showing thirty rows under a published count of 493.
+
+**The section says the sparseness is the record's.** `describeAmendmentDetail` counts how many of the listed amendments
+carry a purpose and prints that figure. A screen of bare citations with no explanation reads as this app having failed
+to load something; the same screen under "Congress.gov publishes no purpose text for any of them here" reads as the
+record. The count is this app's tally of a published field, not a published figure, and the sentence is worded to say
+so — the same distinction `describeOriginalCosponsors` keeps.
+
+**The link goes outward, and it is the only collection on that page where it does.** Cosponsors, committees, and related
+measures each have a page here that collects more than the row does. An amendment does not, so the honest destination is
+Congress.gov's own record. That URL is derived by `congressGovAmendmentUrl` rather than taken from the entry's `url`,
+which is the self-referential API link — the same rule `congressGovBillUrl` follows. The derivation is not guessed: the
+pattern is read from the `latestAction.links` array Congress.gov publishes on an amendment's own item-level record, and
+that record is not fetched at runtime only because doing so would cost one request per amendment on a collection that
+runs to several hundred.
+
+The publisher's order is kept and `dateKey` is omitted, as in `related.ts`. The only date on an entry is `updateDate`,
+which records when Congress.gov last touched the row rather than when anything happened to the amendment; ordering by it
+would present a maintenance timestamp to a reader as chronology.
 
 ### A Committee's Own Records
 

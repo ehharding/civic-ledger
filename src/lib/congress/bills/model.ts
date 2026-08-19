@@ -108,6 +108,111 @@ export function congressGovBillUrl(bill: { congress: number | string; type: stri
 }
 
 /**
+ * Congress.gov's own URL path segment for each amendment type.
+ *
+ * The same split {@link CONGRESS_GOV_BILL_PATHS} keeps, for the same reason: the public site spells the type out
+ * (`/amendment/119th-congress/senate-amendment/2849`) where the API uses a short code (`SAMDT`). Keyed by the
+ * upper-cased code, which is the form {@link BillAmendment.type} is normalized to.
+ *
+ * Two entries rather than the API's full vocabulary, because two is what the API actually publishes: a sweep of the
+ * amendment list endpoint across the 116th to 119th Congresses returns `SAMDT` and `HAMDT` and nothing else. A type
+ * outside this map falls back to {@link CONGRESS_GOV_HOME} rather than being guessed at.
+ */
+const CONGRESS_GOV_AMENDMENT_PATHS: Readonly<Record<string, string>> = {
+  HAMDT: "house-amendment",
+  SAMDT: "senate-amendment",
+};
+
+/**
+ * Builds the public Congress.gov page for an amendment, e.g.,
+ * `https://www.congress.gov/amendment/119th-congress/senate-amendment/2849`.
+ *
+ * Derived rather than passed through, exactly as {@link congressGovBillUrl} is and for exactly the same reason: the
+ * `url` on an amendment entry is the self-referential API link, which serves JSON and 403s without a key of the
+ * reader's own.
+ *
+ * **The derivation is not a guess.** Congress.gov publishes this URL itself, in the `latestAction.links` array on the
+ * amendment's own item-level record — that is where this pattern was read from rather than inferred. It is not read
+ * from there at runtime because reaching it would cost one extra upstream request *per amendment*, on a collection that
+ * runs to several hundred entries for a bill like HR 1.
+ *
+ * @param amendment - Anything carrying an amendment's natural identifier, in either the numeric or string `congress`
+ *   form.
+ * @returns The amendment's public URL, or {@link CONGRESS_GOV_HOME} for an unrecognized type or an unusable
+ *   Congress — a link to the right site beats a confidently-wrong deep link to a page that doesn't exist.
+ */
+export function congressGovAmendmentUrl(amendment: {
+  congress: number | string;
+  type: string;
+  number: string;
+}): string {
+  const typePath: string | undefined = CONGRESS_GOV_AMENDMENT_PATHS[String(amendment.type).toUpperCase()];
+  const congress: number = Number(amendment.congress);
+
+  if (!typePath || !Number.isInteger(congress) || congress <= 0) return CONGRESS_GOV_HOME;
+
+  return `https://www.congress.gov/amendment/${formatOrdinal(congress)}-congress/${typePath}/${amendment.number}`;
+}
+
+/**
+ * One amendment offered to a bill, as the bill's own `/amendments` collection records it.
+ *
+ * A *reference*, and deliberately typed as one: `congress`, `type`, and `number` are required because they are what
+ * every entry carries and what its link is built from, and everything else is optional because the endpoint sends it
+ * for roughly one entry in fifteen. @see congressApiBillAmendmentSchema for the measurement behind that figure.
+ *
+ * The consequence for the page is worth stating here rather than only at the view: an amendment row is usually a
+ * citation and a link, not a description. That is the record's shape, and a section that rendered it as though prose
+ * were merely missing would read as a fault in this app rather than as a fact about the collection.
+ */
+export type BillAmendment = {
+  congress: number;
+  /** The upper-cased type code, `"HAMDT"` or `"SAMDT"`. @see CONGRESS_GOV_AMENDMENT_PATHS */
+  type: string;
+  number: string;
+  /**
+   * What the amendment says it does, in its own voice — `"To strike a provision relating to…"`.
+   *
+   * Prefers the record's `purpose` and falls back to its `description`, which is the longer contextual note the House
+   * attaches to an amendment printed in a report. Absent on most entries.
+   */
+  purpose?: string;
+  /** The amendment's own latest action, when the entry carried one with text. */
+  latestAction?: {
+    date?: string;
+    text: string;
+  };
+  /** The amendment's public Congress.gov page. @see congressGovAmendmentUrl */
+  officialUrl: string;
+};
+
+/**
+ * How Congress.gov's short amendment codes are cited in prose: `"SAMDT"` becomes `"S.Amdt."`.
+ *
+ * The wire code is not a citation. Congress's own records, and Congress.gov's own pages, write these as "S.Amdt. 2849"
+ * and "H.Amdt. 74" — so printing the raw `SAMDT` would show a reader a string they will not find anywhere they go
+ * looking to check it, which is the one thing a provenance-first surface should not do with an identifier.
+ */
+const AMENDMENT_TYPE_CITATIONS: Readonly<Record<string, string>> = {
+  HAMDT: "H.Amdt.",
+  SAMDT: "S.Amdt.",
+};
+
+/**
+ * How an amendment is cited on screen, e.g., `"S.Amdt. 2849"`.
+ *
+ * In the model rather than at the view, on the rule the rest of this layer follows: what a reader is told is display
+ * wording, so it belongs somewhere a unit test can reach without rendering a page. @see formatEnactedLaw.
+ *
+ * @param amendment - The amendment to cite.
+ * @returns The citation. An unrecognized type falls back to the code as published rather than to a guessed
+ *   abbreviation — showing Congress.gov's own string is honest, and inventing a period-separated one is not.
+ */
+export function formatAmendmentCitation(amendment: Pick<BillAmendment, "type" | "number">): string {
+  return `${AMENDMENT_TYPE_CITATIONS[amendment.type] ?? amendment.type} ${amendment.number}`;
+}
+
+/**
  * A reference to one recorded (roll-call) vote taken on a bill.
  *
  * Deliberately a *reference* and not a tally. This app holds no vote counts and no member positions: what it carries is
@@ -177,6 +282,31 @@ export function formatEnactedLaw(law: EnactedLaw): string {
 }
 
 /**
+ * Says how many of the listed amendments came with any prose at all.
+ *
+ * This is the sentence that keeps the section from reading as broken. Congress.gov's bill-level amendment collection
+ * publishes a purpose for roughly one entry in fifteen, so a reader scrolling three hundred bare citations needs to be
+ * told that the sparseness is the record's rather than this page's — and told it with a number, since "some" invites
+ * the reader to wonder whether this app dropped the rest.
+ *
+ * The count is this app's own tally of a published field, not a published figure, and the wording says so — the same
+ * distinction {@link describeOriginalCosponsors} keeps.
+ *
+ * @param described - How many of the listed amendments carry a purpose.
+ * @param total - How many are listed.
+ * @returns The sentence, or an empty string when there is nothing listed to describe.
+ */
+export function describeAmendmentDetail(described: number, total: number): string {
+  if (total === 0) return "";
+  if (described === 0) {
+    return "Congress.gov publishes no purpose text for any of them here, so each row is the amendment's citation and a link to its own record.";
+  }
+  if (described === total) return "Each carries the purpose the record states for it.";
+
+  return `${described} of them carry the purpose the record states; the rest are published here as citations only, with their text on the amendment's own record.`;
+}
+
+/**
  * Congress.gov's own counts for the four collections hanging off a bill.
  *
  * Read rather than inferred from the arrays this app fetched, on the rule that governs `laws` and `legislationUrl`
@@ -197,6 +327,14 @@ export type BillCollectionCounts = {
   summaries?: number;
   textVersions?: number;
   relatedBills?: number;
+  /**
+   * The one count where the two figures routinely disagree by a wide margin rather than by one or two.
+   *
+   * A heavily amended bill carries several hundred amendments and this app fetches a single 250-record page, so
+   * `describeBillCollection` prints "Congress.gov records 493 … this page shows 250" as the ordinary case here instead
+   * of the rare one. That is the sentence doing exactly the job it exists for.
+   */
+  amendments?: number;
 };
 
 /**

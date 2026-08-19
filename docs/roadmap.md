@@ -19,22 +19,33 @@ anything resembling notification.
 which is why it is the first thing that needs auth — and why the schema's scope note is worth keeping honest as it
 grows: congressional records are not stored there and are not mirrored.
 
-## 3. A Fourth Learning Module
+## 3. A Fifth Learning Module
 
-Three modules are built — the bill lifecycle, what a committee does, and how Congress votes — sharing one registry
-(`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fourth is an edit to that file rather than a new page. The
-standing condition on any module is that it cites its sources and prints what it leaves out. See
-[Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the rule and its
+Four modules are built — the bill lifecycle, what a committee does, how Congress votes, and how an amendment changes a
+bill — sharing one registry (`src/lib/lessons.ts`) and one route (`/learn/[slug]`), so a fifth is an edit to that file
+rather than a new page. The standing condition on any module is that it cites its sources and prints what it leaves out.
+See [Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the rule and its
 enforcement point.
 
-**What a fourth module may need first, and none of the three do: a retrieval date.** Every citation today is a stable
+The fourth was the amendment module, added alongside the bill page's amendments section, and the two were written
+together on purpose: the module explains a process, the section shows that process's records, and each states the same
+limit about the other — that a bill's amendment collection names what was offered without saying what became of it.
+
+**What a further module may need, and none of the four do: a retrieval date.** Every citation today is a stable
 explanatory page on house.gov, senate.gov, clerk.house.gov, or the National Archives — documents whose content is not
-versioned by when you read them. A module citing a CRS report, a specific Congress's rules, or anything else that is
-revised in place needs the date it was read printed beside the link, and `LessonSource` carries no such field. Add it
-with the first citation that requires it, not before.
+versioned by when you read them. The amendment module was checked against this before it was written, which is why it
+cites `senate.gov/about/powers-procedures/rules.htm` rather than a specific Congress's standing rules. A module citing a
+CRS report, a specific Congress's rules, or anything else that is revised in place needs the date it was read printed
+beside the link, and `LessonSource` carries no such field. Add it with the first citation that requires it, not before.
+
+**One thing to know before adding a citation: senate.gov soft-404s.** A retired senate.gov path returns `200` with a
+body titled "U.S. Senate: 404 Error Page", so a link check that reads status codes passes on a dead link. Verify a new
+senate.gov citation by its page title. congress.gov, separately, refuses automated requests outright with a `403`, so a
+`403` there is not evidence the page is missing.
 
 The glossary stays uncited by design. The line is length, not rigor: a one-line definition is vocabulary anyone can
-confirm in a sentence, and a five-step explanation is a claim.
+confirm in a sentence, and a five-step explanation is a claim. What it owes instead is coverage of the terms the lessons
+lean on — which is why the amendment module arrived with "Amendment" and "Germane" added to it.
 
 ## 4. Committee Membership — Blocked
 

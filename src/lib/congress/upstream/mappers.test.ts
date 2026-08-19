@@ -153,6 +153,7 @@ describe("mapCongressBill", (): void => {
         summaries: { count: 5 },
         textVersions: { count: 6 },
         relatedBills: { count: 38 },
+        amendments: { count: 493 },
       }),
     );
 
@@ -162,6 +163,7 @@ describe("mapCongressBill", (): void => {
       summaries: 5,
       textVersions: 6,
       relatedBills: 38,
+      amendments: 493,
     });
   });
 
@@ -174,6 +176,7 @@ describe("mapCongressBill", (): void => {
       summaries: undefined,
       textVersions: undefined,
       relatedBills: undefined,
+      amendments: undefined,
     });
   });
 

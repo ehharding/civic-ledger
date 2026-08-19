@@ -28,10 +28,13 @@ import {
   billStages,
   CONGRESS_GOV_HOME,
   compareBillsByRecency,
+  congressGovAmendmentUrl,
   congressGovBillUrl,
+  describeAmendmentDetail,
   describeBillCollection,
   describeOriginalCosponsors,
   describeWithdrawnCosponsors,
+  formatAmendmentCitation,
   type LegislativeBill,
 } from "@/lib/congress/bills/model";
 
@@ -100,6 +103,71 @@ describe("congressGovBillUrl", (): void => {
     expect(congressGovBillUrl({ congress: 0, type: "hr", number: "1" })).toBe(CONGRESS_GOV_HOME);
     expect(congressGovBillUrl({ congress: -119, type: "hr", number: "1" })).toBe(CONGRESS_GOV_HOME);
     expect(congressGovBillUrl({ congress: "not-a-congress", type: "hr", number: "1" })).toBe(CONGRESS_GOV_HOME);
+  });
+});
+
+describe("describeAmendmentDetail", (): void => {
+  it("attributes the tally to this page rather than to Congress.gov, since it counted a field", (): void => {
+    expect(describeAmendmentDetail(17, 250)).toBe(
+      "17 of them carry the purpose the record states; the rest are published here as citations only, with their text on the amendment's own record.",
+    );
+  });
+
+  it("says outright when the record published no purpose for any of them", (): void => {
+    // The common shape, and the sentence that keeps a screen of bare citations from reading as a fault in this app.
+    expect(describeAmendmentDetail(0, 40)).toBe(
+      "Congress.gov publishes no purpose text for any of them here, so each row is the amendment's citation and a link to its own record.",
+    );
+  });
+
+  it("drops the qualifier when there is nothing to qualify", (): void => {
+    expect(describeAmendmentDetail(6, 6)).toBe("Each carries the purpose the record states for it.");
+  });
+
+  it("says nothing about a collection with nothing in it", (): void => {
+    // Unreachable from the section, which only calls this once it has rows — but the function is correct on its own
+    // terms rather than only in the one state its caller is in today.
+    expect(describeAmendmentDetail(0, 0)).toBe("");
+  });
+});
+
+describe("congressGovAmendmentUrl", (): void => {
+  it("builds the public amendment page for both types Congress.gov publishes", (): void => {
+    // Not a guessed pattern: Congress.gov publishes exactly these URLs itself, in the `latestAction.links` array on an
+    // amendment's own item-level record. @see congressGovAmendmentUrl.
+    expect(congressGovAmendmentUrl({ congress: 119, type: "SAMDT", number: "2849" })).toBe(
+      "https://www.congress.gov/amendment/119th-congress/senate-amendment/2849",
+    );
+    expect(congressGovAmendmentUrl({ congress: 117, type: "hamdt", number: "74" })).toBe(
+      "https://www.congress.gov/amendment/117th-congress/house-amendment/74",
+    );
+  });
+
+  it("never points a reader at api.congress.gov, which would serve them JSON or a 403", (): void => {
+    expect(congressGovAmendmentUrl({ congress: 119, type: "SAMDT", number: "2849" })).not.toContain("api.congress.gov");
+  });
+
+  it("falls back to the site home rather than guessing a path for an unrecognized type", (): void => {
+    expect(congressGovAmendmentUrl({ congress: 119, type: "SUAMDT", number: "1" })).toBe(CONGRESS_GOV_HOME);
+    expect(congressGovAmendmentUrl({ congress: 119, type: "", number: "1" })).toBe(CONGRESS_GOV_HOME);
+  });
+
+  it("falls back to the site home for a congress number that isn't a positive whole number", (): void => {
+    expect(congressGovAmendmentUrl({ congress: 0, type: "SAMDT", number: "1" })).toBe(CONGRESS_GOV_HOME);
+    expect(congressGovAmendmentUrl({ congress: -119, type: "SAMDT", number: "1" })).toBe(CONGRESS_GOV_HOME);
+    expect(congressGovAmendmentUrl({ congress: "not-a-congress", type: "SAMDT", number: "1" })).toBe(CONGRESS_GOV_HOME);
+  });
+});
+
+describe("formatAmendmentCitation", (): void => {
+  it("writes the citation the way Congress's own records do", (): void => {
+    // The wire code is `SAMDT`; nowhere a reader goes to check this will call it that.
+    expect(formatAmendmentCitation({ type: "SAMDT", number: "2849" })).toBe("S.Amdt. 2849");
+    expect(formatAmendmentCitation({ type: "HAMDT", number: "74" })).toBe("H.Amdt. 74");
+  });
+
+  it("shows an unrecognized type as published rather than inventing an abbreviation for it", (): void => {
+    expect(formatAmendmentCitation({ type: "SUAMDT", number: "3" })).toBe("SUAMDT 3");
   });
 });
 

@@ -78,18 +78,18 @@ upstream read fails. Preview content is fictional and is never presented as live
   the section drops both published figures outright when the source is preview and states only what the page is showing.
   Every other collection reaches the same place by a duller route: fixtures set no `collectionCounts` at all.
 
-- **An empty section says which kind of empty it is, and `EmptySectionNote` is where that is decided.** Ten sections
+- **An empty section says which kind of empty it is, and `EmptySectionNote` is where that is decided.** Eleven sections
   across the bill, member, and committee pages can come back with nothing to list, and the sentence each prints is not a
   wording choice. When the request failed it says so and claims nothing else; on preview data it says the section is
   waiting for live records; on live data it says why the absence is ordinary — most bills have no companion measure,
   most questions are settled by voice vote, a resolution taken up on the floor never acquires a referral. Getting that
   backwards is the same error as above in a quieter register: "the Congressional Research Service hasn't published a
   summary" printed over a fixture credits a real institution with the emptiness of invented content. One component holds
-  the branch for all ten, so the rule has a single enforcement point rather than ten chances to be spelled differently,
+  the branch for all eleven, so the rule has one enforcement point rather than eleven chances to be spelled differently,
   and `src/components/ui/empty-section-note.test.tsx` pins all three sides.
 
 - **An unanswered request is never rendered as an answer.** The failure branch above needs information the call site
-  does not have: an empty collection and a request that never resolved are both a list of length zero. So the six
+  does not have: an empty collection and a request that never resolved are both a list of length zero. So the seven
   collections on the bill page travel as `BillSubResource` — the rows plus whether Congress.gov actually answered — and
   the committee page's record collections carry the same flag as `unavailable`. A 404 deliberately does not set it: a
   bill with no summaries yet has no summaries resource, and an empty list is the true answer rather than an unreported
@@ -234,6 +234,41 @@ rather than giving the House a richer page because its data happened to be easie
 congress, or URL is not rendered, because a roll call a reader cannot open is worse than one not listed. The same roll
 call attached to several actions — which is ordinary, since the chamber's floor log and the Library of Congress both
 record it — is listed once, since two rows would read as two votes on the same question.
+
+### Amendments Are Named and Linked, and Almost Never Described
+
+A bill's page lists every amendment Congress.gov records against it, each cited the way Congress's own records cite it
+("S.Amdt. 2849") and each linking to its own record. What it does not do is describe them, because for the most part the
+record does not either.
+
+**The sparseness is stated with a number rather than left to be inferred.** Congress.gov's bill-level amendment
+collection publishes a purpose for roughly one entry in fifteen; the rest carry identity and nothing else. A page that
+printed three hundred bare citations without explanation would read as this app having failed to load something, which
+is the same failure mode `EmptySectionNote` exists to prevent one row at a time. So the section counts how many of the
+listed amendments came with any prose and says so — "17 of them carry the purpose the record states; the rest are
+published here as citations only." The count is this app's tally of a published field rather than a published figure,
+and the sentence is worded to say which it is.
+
+**An entry is kept on identity alone.** A related measure with no title is dropped, because a link with no label is not
+a row. An amendment is not, because its citation *is* its label. The bar is deliberately lower here, and the reason is
+arithmetic: applying the stricter one would silently discard fourteen entries in fifteen and leave the page showing
+thirty rows beneath a published count of 493.
+
+**Four things this page does not claim about an amendment**, each of them a thing the bill-level collection does not
+publish:
+
+- **Whether it was adopted.** Where the record carries a latest action, that line is printed; for the large majority it
+  does not, and the disposition lives on the amendment's own record.
+- **What it says.** The text is at Congress.gov, linked rather than re-hosted, exactly as a bill's own text is.
+- **Who offered it.** The collection publishes no sponsor, and this project will not infer one from the amendment's
+  action prose. The same refusal as [the committee roster](#the-committee-page-has-no-roster-and-no-deep-link).
+- **That the list is complete.** One 250-record page is read, and a reconciliation bill can draw twice that. Where the
+  published count exceeds the rows shown, both figures are printed.
+
+The order is Congress.gov's own and is not claimed to mean anything, for the reason [a committee's records are paged in
+the publisher's order](#a-committees-records-are-paged-in-congressgovs-order-not-in-time): the only date on an entry is
+`updateDate`, which says when the row was last touched rather than when anything happened, so sorting by it would hand a
+reader a maintenance timestamp as chronology.
 
 ## What Search Actually Covers
 

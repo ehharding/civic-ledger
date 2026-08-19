@@ -17,6 +17,7 @@
  * rule but an instance of it: it is the *shape* six of the reads below return, so a caller typing what it received
  * cannot get at it any other way. The function that produces it stays unexported, like the rest of the transport.
  */
+export { getBillAmendments } from "@/lib/congress/bills/amendments";
 export { getBillCommittees } from "@/lib/congress/bills/committees";
 export { getBillCosponsors } from "@/lib/congress/bills/cosponsors";
 export {

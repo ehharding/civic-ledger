@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { BillDetail } from "@/components/bills/bill-detail";
 import type {
   BillAction,
+  BillAmendment,
   BillCosponsor,
   BillSummary,
   BillTextVersion,
@@ -74,6 +75,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={withSponsor}
@@ -95,6 +97,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={withSponsor}
@@ -116,6 +119,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={withoutSponsor}
@@ -137,6 +141,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -155,6 +160,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -173,6 +179,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -192,6 +199,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={{ ...bill, collectionCounts: { summaries: 2 } }}
@@ -211,6 +219,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={{ ...bill, collectionCounts: { summaries: 5 } }}
@@ -234,6 +243,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -254,6 +264,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -275,6 +286,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={withBioguide}
@@ -297,6 +309,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={withoutBioguide}
@@ -314,6 +327,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -331,6 +345,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -348,6 +363,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -367,6 +383,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -384,6 +401,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -404,6 +422,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -421,6 +440,7 @@ describe("BillDetail", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -454,6 +474,7 @@ describe("BillDetail with a sparse record", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bare}
@@ -477,6 +498,7 @@ describe("BillDetail with a sparse record", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -494,6 +516,7 @@ describe("BillDetail with a sparse record", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -516,6 +539,7 @@ describe("BillDetail with a sparse record", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -537,6 +561,7 @@ describe("BillDetail with a sparse record", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -583,6 +608,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([passage, referral])}
         committees={sub([])}
         bill={bill}
@@ -606,6 +632,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([referral])}
         committees={sub([])}
         bill={{ ...bill, collectionCounts: { actions: 1 } }}
@@ -624,6 +651,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([passage, referral])}
         committees={sub([])}
         bill={bill}
@@ -645,6 +673,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([passage, referral])}
         committees={sub([])}
         bill={bill}
@@ -681,6 +710,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([senate])}
         committees={sub([])}
         bill={bill}
@@ -698,6 +728,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([referral])}
         committees={sub([])}
         bill={bill}
@@ -716,6 +747,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={unanswered()}
         committees={sub([])}
         bill={bill}
@@ -742,6 +774,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([undated])}
         committees={sub([])}
         bill={bill}
@@ -759,6 +792,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([{ text: "Introduced in House", recordedVotes: [] }])}
         bill={bill}
         committees={sub([])}
@@ -777,6 +811,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -797,6 +832,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -827,6 +863,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([passage])}
         committees={sub([])}
         bill={passedThenReferred}
@@ -845,6 +882,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([referral])}
         committees={sub([])}
         bill={inCommittee}
@@ -867,6 +905,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={enacted}
@@ -885,6 +924,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -905,6 +945,7 @@ describe("BillDetail action history and recorded votes", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([passage])}
         committees={sub([])}
         bill={enacted}
@@ -942,6 +983,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         bill={bill}
         committees={sub([transportation, agriculture])}
@@ -968,6 +1010,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         bill={bill}
         committees={sub([transportation])}
@@ -986,6 +1029,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         bill={bill}
         committees={sub([agriculture])}
@@ -1003,6 +1047,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         bill={bill}
         committees={sub([transportation, agriculture])}
@@ -1025,6 +1070,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -1039,6 +1085,7 @@ describe("BillDetail committees of referral", (): void => {
       <BillDetail
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         actions={sub([])}
         committees={sub([])}
         bill={bill}
@@ -1086,6 +1133,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1106,6 +1154,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1127,6 +1176,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1147,6 +1197,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([cosponsor({ bioguideId: undefined, fullName: "Rep. Unlinkable, Sample [I-ZZ-1]" })])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1165,6 +1216,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([cosponsor({ withdrawnDate: "2025-05-01" })])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1182,6 +1234,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([cosponsor({ sponsorshipDate: undefined })])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1204,6 +1257,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub(many)}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1226,6 +1280,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1243,6 +1298,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1262,6 +1318,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([original, later])}
         related={sub([])}
+        amendments={sub([])}
         source="preview"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1282,6 +1339,7 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1296,12 +1354,272 @@ describe("BillDetail cosponsors", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         source="preview"
         summaries={sub([])}
         textVersions={sub([])}
       />,
     );
     expect(screen.getByText(/Cosponsors appear here once live Congress.gov data is connected/)).toBeInTheDocument();
+  });
+});
+
+describe("BillDetail amendments", (): void => {
+  /** A fully described amendment — the roughly-one-in-fifteen case. */
+  const described: BillAmendment = {
+    congress: 119,
+    type: "SAMDT",
+    number: "2849",
+    purpose: "To strike a provision relating to delayed implementation.",
+    latestAction: { date: "2025-07-01", text: "Amendment SA 2849 not agreed to in Senate by Yea-Nay Vote." },
+    officialUrl: "https://www.congress.gov/amendment/119th-congress/senate-amendment/2849",
+  };
+
+  /** The ordinary case: identity and nothing else. */
+  const bare: BillAmendment = {
+    congress: 119,
+    type: "SAMDT",
+    number: "2850",
+    officialUrl: "https://www.congress.gov/amendment/119th-congress/senate-amendment/2850",
+  };
+
+  /** Builds `count` bare amendments, for the disclosure cap. */
+  function manyAmendments(count: number): BillAmendment[] {
+    return Array.from(
+      { length: count },
+      (_unused: unknown, index: number): BillAmendment => ({
+        ...bare,
+        number: String(3000 + index),
+        officialUrl: `https://www.congress.gov/amendment/119th-congress/senate-amendment/${3000 + index}`,
+      }),
+    );
+  }
+
+  it("cites each amendment the way Congress's own records do, and links out to it", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([described])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    // Outward rather than inward — the one collection on this page with no page of its own here to link to.
+    // @see AmendmentRow.
+    const link: HTMLElement = screen.getByRole("link", { name: /S\.Amdt\. 2849/ });
+
+    expect(link).toHaveAttribute("href", "https://www.congress.gov/amendment/119th-congress/senate-amendment/2849");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+  });
+
+  it("prints the purpose and the amendment's own latest action when the record carries them", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([described])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByText("To strike a provision relating to delayed implementation.")).toBeInTheDocument();
+    expect(
+      screen.getByText((_content: string, element: Element | null): boolean =>
+        element?.className === "amendment-list__action"
+          ? readerText(element).includes("Amendment SA 2849 not agreed to in Senate")
+          : false,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("prints an undated latest action without a stray separator where the date would go", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([{ ...described, latestAction: { text: "Amendment offered." } }])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    const action: Element = document.querySelector(".amendment-list__action") as Element;
+
+    expect(readerText(action)).toBe("Amendment offered.");
+    expect(action.querySelector(".date-label")).not.toBeInTheDocument();
+  });
+
+  it("renders a bare amendment as a citation alone rather than as an empty row", (): void => {
+    // The ordinary shape of this collection. A placeholder standing in for prose Congress.gov never published would
+    // present the record's own sparseness as a fault in this page. @see BillAmendment.
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([bare])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /S\.Amdt\. 2850/ })).toBeInTheDocument();
+    expect(document.querySelector(".amendment-list__purpose")).not.toBeInTheDocument();
+    expect(document.querySelector(".amendment-list__action")).not.toBeInTheDocument();
+  });
+
+  it("counts how many carry a purpose, so the sparseness reads as the record's rather than this page's", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([described, bare, bare])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(
+      screen.getByText(/1 of them carry the purpose the record states; the rest are published here as citations only/),
+    ).toBeInTheDocument();
+  });
+
+  it("says so plainly when none of them carry a purpose", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([bare])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByText(/Congress.gov publishes no purpose text for any of them here/)).toBeInTheDocument();
+  });
+
+  it("drops the qualifier entirely when every amendment carries a purpose", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([described])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByText(/Each carries the purpose the record states for it/)).toBeInTheDocument();
+  });
+
+  it("names both figures when the published count outruns the single page this app fetches", (): void => {
+    // The ordinary case for this collection rather than the rare one: HR 1 of the 119th records 493 amendments and the
+    // transport asks for 250. @see BillCollectionCounts.
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([described, bare])}
+        bill={{ ...bill, collectionCounts: { amendments: 493 } }}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Congress.gov records 493 amendments on this bill; this page shows 2\./),
+    ).toBeInTheDocument();
+  });
+
+  it("caps the visible list and names how many are behind the disclosure", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub(manyAmendments(20))}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    // Nothing is dropped, and the label carries the number — the property that keeps a cap from reading as a complete
+    // short list. @see DisclosedList.
+    expect(screen.getByText("Show the Remaining 5 Amendments")).toBeInTheDocument();
+    expect(document.querySelectorAll(".amendment-list > li")).toHaveLength(20);
+  });
+
+  it("says an absence is ordinary rather than leaving an empty panel", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="live"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByText(/No amendment was offered to this bill/)).toBeInTheDocument();
+  });
+
+  it("waits for live data on a preview record rather than claiming Congress amended nothing", (): void => {
+    render(
+      <BillDetail
+        actions={sub([])}
+        amendments={sub([])}
+        bill={bill}
+        committees={sub([])}
+        cosponsors={sub([])}
+        related={sub([])}
+        source="preview"
+        summaries={sub([])}
+        textVersions={sub([])}
+      />,
+    );
+
+    expect(screen.getByText(/Amendments appear here once live Congress.gov data is connected/)).toBeInTheDocument();
   });
 });
 
@@ -1323,6 +1641,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([companion])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1341,6 +1660,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([companion])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1358,6 +1678,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([{ ...companion, relationships: [{ type: "Procedurally-related" }] }])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1375,6 +1696,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([{ ...companion, relationships: [] }])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1394,6 +1716,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([{ ...companion, latestAction: undefined }])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1411,6 +1734,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([{ ...companion, congress: 118 }])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1432,6 +1756,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub(many)}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1453,6 +1778,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         source="live"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1467,6 +1793,7 @@ describe("BillDetail related measures", (): void => {
         committees={sub([])}
         cosponsors={sub([])}
         related={sub([])}
+        amendments={sub([])}
         source="preview"
         summaries={sub([])}
         textVersions={sub([])}
@@ -1479,8 +1806,8 @@ describe("BillDetail related measures", (): void => {
 
   it("makes no claim about the record in any section whose request went unanswered", (): void => {
     // The regression guard for this file's whole reason to carry `BillSubResource`. When the bill itself resolves from
-    // the cached list snapshot but its six sub-resource requests fail, the bill carries no `collectionCounts` to check
-    // an empty list against — and every one of these sections would otherwise print a confident,
+    // the cached list snapshot but its seven sub-resource requests fail, the bill carries no `collectionCounts` to
+    // check an empty list against — and every one of these sections would otherwise print a confident,
     // Congress.gov-attributed sentence about a record the app never read. `source` is "live" precisely because that is
     // the state that used to license those sentences.
     render(
@@ -1490,6 +1817,7 @@ describe("BillDetail related measures", (): void => {
         committees={unanswered()}
         cosponsors={unanswered()}
         related={unanswered()}
+        amendments={unanswered()}
         source="live"
         summaries={unanswered()}
         textVersions={unanswered()}
@@ -1504,12 +1832,13 @@ describe("BillDetail related measures", (): void => {
       /Congress.gov hasn.t published bill text/,
       /Congress.gov records no measure as related to this one/,
       /No recorded vote appears/,
+      /No amendment was offered to this bill/,
     ]) {
       expect(screen.queryByText(claim)).not.toBeInTheDocument();
     }
 
-    // Seven sections, each saying what it cannot vouch for rather than saying nothing — an unexplained empty panel
+    // Eight sections, each saying what it cannot vouch for rather than saying nothing — an unexplained empty panel
     // reads as a bug in this app, which is the failure mode `EmptySectionNote` exists to prevent.
-    expect(screen.getAllByText(/Congress.gov did not answer this request/)).toHaveLength(7);
+    expect(screen.getAllByText(/Congress.gov did not answer this request/)).toHaveLength(8);
   });
 });

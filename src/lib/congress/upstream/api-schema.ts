@@ -83,7 +83,7 @@ export const congressApiBillSchema = z.looseObject({
     .catch(undefined),
   laws: z.array(congressApiLawSchema).optional().catch(undefined),
   /**
-   * The four collections this app fetches separately, each described here as `{ count, url }`.
+   * The collections this app fetches separately, each described here as `{ count, url }`.
    *
    * Only the counts are read. The `url` is the collection's own *API* endpoint and is skipped for exactly the reason
    * `bill.url` is — it serves JSON, and 403s without a key of the reader's own — while the path this app requests is
@@ -100,6 +100,7 @@ export const congressApiBillSchema = z.looseObject({
   summaries: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   textVersions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   relatedBills: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  amendments: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   /**
    * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
    *
@@ -301,6 +302,37 @@ export const congressApiRelatedBillSchema = z.looseObject({
 /** Shape of `GET /v3/bill/{congress}/{type}/{number}/relatedbills`. */
 export const congressApiRelatedBillsResponseSchema = z.looseObject({
   relatedBills: z.array(congressApiRelatedBillSchema).optional().catch(undefined),
+});
+
+/**
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/amendments`.
+ *
+ * **Nearly every field here is absent on nearly every entry, and that is the endpoint's shape rather than an unlucky
+ * sample.** Across the two largest amended bills in recent Congresses — 493 amendments to HR 1 in the 119th, 539 to
+ * HR 3684 in the 117th — only about one entry in fifteen carries a `purpose` or a `latestAction`, and fewer than one in
+ * fifty carries a `description`. What every entry does carry is identity: `congress`, `type`, and `number`. So this
+ * collection is a list of *references* to amendments, the way the recorded-vote schema is a list of references to
+ * tallies, and the section built on it is written to say that plainly rather than to look sparse.
+ * @see mapBillAmendment, which drops nothing for missing prose and everything for missing identity.
+ *
+ * `purpose` and `description` are two different fields rather than one spelled two ways. `purpose` is the amendment's
+ * own statement of what it does ("To strike a provision relating to…"); `description` is the longer contextual note the
+ * House attaches to an amendment printed in a report. Senate amendments carry the first, House amendments frequently
+ * carry both, and the mapper prefers `purpose` because it is the amendment's own voice.
+ */
+export const congressApiBillAmendmentSchema = z.looseObject({
+  congress: optionalNumber,
+  type: optionalString,
+  number: z.union([z.string(), z.number()]).optional().catch(undefined),
+  purpose: optionalString,
+  description: optionalString,
+  updateDate: optionalString,
+  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+});
+
+/** Shape of `GET /v3/bill/{congress}/{type}/{number}/amendments`. */
+export const congressApiBillAmendmentsResponseSchema = z.looseObject({
+  amendments: z.array(congressApiBillAmendmentSchema).optional().catch(undefined),
 });
 
 /**
@@ -639,6 +671,8 @@ export type CongressApiCosponsorsResponse = z.infer<typeof congressApiCosponsors
 export type CongressApiRelationshipDetail = z.infer<typeof congressApiRelationshipDetailSchema>;
 export type CongressApiRelatedBill = z.infer<typeof congressApiRelatedBillSchema>;
 export type CongressApiRelatedBillsResponse = z.infer<typeof congressApiRelatedBillsResponseSchema>;
+export type CongressApiBillAmendment = z.infer<typeof congressApiBillAmendmentSchema>;
+export type CongressApiBillAmendmentsResponse = z.infer<typeof congressApiBillAmendmentsResponseSchema>;
 export type CongressApiDepiction = z.infer<typeof congressApiDepictionSchema>;
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;

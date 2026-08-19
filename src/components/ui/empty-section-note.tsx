@@ -5,9 +5,9 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
 /**
  * The one sentence a record section prints when it has nothing to list, and the rule that decides which sentence.
  *
- * Ten sections across the bill, member, and committee pages have to answer the same question — a collection came back
- * empty, so what does the reader get told? — and the answer is never "nothing", because an empty panel reads as a bug
- * in this app rather than as a fact about the record. It is one of three sentences, and which one is not a wording
+ * Eleven sections across the bill, member, and committee pages have to answer the same question — a collection came
+ * back empty, so what does the reader get told? — and the answer is never "nothing", because an empty panel reads as a
+ * bug in this app rather than as a fact about the record. It is one of three sentences, and which one is not a wording
  * choice:
  *
  * - **When the request failed, the section says so and claims nothing else.** This is the branch that has to come
@@ -23,8 +23,8 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
  *   questions are settled by voice vote, and a resolution taken up on the floor never acquires a referral. A bare "none
  *   found" turns each of those into an apparent gap.
  *
- * Ten sections through one branch, rather than ten sections each spelling it out: a rule stated in one place is one
- * that cannot be got backwards in the eleventh section, and it is a rule whose failure mode is a false claim about the
+ * Eleven sections through one branch, rather than eleven each spelling it out: a rule stated in one place is one that
+ * cannot be got backwards in the twelfth section, and it is a rule whose failure mode is a false claim about the
  * congressional record rather than a typo.
  */
 

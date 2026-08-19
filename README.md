@@ -77,16 +77,16 @@ pnpm exec playwright install chromium
 
 ## What Is Built
 
-| Route                                            | What it is                                                                         |
-|--------------------------------------------------|------------------------------------------------------------------------------------|
-| `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member  |
-| `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                   |
-| `/bills/[congress]/[type]/[number]`              | One bill: summary, text, actions, votes, committees, cosponsors, related measures  |
-| `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships                |
-| `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, subcommittees, and the records referred to it |
-| `/learn`, `/learn/[slug]`                        | Civic glossary and three source-linked learning modules                            |
-| `/about`                                         | Methodology: how records are sourced, labeled, and linked back                     |
-| `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                             |
+| Route                                            | What it is                                                                           |
+|--------------------------------------------------|--------------------------------------------------------------------------------------|
+| `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member    |
+| `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                     |
+| `/bills/[congress]/[type]/[number]`              | One bill: summary, text, actions, votes, committees, cosponsors, amendments, related |
+| `/members`, `/members/[bioguideId]`              | Member directory, service records, sponsorships, and cosponsorships                  |
+| `/committees`, `/committees/[chamber]/[code]`    | Committee directory, name histories, subcommittees, and the records referred to it   |
+| `/learn`, `/learn/[slug]`                        | Civic glossary and four source-linked learning modules                               |
+| `/about`                                         | Methodology: how records are sourced, labeled, and linked back                       |
+| `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                               |
 
 Behind those routes:
 
@@ -128,6 +128,15 @@ Behind those routes:
   where the two published figures disagree, the page says how many members signed on and later withdrew instead of
   leaving the gap unexplained. No count is ranked, compared, or turned into a score, and the copy says outright that
   cosponsoring is not a vote, not a prediction, and not a ranking.
+- **A bill's amendments, named and linked — and honest that naming is nearly all the record does.** Every amendment
+  Congress.gov holds against a bill is listed, cited the way Congress cites it ("S.Amdt. 2849") and linked to its own
+  record. The collection publishes a purpose for roughly one entry in fifteen, so the section counts how many came with
+  any prose and says so, rather than leaving a screen of bare citations to read as a page that failed to load. It is the
+  one collection here that links outward instead of inward, because an amendment has no page in this app to link
+  to — and the URL is derived from the pattern Congress.gov publishes on the amendment's own record, not guessed. What
+  the page will not say: whether an amendment was adopted, what it says, or who offered it. The bill-level collection
+  publishes none of the three, and a sponsor inferred from action prose would be exactly the fabrication this project
+  refuses elsewhere.
 - **The other measures a bill is related to, each with the body that said so.** "Is there a Senate version of this?" is
   the question a reader most often arrives with, and every related measure links inward to its own page here, carrying
   its title, its latest action, and the relationship as recorded — with the attribution attached ("Identical bill
@@ -149,9 +158,11 @@ Behind those routes:
   it could not render, or a collection past the one page it fetches — it names both numbers instead of presenting its
   own shorter list as the whole record. Where nothing was published, it says what the page is showing and credits
   nobody.
-- **Learning modules that cite their sources and state their limits.** Each of the three walks a process step by step,
+- **Learning modules that cite their sources and state their limits.** Each of the four walks a process step by step,
   ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
-  the voting module, that a vote not taken on a bill is out of reach entirely.
+  the voting module, that a vote not taken on a bill is out of reach entirely, and in the amendment module, that the
+  record names what was offered without saying who offered it. The count in the hub's own heading is derived from the
+  registry rather than typed, so a fifth module cannot leave that line quietly wrong about how many there are.
 - **A glossary that comes to the reader.** Every word the glossary defines is annotated where it is actually used —
   throughout the lessons, and in a bill's latest action, which is the one line on that page written in Congress's voice
   rather than this app's. Hovering or focusing "cloture" or "markup" shows the definition in place; the word is also a

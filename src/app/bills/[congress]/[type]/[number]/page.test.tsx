@@ -1,8 +1,9 @@
 /**
  * Covers the individual bill record route.
  *
- * Three reads go out here — the bill, its CRS summaries, and its official text versions — and the route's comment says
- * they go together because none depends on the others. That, plus the 404 for a bill that resolves to nothing and the
+ * Eight reads go out here — the bill, its CRS summaries, its official text versions, its action history, its committee
+ * referrals, its cosponsors, its related measures, and the amendments offered to it — and the route's comment says they
+ * go together because none depends on the others. That, plus the 404 for a bill that resolves to nothing and the
  * metadata's choice to describe a bill by its *latest action*, is what the tests pin. The latest-action description is
  * more load-bearing than it looks: it is the sentence someone following a shared link sees before they click, and it
  * has to survive a freshly-introduced record that carries no action text at all.
@@ -95,6 +96,21 @@ describe("BillPage", (): void => {
 
     expect(screen.getByText("Preview Data")).toBeInTheDocument();
     expect(screen.queryByText("Live Congress.gov Data")).not.toBeInTheDocument();
+  });
+
+  it("wires every sub-resource through to the page, including the ones a fixture has nothing for", async (): Promise<void> => {
+    // A prop the route forgets to pass is a type error, but a prop it passes to a section that was never rendered is
+    // not — so this pins that each collection's panel actually reaches the page. In preview mode each says it is
+    // waiting for live data, which is the one sentence that proves the section is mounted and correctly wired.
+    render(await BillPage({ params: Promise.resolve(routeFor(firstPreviewBill)) }));
+
+    for (const waiting of [
+      /Amendments appear here once live Congress.gov data is connected/,
+      /Related measures appear here once live Congress.gov data is connected/,
+      /Committees of referral appear here once live Congress.gov data is connected/,
+    ]) {
+      expect(screen.getByText(waiting)).toBeInTheDocument();
+    }
   });
 
   it("404s for a bill number that resolves to no record", async (): Promise<void> => {

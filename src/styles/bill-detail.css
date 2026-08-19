@@ -395,3 +395,40 @@
 .recorded-vote-list__roll + a {
   margin-top: var(--space-1-5);
 }
+
+/* The amendments offered to a bill. A narrower minimum than the related-measure grid and a tighter gap, because the
+   rows are shorter than either of the other two disclosed lists: Congress.gov publishes a purpose for roughly one
+   amendment in fifteen, so the typical row is a single citation line rather than a title plus an action. A wider track
+   would leave most of the grid empty on exactly the bills this section is longest on. */
+.amendment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-4) var(--space-6);
+  margin-top: var(--space-5);
+  list-style: none;
+}
+
+.amendment-list__identity {
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.amendment-list__purpose {
+  margin-top: var(--space-1-5);
+  color: var(--ink);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+.amendment-list__action {
+  margin-top: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+/* The date trails the action text on the same baseline rather than starting its own block, so the row reads as one
+   sentence with a timestamp — the same reason the related-measure identity line clears this margin. */
+.amendment-list__action .date-label {
+  margin-top: 0;
+}

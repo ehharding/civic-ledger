@@ -1,7 +1,8 @@
 /**
  * Covers formatOrdinal's suffix rules (including the 11th/12th/13th exception to the usual st/nd/rd pattern), the
  * timezone pinning that keeps formatDate from rolling a date back a day, the two comparison rules every ordering in the
- * app shares, and the two small display helpers the rest of it leans on for counts and for casing upstream free text.
+ * app shares, and the three small display helpers the rest of it leans on for counts, for spelling a small count in a
+ * heading, and for casing upstream free text.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +12,7 @@ import {
   formatCount,
   formatDate,
   formatOrdinal,
+  formatSpelledCount,
   pluralize,
   toTitleCase,
 } from "@/lib/format";
@@ -200,6 +202,26 @@ describe("toTitleCase with irregular hyphenation", (): void => {
     expect(toTitleCase("wilkes--barre")).toBe("Wilkes--Barre");
     expect(toTitleCase("-barre")).toBe("-Barre");
     expect(toTitleCase("wilkes-")).toBe("Wilkes-");
+  });
+});
+
+describe("formatSpelledCount", (): void => {
+  it("spells the small counts a heading reads as prose", (): void => {
+    expect(formatSpelledCount(0)).toBe("Zero");
+    expect(formatSpelledCount(1)).toBe("One");
+    expect(formatSpelledCount(4)).toBe("Four");
+    expect(formatSpelledCount(10)).toBe("Ten");
+  });
+
+  it("prints the digits past ten, where spelling reads worse than the number", (): void => {
+    expect(formatSpelledCount(11)).toBe("11");
+    // Falls through to `formatCount`, so a large count keeps its separators rather than losing them here.
+    expect(formatSpelledCount(1234)).toBe("1,234");
+  });
+
+  it("normalizes input the way formatOrdinal does, rather than producing a word for half a thing", (): void => {
+    expect(formatSpelledCount(-3)).toBe("Three");
+    expect(formatSpelledCount(2.7)).toBe("Two");
   });
 });
 

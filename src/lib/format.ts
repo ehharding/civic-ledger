@@ -243,3 +243,40 @@ const countFormatter: Intl.NumberFormat = new Intl.NumberFormat("en-US");
 export function formatCount(value: number): string {
   return countFormatter.format(value);
 }
+
+/**
+ * The small counts this app spells out in prose rather than printing as digits.
+ *
+ * Stops at ten because that is where the convention it encodes stops being worth keeping: a heading reading "Four
+ * Walkthroughs" is prose, and one reading "Twenty-Three Walkthroughs" is a number pretending to be prose.
+ */
+const SPELLED_NUMBERS: readonly string[] = [
+  "Zero",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+];
+
+/**
+ * Spells a small whole number in title case, for a heading that counts something derived.
+ *
+ * This exists so a count in display copy can be *derived* rather than typed. A heading reading "Three Walkthroughs"
+ * over a list built from a registry is a second, hand-maintained copy of that registry's length — and the failure mode
+ * is silent: adding a fourth module leaves the heading confidently wrong, on the page whose whole subject is being
+ * checkable. The same rule `lessonNumber` follows for a lesson's position, applied to the count above the list.
+ *
+ * @param value - The count to spell. Fractional or negative input is normalized to its absolute whole part.
+ * @returns The number in words and title case for zero through ten, and the digits for anything larger — where spelling
+ *   it out would read worse than printing it.
+ */
+export function formatSpelledCount(value: number): string {
+  const whole: number = Math.abs(Math.trunc(value));
+  return SPELLED_NUMBERS[whole] ?? formatCount(whole);
+}

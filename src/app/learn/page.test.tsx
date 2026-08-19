@@ -10,8 +10,9 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import LearnPage, { metadata } from "@/app/learn/page";
+import { formatSpelledCount } from "@/lib/format";
 import { type GlossaryTerm, glossary, glossaryEntryId, glossaryHref } from "@/lib/glossary";
-import { type Lesson, lessons } from "@/lib/lessons";
+import { lessons } from "@/lib/lessons";
 
 describe("LearnPage", (): void => {
   it("renders under a single page heading, inside the site chrome", (): void => {
@@ -102,13 +103,17 @@ describe("LearnPage", (): void => {
   });
 
   it("keeps its heading honest about how many lessons there are", (): void => {
-    // The heading says "Three Walkthroughs". If a fourth module is added to the registry, this fails — which is the
-    // point: the copy is a claim about the registry's contents, so it belongs under the same enforcement the registry
-    // itself has in `lessons.test.ts`.
+    // The count in the heading is derived from the registry rather than typed, so this asserts the derivation holds
+    // rather than pinning one spelling: a module added to `lessons` renumbers the heading instead of falsifying it.
+    // The copy is a claim about the registry's contents, and it belongs under the same enforcement the registry itself
+    // has in `lessons.test.ts`.
     render(<LearnPage />);
 
-    const lessonTitles: string[] = lessons.map((lesson: Lesson): string => lesson.title);
-    expect(lessonTitles).toHaveLength(3);
-    expect(screen.getByRole("heading", { level: 2, name: /Three Walkthroughs/ })).toBeInTheDocument();
+    const expected: RegExp = new RegExp(`^${formatSpelledCount(lessons.length)} Walkthroughs`);
+
+    expect(screen.getByRole("heading", { level: 2, name: expected })).toBeInTheDocument();
+    // Guards the derivation against a helper that returns an empty string for everything, which the regex alone would
+    // not catch.
+    expect(formatSpelledCount(lessons.length)).toBe("Four");
   });
 });

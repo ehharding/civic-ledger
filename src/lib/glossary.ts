@@ -74,6 +74,20 @@ export const glossary: GlossaryTerm[] = [
       "rewrite sections, or replace the bill entirely with a substitute.",
   },
   {
+    term: "Amendment",
+    plainEnglish: "A proposed change to the text of a measure that is already pending.",
+    detail:
+      "An amendment being offered is not an amendment being adopted. Most are never voted on at all, and a bill's " +
+      "record lists the ones offered to it without saying which of them changed anything.",
+  },
+  {
+    term: "Germane",
+    plainEnglish: "Relevant to the subject of the measure being amended.",
+    detail:
+      "The House generally requires amendments to be germane; the Senate generally does not, which is how an " +
+      "unrelated provision can be attached to a bill there. After cloture, the Senate requires it too.",
+  },
+  {
     term: "Reported",
     plainEnglish: "A committee finished its review and sent the bill back for a vote.",
     detail:

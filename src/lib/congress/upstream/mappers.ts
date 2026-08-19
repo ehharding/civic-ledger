@@ -1,5 +1,6 @@
 import {
   type BillAction,
+  type BillAmendment,
   type BillCollectionCounts,
   type BillCosponsor,
   type BillCosponsorTally,
@@ -7,6 +8,7 @@ import {
   type BillSummary,
   type BillTextFormat,
   type BillTextVersion,
+  congressGovAmendmentUrl,
   congressGovBillUrl,
   type EnactedLaw,
   type LegislativeBill,
@@ -45,6 +47,7 @@ import {
 import type {
   CongressApiAction,
   CongressApiBill,
+  CongressApiBillAmendment,
   CongressApiBillCommittee,
   CongressApiBillCommitteeActivity,
   CongressApiBillSubcommittee,
@@ -174,6 +177,7 @@ function mapBillCollectionCounts(bill: CongressApiBill): BillCollectionCounts | 
     summaries: bill.summaries?.count,
     textVersions: bill.textVersions?.count,
     relatedBills: bill.relatedBills?.count,
+    amendments: bill.amendments?.count,
   };
 
   return Object.values(counts).some((count: number | undefined): boolean => count !== undefined) ? counts : undefined;
@@ -260,6 +264,42 @@ export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | n
     // renders as a stray date rather than as a sentence.
     latestAction: actionText ? { date: related.latestAction?.actionDate, text: actionText } : undefined,
     relationships: mapUsable(related.relationshipDetails, mapRelatedBillRelationship),
+  };
+}
+
+/**
+ * Maps one entry from a bill's `/amendments` collection.
+ *
+ * **The completeness bar is identity alone, which is deliberately lower than {@link mapRelatedBill}'s.** A related
+ * measure with no title is dropped, because the title is the row — there is nothing to label the link with. An
+ * amendment's row is labeled by its own citation ("S.Amdt. 2849"), which the identity fields already provide, so an
+ * entry carrying nothing but identity is still a complete, openable reference rather than a stub. Dropping those would
+ * discard roughly fourteen entries in fifteen on a heavily amended bill and leave the section quietly claiming that a
+ * bill amended five hundred times was amended thirty.
+ *
+ * @param amendment - A validated amendment entry.
+ * @returns The mapped reference, or `null` without the congress, type, and number its citation and its link are both
+ *   built from.
+ */
+export function mapBillAmendment(amendment: CongressApiBillAmendment): BillAmendment | null {
+  if (!amendment.congress || !amendment.type || amendment.number === undefined) return null;
+
+  const type: string = amendment.type.toUpperCase();
+  const number: string = String(amendment.number);
+  // `purpose` is the amendment's own statement of what it does; `description` is the House's longer contextual note on
+  // an amendment printed in a report. Preferring the first keeps the row in the amendment's voice where it has one.
+  const purpose: string | undefined = amendment.purpose?.trim() || amendment.description?.trim() || undefined;
+  const actionText: string | undefined = amendment.latestAction?.text;
+
+  return {
+    congress: amendment.congress,
+    type,
+    number,
+    purpose,
+    // Carried only when it says something, like `mapRelatedBill`'s: a latest action with a date and no text renders as
+    // a stray date rather than as a sentence.
+    latestAction: actionText ? { date: amendment.latestAction?.actionDate, text: actionText } : undefined,
+    officialUrl: congressGovAmendmentUrl({ congress: amendment.congress, type, number }),
   };
 }
 

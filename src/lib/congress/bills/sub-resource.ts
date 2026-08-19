@@ -16,7 +16,8 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
 
 /**
  * The two reads shared by every module that reaches for a *single bill*: the bill's own record, and any of the
- * collections hanging off it — `/summaries`, `/text`, `/actions`, `/committees`, `/cosponsors`, `/relatedbills`.
+ * collections hanging off it — `/summaries`, `/text`, `/actions`, `/committees`, `/cosponsors`, `/relatedbills`,
+ * `/amendments`.
  *
  * Those collections differ in their path segment, their payload schema, the collection to read off it, the mapper
  * applied to each entry, and whether they are ordered by date. Everything they have in common is stated here once: the
@@ -108,7 +109,7 @@ function answeredEmpty<Entry>(): BillSubResource<Entry> {
 export async function fetchBillSubResource<Payload, Raw, Entry>(
   input: BillRouteParams,
   config: {
-    path: "summaries" | "text" | "actions" | "committees" | "cosponsors" | "relatedbills";
+    path: "summaries" | "text" | "actions" | "committees" | "cosponsors" | "relatedbills" | "amendments";
     schema: ZodType<Payload>;
     select: (payload: Payload) => Raw[] | undefined;
     map: (entry: Raw) => Entry | null;

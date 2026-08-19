@@ -6,6 +6,7 @@ import { BillDetail } from "@/components/bills/bill-detail";
 import { billHref } from "@/lib/bill-route";
 import type {
   BillAction,
+  BillAmendment,
   BillCosponsor,
   BillRouteParams,
   BillSummary,
@@ -17,6 +18,7 @@ import {
   type BillLookupResult,
   type BillSubResource,
   getBillActions,
+  getBillAmendments,
   getBillById,
   getBillCommittees,
   getBillCosponsors,
@@ -86,10 +88,10 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
  *
  * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number
  * works — not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, its official text
- * versions, its action history, its committee referrals, its cosponsors, and the measures it is related to are
- * independent reads, so all seven go out together rather than in sequence.
+ * versions, its action history, its committee referrals, its cosponsors, the amendments offered to it, and the measures
+ * it is related to are independent reads, so all eight go out together rather than in sequence.
  *
- * Independent in their failures, too, which is why the six collections arrive as {@link BillSubResource}s rather than
+ * Independent in their failures, too, which is why the seven collections arrive as {@link BillSubResource}s rather than
  * as bare arrays: the bill itself can resolve from the cached list snapshot while a sub-resource request fails, and in
  * that state the bill carries no `collectionCounts` to check an empty list against. Each collection therefore says for
  * itself whether it was answered. @see EmptySectionNote for what the page does with that.
@@ -99,7 +101,16 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;
-  const [{ bill, source, notice, retrievedAt }, summaries, textVersions, actions, committees, cosponsors, related]: [
+  const [
+    { bill, source, notice, retrievedAt },
+    summaries,
+    textVersions,
+    actions,
+    committees,
+    cosponsors,
+    related,
+    amendments,
+  ]: [
     BillLookupResult,
     BillSubResource<BillSummary>,
     BillSubResource<BillTextVersion>,
@@ -107,6 +118,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
     BillSubResource<BillCommittee>,
     BillSubResource<BillCosponsor>,
     BillSubResource<RelatedBill>,
+    BillSubResource<BillAmendment>,
   ] = await Promise.all([
     getBillById(route),
     getBillSummaries(route),
@@ -115,6 +127,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
     getBillCommittees(route),
     getBillCosponsors(route),
     getRelatedBills(route),
+    getBillAmendments(route),
   ]);
 
   if (!bill) notFound();
@@ -131,6 +144,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
       committees={committees}
       cosponsors={cosponsors}
       related={related}
+      amendments={amendments}
     />
   );
 }
