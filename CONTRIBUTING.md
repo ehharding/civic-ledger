@@ -68,6 +68,19 @@ Two kinds of code are worth testing directly even when a component test already 
   `congress/committees/model.ts`) specifically so the sentence a page prints can be asserted here rather than only
   reached by rendering a route.
 
+**An unexpected `console.error` or `console.warn` fails the test that provoked it.** The guard is in `vitest.setup.ts`.
+It exists because a React duplicate-key warning once passed a fully green `pnpm check` and reached `main`: a warning is
+not an exception, so nothing failed, and Vitest only prints a *passing* test's console output to a TTY — so the line
+appeared in an editor's run panel and in no pipeline anywhere. A key collision is not cosmetic (React may drop or
+duplicate the colliding children), so the fix was to make it fail rather than to print it louder.
+
+Two things pass through it. This app's own `[civic-ledger] …` lines are ignored, because the "degrades rather than
+crashes" suites write about fifty of them on purpose and each already has an assertion beside it. And a test that
+*means* to provoke a log line spies on the method — `vi.spyOn(console, "warn").mockImplementation(() => {})` — which
+replaces the guard for that test; that is what `log.test.ts`, `http.test.ts`, and the `unavailable` tests already did
+before the guard existed. If a test trips the guard, the question to ask is whether the warning is real, not how to
+silence it.
+
 ## Where Documentation Goes
 
 Documentation scales here by having **one home per fact**, chosen by audience rather than topic. The routing table and

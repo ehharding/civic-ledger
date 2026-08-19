@@ -46,6 +46,13 @@ export default defineConfig({
      * wrapped in act(…)" warnings and any genuinely unexpected error a test provokes, which are exactly the lines worth
      * seeing. @see LOG_PREFIX in src/lib/observability/log.ts, whose value this mirrors — the assertions in
      * `log.test.ts` pin the same string, so a change there fails a test rather than quietly un-hiding this.
+     *
+     * **Keeping those lines printable is not the same as anyone seeing them, and this hook cannot be the enforcement
+     * point.** Vitest only writes a *passing* test's console output to a TTY, so a React warning shows up in an
+     * editor's run panel and in no pipeline anywhere — which is how a duplicate-key warning survived a green
+     * `pnpm check` and reached `main`. The guard in `vitest.setup.ts` is what actually holds this rule: it fails any
+     * test that provokes console output not carrying the prefix above. This hook still decides what gets *printed*;
+     * that one decides what is *allowed*.
      */
     onConsoleLog: (log: string): boolean | undefined => (log.startsWith("[civic-ledger]") ? false : undefined),
     coverage: {
