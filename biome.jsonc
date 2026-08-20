@@ -17,12 +17,112 @@
     "indentWidth": 2,
     "lineWidth": 120
   },
+  // Everything beyond `recommended` below is a convention this repository already keeps, promoted to a rule that keeps
+  // it. What they buy is the same thing the import grouping below buys: the next diff that breaks the habit fails
+  // `pnpm lint` rather than depending on a reviewer noticing.
+  //
+  // That is also the bar for adding one. A rule the tree does not already satisfy is a rule this project has not
+  // actually decided to follow, and turning it on converts a real question into a mechanical one. Two near-misses are
+  // worth naming, since both look like obvious additions and neither is:
+  //
+  //   - `style/noInferrableTypes` would strip the explicit annotation off every `const x: string = "…"` in the repo,
+  //     which is the opposite of the house style — @see `useExplicitReturnType` below, and CONTRIBUTING's type rule.
+  //   - `suspicious/noUnnecessaryConditions` does not model `noUncheckedIndexedAccess`, which tsconfig.json turns on,
+  //     so it reports every `arr[i] ?? …` guard that the compiler *requires*.
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "correctness": {
+        // Reaching past `package.json` into a transitive dependency compiles, passes tests, and breaks the day the
+        // package that pulled it in bumps a range nobody here reviewed. `tests/e2e/accessibility.spec.ts` already
+        // documents refusing to import `axe-core` for exactly this reason; this is that reasoning as a check.
+        "noUndeclaredDependencies": "error"
+      },
+      "nursery": {
+        // Nursery rules are explicitly unstable. Each one here is included because it either catches a real defect
+        // class or states a rule this project already follows — and because a nursery rule that changes under us fails
+        // loudly in CI rather than quietly, which is the acceptable failure mode for the value.
+
+        // Monkey-patching a builtin is invisible from every file that depends on the patch.
+        "noExtendNative": "error",
+        // The defect class `bill-directory.tsx`'s `loadMore` avoids by hand: a promise nobody awaits swallows its own
+        // rejection and reports success. Every async path in this app either awaits or handles.
+        "noFloatingPromises": "error",
+        // The same class one level subtler — an async function handed somewhere that expects a synchronous one, most
+        // often a `.filter()` predicate, where the returned promise is always truthy.
+        "noMisusedPromises": "error",
+        // `await` on a non-thenable is either a stray keyword or a signature that changed underneath the caller.
+        "useAwaitThenable": "error",
+        // The compiler catches a missing `case` only when the value is a closed union *and* the switch has no
+        // `default`. This catches the rest, which matters in an app whose models are almost entirely closed unions.
+        "useExhaustiveSwitchCases": "error",
+        // `.includes()` over `.indexOf(x) !== -1`.
+        "useIncludes": "error",
+        // `??` over `||` where the left side can legitimately be `0` or `""` — both of which this app has real values
+        // for (a zero record count, an empty query).
+        "useNullishCoalescing": "error",
+        // `.test()` over `.exec()`/`.match()` when only the boolean is used.
+        "useRegexpTest": "error",
+        // `.startsWith()`/`.endsWith()` over an index comparison or a slice.
+        "useStringStartsEndsWith": "error",
+        // The convention every suite in `src/` already keeps.
+        "useTestHooksOnTop": "error",
+        // The most visible convention in this codebase: every function states what it returns. It is not
+        // decoration — an inferred return type on an exported function is a signature that changes silently when the
+        // body does. The one exemption in the tree carries a `biome-ignore` naming its reason. @see sentry-options.ts.
+        "useExplicitReturnType": "error"
+      },
+      "style": {
+        // `value === 0`, not `0 === value`.
+        "noYodaExpression": "error",
+        // A lone `if` inside an `if` is one condition wearing two.
+        "useCollapsedIf": "error",
+        // `T[]` and `readonly T[]`, never `Array<T>` — the spelling every model in `src/lib` already uses.
+        "useConsistentArrayType": { "level": "error", "options": { "syntax": "shorthand" } },
+        // `type`, never `interface`. This app models data as unions and object types rather than as an inheritance
+        // hierarchy, and declaration merging — the one thing `interface` offers that `type` does not — is a feature
+        // nothing here wants: a second declaration of a model should be an error, not a silent extension of the first.
+        "useConsistentTypeDefinitions": { "level": "error", "options": { "style": "type" } },
+        // A rethrow that drops `cause` throws away the actual diagnosis. `describeCause` in `log.ts` exists precisely
+        // because Node's own `fetch` keeps the useful half one level down a cause chain.
+        "useErrorCause": "error",
+        // `throw new Error(…)`, never `throw Error(…)`.
+        "useThrowNewError": "error"
+      },
+      "suspicious": {
+        // A duplicated `beforeEach` runs twice and reads as one.
+        "noDuplicateTestHooks": "error",
+        // An implicitly-`any` variable that gains its type from first assignment defeats `strict` without saying so.
+        "noEvolvingTypes": "error",
+        // `it.only` / `describe.only` left in a file turns a green suite into a green *subset* of one.
+        "noFocusedTests": "error",
+        // The architectural guard for the layering `docs/architecture.md` describes: models know nothing of transport,
+        // transport knows nothing of components. A cycle is that layering having quietly stopped being true.
+        "noImportCycles": "error",
+        // A skipped test is a coverage gap that reports as a pass. This project runs at a 100% threshold; a `.skip`
+        // that survives review is the one way to be under it and not know.
+        "noSkippedTests": "error",
+        // `new Error()` with no message reaches an operator as a stack and nothing else.
+        "useErrorMessage": "error"
+      }
     }
   },
+  "overrides": [
+    {
+      // Vitest suites say `it`, Playwright specs say `test`. Both are that framework's own idiom rather than a drift
+      // between them, so the rule is scoped to the half where one spelling is right instead of being turned off across
+      // the repo or made to pick a winner between two tools.
+      "includes": ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useConsistentTestIt": { "level": "error", "options": { "function": "it", "withinDescribe": "it" } }
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

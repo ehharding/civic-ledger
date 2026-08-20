@@ -3,7 +3,8 @@
  * placeholder member (no biography link, labeled data), the truncation copy that keeps a capped list from reading as a
  * complete one, and the fact that the page reports service rather than scoring it.
  */
-import { render, screen, within } from "@testing-library/react";
+import { type RenderResult, render, screen, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
 
 import { MemberDetail } from "@/components/members/member-detail";
@@ -37,7 +38,13 @@ const bill: LegislativeBill = {
   officialUrl: "https://www.congress.gov/bill/117th-congress/senate-bill/4417",
 };
 
-function renderMember(props: Partial<Parameters<typeof MemberDetail>[0]> = {}) {
+/**
+ * Renders the page over the default profile, with any prop a test cares about overridden.
+ *
+ * @param props - Props to change on the page.
+ * @returns Testing Library's render result.
+ */
+function renderMember(props: Partial<ComponentProps<typeof MemberDetail>> = {}): RenderResult {
   return render(
     <MemberDetail cosponsored={[]} legislationLimit={12} profile={profile()} source="live" sponsored={[]} {...props} />,
   );

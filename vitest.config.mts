@@ -104,11 +104,16 @@ export default defineConfig({
        * - `map.get(k) ?? 0` immediately after a `map.has(k)` filter (`members/filter.ts`, `committees/filter.ts`).
        * - Handlers guarding against state their own render condition excludes — `members/congress-seating-chart.tsx`
        *   attaches its keyboard handler to an `<svg>` that only exists when there is at least one seat.
-       * - A `??` whose left side the model types as a required `string` (the bill route's metadata description).
        *
        * The rule that keeps this number meaningful: reach for a new ignore only when writing the test would mean
        * fabricating a value the app cannot produce — a test that pins a guard rather than a behavior. Everything
        * reachable gets a test instead.
+       *
+       * And an ignore is a claim rather than a fact — one that goes on passing for a while after it stops being true.
+       * Re-read the reason on the way past instead of inheriting it. A branch nothing can reach is sometimes a case the
+       * code *means* to handle and quietly no longer can, which reads on the page exactly like a guard the types have
+       * already ruled out; the question that separates them is what input would reach it, and what stops that input
+       * from ever arriving.
        */
       thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
     },

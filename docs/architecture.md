@@ -49,6 +49,7 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | `src/components`              | Presentation and small user interactions              | Preserve visible preview/live provenance.                         |
 | `src/db`                      | User-owned data and future normalized snapshots       | Do not claim it is the source of truth for congressional records. |
 | `src/hooks`                   | Client-side behavior extracted from views             | Depend only on isomorphic modules, never on the server adapter.   |
+| `src/lib/api-contract.ts`     | The response bodies this app's own routes return      | One declaration per body; the handler and the caller share it.    |
 | `src/lib/api-query.ts`        | Validation of this app's own query params             | Parse, don't trust; every input resolves to a usable value.       |
 | `src/lib/*-route.ts`          | In-app route construction                             | One definition per route shape; never build a route inline.       |
 | `src/lib/format.ts`           | Shared display and comparison rules                   | One collator and one date order for the whole app.                |
@@ -392,6 +393,14 @@ nothing at all without JavaScript. That trade goes the other way here, for the s
 `<form>` rather than a click handler: a link should arrive at what it says it points to, on the first paint, whatever is
 or isn't running. The cost is a server render per visit, not a Congress.gov request per visit: the roster still comes
 through the shared five-minute cache.
+
+**One window, five literals, one test.** That window is `REVALIDATE_SECONDS` in `congress/upstream/http.ts`, and the
+five routes that also declare a segment-level `revalidate` each restate it as a bare `300` rather than importing it.
+That is not a lapse: Next reads the segment export statically, so a variable — or even `60 * 10` — is ignored rather
+than honored. The duplication is therefore the framework's, and what this project owns is its ability to drift.
+`src/app/revalidate.test.ts` is the enforcement point; it reads every route's own export, asserts each against the
+constant, and separately walks `src/app` so a *new* route declaring its own window fails the suite until it is either
+brought in line or listed as a deliberate exception.
 
 ## The Glossary Comes to the Reader
 

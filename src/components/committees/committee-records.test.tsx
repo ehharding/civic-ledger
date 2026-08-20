@@ -14,7 +14,7 @@
  *   real GET form, so each view is shareable, openable in a new tab, and reachable without JavaScript. A click handler
  *   over local state would pass a "does it switch tabs" test and fail every one of those.
  */
-import { render, screen, within } from "@testing-library/react";
+import { type RenderResult, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { CommitteeRecordsSection } from "@/components/committees/committee-records";
@@ -76,11 +76,19 @@ function referral(overrides: Partial<CommitteeBillReferral> = {}): CommitteeBill
   };
 }
 
+/**
+ * Renders the records section over one collection.
+ *
+ * @param records - The collection to show, and its rows.
+ * @param overrides - Fields to change on the result wrapping it — the total, the page, availability.
+ * @param committee - The committee the section belongs to. Defaults to the shared profile.
+ * @returns Testing Library's render result.
+ */
 function renderRecords(
   records: CommitteeRecords,
   overrides: Partial<CommitteeRecordsResult> = {},
-  committee = profile(),
-) {
+  committee: CommitteeProfile = profile(),
+): RenderResult {
   return render(<CommitteeRecordsSection profile={committee} result={result(records, overrides)} />);
 }
 

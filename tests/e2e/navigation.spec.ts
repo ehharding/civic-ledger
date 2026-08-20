@@ -1,4 +1,5 @@
 import type {
+  APIResponse,
   Locator,
   PlaywrightTestArgs,
   PlaywrightTestOptions,
@@ -119,6 +120,72 @@ test("opening a bill card leads to a detail page with the official-record link",
 
   await page.getByRole("link", { name: "All Bills" }).click();
   await expect(page).toHaveURL(/\/bills$/);
+});
+
+/*
+ * This app's own two API routes, checked against a running server.
+ *
+ * `BillDirectory`'s unit tests cover both call sites thoroughly, but they cover them against a `fetch` those tests
+ * wrote the response for — the half that cannot disagree. `src/lib/api-contract.ts` settles the other half at compile
+ * time, since the handler and the caller annotate one shared declaration; what is left for a browser to answer is
+ * whether the running route actually replies in it.
+ */
+
+/*
+ * Asserted through `request` rather than by clicking "Load More", deliberately: the button is offered only when the
+ * directory holds live Congress.gov records — preview data is a fixed sample with nothing behind it — so a UI-level
+ * version of this would pass locally with a key configured and time out in CI, which has none, waiting for a control
+ * the page is correct not to render. The route answers in both cases, and its body is the thing under test either way.
+ */
+test("the load-more route answers in the shape the directory reads", async ({
+  request,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  const response: APIResponse = await request.get("/api/bills?offset=12");
+
+  // Never an error status, even with no key and no upstream: an empty page means both "there are no more" and "we could
+  // not find out", which is how the button behaves in either case. @see the route handler.
+  expect(response.status()).toBe(200);
+
+  const body = (await response.json()) as Record<string, unknown>;
+  expect(Object.keys(body)).toEqual(["bills"]);
+  expect(Array.isArray(body.bills)).toBe(true);
+});
+
+test("the search route answers in the shape the search box reads", async ({
+  request,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  const response: APIResponse = await request.get("/api/bills/search?q=broadband");
+
+  expect(response.status()).toBe(200);
+
+  // The last three are the fields that exist only so the UI can describe its own reach rather than imply it swept
+  // everything. A response missing one is a scope note that quietly stops being true.
+  const body = (await response.json()) as Record<string, unknown>;
+  expect(Object.keys(body).sort()).toEqual(["bills", "congressesSearched", "source", "truncated"]);
+  expect(Array.isArray(body.bills)).toBe(true);
+});
+
+/* And the same contract from the other end: the route's fields reaching a browser and coming back out as a sentence. */
+test("searching the directory reports the scope it actually swept", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/bills");
+
+  await page.getByRole("searchbox", { name: /Search bill records/ }).fill("broadband");
+
+  // The narrowed view is a place: what was typed comes back out as a link someone else can open. Asserted first
+  // because it settles on the keystroke, which makes it the assertion that fails if the typing never reached React at
+  // all — leaving the slower one below to mean what it says.
+  await expect(page).toHaveURL(/\?q=broadband/);
+
+  // Built from `congressesSearched` and `truncated`. Seeing this sentence at all also rules out the degraded local
+  // fallback, which words itself differently on purpose when the route cannot be reached.
+  //
+  // Given room well past the default, because the work behind it is real: with a key configured the route sweeps every
+  // covered Congress, and on a cold cache against a dev server that is seconds rather than milliseconds. CI has no key
+  // and answers from the preview fixture immediately — the wait is headroom for a contributor's own machine, not a
+  // duration anything here depends on.
+  await expect(page.locator(".directory-search-note")).toContainText(/Matched against titles/, { timeout: 30_000 });
 });
 
 test("the bill-lifecycle lesson is reachable from /learn and links onward to /bills", async ({

@@ -2,6 +2,7 @@
 
 import { type RefObject, useEffect, useRef, useState } from "react";
 
+import type { BillSearchResponse } from "@/lib/api-contract";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { matchesQuery } from "@/lib/congress/bills/search";
 
@@ -13,20 +14,6 @@ import { matchesQuery } from "@/lib/congress/bills/search";
  * living in a test file is one that can quietly stop matching this one.
  */
 export const SEARCH_DEBOUNCE_MS: number = 300;
-
-/**
- * Shape of `/api/bills/search`'s JSON response, kept in sync with `BillSearchResult` in the adapter.
- *
- * Declared here rather than imported from `@/lib/congress/client`, deliberately: that module is server-only (it reads
- * `CONGRESS_API_KEY` and calls Congress.gov directly), so anything running in the browser depends only on the
- * isomorphic `@/lib/congress/bills/model` and `@/lib/congress/bills/search` modules and never risks pulling the
- * adapter — and the key it reads — into a client bundle.
- */
-type SearchResponse = {
-  bills: LegislativeBill[];
-  congressesSearched: number;
-  truncated: boolean;
-};
 
 /** What a search actually covered, for the scope note shown beneath the results. */
 export type BillSearchMeta = {
@@ -107,11 +94,11 @@ export function useBillSearch(query: string, fallbackBills: LegislativeBill[]): 
     const controller: AbortController = new AbortController();
     const timeoutId: ReturnType<typeof setTimeout> = setTimeout((): void => {
       fetch(`/api/bills/search?q=${encodeURIComponent(trimmedQuery)}`, { signal: controller.signal })
-        .then((response: Response): Promise<SearchResponse> => {
+        .then((response: Response): Promise<BillSearchResponse> => {
           if (!response.ok) throw new Error(`Request failed with ${response.status}`);
-          return response.json() as Promise<SearchResponse>;
+          return response.json() as Promise<BillSearchResponse>;
         })
-        .then((payload: SearchResponse): void => {
+        .then((payload: BillSearchResponse): void => {
           if (controller.signal.aborted) return;
 
           setResults(payload.bills);

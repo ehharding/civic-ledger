@@ -4,15 +4,16 @@ import type { JSX } from "react";
 
 import { BillDetail } from "@/components/bills/bill-detail";
 import { billHref } from "@/lib/bill-route";
-import type {
-  BillAction,
-  BillAmendment,
-  BillCosponsor,
-  BillRouteParams,
-  BillSummary,
-  BillTextVersion,
-  LegislativeBill,
-  RelatedBill,
+import {
+  type BillAction,
+  type BillAmendment,
+  type BillCosponsor,
+  type BillRouteParams,
+  type BillSummary,
+  type BillTextVersion,
+  type LegislativeBill,
+  NO_LATEST_ACTION_TEXT,
+  type RelatedBill,
 } from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
@@ -70,15 +71,20 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 
   if (!bill) return notFoundMetadata("Bill Not Found");
 
+  // The latest action is the most useful single sentence about a bill — it says where the bill actually *is*, which is
+  // the question someone following a shared link is most often asking. A freshly introduced record can carry no action
+  // prose at all, and naming the bill is a better link preview than the placeholder that stands in for it elsewhere.
+  //
+  // A comparison rather than a nullish check, because `latestAction.text` is a required string on the model: the
+  // absence is spelled as that placeholder, not as a missing field, so a `??` here would type-check and never fire.
+  // @see NO_LATEST_ACTION_TEXT.
+  const hasActionText: boolean = bill.latestAction.text !== NO_LATEST_ACTION_TEXT;
+
   return pageMetadata({
     title: `${bill.type} ${bill.number}: ${bill.title}`,
-    // The latest action is the most useful single sentence about a bill — it says where the bill actually *is*, which
-    // is the question someone following a shared link is most often asking. Falls back to naming the bill, since a
-    // freshly introduced record can carry no action text at all.
-    /* v8 ignore start -- `latestAction.text` is a required string on the model; the fallback is belt-and-braces. */
-    description:
-      bill.latestAction.text ?? `${bill.type} ${bill.number} in the ${formatOrdinal(bill.congress)} Congress.`,
-    /* v8 ignore stop */
+    description: hasActionText
+      ? bill.latestAction.text
+      : `${bill.type} ${bill.number} in the ${formatOrdinal(bill.congress)} Congress.`,
     path: billHref(bill),
   });
 }

@@ -9,15 +9,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/bills/search/route";
+import type { BillSearchResponse } from "@/lib/api-contract";
 import { MAX_QUERY_LENGTH } from "@/lib/api-query";
-import type { BillSearchResult } from "@/lib/congress/client";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 
 const { getSearchResults } = vi.hoisted(() => ({ getSearchResults: vi.fn() }));
 
 vi.mock("@/lib/congress/client", () => ({ getSearchResults }));
 
-const EMPTY_RESULT: BillSearchResult = {
+const EMPTY_RESULT: BillSearchResponse = {
   bills: [],
   source: "live",
   congressesSearched: 27,
@@ -25,9 +25,9 @@ const EMPTY_RESULT: BillSearchResult = {
 };
 
 /** Calls the handler with a raw query string, exactly as the browser would send it. */
-async function get(search: string): Promise<{ status: number; body: BillSearchResult }> {
+async function get(search: string): Promise<{ status: number; body: BillSearchResponse }> {
   const response = await GET(new Request(`https://civic-ledger.test/api/bills/search${search}`));
-  return { status: response.status, body: (await response.json()) as BillSearchResult };
+  return { status: response.status, body: (await response.json()) as BillSearchResponse };
 }
 
 beforeEach((): void => {
@@ -41,7 +41,7 @@ describe("GET /api/bills/search", (): void => {
       source: "live",
       congressesSearched: 27,
       truncated: true,
-    } satisfies BillSearchResult);
+    } satisfies BillSearchResponse);
 
     const { status, body } = await get("?q=broadband");
 
@@ -89,7 +89,7 @@ describe("GET /api/bills/search", (): void => {
   it("reports preview provenance rather than hiding it", async (): Promise<void> => {
     // A search that can't reach live data returns the labeled preview matches, and `source` is how the UI knows to say
     // so. Dropping it here would let fictional records render as though they were the real record.
-    getSearchResults.mockResolvedValue({ ...EMPTY_RESULT, source: "preview" } satisfies BillSearchResult);
+    getSearchResults.mockResolvedValue({ ...EMPTY_RESULT, source: "preview" } satisfies BillSearchResponse);
 
     const { body } = await get("?q=broadband");
 

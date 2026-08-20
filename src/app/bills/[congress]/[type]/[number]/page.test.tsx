@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import BillPage, { generateMetadata, generateStaticParams } from "@/app/bills/[congress]/[type]/[number]/page";
 import { billHref } from "@/lib/bill-route";
-import type { BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
+import { type BillRouteParams, type LegislativeBill, NO_LATEST_ACTION_TEXT } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 import { expectNotFound } from "@/test/next-not-found";
 import { readerText } from "@/test/reader-text";
@@ -58,6 +58,33 @@ describe("generateMetadata", (): void => {
     const metadata: Metadata = await generateMetadata({ params: Promise.resolve(routeFor(firstPreviewBill)) });
 
     expect(metadata.description).toBe(firstPreviewBill.latestAction.text);
+  });
+
+  it("names the bill instead when the record carries no action prose", async (): Promise<void> => {
+    // The placeholder `mapCongressBill` substitutes is the right thing on a card, where the alternative is a blank
+    // line, and the wrong thing in a link preview, where it is the entire summary someone sees before deciding whether
+    // to open the page. This is the one caller that has to tell "no action text" apart from an action, which is why
+    // `NO_LATEST_ACTION_TEXT` is exported rather than inlined at the mapper. @see generateMetadata.
+    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({ bill: { congress: 119, type: "hr", number: 284, title: "A Bill With No Actions Yet" } }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      ),
+    );
+
+    const metadata: Metadata = await generateMetadata({
+      params: Promise.resolve({ congress: "119", type: "hr", number: "284" }),
+    });
+
+    expect(metadata.description).toBe("HR 284 in the 119th Congress.");
+    expect(metadata.description).not.toBe(NO_LATEST_ACTION_TEXT);
   });
 
   it("returns noindex not-found tags for a bill number naming nothing", async (): Promise<void> => {

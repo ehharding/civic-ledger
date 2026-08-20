@@ -512,6 +512,24 @@ export type BillSponsor = {
 };
 
 /**
+ * What `latestAction.text` says when Congress.gov published no action prose for a bill.
+ *
+ * `latestAction.text` is a *required* string on {@link LegislativeBill} rather than an optional one, because every
+ * surface that shows a bill shows its latest action and a card with a blank line where that sentence goes reads as a
+ * rendering failure rather than as a fact about the record. Substituting a sentence is the honest version of that: it
+ * says the record has no action text yet, which is true, instead of leaving the caller to invent a reason.
+ *
+ * The cost of that choice is that "no action text" stops being expressible as a nullish check, so the sentence has to
+ * be named for anywhere that needs to tell the two apart. Exactly one place does — the bill route's social-card
+ * description, which would otherwise offer this placeholder to a link preview as its summary of the bill. Naming it
+ * here, in the module that declares the field's contract, is what keeps that comparison from being a second copy of the
+ * string sitting in a route file.
+ *
+ * @see mapCongressBill, which is the only thing that ever assigns it.
+ */
+export const NO_LATEST_ACTION_TEXT: string = "No action text has been published yet.";
+
+/**
  * The app's stable internal bill shape. Congress.gov API responses (list or detail) are mapped into this by
  * `mapCongressBill` in `upstream/mappers.ts` before anything else touches them.
  */

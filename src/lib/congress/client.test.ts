@@ -5,11 +5,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { BillSearchResponse } from "@/lib/api-contract";
 import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type BillLookupResult,
-  type BillSearchResult,
   getBillById,
   getBillSummaries,
   getBillTextVersions,
@@ -452,7 +452,7 @@ describe("getBillTextVersions", (): void => {
 
 describe("getSearchResults", (): void => {
   it("filters the preview fixtures when no API key is configured", async (): Promise<void> => {
-    const result: BillSearchResult = await getSearchResults(firstPreviewBill.title);
+    const result: BillSearchResponse = await getSearchResults(firstPreviewBill.title);
 
     expect(result.source).toBe("preview");
     expect(result.congressesSearched).toBe(0);
@@ -493,7 +493,7 @@ describe("getSearchResults", (): void => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result: BillSearchResult = await getSearchResults("broadband");
+    const result: BillSearchResponse = await getSearchResults("broadband");
 
     expect(result.source).toBe("live");
     expect(result.congressesSearched).toBeGreaterThan(1);
@@ -539,7 +539,7 @@ describe("getSearchResults", (): void => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result: BillSearchResult = await getSearchResults("HR 284");
+    const result: BillSearchResponse = await getSearchResults("HR 284");
 
     expect(result.bills[0]?.title).toBe("Community Water Reliability Act");
     expect(result.bills[0]?.number).toBe("284");
@@ -564,7 +564,7 @@ describe("getSearchResults", (): void => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result: BillSearchResult = await getSearchResults("broadband");
+    const result: BillSearchResponse = await getSearchResults("broadband");
 
     expect(result.truncated).toBe(true);
     expect(result.bills.length).toBeLessThanOrEqual(60);

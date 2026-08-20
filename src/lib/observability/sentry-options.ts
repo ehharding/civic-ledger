@@ -196,9 +196,15 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
      * and the callbacks: the module-level pass is what runs, and this is what still holds when a future caller forgets
      * it.
      */
+    // biome-ignore-start lint/nursery/useExplicitReturnType: these four are the one place in the app where an inferred
+    // signature is the more precise one. Each `satisfies` clause types the parameter *and* the return from the SDK's
+    // own hook type, which is derived above rather than named — so spelling either out by hand would mean writing
+    // `Parameters<BeforeSend>[0]` and `ReturnType<BeforeSend>` around a body that is already exactly that, and would
+    // stop tracking the SDK the next time it changes one of them. @see SentryInitOptions.
     beforeSend: ((event) => redactEvent(event, secrets)) satisfies BeforeSend,
     beforeSendTransaction: ((event) => redactEvent(event, secrets)) satisfies BeforeSendTransaction,
     beforeBreadcrumb: ((breadcrumb) => redactEvent(breadcrumb, secrets)) satisfies BeforeBreadcrumb,
     beforeSendLog: ((log) => redactEvent(log, secrets)) satisfies BeforeSendLog,
+    // biome-ignore-end lint/nursery/useExplicitReturnType: @see above.
   };
 }

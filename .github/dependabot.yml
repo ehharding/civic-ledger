@@ -7,6 +7,13 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
+    ignore:
+      # `@types/node`'s major tracks the Node major it describes: 24.x is the type surface of Node 24, 26.x of Node 26.
+      # This project runs Node 24, so a major bump here would declare APIs the runtime does not have — and quietly: the
+      # code compiles, `pnpm check` is green, and the call is missing when it runs. Minors and patches are still taken.
+      # Raise this the same day `.nvmrc` and `engines` move, as one change; the policy is in CONTRIBUTING.md.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

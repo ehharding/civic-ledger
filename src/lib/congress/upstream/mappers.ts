@@ -12,6 +12,7 @@ import {
   congressGovBillUrl,
   type EnactedLaw,
   type LegislativeBill,
+  NO_LATEST_ACTION_TEXT,
   type RecordedVote,
   type RelatedBill,
   type RelatedBillRelationship,
@@ -120,7 +121,7 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
 
   if (!bill.congress || !bill.title || !type || !number) return null;
 
-  const actionText: string = bill.latestAction?.text ?? "No action text has been published yet.";
+  const actionText: string = bill.latestAction?.text ?? NO_LATEST_ACTION_TEXT;
   const sponsor: CongressApiSponsor | undefined = bill.sponsors?.[0];
   // A bill is enacted at most once; the array is how the endpoint spells an optional field, not a collection to page.
   const enactedLaw: EnactedLaw | undefined = mapUsable(bill.laws, mapEnactedLaw)[0];

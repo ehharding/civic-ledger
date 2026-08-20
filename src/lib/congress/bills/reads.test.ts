@@ -12,11 +12,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { BillSearchResponse } from "@/lib/api-contract";
 import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type BillLookupResult,
-  type BillSearchResult,
   getBillActions,
   getBillById,
   getBillSummaries,
@@ -249,7 +249,7 @@ describe("getSearchResults", (): void => {
       (): Promise<Response> => Promise.reject(new Error("upstream unavailable")),
     );
 
-    const result: BillSearchResult = await getSearchResults("broadband");
+    const result: BillSearchResponse = await getSearchResults("broadband");
 
     expect(result.source).toBe("live");
     expect(result.bills.map((bill: LegislativeBill): string => bill.title)).toEqual(["Broadband Access Act"]);
@@ -286,7 +286,7 @@ describe("getSearchResults", (): void => {
       (): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })),
     );
 
-    const result: BillSearchResult = await getSearchResults("broadband");
+    const result: BillSearchResponse = await getSearchResults("broadband");
 
     expect(result.bills[0]?.title).toBe("Dated Broadband Act");
     expect(result.bills).toHaveLength(3);
@@ -338,7 +338,7 @@ describe("getSearchResults", (): void => {
       }),
     );
 
-    const result: BillSearchResult = await getSearchResults("HR 284");
+    const result: BillSearchResponse = await getSearchResults("HR 284");
 
     expect(result.bills[0]?.number).toBe("284");
     expect(result.bills[1]?.number).toBe("999");
@@ -380,7 +380,7 @@ describe("getSearchResults", (): void => {
       }),
     );
 
-    const result: BillSearchResult = await getSearchResults("HR 284");
+    const result: BillSearchResponse = await getSearchResults("HR 284");
 
     expect(result.bills[0]?.number).toBe("284");
     expect(result.bills).toHaveLength(6);
@@ -408,7 +408,7 @@ describe("getSearchResults", (): void => {
       }),
     );
 
-    const result: BillSearchResult = await getSearchResults("HR 284");
+    const result: BillSearchResponse = await getSearchResults("HR 284");
 
     expect(result.bills.filter((bill: LegislativeBill): boolean => bill.number === "284")).toHaveLength(1);
   });

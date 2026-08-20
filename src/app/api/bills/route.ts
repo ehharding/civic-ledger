@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import type { BillPageResponse } from "@/lib/api-contract";
 import { parseCongressQueryParam, parseOffsetParam } from "@/lib/api-query";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMoreBills } from "@/lib/congress/client";
@@ -21,11 +22,11 @@ import { getMoreBills } from "@/lib/congress/client";
  *   range resolves to a sensible default instead of a 400.
  *   @see parseOffsetParam
  *   @see parseCongressQueryParam
- * @returns `{ bills }` — the next page, or an empty array when no API key is configured or the upstream fetch fails.
- *   Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same empty page,
- *   which is exactly how the button behaves in both cases.
+ * @returns A {@link BillPageResponse} — the next page, or an empty array when no API key is configured or the upstream
+ *   fetch fails. Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same
+ *   empty page, which is exactly how the button behaves in both cases.
  */
-export async function GET(request: Request): Promise<NextResponse<{ bills: LegislativeBill[] }>> {
+export async function GET(request: Request): Promise<NextResponse<BillPageResponse>> {
   const { searchParams } = new URL(request.url);
 
   const offset: number = parseOffsetParam(searchParams.get("offset"));

@@ -1,3 +1,4 @@
+import type { BillSearchResponse } from "@/lib/api-contract";
 import {
   type BillAction,
   type BillRouteParams,
@@ -358,16 +359,6 @@ export async function getBillTextVersions(input: BillRouteParams): Promise<BillS
   });
 }
 
-/** Result of a cross-Congress bill search. @see getSearchResults */
-export type BillSearchResult = {
-  bills: LegislativeBill[];
-  source: CongressSnapshot["source"];
-  /** How many Congresses this search actually swept. */
-  congressesSearched: number;
-  /** Whether more matches existed than {@link MAX_SEARCH_RESULTS} allows returning. */
-  truncated: boolean;
-};
-
 /**
  * Sorts search matches for display.
  *
@@ -419,7 +410,7 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
  *   sweep's provenance and whether the cap truncated the results. Falls back to filtering the small preview fixture set
  *   when no key is configured.
  */
-export async function getSearchResults(query: string): Promise<BillSearchResult> {
+export async function getSearchResults(query: string): Promise<BillSearchResponse> {
   const trimmedQuery: string = query.trim();
   const apiKey: string | undefined = getCongressApiKey();
 

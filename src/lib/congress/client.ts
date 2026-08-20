@@ -16,13 +16,17 @@
  * `BillSubResource` is the one name from `sub-resource.ts` that does belong here, and it is not an exception to that
  * rule but an instance of it: it is the *shape* six of the reads below return, so a caller typing what it received
  * cannot get at it any other way. The function that produces it stays unexported, like the rest of the transport.
+ *
+ * `getSearchResults` is the one read below whose shape is *not* re-exported here, on the same rule read the other
+ * way: that shape is also the body `/api/bills/search` sends, so it is declared in `@/lib/api-contract`, where a
+ * browser can import it without importing this surface and the API key behind it. A caller can get at it, just not from
+ * here.
  */
 export { getBillAmendments } from "@/lib/congress/bills/amendments";
 export { getBillCommittees } from "@/lib/congress/bills/committees";
 export { getBillCosponsors } from "@/lib/congress/bills/cosponsors";
 export {
   type BillLookupResult,
-  type BillSearchResult,
   getBillActions,
   getBillById,
   getBillSummaries,

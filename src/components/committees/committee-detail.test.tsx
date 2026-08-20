@@ -11,7 +11,7 @@
  * The rest is the ordinary contract: the heading, the type explainer, the name history, the counts that are omitted
  * rather than zeroed when absent, and the subcommittee list's two different empty states.
  */
-import { render, screen, within } from "@testing-library/react";
+import { type RenderResult, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { CommitteeDetail } from "@/components/committees/committee-detail";
@@ -52,10 +52,18 @@ function profile(overrides: Partial<CommitteeProfile> = {}): CommitteeProfile {
   };
 }
 
+/**
+ * Renders the page over the default profile, with anything a test cares about overridden.
+ *
+ * @param overrides - Fields to change on the committee itself.
+ * @param props - The two props that are about the page rather than the committee: whether the record is live, and the
+ *   records section's own result.
+ * @returns Testing Library's render result, so the callers that read `container` still can.
+ */
 function renderCommittee(
   overrides: Partial<CommitteeProfile> = {},
   props: { source?: "live" | "preview"; records?: CommitteeRecordsResult } = {},
-) {
+): RenderResult {
   return render(
     <CommitteeDetail
       profile={profile(overrides)}

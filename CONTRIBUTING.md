@@ -123,6 +123,12 @@ default — a few current positions, so they don't have to be relitigated per pu
   and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — @see the
   header of `tests/e2e/accessibility.spec.ts` for what stays with review.
 - **No Storybook yet.** Add it when the component inventory justifies it.
+- **`@types/node` is held at the Node major this project runs.** Its major version *is* a Node version — 24.x describes
+  Node 24, 26.x describes Node 26 — so it is the one dependency here where "update to latest" is the wrong instinct.
+  `.nvmrc` and `engines` name Node 24, CI runs Node 24, and typings from a later major would declare APIs that runtime
+  does not have: the code compiles, `pnpm check` passes, and the call is simply missing when it runs. The caret range in
+  `package.json` and an `ignore` entry in `.github/dependabot.yml` both hold that ceiling, and `pnpm outdated` will keep
+  reporting a newer "Latest" because of it. Move it when `.nvmrc` and `engines` move, in the same change.
 
 ## Code Conventions
 

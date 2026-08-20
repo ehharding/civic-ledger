@@ -3,8 +3,9 @@
  * scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked for is the
  * view that renders, and that a preview list doesn't claim to be the committees of a real Congress.
  */
-import { act, render, screen, within } from "@testing-library/react";
+import { act, type RenderResult, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { CommitteeDirectory } from "@/components/committees/committee-directory";
@@ -30,7 +31,13 @@ const list: CommitteeSummary[] = [
   committee({ systemCode: "jsec00", name: "Joint Economic Committee", chamber: "joint", type: "joint" }),
 ];
 
-function renderDirectory(props: Partial<Parameters<typeof CommitteeDirectory>[0]> = {}) {
+/**
+ * Renders the directory over the shared list, with any prop a test cares about overridden.
+ *
+ * @param props - Props to change on the directory.
+ * @returns Testing Library's render result.
+ */
+function renderDirectory(props: Partial<ComponentProps<typeof CommitteeDirectory>> = {}): RenderResult {
   return render(<CommitteeDirectory committees={list} congress={119} source="live" {...props} />);
 }
 

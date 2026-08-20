@@ -29,7 +29,7 @@ export const dynamic = "force-static";
 export const alt: string = OG_IMAGE_ALT;
 
 /** Read from `metadata.ts` so the drawing and the `og:image:width`/`height` tags describing it cannot disagree. */
-export const size = OG_IMAGE_SIZE;
+export const size: typeof OG_IMAGE_SIZE = OG_IMAGE_SIZE;
 
 export const contentType: string = "image/png";
 

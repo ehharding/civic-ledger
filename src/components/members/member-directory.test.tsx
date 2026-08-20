@@ -3,9 +3,9 @@
  * count and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked
  * for is the view that renders, and that a preview roster doesn't claim to be a list of people currently holding seats.
  */
-import { act, render, screen, within } from "@testing-library/react";
+import { act, type RenderResult, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
-import type React from "react";
+import type { ComponentProps, ReactElement } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { MemberDirectory } from "@/components/members/member-directory";
@@ -46,7 +46,13 @@ const roster: MemberDirectoryEntry[] = [
   }),
 ];
 
-function renderDirectory(props: Partial<Parameters<typeof MemberDirectory>[0]> = {}) {
+/**
+ * Renders the directory over the shared roster, with any prop a test cares about overridden.
+ *
+ * @param props - Props to change on the directory.
+ * @returns Testing Library's render result.
+ */
+function renderDirectory(props: Partial<ComponentProps<typeof MemberDirectory>> = {}): RenderResult {
   return render(<MemberDirectory congress={119} members={roster} source="live" {...props} />);
 }
 
@@ -307,8 +313,18 @@ describe("MemberDirectory", (): void => {
 });
 
 describe("MemberDirectory, opened from a link", (): void => {
-  function view(overrides: Partial<MemberDirectoryQuery["filters"]> = {}, sort: MemberDirectoryQuery["sort"] = "name") {
-    return { filters: { query: "", chamber: "all", party: "all", state: "all", ...overrides }, sort } as const;
+  /**
+   * Builds the `initialQuery` a shared link resolves to, over the unnarrowed default.
+   *
+   * @param overrides - Filters to change.
+   * @param sort - The order the link asks for. Defaults to the directory's own default.
+   * @returns The view to open the directory on.
+   */
+  function view(
+    overrides: Partial<MemberDirectoryQuery["filters"]> = {},
+    sort: MemberDirectoryQuery["sort"] = "name",
+  ): MemberDirectoryQuery {
+    return { filters: { query: "", chamber: "all", party: "all", state: "all", ...overrides }, sort };
   }
 
   it("renders already narrowed rather than showing everyone first", (): void => {
@@ -407,7 +423,7 @@ describe("MemberDirectory following a URL it did not write", (): void => {
   });
 
   /** Navigates the way the router does: the URL changes, then the route re-renders with the view it resolved. */
-  function navigate(rerender: (ui: React.ReactElement) => void, search: string, query: MemberDirectoryQuery): void {
+  function navigate(rerender: (ui: ReactElement) => void, search: string, query: MemberDirectoryQuery): void {
     window.history.replaceState(null, "", `/members${search}`);
     rerender(<MemberDirectory congress={119} initialQuery={query} members={roster} source="live" />);
   }
