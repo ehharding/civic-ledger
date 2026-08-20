@@ -1,11 +1,11 @@
-import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
-import Link from "next/link";
+import { ArrowUpRight, Landmark } from "lucide-react";
 import type { JSX } from "react";
 
 import { BillCard } from "@/components/bills/bill-card";
 import { SiteShell } from "@/components/layout/site-shell";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
+import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
 import { OutboundLink } from "@/components/ui/outbound-link";
@@ -203,11 +203,7 @@ export function MemberDetail({
       {/* Points at the directory rather than the home page: a person who reached a member from a bill's sponsor line or
           a seat in the chamber diagram has nowhere sideways to go otherwise, and "back" from one person is far more
           usefully the list of everyone than the front door. */}
-      <div className="bill-backlink">
-        <Link href="/members">
-          <ChevronLeft aria-hidden="true" size={16} /> All Members
-        </Link>
-      </div>
+      <DetailBackLink href="/members" label="All Members" />
 
       <section className="member-hero" aria-labelledby="member-name">
         <MemberPortrait profile={profile} />

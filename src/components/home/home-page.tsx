@@ -129,7 +129,7 @@ export function HomePage({
         <article>
           <Scale aria-hidden="true" size={20} />
           <h2>Nonpartisan by Design</h2>
-          <p>Clarity and provenance—not persuasion—are the product.</p>
+          <p>Clarity and provenance — not persuasion — are the product.</p>
         </article>
       </section>
     </SiteShell>

@@ -1,6 +1,6 @@
 "use client";
 
-import { type JSX, useCallback, useMemo, useState } from "react";
+import { type JSX, useMemo } from "react";
 
 import { CommitteeCard } from "@/components/committees/committee-card";
 import {
@@ -11,10 +11,11 @@ import {
   DirectorySearch,
   DirectorySort,
   directoryCountLabel,
+  FACETED_DIRECTORY_EMPTY_ADVICE,
   FacetOptions,
   SegmentedFilter,
 } from "@/components/ui/directory-controls";
-import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
+import { useFacetedDirectory } from "@/hooks/use-faceted-directory";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import {
   type CommitteeChamberFilter,
@@ -48,6 +49,20 @@ import { formatOrdinal } from "@/lib/format";
 /** The chamber control's options: all three chambers, preceded by the "no filter" choice. */
 const CHAMBER_OPTIONS: readonly CommitteeChamberFilter[] = [ANY_FACET, ...committeeChambers];
 
+/**
+ * Reads a view out of a URL, through the same parser the route uses, so the browser and the server cannot disagree
+ * about what a link means.
+ *
+ * At module scope rather than inside the component, which is all this directory needs to satisfy
+ * {@link useFacetedDirectory}'s stability requirement — nothing here closes over a prop.
+ *
+ * @param search - The address bar's query string.
+ * @returns The view the URL asks for.
+ */
+function parseCommitteeDirectoryUrl(search: string): CommitteeDirectoryQuery {
+  return parseCommitteeDirectoryQuery(new URLSearchParams(search));
+}
+
 /** Props for {@link CommitteeDirectory}. */
 type CommitteeDirectoryProps = {
   /** Every parent committee, already ordered server-side. */
@@ -70,9 +85,9 @@ type CommitteeDirectoryProps = {
  * Every narrowing happens in the browser against the list the server already sent — no request per keystroke, no
  * debounce, no loading state, and nothing to go wrong offline or in the static export. This is the same shape as
  * `MemberDirectory` down to the URL reconciliation, and deliberately so: the two are the same kind of page and a reader
- * should not have to learn each of them separately — which is why the reconciliation itself is one shared hook rather
+ * should not have to learn each of them separately — which is why the whole of that shape is one shared hook rather
  * than two copies that can drift.
- * @see useDirectoryUrlSync.
+ * @see useFacetedDirectory.
  *
  * @param props - @see CommitteeDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the committee grid or an empty
@@ -84,9 +99,6 @@ export function CommitteeDirectory({
   source,
   initialQuery = DEFAULT_COMMITTEE_DIRECTORY_QUERY,
 }: CommitteeDirectoryProps): JSX.Element {
-  const [filters, setFilters] = useState<CommitteeFilters>(initialQuery.filters);
-  const [sort, setSort] = useState<CommitteeSort>(initialQuery.sort);
-
   // Derived from the whole list rather than from the filtered result, so choosing a chamber doesn't empty the type list
   // out from under the reader mid-narrowing.
   const types: CommitteeFacetOption<CommitteeType>[] = useMemo(
@@ -94,36 +106,28 @@ export function CommitteeDirectory({
     [committees],
   );
 
+  const { filters, sort, setSort, update, clear, isFiltered } = useFacetedDirectory<CommitteeFilters, CommitteeSort>({
+    hasActiveFilters: hasActiveCommitteeFilters,
+    initialQuery,
+    noFilters: NO_COMMITTEE_FILTERS,
+    // Stable without a `useCallback`, unlike the member directory's, which has to close over the roster's
+    // jurisdictions: neither of this directory's facets is derived from the data, so a stale `?type=` is validated
+    // against the model itself and this parser closes over nothing.
+    parse: parseCommitteeDirectoryUrl,
+    serialize: committeeDirectoryQueryString,
+  });
+
   const shown: CommitteeSummary[] = useMemo(
     (): CommitteeSummary[] => sortCommittees(filterCommittees(committees, filters), sort),
     [committees, filters, sort],
   );
 
-  const queryString: string = committeeDirectoryQueryString({ filters, sort });
-  const requestedQueryString: string = committeeDirectoryQueryString(initialQuery);
-
-  /** Takes the view a URL names as the current one, through the same parser the route uses. */
-  const adoptUrl = useCallback((search: string): void => {
-    const view: CommitteeDirectoryQuery = parseCommitteeDirectoryQuery(new URLSearchParams(search));
-
-    setFilters(view.filters);
-    setSort(view.sort);
-  }, []);
-
-  useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
-
-  const isFiltered: boolean = hasActiveCommitteeFilters(filters);
   const countLabel: string = directoryCountLabel(shown.length, committees.length, "Committee", isFiltered);
 
   const scopeNote: string =
     source === "live"
       ? `Every committee of the ${formatOrdinal(congress)} Congress as Congress.gov currently reports it. Subcommittees are listed on their parent committee's page rather than here.`
       : "Placeholder committees, shown until a Congress.gov API key is configured. None of these is a real committee.";
-
-  /** Applies one facet without disturbing the others. */
-  function update(patch: Partial<CommitteeFilters>): void {
-    setFilters((current: CommitteeFilters): CommitteeFilters => ({ ...current, ...patch }));
-  }
 
   return (
     <section className="committee-directory" aria-label="Committee directory">
@@ -166,7 +170,7 @@ export function CommitteeDirectory({
           value={sort}
         />
 
-        {isFiltered ? <ClearFiltersButton onClear={(): void => setFilters(NO_COMMITTEE_FILTERS)} /> : null}
+        {isFiltered ? <ClearFiltersButton onClear={clear} /> : null}
       </div>
 
       <DirectoryResultCount
@@ -185,9 +189,9 @@ export function CommitteeDirectory({
         </div>
       ) : (
         <DirectoryEmptyState
-          body="Try a shorter name, a different chamber, or clear the filters to start again."
+          body={FACETED_DIRECTORY_EMPTY_ADVICE}
           heading="No Committees Match Those Filters."
-          onClear={isFiltered ? (): void => setFilters(NO_COMMITTEE_FILTERS) : undefined}
+          onClear={isFiltered ? clear : undefined}
         />
       )}
     </section>

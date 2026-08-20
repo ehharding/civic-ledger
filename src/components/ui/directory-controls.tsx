@@ -275,6 +275,20 @@ export function ClearFiltersButton({ onClear }: { onClear: () => void }): JSX.El
   );
 }
 
+/**
+ * What the two faceted directories tell a reader whose filters matched nothing.
+ *
+ * One sentence, shared, because the two directories are the same page in two subjects and a reader who empties one of
+ * them should be told the same thing either way. Written down once rather than typed into both, on the rule the rest of
+ * this file holds: a sameness that is only a convention is a sameness that drifts, and copy drifts more quietly than
+ * markup does.
+ *
+ * The bill directory deliberately words its own — it has a stage filter rather than a chamber one, and a second empty
+ * state for a Congress that holds no records at all, which no filter caused and none can undo.
+ */
+export const FACETED_DIRECTORY_EMPTY_ADVICE: string =
+  "Try a shorter name, a different chamber, or clear the filters to start again.";
+
 /** Props for {@link DirectoryEmptyState}. */
 type DirectoryEmptyStateProps = {
   /** What happened, e.g., `"No Members Match Those Filters."` */

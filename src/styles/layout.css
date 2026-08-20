@@ -180,6 +180,28 @@
   font-size: var(--text-sm);
 }
 
+/* The link back up to a directory, which all three detail pages open with. @see DetailBackLink.
+
+   Here rather than in bill-detail.css, where it lived while it was called `.bill-backlink` and the member and committee
+   pages wore it anyway. It is chrome around a page's content in exactly the sense the rules above it are — the same
+   argument that puts .page-shell and the skip link in this file rather than in the routes that render them. */
+.detail-backlink {
+  margin-bottom: var(--space-6);
+  color: var(--ink-soft);
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.detail-backlink a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+.detail-backlink a:hover {
+  color: var(--burgundy);
+}
+
 /* Skip link (SiteShell). Visually hidden until focused, then pinned to the top-left as an ordinary visible control — a
    skip link that stays invisible while focused is useless to the sighted keyboard users who most rely on it. */
 .skip-link {

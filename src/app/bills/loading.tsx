@@ -1,21 +1,16 @@
 import type { JSX } from "react";
 
+import { CURRENT_CONGRESS_BILLS_HEADER } from "@/app/bills/header-copy";
 import { BillDirectorySkeleton } from "@/components/bills/bill-directory-skeleton";
 
 /**
  * Streamed by Next while the `/bills` route's snapshot fetch resolves.
  *
- * Copy is duplicated from the route rather than shared, deliberately: matching it exactly is what makes the skeleton
- * resolve into the real page without anything shifting.
+ * The header copy is the route's own, imported rather than restated, so the skeleton cannot resolve into a page whose
+ * header is a different height. @see CURRENT_CONGRESS_BILLS_HEADER.
  *
  * @returns The directory skeleton with this route's header copy.
  */
 export default function BillsLoading(): JSX.Element {
-  return (
-    <BillDirectorySkeleton
-      description="Search the current Congress's bills, then follow each record back to its official Congress.gov source."
-      eyebrow="Legislation"
-      title="Start With the Record."
-    />
-  );
+  return <BillDirectorySkeleton {...CURRENT_CONGRESS_BILLS_HEADER} />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { type JSX, useCallback, useMemo, useState } from "react";
+import { type JSX, useCallback, useMemo } from "react";
 
 import { MemberCard } from "@/components/members/member-card";
 import {
@@ -11,10 +11,11 @@ import {
   DirectorySearch,
   DirectorySort,
   directoryCountLabel,
+  FACETED_DIRECTORY_EMPTY_ADVICE,
   FacetOptions,
   SegmentedFilter,
 } from "@/components/ui/directory-controls";
-import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
+import { useFacetedDirectory } from "@/hooks/use-faceted-directory";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { ANY_FACET } from "@/lib/congress/directory-filter";
 import {
@@ -110,10 +111,10 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
  * shape (debounced fetches to a server-side sweep) is a consequence of that, not a difference in taste.
  * @see filterMembers for the rules themselves, and sortMembers for the orders they can be read in.
  *
- * The current view is mirrored into the address bar as the reader narrows, so any state of this page can be linked,
- * bookmarked, or reopened — and a URL that changes underneath the page is followed rather than overwritten.
- * @see useDirectoryUrlSync, which all three of this app's directories share, for how that reconciliation works and why
- * it writes with `history.replaceState` rather than a router navigation.
+ * The view itself — the filter and sort state, the address-bar mirroring, and the three ways the controls change
+ * it — is held by {@link useFacetedDirectory}, shared with the committee directory because everything about it is the
+ * same in both and none of it is about members. What is left here is what this directory is: its three facets, its
+ * scope note, and its grid.
  *
  * @param props - @see MemberDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
@@ -125,9 +126,6 @@ export function MemberDirectory({
   source,
   initialQuery = DEFAULT_MEMBER_DIRECTORY_QUERY,
 }: MemberDirectoryProps): JSX.Element {
-  const [filters, setFilters] = useState<MemberFilters>(initialQuery.filters);
-  const [sort, setSort] = useState<MemberSort>(initialQuery.sort);
-
   // Both option lists are derived from the whole roster rather than from the filtered result, so choosing a party
   // doesn't empty the state list out from under the reader mid-narrowing.
   const jurisdictions: JurisdictionOption[] = useMemo(
@@ -139,48 +137,42 @@ export function MemberDirectory({
     [members],
   );
 
-  const shown: MemberDirectoryEntry[] = useMemo(
-    (): MemberDirectoryEntry[] => sortMembers(filterMembers(members, filters), sort),
-    [members, filters, sort],
-  );
-
-  const queryString: string = memberDirectoryQueryString({ filters, sort });
-  const requestedQueryString: string = memberDirectoryQueryString(initialQuery);
   const jurisdictionValues: string[] = useMemo(
     (): string[] => jurisdictions.map((option: JurisdictionOption): string => option.value),
     [jurisdictions],
   );
 
   /**
-   * Takes the view a URL names as the current one.
-   *
-   * Read through the same parser the route uses, so the browser and the server cannot disagree about what a link means.
+   * Reads a view out of a URL, through the same parser the route uses, so the browser and the server cannot disagree
+   * about what a link means. Closes over the roster's jurisdictions, so `?state=` can only ever resolve to one the
+   * control will actually offer.
    * @see parseMemberDirectoryQuery
    */
-  const adoptUrl = useCallback(
-    (search: string): void => {
-      const view: MemberDirectoryQuery = parseMemberDirectoryQuery(new URLSearchParams(search), jurisdictionValues);
-
-      setFilters(view.filters);
-      setSort(view.sort);
-    },
+  const parseUrl = useCallback(
+    (search: string): MemberDirectoryQuery =>
+      parseMemberDirectoryQuery(new URLSearchParams(search), jurisdictionValues),
     [jurisdictionValues],
   );
 
-  useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
+  const { filters, sort, setSort, update, clear, isFiltered } = useFacetedDirectory<MemberFilters, MemberSort>({
+    hasActiveFilters: hasActiveMemberFilters,
+    initialQuery,
+    noFilters: NO_MEMBER_FILTERS,
+    parse: parseUrl,
+    serialize: memberDirectoryQueryString,
+  });
 
-  const isFiltered: boolean = hasActiveMemberFilters(filters);
+  const shown: MemberDirectoryEntry[] = useMemo(
+    (): MemberDirectoryEntry[] => sortMembers(filterMembers(members, filters), sort),
+    [members, filters, sort],
+  );
+
   const countLabel: string = directoryCountLabel(shown.length, members.length, "Member", isFiltered);
 
   const scopeNote: string =
     source === "live"
       ? `Everyone holding a seat in the ${formatOrdinal(congress)} Congress as Congress.gov currently reports it. Vacant seats are simply absent.`
       : "Placeholder people, shown until a Congress.gov API key is configured. Some no longer hold a seat.";
-
-  /** Applies one facet without disturbing the others. */
-  function update(patch: Partial<MemberFilters>): void {
-    setFilters((current: MemberFilters): MemberFilters => ({ ...current, ...patch }));
-  }
 
   return (
     <section className="member-directory" aria-label="Member directory">
@@ -235,7 +227,7 @@ export function MemberDirectory({
           value={sort}
         />
 
-        {isFiltered ? <ClearFiltersButton onClear={(): void => setFilters(NO_MEMBER_FILTERS)} /> : null}
+        {isFiltered ? <ClearFiltersButton onClear={clear} /> : null}
       </div>
 
       {/* The order is named only when it isn't the default, so the common case stays a plain count rather than
@@ -256,9 +248,9 @@ export function MemberDirectory({
         </div>
       ) : (
         <DirectoryEmptyState
-          body="Try a shorter name, a different chamber, or clear the filters to start again."
+          body={FACETED_DIRECTORY_EMPTY_ADVICE}
           heading="No Members Match Those Filters."
-          onClear={isFiltered ? (): void => setFilters(NO_MEMBER_FILTERS) : undefined}
+          onClear={isFiltered ? clear : undefined}
         />
       )}
     </section>

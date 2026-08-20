@@ -1,4 +1,4 @@
-import { ArrowUpRight, ChevronLeft, Landmark } from "lucide-react";
+import { ArrowUpRight, Landmark } from "lucide-react";
 import Link from "next/link";
 import type { JSX } from "react";
 
@@ -6,6 +6,7 @@ import { CommitteeRecordsSection } from "@/components/committees/committee-recor
 import { SiteShell } from "@/components/layout/site-shell";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
+import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
 import { committeeHref } from "@/lib/committee-route";
@@ -88,11 +89,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
     <SiteShell>
       {/* Points at the directory rather than the home page, on the same reasoning as the member page's backlink: from
           one committee, "back" is far more usefully the list of all of them than the front door. */}
-      <div className="bill-backlink">
-        <Link href="/committees">
-          <ChevronLeft aria-hidden="true" size={16} /> All Committees
-        </Link>
-      </div>
+      <DetailBackLink href="/committees" label="All Committees" />
 
       <section className="committee-hero" aria-labelledby="committee-name">
         {/* No trailing "Committee": the type label already carries it where it belongs, and appending it would read as

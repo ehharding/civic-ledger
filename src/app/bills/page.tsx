@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
+import { CURRENT_CONGRESS_BILLS_HEADER } from "@/app/bills/header-copy";
 import { BillDirectory } from "@/components/bills/bill-directory";
 import { CongressSwitcher } from "@/components/bills/congress-switcher";
 import { PageHeader } from "@/components/layout/page-header";
@@ -46,11 +47,7 @@ export default async function BillsPage({ searchParams }: BillsPageProps): Promi
 
   return (
     <SiteShell>
-      <PageHeader
-        eyebrow="Legislation"
-        title="Start With the Record."
-        description="Search the current Congress's bills, then follow each record back to its official Congress.gov source."
-      />
+      <PageHeader {...CURRENT_CONGRESS_BILLS_HEADER} />
       <CongressSwitcher congresses={listCongresses()} selected={getCurrentCongress()} />
       <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
       <BillDirectory

@@ -1,23 +1,6 @@
 /* The bill detail route (/bills/[congress]/[type]/[number]): hero, the two-column detail panels, the CRS summary body,
    and the text-version list. */
 
-.bill-backlink {
-  margin-bottom: var(--space-6);
-  color: var(--ink-soft);
-  font-size: var(--text-md);
-  font-weight: 700;
-}
-
-.bill-backlink a {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-0-5);
-}
-
-.bill-backlink a:hover {
-  color: var(--burgundy);
-}
-
 .bill-detail-hero {
   max-width: 880px;
   padding-bottom: var(--space-12);
