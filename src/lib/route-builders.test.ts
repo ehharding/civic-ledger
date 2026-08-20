@@ -1,19 +1,22 @@
 /**
- * Covers all four in-app route builders.
+ * Covers all five in-app route builders.
  *
  * They are three lines each, but `docs/architecture.md` gives them a rule — "One definition per route shape; never
- * build a route inline" — which means every link to a bill, a person, a committee, or a lesson in this app resolves
- * through them. A drift here is not a broken helper, it is every card, seat, sponsor line, and referral link pointing
- * somewhere that doesn't exist.
+ * build a route inline" — which means every link to a bill, a Congress's directory, a person, a committee, or a lesson
+ * in this app resolves through them. A drift here is not a broken helper, it is every card, seat, sponsor line, and
+ * referral link pointing somewhere that doesn't exist.
  *
- * What's pinned down is the normalization each performs, since that is what lets an inconsistently-cased upstream
- * record and a hand-typed URL land on the same page.
+ * What's pinned down is what each does to the identifier it is handed: the normalization that lets an
+ * inconsistently-cased upstream record and a hand-typed URL land on the same page, and — for the two that need no
+ * normalization because their input is already a closed type — that the route they build resolves back to the record it
+ * was built from.
  */
 import { describe, expect, it } from "vitest";
 
-import { billHref } from "@/lib/bill-route";
+import { billHref, congressBillsHref } from "@/lib/bill-route";
 import { committeeHref } from "@/lib/committee-route";
 import { billIdentityKey } from "@/lib/congress/bills/model";
+import { listCongresses, parseCongressParam } from "@/lib/congress/congress-history";
 import { lessonHref } from "@/lib/lesson-route";
 import { findLesson, type Lesson, lessons } from "@/lib/lessons";
 import { memberHref } from "@/lib/member-route";
@@ -40,6 +43,25 @@ describe("billHref", (): void => {
     expect(billIdentityKey({ congress: segments[1] ?? "", type: segments[2] ?? "", number: segments[3] ?? "" })).toBe(
       billIdentityKey(record),
     );
+  });
+});
+
+describe("congressBillsHref", (): void => {
+  it("builds one Congress's directory route", (): void => {
+    expect(congressBillsHref(118)).toBe("/bills/118");
+  });
+
+  it("accepts a numeric or string Congress, so the switcher's value and listCongresses agree", (): void => {
+    // The switcher reads a `<select>` value, which is a string; the sitemap reads `listCongresses`, which is numbers.
+    expect(congressBillsHref("118")).toBe(congressBillsHref(118));
+  });
+
+  it("resolves back to a Congress the app supports browsing", (): void => {
+    // A route this builds and a route `/bills/[congress]` accepts have to be the same set: the sitemap advertises
+    // these, so one the route rejected would be a listed page that 404s. @see parseCongressParam.
+    for (const entry of listCongresses()) {
+      expect(parseCongressParam(congressBillsHref(entry.number).replace("/bills/", ""))).toBe(entry.number);
+    }
   });
 });
 
@@ -84,8 +106,10 @@ describe("lessonHref", (): void => {
     expect(lessonHref("how-a-bill-becomes-law")).toBe("/learn/how-a-bill-becomes-law");
   });
 
-  it("lower-cases and trims, matching what findLesson accepts", (): void => {
-    expect(lessonHref("  How-Congress-Votes  ")).toBe("/learn/how-congress-votes");
+  it("takes only a slug the registry declares, so an inline one is checked rather than trusted", (): void => {
+    // The guarantee is the parameter's type, which is why this reads as a plain equality rather than a normalization
+    // case: `lessonHref` no longer accepts a string to normalize. @see LessonSlug.
+    expect(lessonHref("what-committees-do")).toBe("/learn/what-committees-do");
   });
 
   it("round-trips: every route it builds resolves back to the lesson it was built from", (): void => {

@@ -6,10 +6,10 @@ import { CommitteeDetail } from "@/components/committees/committee-detail";
 import { committeeHref } from "@/lib/committee-route";
 import { type CommitteeProfileResult, getCommitteeProfile, getCommitteeRecords } from "@/lib/congress/client";
 import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees/model";
-import type {
-  CommitteeRecordKind,
-  CommitteeRecordsQuery,
-  CommitteeRecordsResult,
+import {
+  type CommitteeRecordsQuery,
+  type CommitteeRecordsResult,
+  committeeReportedCount,
 } from "@/lib/congress/committees/records";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
@@ -109,25 +109,10 @@ export default async function CommitteePage({ params, searchParams }: CommitteeP
     chamber,
     systemCode,
     query,
-    committeeRecordTotal(profile, query.kind),
+    committeeReportedCount(profile, query.kind),
   );
 
   return (
     <CommitteeDetail notice={notice} profile={profile} records={records} retrievedAt={retrievedAt} source={source} />
   );
-}
-
-/**
- * The committee's own count for one collection.
- *
- * @param profile - The committee whose counts to read.
- * @param kind - Which collection.
- * @returns The count, or `undefined` when Congress.gov reported none — which leaves the page unable to clamp a
- *   requested page in advance, and so lets the response's own count settle it instead.
- */
-function committeeRecordTotal(profile: CommitteeProfile, kind: CommitteeRecordKind): number | undefined {
-  if (kind === "bills") return profile.billCount;
-  if (kind === "reports") return profile.reportCount;
-
-  return profile.nominationCount;
 }

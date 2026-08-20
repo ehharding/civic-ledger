@@ -19,6 +19,7 @@ import {
   committeeRecordKindDescriptions,
   committeeRecordKindLabels,
   committeeRecordKinds,
+  committeeReportedCount,
   DEFAULT_COMMITTEE_RECORD_KIND,
   describeCommitteeRecordsPage,
 } from "@/lib/congress/committees/records";
@@ -80,10 +81,7 @@ function countFor(
 ): number | undefined {
   if (kind === result.records.kind && result.total !== undefined) return result.total;
 
-  if (kind === "bills") return profile.billCount;
-  if (kind === "reports") return profile.reportCount;
-
-  return profile.nominationCount;
+  return committeeReportedCount(profile, kind);
 }
 
 /**

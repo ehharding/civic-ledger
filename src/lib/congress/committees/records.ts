@@ -1,4 +1,5 @@
 import type { LegislativeBill } from "@/lib/congress/bills/model";
+import type { CommitteeProfile } from "@/lib/congress/committees/model";
 import { parseEnumParam, toQueryString } from "@/lib/congress/directory-filter";
 import { formatCount } from "@/lib/format";
 
@@ -92,6 +93,32 @@ export const committeeRecordKindClauses: Record<CommitteeRecordKind, string> = {
   reports: "no reports published by this committee",
   nominations: "no nominations referred to this committee",
 };
+
+/**
+ * The count the committee's *own* record reports for one of its collections.
+ *
+ * The mapping from a collection to the field holding its count is stated here once, rather than in each of the two
+ * places that needs it: the route, which reads the count *before* fetching so a requested page can be held inside the
+ * collection without a wasted round trip (@see clampCommitteeRecordsPage), and the records section, which prints it on
+ * every tab that is not the one currently open. Spelled out twice, a fourth collection would be a change to two files
+ * with nothing failing if only one of them was made — and the symptom would be a tab reading "Not reported" over a
+ * collection Congress.gov had counted perfectly well.
+ *
+ * This is deliberately *only* the committee's own figure. Where a collection has actually been fetched, its endpoint's
+ * count is the authoritative one and the caller prefers it — @see countFor in `committee-records.tsx` for why the two
+ * disagree and which one wins on screen.
+ *
+ * @param profile - The committee whose counts to read.
+ * @param kind - Which collection.
+ * @returns The count, or `undefined` when Congress.gov reported none for it — a different claim from "none", and one
+ *   every caller has to keep distinct from zero.
+ */
+export function committeeReportedCount(profile: CommitteeProfile, kind: CommitteeRecordKind): number | undefined {
+  if (kind === "bills") return profile.billCount;
+  if (kind === "reports") return profile.reportCount;
+
+  return profile.nominationCount;
+}
 
 /**
  * One bill's relationship to this committee.

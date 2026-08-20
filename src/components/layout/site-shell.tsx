@@ -1,6 +1,7 @@
 import type { JSX, ReactNode } from "react";
 
 import { SiteHeader } from "@/components/layout/site-header";
+import { SITE_NAME } from "@/lib/metadata";
 
 /** The id the skip link targets. Also the `<main>` landmark's id, so the two can't drift apart. */
 export const MAIN_CONTENT_ID: string = "main-content";
@@ -32,7 +33,7 @@ export function SiteShell({ children }: { children: ReactNode }): JSX.Element {
         {children}
       </main>
       <footer className="site-footer">
-        <span>Civic Ledger</span>
+        <span>{SITE_NAME}</span>
         <span>Built for understanding, anchored to primary sources.</span>
       </footer>
     </div>

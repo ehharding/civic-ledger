@@ -26,6 +26,11 @@ export const metadata: Metadata = pageMetadata({
   path: "/bills",
 });
 
+/** Params for the bill directory route — the shareable `?q=`/`?stage=` view. */
+type BillsPageProps = {
+  searchParams: Promise<RouteSearchParams>;
+};
+
 /**
  * Bill directory route for the *current* Congress.
  *
@@ -36,11 +41,7 @@ export const metadata: Metadata = pageMetadata({
  *   @see resolveBillDirectoryQuery
  * @returns The directory page for the current Congress.
  */
-export default async function BillsPage({
-  searchParams,
-}: {
-  searchParams: Promise<RouteSearchParams>;
-}): Promise<JSX.Element> {
+export default async function BillsPage({ searchParams }: BillsPageProps): Promise<JSX.Element> {
   const [initialView, snapshot] = await Promise.all([resolveBillDirectoryQuery(searchParams), getCongressSnapshot()]);
 
   return (

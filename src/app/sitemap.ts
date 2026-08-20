@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { congressBillsHref } from "@/lib/bill-route";
 import { type CongressHistoryEntry, listCongresses } from "@/lib/congress/congress-history";
 import { lessonHref } from "@/lib/lesson-route";
 import { type Lesson, lessons } from "@/lib/lessons";
@@ -58,7 +59,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   const congressEntries: MetadataRoute.Sitemap = listCongresses().map((entry: CongressHistoryEntry) => ({
-    url: `${siteUrl}/bills/${entry.number}`,
+    url: `${siteUrl}${congressBillsHref(entry.number)}`,
     lastModified,
     // A concluded Congress's records are final; the current one gains bills every day it sits.
     changeFrequency: entry.isCurrent ? ("daily" as const) : ("yearly" as const),

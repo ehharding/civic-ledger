@@ -117,9 +117,7 @@ export async function resolveMemberDirectoryQuery(
 ): Promise<MemberDirectoryQuery> {
   if (!canReadRequest()) return DEFAULT_MEMBER_DIRECTORY_QUERY;
 
-  const params: RouteSearchParams = await searchParams;
-
-  return parseMemberDirectoryQuery(toSearchParams(params), knownJurisdictions);
+  return parseMemberDirectoryQuery(toSearchParams(await searchParams), knownJurisdictions);
 }
 
 /**

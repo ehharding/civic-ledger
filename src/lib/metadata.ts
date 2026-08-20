@@ -117,7 +117,7 @@ export function pageMetadata({ title, description, path }: PageMetadataInput): M
  */
 export function notFoundMetadata(title: string): Metadata {
   return {
-    ...pageMetadata({ title, description: "This record could not be found in Civic Ledger." }),
+    ...pageMetadata({ title, description: `This record could not be found in ${SITE_NAME}.` }),
     robots: { index: false, follow: true },
   };
 }

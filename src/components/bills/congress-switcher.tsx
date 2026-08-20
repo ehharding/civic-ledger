@@ -1,9 +1,9 @@
 "use client";
 
-import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import type { ChangeEvent, JSX } from "react";
 
+import { congressBillsHref } from "@/lib/bill-route";
 import type { CongressHistoryEntry } from "@/lib/congress/congress-history";
 import { formatOrdinal } from "@/lib/format";
 
@@ -43,7 +43,7 @@ export function CongressSwitcher({
     const nextCongress: string = event.target.value;
     if (Number(nextCongress) === selected) return;
 
-    router.push(`/bills/${nextCongress}` as Route);
+    router.push(congressBillsHref(nextCongress));
   }
 
   return (

@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { PrimaryNav } from "@/components/layout/primary-nav";
+import { BILL_DIRECTORY_PARAMS } from "@/lib/congress/bills/search";
+import { SITE_NAME } from "@/lib/metadata";
 
 /**
  * Where the header's search form submits.
@@ -27,17 +29,23 @@ const SEARCH_ACTION: string = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/bills`
  * @see resolveBillDirectoryQuery
  * @see SEARCH_ACTION for why the target is built rather than written literally.
  *
+ * The field's `name` comes from {@link BILL_DIRECTORY_PARAMS} rather than being spelled `"q"` here, which is the third
+ * crossing of the boundary that constant exists for: the directory writes the param, the route parses it, and this form
+ * submits it. It is also the crossing with no type between its two ends — a plain `<form>` GET — so a rename that
+ * updated the other two would leave this one quietly submitting to a param nothing reads, and the only symptom would be
+ * a search box that navigates to an unfiltered `/bills`.
+ *
  * @returns The site header.
  */
 export function SiteHeader(): JSX.Element {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <Link className="wordmark" href="/" aria-label="Civic Ledger home">
+        <Link className="wordmark" href="/" aria-label={`${SITE_NAME} home`}>
           <span className="wordmark__mark">
             <Compass aria-hidden="true" size={18} strokeWidth={2.25} />
           </span>
-          <span>Civic Ledger</span>
+          <span>{SITE_NAME}</span>
         </Link>
         <PrimaryNav />
         {/* biome-ignore lint/a11y/useSemanticElements: the suggested <search> element would have to wrap this form
@@ -48,7 +56,7 @@ export function SiteHeader(): JSX.Element {
             Search bills
           </label>
           <Search aria-hidden="true" size={15} />
-          <input id="global-search" name="q" placeholder="Search bills" type="search" />
+          <input id="global-search" name={BILL_DIRECTORY_PARAMS.query} placeholder="Search bills" type="search" />
         </form>
       </div>
     </header>

@@ -19,8 +19,8 @@ export const SEARCH_DEBOUNCE_MS: number = 300;
  *
  * Declared here rather than imported from `@/lib/congress/client`, deliberately: that module is server-only (it reads
  * `CONGRESS_API_KEY` and calls Congress.gov directly), so anything running in the browser depends only on the
- * isomorphic `@/lib/congress/types` and `@/lib/congress/search` modules and never risks pulling the adapter — and the
- * key it reads — into a client bundle.
+ * isomorphic `@/lib/congress/bills/model` and `@/lib/congress/bills/search` modules and never risks pulling the
+ * adapter — and the key it reads — into a client bundle.
  */
 type SearchResponse = {
   bills: LegislativeBill[];
