@@ -40,7 +40,15 @@ export default defineConfig({
   // Chromium only. The checks here are about this app's own markup, geometry, and keyboard model rather than about
   // engine differences, and every one of them would assert the same thing three times over on three engines for triple
   // the CI minutes. Add a project when a finding is actually engine-specific.
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  //
+  // The `warmup` project ahead of it compiles every route and primes this app's upstream cache before anything is
+  // asserted against, which is what keeps the cold-compile timeout described under `retries` from being a thing a
+  // contributor meets on a fresh checkout. @see tests/e2e/warmup.setup.ts. The two are split by filename — `.setup.ts`
+  // against `.spec.ts` — so the warm-up cannot be collected as a spec, and a spec cannot accidentally run before it.
+  projects: [
+    { name: "warmup", testMatch: /\.setup\.ts$/ },
+    { name: "chromium", testMatch: /\.spec\.ts$/, use: { ...devices["Desktop Chrome"] }, dependencies: ["warmup"] },
+  ],
   webServer: {
     // The dev server rather than `next build && next start`, which is the deliberate half of this and worth knowing
     // before reading a failure. It costs a slower first navigation per route, since Turbopack compiles on demand — and

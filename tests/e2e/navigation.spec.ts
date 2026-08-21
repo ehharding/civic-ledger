@@ -148,7 +148,7 @@ test("the load-more route answers in the shape the directory reads", async ({
 
   const body = (await response.json()) as Record<string, unknown>;
   expect(Object.keys(body)).toEqual(["bills"]);
-  expect(Array.isArray(body.bills)).toBe(true);
+  expect(Array.isArray(body["bills"])).toBe(true);
 });
 
 test("the search route answers in the shape the search box reads", async ({
@@ -162,7 +162,7 @@ test("the search route answers in the shape the search box reads", async ({
   // everything. A response missing one is a scope note that quietly stops being true.
   const body = (await response.json()) as Record<string, unknown>;
   expect(Object.keys(body).sort()).toEqual(["bills", "congressesSearched", "source", "truncated"]);
-  expect(Array.isArray(body.bills)).toBe(true);
+  expect(Array.isArray(body["bills"])).toBe(true);
 });
 
 /* And the same contract from the other end: the route's fields reaching a browser and coming back out as a sentence. */

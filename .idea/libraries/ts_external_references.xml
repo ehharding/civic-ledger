@@ -2,9 +2,7 @@
   <library name="ts-external-references" type="javaScript">
     <properties>
       <sourceFilesUrls>
-        <item url="file://$PROJECT_DIR$/.next/dev/types/root-params.d.ts" />
-        <item url="file://$PROJECT_DIR$/.next/dev/types/routes.d.ts" />
-        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/@next+env@16.3.0/node_modules/@next/env/dist/index.d.ts" />
+        <item url="file://$PROJECT_DIR$/node_modules/.pnpm/@next+env@16.3.1/node_modules/@next/env/dist/index.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/csstype@3.2.3/node_modules/csstype/index.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/agent.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/api.d.ts" />
@@ -48,15 +46,10 @@
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/util.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/utility.d.ts" />
         <item url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/websocket.d.ts" />
-        <item url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.es2020.d.ts" />
-        <item url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.es2025.float16.d.ts" />
-        <item url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.esnext.disposable.d.ts" />
       </sourceFilesUrls>
     </properties>
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/.next/dev/types/root-params.d.ts" />
-      <root url="file://$PROJECT_DIR$/.next/dev/types/routes.d.ts" />
-      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/@next+env@16.3.0/node_modules/@next/env/dist/index.d.ts" />
+      <root url="file://$PROJECT_DIR$/node_modules/.pnpm/@next+env@16.3.1/node_modules/@next/env/dist/index.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/csstype@3.2.3/node_modules/csstype/index.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/agent.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/api.d.ts" />
@@ -100,9 +93,6 @@
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/util.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/utility.d.ts" />
       <root url="file://$PROJECT_DIR$/node_modules/.pnpm/undici-types@7.18.2/node_modules/undici-types/websocket.d.ts" />
-      <root url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.es2020.d.ts" />
-      <root url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.es2025.float16.d.ts" />
-      <root url="file://$PROJECT_DIR$/node_modules/typescript/lib/lib.esnext.disposable.d.ts" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -165,7 +165,7 @@ function emit(level: "warn" | "error", message: string, details: LogDetails): vo
   const attributes: LogAttributes = redactAttributes(details.attributes ?? {}, secrets);
 
   const cause: string | undefined = describeCause(details.cause, secrets);
-  if (cause !== undefined) attributes.cause = cause;
+  if (cause !== undefined) attributes["cause"] = cause;
 
   // Human-readable, and the only sink that exists when Sentry is switched off — which is the normal state of a local
   // checkout and of the static demo, so it is the one that must not be conditional on anything.

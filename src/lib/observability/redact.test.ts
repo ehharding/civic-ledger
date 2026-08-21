@@ -185,7 +185,7 @@ describe("redactEvent", (): void => {
 
   it("terminates on a cycle instead of recurring forever", (): void => {
     const event: Record<string, unknown> = { request: { url: "https://civic-ledger.example/bills" } };
-    event.self = event;
+    event["self"] = event;
 
     // Dropped rather than followed: an un-walked branch is an un-redacted one, so the safe answer is to omit it.
     expect(redactEvent(event)).toEqual({ request: { url: "https://civic-ledger.example/bills" }, self: undefined });

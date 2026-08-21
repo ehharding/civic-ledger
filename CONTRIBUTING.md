@@ -155,3 +155,8 @@ default — a few current positions, so they don't have to be relitigated per pu
   no I/O. Anything that fetches belongs beside it under its own name, not inside it.
 - A component file is named for the single component it exports, so `BillCard` is findable at `bills/bill-card.tsx`
   from the name alone. The adapter's modules export many things and are named for their responsibility instead.
+- **A new environment variable is declared in `env.d.ts` before it can be read.** `noPropertyAccessFromIndexSignature`
+  in `tsconfig.json` is the enforcement point: without a declaration, `process.env.WHATEVER` no longer compiles, so a
+  misspelled name fails `pnpm typecheck` instead of evaluating to `undefined` — which every read in this app has a
+  graceful, silent answer for. Document the variable in `.env.example` too if a contributor is ever expected to set it,
+  and in [Deployment](docs/deployment.md) if a deployment is.

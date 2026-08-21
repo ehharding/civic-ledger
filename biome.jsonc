@@ -33,6 +33,22 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "complexity": {
+        // Off because tsconfig.json turns on `noPropertyAccessFromIndexSignature`, and the two disagree by
+        // construction: that flag permits a dot only where a property is actually *declared*, so every bracket access
+        // left in this tree is one the compiler required — and this rule reports each of them as a simplification, with
+        // an "unsafe fix" that reintroduces the type error. There is no ordering of the two that leaves both happy.
+        //
+        // The compiler is the right owner of that decision, because it is deciding something real. `attributes.cause`
+        // and `attributes["cause"]` look interchangeable and are not: the first claims `cause` is part of a declared
+        // shape, the second says it is a key in a bag. @see env.d.ts, whose whole guarantee — that a misspelled
+        // environment variable stops compiling — is this flag applied to `process.env`.
+        //
+        // What that costs, stated rather than buried: a genuinely gratuitous `bill["title"]` over a declared property
+        // is no longer flagged. That is a readability nit rather than a defect, and it is the smaller half of this
+        // trade by a wide margin.
+        "useLiteralKeys": "off"
+      },
       "correctness": {
         // Reaching past `package.json` into a transitive dependency compiles, passes tests, and breaks the day the
         // package that pulled it in bumps a range nobody here reviewed. `tests/e2e/accessibility.spec.ts` already
@@ -109,6 +125,16 @@
     }
   },
   "overrides": [
+    {
+      // Ambient declaration files are the one place `interface` is not a style choice. Their purpose is to *merge* with
+      // declarations this project does not own — Node's `ProcessEnv`, a library's types — and `type` cannot merge, so
+      // the rule below would forbid the only spelling that works. Scoped to `.d.ts` rather than suppressed per file,
+      // because this is a category rather than an exception: every ambient file that ever augments someone else's
+      // types lands here for the same reason. Nothing in `src/` is a `.d.ts`, so the house rule still covers every
+      // model in the app. @see env.d.ts, currently the only file this reaches.
+      "includes": ["**/*.d.ts"],
+      "linter": { "rules": { "style": { "useConsistentTypeDefinitions": "off" } } }
+    },
     {
       // Vitest suites say `it`, Playwright specs say `test`. Both are that framework's own idiom rather than a drift
       // between them, so the rule is scoped to the half where one spelling is right instead of being turned off across
