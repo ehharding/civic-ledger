@@ -151,15 +151,21 @@
 
   /* The nav gets a row of its own below this width.
    *
-   * Above it, the header is wordmark-then-nav on one line and the nav is pinned right. That arrangement holds at four
-   * destinations and fails at five, which is what this app has: squeezed into the column beside the wordmark, the links
-   * wrap into a ragged two- or three-line block hanging off the right edge, and each one added past that makes it
-   * worse. The arrangement that scales is to stop sharing the line — a full-width row left-aligned under the wordmark
-   * fits five labels on one line on any phone wider than about 340px, and wraps to a tidy left-aligned second line
-   * below that instead of a staircase.
+   * This is the arrangement the drawer replaces, and it is still the one a browser with scripting off gets — the drawer
+   * block further down is conditioned on `(scripting: enabled)`, so everything here has to keep standing on its own.
+   * Read the two together: this is the header when the five destinations have to be reachable without a control to open
+   * them. @see the drawer block below.
+   *
+   * Above this width, the header is wordmark-then-nav on one line and the nav is pinned right. That arrangement holds
+   * at four destinations and fails at five, which is what this app has: squeezed into the column beside the wordmark,
+   * the links wrap into a ragged two- or three-line block hanging off the right edge, and each one added past that
+   * makes it worse. The arrangement that scales is to stop sharing the line — a full-width row left-aligned under the
+   * wordmark fits five labels on one line on any phone wider than about 340px, and wraps to a tidy left-aligned second
+   * line below that instead of a staircase.
    *
    * The cost is roughly 12px of a sticky header, which is the trade being made deliberately: the alternative is
-   * shrinking the type again, and these labels are already at the smallest step on the type scale. */
+   * shrinking the type again, and these labels are already at the smallest step on the type scale. That cost is what
+   * the drawer stopped paying, which is the other half of why it exists. */
   .site-header__inner {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
@@ -312,6 +318,222 @@
 
   .member-portrait__image {
     width: 128px;
+  }
+}
+
+/* The mobile navigation drawer. @see PrimaryNav.
+ *
+ * **Why this block is conditioned on scripting as well as on width.** Everything in it describes a control that has to
+ * be operated: five destinations parked off the right edge of the window, and a button that brings them back. With
+ * scripting off the button cannot do that, so this block does not apply at all and the 640px block above stands as
+ * written — the wrapped row, at the smaller type, exactly as this header behaved before the drawer existed. That is not
+ * a courtesy. It is the same commitment the header's search form and the glossary bubble already make, and the one a
+ * nav has the least excuse for breaking: a hamburger with no JavaScript behind it does not degrade to a smaller menu,
+ * it degrades to no menu at all.
+ *
+ * `(scripting: enabled)` rather than a class an inline script writes onto `<html>`, which is the older way to ask this
+ * question. The media feature has been in every browser this app supports since 2023, it is answered before the first
+ * paint rather than after a script runs, and it cannot get out of step with anything — there is no attribute to set, no
+ * ordering to get right, and no flash of the other layout while a bundle loads.
+ *
+ * **Why the drawer is the same `<nav>`.** Nothing below duplicates a destination. The panel is the header's own nav
+ * element taken out of flow, which is what keeps one landmark in the document, one list to keep in step, and one
+ * answer to "the primary navigation" for every test that asks. @see PrimaryNav for the rest of that argument.
+ *
+ * **Why the closed state is `visibility`, not `display` or an attribute.** A drawer that is merely translated off the
+ * edge is still focusable and still announced, so tabbing out of the header would walk a reader through five links they
+ * cannot see. `visibility: hidden` takes it out of both the tab order and the accessibility tree, and — this is the
+ * part that matters — it does so *here*, inside the conditions the drawer exists under. The same nav above 640px is
+ * untouched by this rule, so nothing has to remember to undo it at the breakpoint, and there is no window during a
+ * resize where React has hidden a row that CSS has just put back on screen. The transitions below hold `visibility`
+ * until the slide has finished, so the panel does not vanish mid-animation on the way out.
+ *
+ * **What the header gets back.** The row this replaces cost about 24px of a sticky header on the smallest screens — a
+ * full line of nav under the wordmark, at the bottom of the type scale, wrapping to two lines under ~340px. The header
+ * here is one line again at --space-16, which is 65px including its border: shorter than the 66px the two-row
+ * arrangement took, while giving each destination a 44px row in the panel instead of an 18px label in a wrapped row.
+ * `scroll-padding-top` in base.css is stated against the tallest of the header's three heights and still clears this
+ * one. */
+@media (max-width: 640px) and (scripting: enabled) {
+  /* Back to one line: wordmark, then toggle. Every declaration here undoes one from the 640px block above, which is
+     describing the other layout — the two-row grid, its `start` alignment, and the padding that gave the nav row
+     somewhere to sit.
+
+     `--drawer-top` is the header's own height, named once so the panel and its scrim can start immediately below it
+     rather than each restating the arithmetic. The `+ 1px` is the header's bottom border, which is on `.site-header`
+     and therefore outside this `min-height`. Both users are `position: fixed`, so they resolve it against the
+     viewport — which is where the sticky header is, always, at `top: 0`.
+
+     That "against the viewport" is a fact this block depends on and does not own: it holds only because the header's
+     blur is drawn by a pseudo-element rather than by the header itself. @see the `.site-header::before` rule in
+     layout.css, which is where the reason lives. */
+  .site-header__inner {
+    --drawer-top: calc(var(--space-16) + 1px);
+
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: var(--space-16);
+    gap: var(--space-4);
+    padding-block: 0;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  /* Below the header rather than over it, so the wordmark stays legible and un-dimmed and the header reads as one
+     unbroken bar with the page dimmed underneath it. Both this and the panel are children of the header, which is
+     already a stacking context at z-index 10 — so these two numbers order them against each other and nothing else, and
+     neither has to out-rank anything on the page. */
+  .nav-scrim {
+    display: block;
+    position: fixed;
+    top: var(--drawer-top);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    background: color-mix(in srgb, var(--shadow-color) 38%, transparent);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 260ms ease,
+      visibility 0s linear 260ms;
+  }
+
+  .nav-scrim[data-open="true"] {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 260ms ease,
+      visibility 0s;
+  }
+
+  /* `min(82vw, 320px)` rather than a fixed width: 320px is as wide as the panel ever needs to be for five short labels,
+     and at the 320px reflow floor a fixed 320 would be the whole window, which reads as a page rather than as a panel
+     over one. 82vw leaves a strip of the dimmed page visible at every width, which is what says "this is on top of
+     something, and tapping there puts it back".
+
+     The easing is the one iOS uses for sheets — almost all of the movement happens early, so the panel arrives rather
+     than drifts. It is off the grid in the same sense the header's gaps are: a curve is a measurement, not a step. */
+  .primary-nav {
+    position: fixed;
+    top: var(--drawer-top);
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+    width: min(82vw, 320px);
+    padding: var(--space-5) var(--space-4) var(--space-8);
+    gap: var(--space-1);
+    overflow-y: auto;
+    /* A flick that reaches the end of the panel scrolls the panel, not the page behind it. */
+    overscroll-behavior: contain;
+    border-left: 1px solid var(--line);
+    background: var(--paper);
+    box-shadow: var(--shadow);
+    font-size: var(--text-2xl);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+      transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 300ms;
+  }
+
+  .primary-nav[data-open="true"] {
+    transform: translateX(0);
+    visibility: visible;
+    transition:
+      transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s;
+  }
+
+  /* A row per destination, at the 44px touch floor rather than the 24px minimum the wrapped row was held to — the
+     column has the height to spend, and this is the one control on the page while it is open.
+
+     The destinations arrive just behind the panel rather than with it, which is what makes the drawer read as opening
+     onto something instead of sliding a finished picture in. Only the open state carries the delays: on the way out
+     they leave together with the panel, because a staggered *exit* is a control the reader has already dismissed still
+     asking to be watched. */
+  .primary-nav a {
+    display: flex;
+    align-items: center;
+    min-height: var(--space-11);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    opacity: 0;
+    transform: translateX(var(--space-4));
+    transition:
+      opacity 200ms ease,
+      transform 200ms ease;
+  }
+
+  .primary-nav[data-open="true"] a {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Off the grid, and measured: the first destination waits for the panel to be most of the way in (the easing above
+     puts it there by ~60ms) and each next one follows by 35ms, which lands the fifth at 200ms — inside the panel's own
+     300ms, so the drawer finishes as one movement rather than trailing. */
+  .primary-nav[data-open="true"] a:nth-child(1) {
+    transition-delay: 60ms;
+  }
+
+  .primary-nav[data-open="true"] a:nth-child(2) {
+    transition-delay: 95ms;
+  }
+
+  .primary-nav[data-open="true"] a:nth-child(3) {
+    transition-delay: 130ms;
+  }
+
+  .primary-nav[data-open="true"] a:nth-child(4) {
+    transition-delay: 165ms;
+  }
+
+  .primary-nav[data-open="true"] a:nth-child(5) {
+    transition-delay: 200ms;
+  }
+
+  /* The page behind the scrim holds still. Scoped in here rather than applied from the component, so a reader who opens
+     the drawer and then turns a tablet into the row layout gets their scrolling back from the stylesheet — the
+     attribute on <body> says the drawer is open, and this block is the only thing that decides whether "open" means
+     anything. @see PrimaryNav.
+
+     Keyed to the attribute's presence rather than to a value, which is the same rule `.primary-nav a[aria-current]`
+     follows: the attribute is the state, so there is nothing for a value to add and nothing for the two to disagree
+     about. It is also what `toggleAttribute` writes — a bare attribute, not `="true"`. */
+  body[data-nav-open] {
+    overflow: hidden;
+  }
+
+  /* Reduced motion keeps every state and drops every movement: the panel and the scrim appear and disappear, the
+     destinations arrive with them, and nothing slides or staggers. Nested inside this block rather than sitting beside
+     the toggle's own reduced-motion rule in layout.css, because it is overriding declarations made *here* — a
+     `components` rule cannot take back an `overrides` one whatever its specificity. @see the layer contract in
+     globals.css. */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-scrim,
+    .nav-scrim[data-open="true"],
+    .primary-nav,
+    .primary-nav[data-open="true"] {
+      transition: none;
+    }
+
+    .primary-nav a,
+    .primary-nav[data-open="true"] a:nth-child(1),
+    .primary-nav[data-open="true"] a:nth-child(2),
+    .primary-nav[data-open="true"] a:nth-child(3),
+    .primary-nav[data-open="true"] a:nth-child(4),
+    .primary-nav[data-open="true"] a:nth-child(5) {
+      transform: none;
+      transition: none;
+      transition-delay: 0s;
+    }
   }
 }
 

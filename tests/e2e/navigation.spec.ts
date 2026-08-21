@@ -94,6 +94,175 @@ test("the primary nav marks the section being read, and keeps marking it across 
   await expect(primaryNav.locator("a[aria-current]")).toHaveCount(1);
 });
 
+/**
+ * The mobile navigation drawer: the same five destinations, as a panel rather than a row. @see PrimaryNav.
+ *
+ * This is the one arrangement no unit test can see. jsdom applies none of the app's stylesheets, so the panel is never
+ * off-screen there and its links are never out of the tab order — which means every claim the drawer's design rests on
+ * (that a closed drawer offers nothing, that an open one holds the page still, that Tab stays inside it) is only ever
+ * true in a browser. The component's own contract — what it marks open, what it closes on, where it puts focus — is
+ * covered in `src/components/layout/primary-nav.test.tsx` and deliberately not repeated here.
+ *
+ * 390 × 844 is a current mid-size phone. The narrowest supported width, where the panel is at its tightest, is measured
+ * in `layout.spec.ts` instead, alongside the rest of this app's geometry.
+ */
+test.describe("the mobile navigation drawer", (): void => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  /*
+   * The claim the whole arrangement rests on: a closed drawer is not merely off-screen, it is gone. `getByRole` reads
+   * the accessibility tree, so a panel hidden with a transform alone — still focusable, still announced — would pass
+   * every other assertion in this file and fail this one.
+   */
+  test("offers nothing until it is opened", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+
+    const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
+    await expect(primaryNav.getByRole("link")).toHaveCount(0);
+
+    const toggle: Locator = page.getByRole("button", { name: "Menu" });
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await toggle.click();
+
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(primaryNav.getByRole("link")).toHaveCount(5);
+  });
+
+  test("leads to a section and closes behind you", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Menu" }).click();
+
+    const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
+    await primaryNav.getByRole("link", { name: "Committees" }).click();
+
+    await expect(page).toHaveURL(/\/committees$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Where Bills Actually Go." })).toBeVisible();
+    // Arriving somewhere with the menu still over it would be the drawer covering the page it just asked for.
+    await expect(page.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
+    await expect(primaryNav.getByRole("link")).toHaveCount(0);
+
+    // And the section is marked in the drawer exactly as it is in the row, since it is the same nav either way.
+    await page.getByRole("button", { name: "Menu" }).click();
+    await expect(primaryNav.getByRole("link", { name: "Committees" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("closes when the page behind it is tapped", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Menu" }).click();
+    await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link")).toHaveCount(5);
+
+    // Left of the panel, below the header: the scrim, and nothing else. A tap there has to reach the scrim rather than
+    // the page underneath it, which is the assertion — the click would otherwise land on the hero.
+    await page.mouse.click(40, 400);
+
+    await expect(page.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
+    await expect(page).toHaveURL(/\/$/);
+  });
+
+  /*
+   * WCAG 1.4.13's dismissible requirement, and the focus return that has to come with it: closing while focus is inside
+   * a panel that is about to become `visibility: hidden` would drop focus to <body>, and the reader's next Tab would
+   * start the page over from the skip link.
+   */
+  test("closes on Escape and hands focus back to the toggle", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+    const toggle: Locator = page.getByRole("button", { name: "Menu" });
+    await toggle.click();
+
+    const firstDestination: Locator = page
+      .getByRole("navigation", { name: "Primary navigation" })
+      .getByRole("link", { name: "Bills" });
+    await firstDestination.focus();
+    await expect(firstDestination).toBeFocused();
+
+    await page.keyboard.press("Escape");
+
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle).toBeFocused();
+  });
+
+  /*
+   * The Tab loop. Without it, tabbing past the last destination walks into page content the scrim has covered — focus
+   * on something the reader cannot see, in a page they cannot scroll.
+   */
+  test("keeps Tab inside the drawer while it is open", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+    const toggle: Locator = page.getByRole("button", { name: "Menu" });
+    await toggle.click();
+
+    const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
+    await primaryNav.getByRole("link", { name: "Methodology" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(toggle).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeFocused();
+
+    // The loop is the drawer's, not the page's: it comes down with the drawer rather than outliving it.
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Tab");
+    await expect(toggle).not.toBeFocused();
+  });
+
+  /**
+   * The drawer's own precondition, checked from the other side.
+   *
+   * Everything above describes a control that has to be operated, and the stylesheet is explicit that none of it
+   * applies without scripting — the whole drawer block is gated on `@media (scripting: enabled)`. This is the test of
+   * the half that gate protects: with scripting off, the five destinations are on the page, laid out as the wrapped
+   * row this header had before the drawer existed, and the button that could not have opened them is not offered.
+   *
+   * Worth having as a browser test rather than as a comment, because nothing else in this project can see it. A media
+   * feature is answered by the engine; jsdom has none, and a reviewer reading the stylesheet cannot tell whether
+   * Chromium agrees that scripting is off. The failure it guards against is also the worst one a nav has available: a
+   * hamburger with nothing behind it does not degrade to a smaller menu, it degrades to no menu at all.
+   */
+  test.describe("with scripting off", (): void => {
+    test.use({ javaScriptEnabled: false });
+
+    test("keeps every destination reachable, and offers no control that could not work", async ({
+      page,
+    }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+      await page.goto("/");
+
+      const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
+      await expect(primaryNav.getByRole("link")).toHaveCount(5);
+      await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeVisible();
+
+      await expect(page.getByRole("button", { name: "Menu" })).toBeHidden();
+    });
+  });
+
+  /* The page behind the scrim holds still, so a flick meant for the menu does not scroll the document under it. */
+  test("holds the page still while it is open", async ({
+    page,
+  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Menu" }).click();
+
+    await page.mouse.move(40, 400);
+    await page.mouse.wheel(0, 600);
+
+    expect(await page.evaluate((): number => window.scrollY)).toBe(0);
+
+    await page.keyboard.press("Escape");
+    await page.mouse.wheel(0, 600);
+    await expect.poll(async (): Promise<number> => page.evaluate((): number => window.scrollY)).toBeGreaterThan(0);
+  });
+});
+
 test("header search submits the query to the bills directory", async ({
   page,
 }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {

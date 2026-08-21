@@ -30,6 +30,29 @@
   top: 0;
   z-index: 10;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+}
+
+/* The header's surface: a translucent wash over a blur of whatever is scrolling underneath it.
+ *
+ * Drawn by a pseudo-element rather than by the rule above, and that is structural rather than a flourish.
+ * `backdrop-filter` — like `filter` and `transform` — makes an element the containing block for its `position: fixed`
+ * descendants, and the navigation drawer below 640px is exactly one of those: a panel fixed to the *viewport*, full
+ * height, parked off its right edge while closed. With the blur on the header, the panel was laid out against a 65px
+ * bar instead, which broke it in three ways at once — a scrim with no height, a panel that shrank to the height of its
+ * own links, and, because a fixed box whose containing block is not the viewport *is* part of that container's
+ * scrollable overflow, 262px of horizontal scrolling on every page at the 320px reflow width. One level down, the
+ * header is drawn exactly as it was and the drawer has the viewport back. @see the drawer block in responsive.css, and
+ * the reflow sweep in tests/e2e/layout.spec.ts that fails if this moves back up.
+ *
+ * `z-index: -1` because an absolutely positioned pseudo-element is a *positioned* descendant, which would otherwise
+ * paint over the wordmark and the nav rather than behind them. Negative z-index puts it back where a background
+ * belongs: after the header's own border, before its content. `inset: 0` resolves against the padding box, so the 1px
+ * bottom border above is outside this box and composites over the page exactly as it did before. */
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: color-mix(in srgb, var(--canvas) 90%, transparent);
   backdrop-filter: blur(18px);
 }
@@ -96,7 +119,11 @@
    Padding rather than a min-height, because the row that matters is the wrapped one, and only padding grows the box
    symmetrically around the text — a min-height would center the label in a taller box on one row and leave the rows
    themselves further apart. It costs nothing on wide screens, where the header's own min-height is what sets its
-   height; the row-gap that pays for it below 640px is handled at that breakpoint. @see responsive.css. */
+   height; the row-gap that pays for it below 640px is handled at that breakpoint. @see responsive.css.
+
+   Below 640px with scripting on, the drawer answers this more generously — a 44px row per destination rather than a
+   24px label — and this rule is what the wrapped row falls back to when there is no drawer to open. Both are held to
+   the floor by the same e2e sweep. @see tests/e2e/layout.spec.ts. */
 .primary-nav a {
   padding-block: 3px;
 }
@@ -129,6 +156,100 @@
   text-decoration-color: var(--burgundy);
   text-decoration-thickness: 2px;
   text-underline-offset: 6px;
+}
+
+/* The drawer toggle, and the scrim behind the drawer it opens. @see PrimaryNav.
+ *
+ * Both are `display: none` here and turned on in exactly one place — the drawer block in responsive.css, which is gated
+ * on `(max-width: 640px) and (scripting: enabled)`. Stating the off state here rather than a `display: none` inside a
+ * `min-width` query is what makes that gating total: there is no width, and no scripting setting, at which these appear
+ * by default and have to be taken away again. Above the breakpoint the header is a row of links and these two elements
+ * are not in the layout at all; with scripting off they are not in it either, and the row below 640px is the wrapped
+ * one this header had before the drawer existed.
+ *
+ * Everything below the two `display` declarations is how the toggle is *drawn*, which does not depend on either
+ * condition — a rule that only matters when the button is visible costs nothing while it isn't, and keeping it here
+ * leaves responsive.css holding the layout switch alone. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* 44px, the touch-target floor `.button` is already pinned to — @see buttons.css. The bars inside are 20px wide, so
+     the box is mostly padding, and deliberately: this is the only control in the header on a phone. */
+  width: var(--space-11);
+  height: var(--space-11);
+  padding: 0;
+  /* The same user-agent chrome reset `.button` carries, and for the same contrast reason rather than a cosmetic one:
+     `color-scheme: light dark` resolves an untouched `ButtonFace` to a mid grey, which a --navy-deep glyph sits on
+     below threshold in dark mode. @see the reset note in buttons.css. */
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--navy-deep);
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-scrim {
+  display: none;
+}
+
+/* The bars, and the ✕ they become.
+ *
+ * A fixed 14px box holding three absolutely-positioned 2px bars, which is what lets the morph be a transition rather
+ * than a swap: the top and bottom bars translate to the middle and rotate to meet, and the middle one collapses into
+ * them. Sizing the box in literals rather than on the spacing grid, because the three offsets (0, 6px, 12px) and the
+ * 6px each outer bar travels are one arithmetic: the travel *is* the offset, so the ✕ crosses exactly at the middle
+ * bar's line. Rounding any of them to the grid separately breaks that.
+ *
+ * `scaleX` on the way out as well as `opacity`, so the middle bar reads as being drawn into the crossing rather than
+ * simply switched off. Its opacity runs faster than the rotation for the same reason — it should be gone before the
+ * two outer bars arrive over it, not fading behind them.
+ *
+ * Keyed to `aria-expanded` rather than to a `data-open` beside it, which is the same rule
+ * `.primary-nav a[aria-current]` follows: the ARIA attribute is what carries the state, so it is what the stylesheet
+ * selects on. The scrim and the panel have no equivalent of their own and do carry a `data-open`. */
+.nav-toggle__bars {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 14px;
+}
+
+.nav-toggle__bars span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  transition:
+    transform 260ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 140ms ease;
+}
+
+.nav-toggle__bars span:nth-child(1) {
+  top: 0;
+}
+
+.nav-toggle__bars span:nth-child(2) {
+  top: 6px;
+}
+
+.nav-toggle__bars span:nth-child(3) {
+  top: 12px;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle__bars span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle__bars span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.3);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle__bars span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 /* The block padding sits on the input rather than here, which is what makes the field's hit area the box you can see.
@@ -233,6 +354,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .skip-link {
+    transition: none;
+  }
+
+  /* The bars still become an ✕ — the state has to be readable — they just arrive there. The drawer and its scrim are
+     held to the same promise one layer up, in the block that gives them their transitions. @see responsive.css. */
+  .nav-toggle__bars span {
     transition: none;
   }
 }

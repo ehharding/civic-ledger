@@ -556,6 +556,27 @@ reviewer who does not use dark mode.
   mode only, which is exactly the failure a light-mode reviewer cannot see.
 - Every page begins with a skip link to the `<main>` landmark, which takes `tabIndex={-1}` so the jump actually moves
   focus rather than only scrolling. The header's search form is a `search` landmark in its own right.
+- **The mobile navigation drawer is one nav in two layouts, and a disclosure rather than a modal.** Below 640px the
+  header's five destinations become a slide-out panel — the same `<nav>` element, taken out of flow by the stylesheet
+  rather than duplicated into a second landmark with the same name. The toggle is a real button carrying `aria-expanded`
+  and `aria-controls`; focus is deliberately not moved on opening, because the panel is the toggle's next sibling and
+  the next Tab already lands on the first destination. What the drawer borrows from a dialog is the Tab loop, which it
+  needs because it has a scrim: without it, tabbing past the last destination walks into page content the reader can no
+  longer see. Escape closes it, and closing hands focus back to the toggle *only* when focus was inside the panel — a
+  destination being chosen must not yank focus off the page it just asked for.
+  - Which layout is in force is decided in CSS and never in React. The closed panel is `visibility: hidden` inside the
+    drawer's own media query, so it leaves the tab order and the accessibility tree exactly where the drawer exists and
+    nowhere else; a React-side `inert` would have to know the breakpoint to avoid hiding the desktop row.
+  - **With scripting off there is no drawer and no toggle** — the whole block is gated on `@media (scripting: enabled)`,
+    and the wrapped row this header had before it stands unchanged. This is the same commitment the header's search form
+    and the glossary bubble make, and the one a nav has least excuse for breaking: a hamburger with nothing behind it
+    does not degrade to a smaller menu, it degrades to no menu at all. `tests/e2e/navigation.spec.ts` runs a context
+    with JavaScript disabled to hold that.
+  - One consequence worth knowing before touching the header's styles: the header's blur is drawn by
+    `.site-header::before` rather than by `.site-header`, because `backdrop-filter` makes an element the containing
+    block for its `position: fixed` descendants. Held one level up, it laid the drawer out against a 65px bar and put
+    262px of horizontal scroll on every page at the 320px reflow width. The reflow sweep in
+    `tests/e2e/layout.spec.ts` fails if it moves back.
 - Links that open a new tab say so in their accessible name (`ExternalLinkHint`); the external-link glyph beside them is
   decorative and `aria-hidden`, so on its own it told a screen-reader user nothing.
 - **Reordering in place needs announcing, not advising.** The directories' sort controls reorder the grid without

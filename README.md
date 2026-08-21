@@ -168,6 +168,12 @@ Behind those routes:
   rather than this app's. Hovering or focusing "cloture" or "markup" shows the definition in place; the word is also a
   link to its full entry, so it works on a touch screen and with JavaScript off. The annotation never rewrites the text
   it runs over, which is checked rather than intended.
+- **A header that changes shape rather than shrinking.** On a phone the five primary destinations become an animated
+  slide-out drawer instead of a row of ever-smaller labels — the same navigation landmark, restyled, so nothing is
+  duplicated and each destination gets a full-size row. It is a disclosure with a real button, a Tab loop while the
+  scrim is up, Escape to dismiss, and focus handed back to the control that opened it. With JavaScript off there is no
+  drawer and no toggle: the plain row it replaces is still there, which is checked in a browser with scripting disabled
+  rather than assumed.
 - **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
 - **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
   and a safe preview fallback.

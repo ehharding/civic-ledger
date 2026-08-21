@@ -106,6 +106,30 @@ for (const scheme of ["light", "dark"] as const) {
       });
     }
 
+    /*
+     * The one page state that only exists at a phone's width: the navigation drawer, open. It is swept rather than
+     * assumed because it is the app's only overlay — a control whose expanded state, whose scrim, and whose panel are
+     * all things axe has rules about, sitting over a page that is still in the tree behind it.
+     */
+    test("the open navigation drawer has no WCAG 2.1 AA violations", async ({
+      page,
+    }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto("/");
+      await page.getByRole("button", { name: "Menu" }).click();
+
+      // Waited on the *opacity* rather than on visibility, and the distinction matters here more than anywhere else in
+      // this file. The destinations fade in behind the panel on a stagger, and Playwright calls an element visible as
+      // soon as it has a box — opacity is not part of that judgment. Axe's is: a link still at 0.4 through its fade is
+      // a real contrast failure at the instant it is measured, so scanning on `toBeVisible` reports the animation
+      // rather than the palette. The last destination is the one the stagger finishes on.
+      await expect(
+        page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Methodology" }),
+      ).toHaveCSS("opacity", "1");
+
+      await expectNoViolations(page, testInfo);
+    });
+
     test("a bill record has no WCAG 2.1 AA violations", async ({
       page,
     }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {

@@ -129,20 +129,64 @@ test("the footer sits at the bottom of the window on a page too short to fill it
 });
 
 /**
- * The primary navigation's five destinations are the most-used controls on the site, and their line boxes are the
- * smallest on it — 21px on a desktop and 18px on a phone. What lifts them over the floor is block padding rather than
- * anything visible, which is exactly the kind of rule a later change to the type scale or the header would undo
- * silently, so it is pinned here.
+ * The primary navigation's five destinations are the most-used controls on the site, and on a wide screen their line
+ * boxes are the smallest on it — 21px, lifted over the floor by block padding rather than by anything visible, which is
+ * exactly the kind of rule a later change to the type scale or the header would undo silently.
  *
- * Checked at the narrowest viewport because that is where the type steps down and the row wraps into a second line: the
- * boxes are smallest there, and a near miss lands on a different section of the app rather than on nothing.
+ * Below 640px the same five are rows in the drawer instead, sized generously because a column has the height to spend.
+ * Both arrangements are checked, at the narrowest viewport each one is reached at, because they are laid out by
+ * different rules and only one of them can be wrong at a time.
  */
 test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`, async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
+  // 641px: one pixel above the drawer breakpoint, so this is the row at its most cramped — the nav pinned right beside
+  // the wordmark, sharing a line with it.
+  await page.setViewportSize({ width: 641, height: 900 });
+  await page.goto("/");
+
+  await expectDestinationsClearTheFloor(page);
+});
+
+/**
+ * The same floor, in the drawer.
+ *
+ * Checked at the reflow width because that is the narrowest window the app promises to work in, and because the panel
+ * is sized as a fraction of it — at 320px the drawer is 262px wide, which is where a row has the least to work with.
+ * The toggle is measured alongside the destinations: below 640px it is the only way into any of them, so a toggle under
+ * the floor is five controls under it.
+ */
+test(`the drawer's toggle and destinations meet the ${MIN_TARGET}px target-size floor`, async ({
   page,
 }: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
   await page.setViewportSize({ width: REFLOW_WIDTH, height: 900 });
   await page.goto("/");
 
+  const toggle: Locator = page.getByRole("button", { name: "Menu" });
+  const toggleBox = await toggle.boundingBox();
+  expect(toggleBox, "the drawer toggle has no box").not.toBeNull();
+  expect(Math.round(toggleBox?.height ?? 0), "the drawer toggle is under the target-size floor").toBeGreaterThanOrEqual(
+    MIN_TARGET,
+  );
+  expect(Math.round(toggleBox?.width ?? 0), "the drawer toggle is under the target-size floor").toBeGreaterThanOrEqual(
+    MIN_TARGET,
+  );
+
+  await toggle.click();
+  await expectDestinationsClearTheFloor(page);
+});
+
+/**
+ * Measures every destination the primary nav is currently offering.
+ *
+ * Written against `getByRole`, which sees only what is actually reachable — so this doubles as the assertion that the
+ * five are on screen at all. A closed drawer offers none of them, and this fails on the count rather than on a null
+ * box, which is the more useful failure.
+ *
+ * @param page - The page to measure, already navigated and with the nav in whichever state is under test.
+ * @returns Nothing; asserts.
+ */
+async function expectDestinationsClearTheFloor(page: Page): Promise<void> {
   const links: Locator = page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link");
   const count: number = await links.count();
   expect(count).toBe(5);
@@ -157,4 +201,4 @@ test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`
       MIN_TARGET,
     );
   }
-});
+}

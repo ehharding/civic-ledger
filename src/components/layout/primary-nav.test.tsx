@@ -1,5 +1,16 @@
-/** Covers PrimaryNav's destinations and the aria-current marking it derives from the open path. */
-import { render, screen } from "@testing-library/react";
+/**
+ * Covers PrimaryNav's destinations, the aria-current marking it derives from the open path, and the drawer the same
+ * nav becomes below 640px.
+ *
+ * What jsdom can and cannot answer about that drawer is worth stating, because it decides what is asserted here and
+ * what is left to `tests/e2e`. jsdom has no layout engine and applies none of this app's stylesheets, so *which* of
+ * the two arrangements is in force is invisible to it — the panel is never actually off-screen, never actually
+ * `visibility: hidden`, and the toggle is never actually `display: none`. What is testable here is the whole of the
+ * component's own contract: what it marks open, what it locks, what it closes on, and where it puts focus. Whether the
+ * drawer is *painted*, whether the closed panel leaves the tab order, and whether a destination clears the target-size
+ * floor inside it are geometry, and they are pinned in `tests/e2e/layout.spec.ts` and `tests/e2e/navigation.spec.ts`.
+ */
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { navCurrent, PrimaryNav } from "@/components/layout/primary-nav";
@@ -108,5 +119,224 @@ describe("PrimaryNav", (): void => {
     const nav: HTMLElement = renderNavAt("/bills");
 
     expect(nav.querySelector('a[href="/learn"]')).not.toHaveAttribute("aria-current");
+  });
+});
+
+/**
+ * The drawer, rendered open, with the handles every assertion below reaches for.
+ *
+ * @param pathname - The open path to report from `usePathname`.
+ * @returns The toggle, the scrim, the nav landmark, and its last destination.
+ */
+function openDrawerAt(pathname: string | null): {
+  toggle: HTMLElement;
+  scrim: Element;
+  nav: HTMLElement;
+  lastLink: HTMLElement;
+} {
+  pathnameMock.mockReturnValue(pathname);
+  const { container } = render(<PrimaryNav />);
+
+  const toggle: HTMLElement = screen.getByRole("button", { name: "Menu" });
+  fireEvent.click(toggle);
+
+  const nav: HTMLElement = screen.getByRole("navigation", { name: "Primary navigation" });
+  const links: NodeListOf<HTMLAnchorElement> = nav.querySelectorAll("a");
+  const scrim: Element | null = container.querySelector(".nav-scrim");
+  const lastLink: HTMLAnchorElement | undefined = links[links.length - 1];
+
+  if (scrim === null) throw new Error("no .nav-scrim rendered");
+  if (lastLink === undefined) throw new Error("the nav rendered no destinations");
+
+  return { toggle, scrim, nav, lastLink };
+}
+
+describe("PrimaryNav drawer", (): void => {
+  beforeEach((): void => {
+    pathnameMock.mockReset();
+  });
+
+  it("starts closed and says so on the control that opens it", (): void => {
+    pathnameMock.mockReturnValue("/");
+    render(<PrimaryNav />);
+
+    const toggle: HTMLElement = screen.getByRole("button", { name: "Menu" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "primary-nav");
+    expect(screen.getByRole("navigation", { name: "Primary navigation" })).toHaveAttribute("id", "primary-nav");
+  });
+
+  /*
+   * All three elements read the same state, because all three are drawn from it: the panel slides, the scrim fades, and
+   * the toggle's bars become an ✕. A disagreement between them is a half-open drawer.
+   */
+  it("marks the panel, the scrim and the toggle with one open state", (): void => {
+    const { toggle, scrim, nav } = openDrawerAt("/");
+
+    // The toggle says it with `aria-expanded` alone; the other two have no ARIA attribute of their own to say it with.
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).not.toHaveAttribute("data-open");
+    expect(scrim).toHaveAttribute("data-open", "true");
+    expect(nav).toHaveAttribute("data-open", "true");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(scrim).toHaveAttribute("data-open", "false");
+    expect(nav).toHaveAttribute("data-open", "false");
+  });
+
+  it("marks the page as locked while it is open and releases it on close", (): void => {
+    const { toggle } = openDrawerAt("/");
+    expect(document.body).toHaveAttribute("data-nav-open");
+
+    fireEvent.click(toggle);
+    expect(document.body).not.toHaveAttribute("data-nav-open");
+  });
+
+  /* An unmount with the drawer open would otherwise leave the page unable to scroll and nothing left to unlock it. */
+  it("releases the page when it unmounts while open", (): void => {
+    pathnameMock.mockReturnValue("/");
+    const { unmount } = render(<PrimaryNav />);
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(document.body).toHaveAttribute("data-nav-open");
+
+    unmount();
+
+    expect(document.body).not.toHaveAttribute("data-nav-open");
+  });
+
+  /*
+   * The default action is stopped because jsdom has no navigation to perform and says so on its own console — a line
+   * that reports as a failure nowhere and is noise everywhere. What is under test is the handler, which has already
+   * run by the time the default action would.
+   */
+  it("closes when a destination is chosen", (): void => {
+    const { toggle, nav } = openDrawerAt("/");
+    const stopNavigation = (event: Event): void => event.preventDefault();
+    document.addEventListener("click", stopNavigation);
+
+    fireEvent.click(nav.querySelectorAll("a")[0] as HTMLAnchorElement);
+    document.removeEventListener("click", stopNavigation);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  /*
+   * The case a destination's own click handler cannot see: the path moved without one being tapped — Back out of an
+   * open drawer, or a link elsewhere on the page reached before it was dismissed.
+   */
+  it("closes when the path changes underneath it", (): void => {
+    pathnameMock.mockReturnValue("/bills");
+    const { rerender } = render(<PrimaryNav />);
+    const toggle: HTMLElement = screen.getByRole("button", { name: "Menu" });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    pathnameMock.mockReturnValue("/members");
+    rerender(<PrimaryNav />);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("closes when the scrim is tapped", (): void => {
+    const { toggle, scrim } = openDrawerAt("/");
+
+    fireEvent.click(scrim);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  /*
+   * Above 640px there is no drawer, no scrim and no toggle to see, but this component's state would still say
+   * "open" — and a Tab loop around a control the reader cannot find is the exact trap the loop exists to prevent. A
+   * resize is the only way to leave the drawer layout.
+   */
+  it("closes when the window is resized out of the drawer layout", (): void => {
+    const { toggle } = openDrawerAt("/");
+
+    act((): void => {
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("closes on Escape and hands focus back to the toggle", (): void => {
+    const { toggle, lastLink } = openDrawerAt("/");
+    lastLink.focus();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  /*
+   * Focus outside the panel is somewhere the reader put it deliberately — most often the toggle itself, which is where
+   * a drawer opened by pointer leaves it. Pulling it anywhere on close would be this component overruling that.
+   */
+  it("leaves focus where it is when Escape arrives from outside the panel", (): void => {
+    const { toggle } = openDrawerAt("/");
+    expect(document.activeElement).toBe(document.body);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("ignores keys that are neither Escape nor Tab", (): void => {
+    const { toggle } = openDrawerAt("/");
+
+    fireEvent.keyDown(document, { key: "a" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  /*
+   * The two ends of the loop. It runs toggle → first destination → … → last destination → toggle, so a reader tabbing
+   * through an open drawer stays inside it rather than walking into page content the scrim has covered.
+   */
+  it("loops Tab from the last destination back to the toggle", (): void => {
+    const { toggle, lastLink } = openDrawerAt("/");
+    lastLink.focus();
+
+    fireEvent.keyDown(document, { key: "Tab" });
+
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  it("loops Shift+Tab from the toggle to the last destination", (): void => {
+    const { toggle, lastLink } = openDrawerAt("/");
+    toggle.focus();
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+
+    expect(document.activeElement).toBe(lastLink);
+  });
+
+  /* Only the ends are caught; in the middle of the panel the browser's own tab order is left to do its job. */
+  it("leaves Tab alone in the middle of the panel", (): void => {
+    const { nav } = openDrawerAt("/");
+    const firstLink: HTMLAnchorElement = nav.querySelectorAll("a")[0] as HTMLAnchorElement;
+    firstLink.focus();
+
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(firstLink);
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(firstLink);
+  });
+
+  /* The listeners come down with the drawer, rather than staying on the document waiting for a state that is gone. */
+  it("stops answering Escape once it is closed", (): void => {
+    const { toggle, lastLink } = openDrawerAt("/");
+    fireEvent.click(toggle);
+    lastLink.focus();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(document.activeElement).toBe(lastLink);
   });
 });

@@ -19,9 +19,11 @@ html {
      onto every future target and re-tuned in all of them whenever the header's height changes — which is exactly how
      the 24px that used to sit on `.glossary-entry` came to be a third of what it needed to be.
 
-     One value for both header layouts rather than a breakpoint pair. The header is 73px wide-screen (--space-18 plus
-     its 1px border) and 66px below 640px, where the nav takes its own row; --space-18 + --space-4 clears the taller of
-     the two with room left over, and a single number cannot drift out of step with the other one. */
+     One value for all three header layouts rather than a breakpoint pair. The header is 73px wide-screen (--space-18
+     plus its 1px border), 65px below 640px where the nav becomes a drawer and the row is wordmark-plus-toggle, and
+     66px in the scripting-off fallback at that width, where the nav takes a row of its own. --space-18 + --space-4
+     clears the tallest of the three with room left over, and a single number cannot drift out of step with the
+     others. */
   scroll-padding-top: calc(var(--space-18) + var(--space-4));
 }
 
