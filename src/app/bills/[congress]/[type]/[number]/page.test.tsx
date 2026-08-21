@@ -13,9 +13,9 @@ import type { Metadata } from "next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import BillPage, { generateMetadata, generateStaticParams } from "@/app/bills/[congress]/[type]/[number]/page";
-import { billHref } from "@/lib/bill-route";
 import { type BillRouteParams, type LegislativeBill, NO_LATEST_ACTION_TEXT } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
+import { billHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 import { readerText } from "@/test/reader-text";
 

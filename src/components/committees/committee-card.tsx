@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { JSX } from "react";
 
-import { committeeHref } from "@/lib/committee-route";
 import {
   type CommitteeSummary,
   committeeChamberShortLabels,
   committeeTypeLabels,
 } from "@/lib/congress/committees/model";
 import { pluralize } from "@/lib/format";
+import { committeeHref } from "@/lib/routes";
 
 /**
  * Compact committee summary card, used in the `/committees` directory grid.

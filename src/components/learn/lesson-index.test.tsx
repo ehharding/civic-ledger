@@ -7,8 +7,8 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { LessonIndex } from "@/components/learn/lesson-index";
-import { lessonHref } from "@/lib/lesson-route";
 import { type Lesson, lessons } from "@/lib/lessons";
+import { lessonHref } from "@/lib/routes";
 
 describe("LessonIndex", (): void => {
   it("lists every registered lesson, in order", (): void => {

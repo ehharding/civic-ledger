@@ -1,25 +1,32 @@
 /**
- * Covers all five in-app route builders.
+ * Covers every in-app route builder in `routes.ts`.
  *
  * They are three lines each, but `docs/architecture.md` gives them a rule — "One definition per route shape; never
- * build a route inline" — which means every link to a bill, a Congress's directory, a person, a committee, or a lesson
- * in this app resolves through them. A drift here is not a broken helper, it is every card, seat, sponsor line, and
- * referral link pointing somewhere that doesn't exist.
+ * build a route inline" — which means every link to a bill, a Congress's directory, a person, a committee, one view of
+ * a committee's records, or a lesson in this app resolves through them. A drift here is not a broken helper, it is
+ * every card, seat, sponsor line, tab, pager arrow, and referral link pointing somewhere that doesn't exist.
  *
  * What's pinned down is what each does to the identifier it is handed: the normalization that lets an
- * inconsistently-cased upstream record and a hand-typed URL land on the same page, and — for the two that need no
+ * inconsistently-cased upstream record and a hand-typed URL land on the same page, and — for the ones that need no
  * normalization because their input is already a closed type — that the route they build resolves back to the record it
  * was built from.
+ *
+ * The suite covers the whole file rather than a chosen subset, which is a rule the file's own history argues for:
+ * `committeeRecordsHref` spent its life covered only through the component that renders the tabs, so the one builder
+ * that *composes* two independently-changeable pieces — a path builder and a query serializer — was the one nothing
+ * here pinned directly.
  */
 import { describe, expect, it } from "vitest";
 
-import { billHref, congressBillsHref } from "@/lib/bill-route";
-import { committeeHref } from "@/lib/committee-route";
 import { billIdentityKey } from "@/lib/congress/bills/model";
+import {
+  type CommitteeRecordKind,
+  committeeRecordKinds,
+  DEFAULT_COMMITTEE_RECORDS_QUERY,
+} from "@/lib/congress/committees/records";
 import { listCongresses, parseCongressParam } from "@/lib/congress/congress-history";
-import { lessonHref } from "@/lib/lesson-route";
 import { findLesson, type Lesson, lessons } from "@/lib/lessons";
-import { memberHref } from "@/lib/member-route";
+import { billHref, committeeHref, committeeRecordsHref, congressBillsHref, lessonHref, memberHref } from "@/lib/routes";
 
 describe("billHref", (): void => {
   it("builds the bill detail route", (): void => {
@@ -98,6 +105,39 @@ describe("committeeHref", (): void => {
     // The same system code under a different chamber is a different page — which is the whole reason the chamber is a
     // path segment rather than something the route has to guess back. @see committeeHref.
     expect(committeeHref("house", "hsag00")).not.toBe(committeeHref("senate", "hsag00"));
+  });
+});
+
+describe("committeeRecordsHref", (): void => {
+  it("builds on committeeHref, so the two cannot disagree about where a committee lives", (): void => {
+    expect(committeeRecordsHref("house", "hsag00", { kind: "reports", page: 3 })).toBe(
+      `${committeeHref("house", "hsag00")}?records=reports&page=3`,
+    );
+  });
+
+  it("normalizes the system code exactly as a plain committee link does", (): void => {
+    expect(committeeRecordsHref("senate", "  SSAP00  ", { kind: "nominations", page: 1 })).toBe(
+      "/committees/senate/ssap00?records=nominations",
+    );
+  });
+
+  it("returns the bare committee URL for the default view, rather than params that both say 'the default'", (): void => {
+    expect(committeeRecordsHref("house", "hsag00", DEFAULT_COMMITTEE_RECORDS_QUERY)).toBe(
+      committeeHref("house", "hsag00"),
+    );
+  });
+
+  it("names every collection a committee page can show", (): void => {
+    // Every tab is one of these links, so a kind the serializer stopped writing is a tab that silently resolves to the
+    // default collection rather than to itself.
+    for (const kind of committeeRecordKinds) {
+      const href: string = committeeRecordsHref("house", "hsag00", { kind, page: 1 });
+      const resolved: CommitteeRecordKind =
+        (new URLSearchParams(href.split("?")[1] ?? "").get("records") as CommitteeRecordKind | null) ??
+        DEFAULT_COMMITTEE_RECORDS_QUERY.kind;
+
+      expect(resolved).toBe(kind);
+    }
   });
 });
 

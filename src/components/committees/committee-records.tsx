@@ -4,8 +4,6 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
-import { billHref } from "@/lib/bill-route";
-import { committeeHref, committeeRecordsHref } from "@/lib/committee-route";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import {
   COMMITTEE_RECORDS_PARAMS,
@@ -24,6 +22,7 @@ import {
   describeCommitteeRecordsPage,
 } from "@/lib/congress/committees/records";
 import { formatCount, formatDate, formatOrdinal } from "@/lib/format";
+import { billHref, committeeHref, committeeRecordsHref } from "@/lib/routes";
 
 /**
  * The records an individual committee has accumulated: the bills referred to it, the reports it published, and the

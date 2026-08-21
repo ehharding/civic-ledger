@@ -8,11 +8,11 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { CongressSeatingChart } from "@/components/members/congress-seating-chart";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import { billHref } from "@/lib/bill-route";
 import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { CongressComposition } from "@/lib/congress/members/model";
 import { formatOrdinal } from "@/lib/format";
+import { billHref } from "@/lib/routes";
 
 /**
  * Home route content.

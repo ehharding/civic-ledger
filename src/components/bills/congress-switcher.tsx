@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import type { ChangeEvent, JSX } from "react";
 
-import { congressBillsHref } from "@/lib/bill-route";
 import type { CongressHistoryEntry } from "@/lib/congress/congress-history";
 import { formatOrdinal } from "@/lib/format";
+import { congressBillsHref } from "@/lib/routes";
 
 /**
  * Lets a person jump directly to any Congress this app supports browsing.

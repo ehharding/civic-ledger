@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
 import { CommitteeDetail } from "@/components/committees/committee-detail";
-import { committeeHref } from "@/lib/committee-route";
 import { type CommitteeProfileResult, getCommitteeProfile, getCommitteeRecords } from "@/lib/congress/client";
 import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees/model";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/lib/congress/committees/records";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { committeeHref } from "@/lib/routes";
 import { type RouteSearchParams, resolveCommitteeRecordsQuery } from "@/lib/search-params";
 
 /** Params for the individual committee route (`/committees/[chamber]/[systemCode]`). */

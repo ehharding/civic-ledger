@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
-import type { BillPageResponse } from "@/lib/api-contract";
+import { type BillPageResponse, billPageRequestUrl } from "@/lib/api-contract";
 import {
   billIdentityKey,
   billStageLabels,
@@ -122,14 +122,16 @@ export function BillDirectory({
    * The offset is the number of bills already held, so paging stays correct however many pages have been loaded.
    * Further pages stop being offered once a short or empty page comes back — there is nothing left — and a failed
    * request surfaces an error beside the button rather than leaving it looking idle.
+   *
+   * The URL comes from {@link billPageRequestUrl} rather than being spelled here, so the param names this writes and
+   * the ones the handler reads are the same declaration. @see BILL_API_PARAMS.
    */
   async function loadMore(): Promise<void> {
     setIsLoadingMore(true);
     setLoadError(false);
 
     try {
-      const congressParam: string = congress ? `&congress=${congress}` : "";
-      const response: Response = await fetch(`/api/bills?offset=${allBills.length}${congressParam}`);
+      const response: Response = await fetch(billPageRequestUrl(allBills.length, congress));
       if (!response.ok) throw new Error(`Request failed with ${response.status}`);
 
       const payload = (await response.json()) as BillPageResponse;

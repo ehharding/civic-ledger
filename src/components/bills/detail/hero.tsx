@@ -7,7 +7,7 @@ import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
 import { type BillStage, billStageLabels, formatEnactedLaw, type LegislativeBill } from "@/lib/congress/bills/model";
 import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
-import { memberHref } from "@/lib/member-route";
+import { memberHref } from "@/lib/routes";
 
 /**
  * The three sections at the top of a bill's page: what the bill *is*, where it has got to, and what happened to it

@@ -51,7 +51,7 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 | `src/hooks`                   | Client-side behavior extracted from views             | Depend only on isomorphic modules, never on the server adapter.   |
 | `src/lib/api-contract.ts`     | The response bodies this app's own routes return      | One declaration per body; the handler and the caller share it.    |
 | `src/lib/api-query.ts`        | Validation of this app's own query params             | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/*-route.ts`          | In-app route construction                             | One definition per route shape; never build a route inline.       |
+| `src/lib/routes.ts`           | In-app route construction                             | One definition per route shape; never build a route inline.       |
 | `src/lib/format.ts`           | Shared display and comparison rules                   | One collator and one date order for the whole app.                |
 | `src/lib/glossary.ts`         | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
 | `src/lib/lessons.ts`          | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |

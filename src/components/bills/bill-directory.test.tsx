@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BillDirectory } from "@/components/bills/bill-directory";
+import { billSearchRequestUrl } from "@/lib/api-contract";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 
@@ -65,7 +66,7 @@ describe("BillDirectory", (): void => {
     expect(await screen.findByText("1 Match")).toBeInTheDocument();
     // The second argument carries the AbortSignal that lets a superseded search cancel itself — see useBillSearch.
     expect(fetchMock).toHaveBeenCalledWith(
-      `/api/bills/search?q=${encodeURIComponent(firstPreviewBill.title)}`,
+      billSearchRequestUrl(firstPreviewBill.title),
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });

@@ -5,7 +5,6 @@ import { type BillSectionProps, DisclosedList } from "@/components/bills/detail/
 import { GlossaryProse } from "@/components/learn/glossary-prose";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
-import { billHref } from "@/lib/bill-route";
 import {
   billIdentityKey,
   describeBillCollection,
@@ -13,6 +12,7 @@ import {
   type RelatedBillRelationship,
 } from "@/lib/congress/bills/model";
 import { formatOrdinal } from "@/lib/format";
+import { billHref } from "@/lib/routes";
 
 /**
  * The measures Congress.gov records as related to a bill: the panel, the list, and one measure's row.

@@ -1,6 +1,7 @@
 import {
   type BillCosponsor,
   billIdentityKey,
+  CONGRESS_GOV_HOME,
   compareBillsByRecency,
   type LegislativeBill,
 } from "@/lib/congress/bills/model";
@@ -39,6 +40,10 @@ import {
  * rather than to a plausible-looking bill URL — a fabricated deep link is the single easiest way for preview content to
  * be mistaken for the official record.
  *
+ * That last rule is spelled {@link CONGRESS_GOV_HOME} at every fixture rather than as a copy of the URL, so it reads as
+ * the deliberate choice it is. Seven identical string literals read as seven records that happen to share a link, and
+ * an eighth fixture written by hand is one keystroke away from being a deep link nobody notices.
+ *
  * The set deliberately spans several Congresses and every `BillStage`, so filtering, the Congress switcher, and the
  * journey stepper are all exercisable without a key.
  */
@@ -56,7 +61,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Public works and water resources",
     stage: "committee",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Rep. Bennett, Marcus T. [D-OH-9]", party: "D", state: "OH", bioguideId: "PREVIEW-1" },
     cosponsorTally: { current: 12, includingWithdrawn: 12 },
   },
@@ -73,7 +78,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Government operations and politics",
     stage: "chamber",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Sen. Alvarez, Priya R. [R-AZ]", party: "R", state: "AZ", bioguideId: "PREVIEW-2" },
     cosponsorTally: { current: 34, includingWithdrawn: 34 },
   },
@@ -90,7 +95,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Education",
     stage: "introduced",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Rep. Okafor, Daniel K. [D-GA-4]", party: "D", state: "GA", bioguideId: "PREVIEW-3" },
     cosponsorTally: { current: 3, includingWithdrawn: 3 },
   },
@@ -107,7 +112,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Government operations and politics",
     stage: "president",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Sen. Whitmore, Louise B. [R-ME]", party: "R", state: "ME", bioguideId: "PREVIEW-4" },
     cosponsorTally: { current: 21, includingWithdrawn: 21 },
   },
@@ -124,7 +129,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Communications",
     stage: "law",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Rep. Castillo, Ana P. [D-TX-20]", party: "D", state: "TX", bioguideId: "PREVIEW-5" },
     cosponsorTally: { current: 47, includingWithdrawn: 47 },
   },
@@ -141,7 +146,7 @@ export const previewBills: LegislativeBill[] = [
     },
     policyArea: "Health",
     stage: "law",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Rep. Dupont, Lauren M. [D-NM-2]", party: "D", state: "NM", bioguideId: "PREVIEW-6" },
     cosponsorTally: { current: 58, includingWithdrawn: 58 },
   },
@@ -162,7 +167,7 @@ export const previewBills: LegislativeBill[] = [
     // /learn/how-a-bill-becomes-law lesson makes, but on a real (if fictional) historical record instead of just in the
     // abstract.
     stage: "chamber",
-    officialUrl: "https://www.congress.gov/",
+    officialUrl: CONGRESS_GOV_HOME,
     sponsor: { fullName: "Sen. Halloran, Peter J. [R-IA]", party: "R", state: "IA", bioguideId: "PREVIEW-7" },
     cosponsorTally: { current: 9, includingWithdrawn: 9 },
   },

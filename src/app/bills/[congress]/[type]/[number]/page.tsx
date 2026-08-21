@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
 import { BillDetail } from "@/components/bills/bill-detail";
-import { billHref } from "@/lib/bill-route";
 import {
   type BillAction,
   type BillAmendment,
@@ -31,6 +30,7 @@ import type { BillCommittee } from "@/lib/congress/committees/model";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
 import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { billHref } from "@/lib/routes";
 
 /** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {

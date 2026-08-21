@@ -12,8 +12,8 @@ import type { Metadata } from "next";
 import { describe, expect, it } from "vitest";
 
 import LessonPage, { generateMetadata, generateStaticParams } from "@/app/learn/[slug]/page";
-import { lessonHref } from "@/lib/lesson-route";
 import { type Lesson, lessons } from "@/lib/lessons";
+import { lessonHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 
 /** The first lesson, non-null-asserted once here rather than at each use under `noUncheckedIndexedAccess`. */

@@ -114,14 +114,17 @@ describe("useBillSearch", (): void => {
     );
   });
 
-  it("percent-encodes the query rather than pasting it into the URL", async (): Promise<void> => {
+  it("encodes the query rather than pasting it into the URL", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(searchResponse([]));
     vi.stubGlobal("fetch", fetchMock);
 
     renderSearch({ query: "clean air & water", fallback: previewBills });
     await flushDebounce();
 
-    expect(fetchMock).toHaveBeenCalledWith("/api/bills/search?q=clean%20air%20%26%20water", expect.anything());
+    // `+` for a space and `%26` for the ampersand is `URLSearchParams`' form encoding, which is what the handler's own
+    // `new URL(request.url).searchParams` decodes — @see api-contract.test.ts, which pins that round trip. What matters
+    // here is that the raw `&` never reaches the URL, where it would truncate the query at "clean air".
+    expect(fetchMock).toHaveBeenCalledWith("/api/bills/search?q=clean+air+%26+water", expect.anything());
   });
 
   it("reports the server's results and the scope it actually swept", async (): Promise<void> => {

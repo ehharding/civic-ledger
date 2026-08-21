@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MemberPage, { generateMetadata, generateStaticParams } from "@/app/members/[bioguideId]/page";
 import { chamberLabels, formatMemberName, formatMemberTitle, type MemberProfile } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
-import { memberHref } from "@/lib/member-route";
+import { memberHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;

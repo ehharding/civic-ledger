@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import sitemap from "@/app/sitemap";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { lessonHref } from "@/lib/lesson-route";
 import { lessons } from "@/lib/lessons";
+import { lessonHref } from "@/lib/routes";
 
 const SITE_URL: string = "https://civic-ledger.test";
 const originalSiteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL;

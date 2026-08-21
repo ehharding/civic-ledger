@@ -8,7 +8,7 @@ import { OutboundLink } from "@/components/ui/outbound-link";
 import type { BillAction, RecordedVote } from "@/lib/congress/bills/model";
 import { collectRecordedVotes } from "@/lib/congress/upstream/mappers";
 import { formatDate, pluralize } from "@/lib/format";
-import { lessonHref } from "@/lib/lesson-route";
+import { lessonHref } from "@/lib/routes";
 
 /**
  * The roll calls taken on a bill.

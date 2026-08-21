@@ -1,9 +1,8 @@
 import type { MetadataRoute } from "next";
 
-import { congressBillsHref } from "@/lib/bill-route";
 import { type CongressHistoryEntry, listCongresses } from "@/lib/congress/congress-history";
-import { lessonHref } from "@/lib/lesson-route";
 import { type Lesson, lessons } from "@/lib/lessons";
+import { congressBillsHref, lessonHref } from "@/lib/routes";
 import { getSiteUrl } from "@/lib/site";
 
 // Reads no request data, so it's safe to include in a STATIC_EXPORT=true build (see robots.ts for the same reasoning) —

@@ -2,7 +2,7 @@
 
 import { type RefObject, useEffect, useRef, useState } from "react";
 
-import type { BillSearchResponse } from "@/lib/api-contract";
+import { type BillSearchResponse, billSearchRequestUrl } from "@/lib/api-contract";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { matchesQuery } from "@/lib/congress/bills/search";
 
@@ -93,7 +93,7 @@ export function useBillSearch(query: string, fallbackBills: LegislativeBill[]): 
 
     const controller: AbortController = new AbortController();
     const timeoutId: ReturnType<typeof setTimeout> = setTimeout((): void => {
-      fetch(`/api/bills/search?q=${encodeURIComponent(trimmedQuery)}`, { signal: controller.signal })
+      fetch(billSearchRequestUrl(trimmedQuery), { signal: controller.signal })
         .then((response: Response): Promise<BillSearchResponse> => {
           if (!response.ok) throw new Error(`Request failed with ${response.status}`);
           return response.json() as Promise<BillSearchResponse>;

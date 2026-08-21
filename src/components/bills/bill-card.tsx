@@ -4,8 +4,8 @@ import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bills/bill-journey";
-import { billHref } from "@/lib/bill-route";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/bills/model";
+import { billHref } from "@/lib/routes";
 
 /**
  * Compact bill summary card, used in the directory grid and the homepage's "Latest Activity" section.

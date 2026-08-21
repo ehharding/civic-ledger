@@ -9,7 +9,6 @@ import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
-import { committeeHref } from "@/lib/committee-route";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import {
   CONGRESS_GOV_COMMITTEES,
@@ -23,7 +22,7 @@ import {
   type Subcommittee,
 } from "@/lib/congress/committees/model";
 import type { CommitteeRecordsResult } from "@/lib/congress/committees/records";
-import { lessonHref } from "@/lib/lesson-route";
+import { committeeHref, lessonHref } from "@/lib/routes";
 
 /** Props for {@link CommitteeDetail} — everything the committee route resolves server-side. */
 type CommitteeDetailProps = {

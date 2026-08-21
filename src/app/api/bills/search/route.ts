@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import type { BillSearchResponse } from "@/lib/api-contract";
+import { BILL_API_PARAMS, type BillSearchResponse } from "@/lib/api-contract";
 import { parseQueryParam } from "@/lib/api-query";
 import { getSearchResults } from "@/lib/congress/client";
 
@@ -24,7 +24,7 @@ import { getSearchResults } from "@/lib/congress/client";
  */
 export async function GET(request: Request): Promise<NextResponse<BillSearchResponse>> {
   const { searchParams } = new URL(request.url);
-  const query: string = parseQueryParam(searchParams.get("q"));
+  const query: string = parseQueryParam(searchParams.get(BILL_API_PARAMS.query));
 
   const result: BillSearchResponse = await getSearchResults(query);
 

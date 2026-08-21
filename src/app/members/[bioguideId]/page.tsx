@@ -12,8 +12,8 @@ import {
   type MemberProfile,
 } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
-import { memberHref } from "@/lib/member-route";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { memberHref } from "@/lib/routes";
 
 /** Params for the individual member route (`/members/[bioguideId]`). */
 type MemberPageProps = {

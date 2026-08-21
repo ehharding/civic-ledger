@@ -4,9 +4,9 @@ import type { JSX } from "react";
 
 import { SiteShell } from "@/components/layout/site-shell";
 import { LessonArticle } from "@/components/learn/lesson-article";
-import { lessonHref } from "@/lib/lesson-route";
 import { findLesson, type Lesson, lessons } from "@/lib/lessons";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
+import { lessonHref } from "@/lib/routes";
 
 /**
  * The route params, as Next hands them to a dynamic segment. A plain string rather than the registry's `LessonSlug` on

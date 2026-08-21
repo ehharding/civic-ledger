@@ -3,8 +3,8 @@ import type { Route } from "next";
 import Link from "next/link";
 import type { JSX } from "react";
 
-import { lessonHref } from "@/lib/lesson-route";
 import { type Lesson, lessonNumber, lessons } from "@/lib/lessons";
+import { lessonHref } from "@/lib/routes";
 
 /**
  * The learn hub's list of modules, in reading order.

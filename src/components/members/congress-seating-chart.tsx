@@ -35,7 +35,7 @@ import {
 } from "@/lib/congress/members/model";
 import { buildChamberSeating, type ChamberSeat, type ChamberSeating } from "@/lib/congress/members/seating";
 import { formatOrdinal } from "@/lib/format";
-import { memberHref } from "@/lib/member-route";
+import { memberHref } from "@/lib/routes";
 
 /** How far PageUp/PageDown jump along the arc, in seats. */
 const PAGE_STEP: number = 10;

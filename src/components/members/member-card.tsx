@@ -9,7 +9,7 @@ import {
   type MemberDirectoryEntry,
   partyTintClass,
 } from "@/lib/congress/members/model";
-import { memberHref } from "@/lib/member-route";
+import { memberHref } from "@/lib/routes";
 
 /**
  * The member's portrait, with the credit line Congress.gov's terms require beside it.

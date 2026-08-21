@@ -14,7 +14,7 @@ import {
 } from "@/lib/congress/bills/model";
 import { normalizePartyCode, type PartyGroup, partyTintClass } from "@/lib/congress/members/model";
 import { formatDate } from "@/lib/format";
-import { memberHref } from "@/lib/member-route";
+import { memberHref } from "@/lib/routes";
 
 /**
  * Everyone who signed on to a bill after its sponsor: the panel, the list and its counting sentences, and one member's

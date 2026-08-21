@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import type { BillPageResponse } from "@/lib/api-contract";
+import { BILL_API_PARAMS, type BillPageResponse } from "@/lib/api-contract";
 import { parseCongressQueryParam, parseOffsetParam } from "@/lib/api-query";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMoreBills } from "@/lib/congress/client";
@@ -29,8 +29,8 @@ import { getMoreBills } from "@/lib/congress/client";
 export async function GET(request: Request): Promise<NextResponse<BillPageResponse>> {
   const { searchParams } = new URL(request.url);
 
-  const offset: number = parseOffsetParam(searchParams.get("offset"));
-  const congress: number = parseCongressQueryParam(searchParams.get("congress"));
+  const offset: number = parseOffsetParam(searchParams.get(BILL_API_PARAMS.offset));
+  const congress: number = parseCongressQueryParam(searchParams.get(BILL_API_PARAMS.congress));
 
   const bills: LegislativeBill[] = await getMoreBills(offset, congress);
 

@@ -4,9 +4,9 @@ import type { JSX } from "react";
 import type { BillSectionProps } from "@/components/bills/detail/section";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
-import { committeeHref } from "@/lib/committee-route";
 import { describeBillCollection } from "@/lib/congress/bills/model";
 import type { BillCommittee, BillCommitteeActivity, BillSubcommittee } from "@/lib/congress/committees/model";
+import { committeeHref } from "@/lib/routes";
 
 /**
  * The committees a bill was referred to: the panel, the nested list of parents and subcommittees, and the line that
