@@ -137,6 +137,29 @@ code that prevents that is not optional.
 An unset DSN is a supported state rather than a misconfiguration: it is how a local checkout stays out of the shared
 project's issue stream, and it is why `.env.example` ships the variable empty.
 
+## Health Check
+
+`GET /api/health` answers with a fixed shape and makes no upstream call:
+
+```json
+{ "status": "ok", "service": "civic-ledger", "records": "live", "timestamp": "2026-08-21T12:00:00.000Z" }
+```
+
+`status` is liveness — the server answered. **`records` is the field worth alerting on**, and it exists because this
+app's central design decision has an operational blind spot on the other side of it. A missing or blank
+`CONGRESS_API_KEY` is not an error here: nothing throws, no request fails, no page 500s, and no Sentry event is raised.
+The site renders labeled preview fixtures and keeps doing so indefinitely. Every ordinary signal stays green while the
+deployment publishes fiction — which is the exact failure mode of a key that expired, was rotated without being updated,
+or was dropped from an environment during a migration.
+
+So alert on `records != "live"` in production. It is the difference between noticing that within a minute and noticing
+it when a reader asks why a bill from last week is missing. The field reads configuration state only; it never discloses
+the key, and a site in preview mode already says so in a banner on every page.
+
+It deliberately does **not** report whether Congress.gov is reachable — that would make this app's liveness depend on a
+third party's and turn every probe into traffic against the API's rate limit. Upstream trouble is a separate signal and
+has one already: the `congress.request-failed` logs described above.
+
 ## Secondary: GitHub Pages Static Demo
 
 Workflow: `.github/workflows/deploy-gh-pages.yml`. This publishes a **static demo only**, built with

@@ -111,6 +111,89 @@ describe("getBillById", (): void => {
     expect(result.bill).toBeUndefined();
     expect(result.source).toBe("preview");
   });
+
+  /**
+   * The fallback has to read the Congress the *bill* is in, not the one currently seated.
+   *
+   * Every other test in this describe block looks up a bill in the current Congress, where those two are the same
+   * number and the distinction is invisible. That is exactly how this went wrong: the snapshot fallback fetched the
+   * current Congress's first page for an older bill, could not possibly find it there, and then reported that
+   * unrelated snapshot's own `source` — handing the route a `bill: undefined` labeled `live`, which it renders as a
+   * hard 404. A reader asking for a real 117th-Congress bill during a Congress.gov blip was told it does not exist.
+   */
+  describe("when the lookup fails for a bill outside the seated Congress", (): void => {
+    const OLDER_CONGRESS: number = getCurrentCongress() - 2;
+    const olderRoute: BillRouteParams = { congress: String(OLDER_CONGRESS), type: "hr", number: "1" };
+
+    /** A bill the current Congress's list would return — never the one being looked up. */
+    const CURRENT_CONGRESS_BILL = {
+      congress: getCurrentCongress(),
+      type: "HR",
+      number: "9999",
+      title: "An unrelated bill from the Congress currently seated",
+      latestAction: { actionDate: "2026-03-01", text: "Referred to committee." },
+    };
+
+    /**
+     * Fails the detail lookup, then answers the snapshot retry *according to which Congress it asks for*.
+     *
+     * Answering every URL with the same body is what makes this bug invisible, so the mock has to route: the older
+     * Congress's list returns `olderBills`, and the current Congress's returns an unrelated — crucially non-empty —
+     * page. Non-empty matters, because an empty snapshot degrades to `preview` on its own and would mask a wrong-
+     * Congress fetch behind the right-looking outcome.
+     */
+    function stubFailedLookupThenSnapshot(olderBills: unknown[]): ReturnType<typeof vi.fn> {
+      const fetchMock = vi.fn().mockImplementation((url: URL | string): Promise<Response> => {
+        const href: string = String(url);
+
+        if (href.includes(`/bill/${OLDER_CONGRESS}/`)) return Promise.reject(new Error("network down"));
+        if (href.includes(`/bill/${OLDER_CONGRESS}?`)) return Promise.resolve(jsonResponse({ bills: olderBills }));
+
+        return Promise.resolve(jsonResponse({ bills: [CURRENT_CONGRESS_BILL] }));
+      });
+
+      vi.stubGlobal("fetch", fetchMock);
+      return fetchMock;
+    }
+
+    it("asks the bill's own Congress for the snapshot it falls back to", async (): Promise<void> => {
+      const fetchMock = stubFailedLookupThenSnapshot([]);
+
+      await getBillById(olderRoute);
+
+      // The retry's path names the older Congress. Before the fix it named the current one, which is why the `find`
+      // below it could never hit.
+      const retryUrl: string = String(fetchMock.mock.calls[1]?.[0]);
+      expect(retryUrl).toContain(`/bill/${OLDER_CONGRESS}?`);
+    });
+
+    it("resolves the bill from that Congress's snapshot rather than 404ing it", async (): Promise<void> => {
+      stubFailedLookupThenSnapshot([
+        {
+          congress: OLDER_CONGRESS,
+          type: "HR",
+          number: "1",
+          title: "A bill from a Congress that is no longer seated",
+          latestAction: { actionDate: "2022-03-01", text: "Referred to committee." },
+        },
+      ]);
+
+      const result: BillLookupResult = await getBillById(olderRoute);
+
+      expect(result.bill?.title).toBe("A bill from a Congress that is no longer seated");
+      expect(result.bill?.congress).toBe(OLDER_CONGRESS);
+    });
+
+    it("never reports a live 'no such record' for what was only a transient failure", async (): Promise<void> => {
+      // The snapshot succeeds and simply does not contain this bill. The result must not be the pairing the route
+      // reads as a 404 — `bill: undefined` alongside `source: "live"`.
+      stubFailedLookupThenSnapshot([]);
+
+      const result: BillLookupResult = await getBillById(olderRoute);
+
+      expect(result.bill === undefined && result.source === "live").toBe(false);
+    });
+  });
 });
 
 describe("getMoreBills", (): void => {

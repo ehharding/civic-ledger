@@ -257,7 +257,15 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
 
   // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
   // preview data as a last resort.
-  const snapshot: CongressSnapshot = await getCongressSnapshot();
+  //
+  // The snapshot is scoped to *this bill's* Congress rather than the current one, and that is the whole reason this
+  // branch does anything at all for a bill outside the seated Congress. `getCongressSnapshot()` here read the current
+  // Congress's first page, which by construction cannot contain a 117th-Congress bill — so the `find` below could
+  // never hit, and the wasted round trip then handed back its own `source: "live"`. That combination is the specific
+  // failure this function's contract forbids: `bill: undefined` labeled `live` is read by the route as "no such record"
+  // and rendered as a hard 404, so a momentary Congress.gov blip told a reader that a bill that exists does not. Scoped
+  // correctly, the fallback either finds the bill or degrades to preview, and both are honest.
+  const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(Number(route.congress));
   const key: string = billIdentityKey(input);
   const bill: LegislativeBill | undefined =
     snapshot.bills.find((candidate: LegislativeBill): boolean => billIdentityKey(candidate) === key) ??

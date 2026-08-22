@@ -24,6 +24,19 @@ jobs:
       - run: pnpm check
       - run: pnpm build
 
+      # Dependabot opens a pull request per outdated package; it does not answer "is anything installed right now
+      # known-vulnerable". Those are different questions, and only the second one has an answer that can regress
+      # between dependency bumps — a transitive package can have an advisory published against a version this lockfile
+      # already pins, with no update to prompt a bot. This asks it on every run.
+      #
+      # Gated at `high` rather than at everything. The bar is what should *stop a merge*, and this project's
+      # dependencies are almost entirely build and test tooling: a moderate advisory in a dev-only transitive is worth
+      # seeing and is not worth blocking a documentation fix over. `pnpm audit` with no threshold reports the full list
+      # either way — see the `overrides` block in pnpm-workspace.yaml, which closed the one finding that existed when
+      # this step was added. Lower the bar here the moment a runtime dependency makes it the wrong one.
+      - name: Audit Dependencies
+        run: pnpm audit --audit-level high
+
   # The static export is the one build a change can break while passing everything above: `pnpm build` is the *server*
   # build, so a new route handler or a fresh `request.url` read compiles, type-checks, and tests clean and then fails
   # only under `output: "export"`. deploy-gh-pages.yml runs on pushes to `main`, which meant that failure used to

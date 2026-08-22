@@ -16,3 +16,18 @@ allowBuilds:
 #
 # CI is unaffected: `pnpm install --frozen-lockfile` installs what the lockfile already pins and resolves nothing.
 minimumReleaseAge: 1440
+
+# Pins one transitive dependency past a published advisory. Kept narrow on purpose: an override is a claim that this
+# project knows better than a package's own range, so each one names the single edge it rewrites and says why.
+#
+# `@esbuild-kit/core-utils` asks for `esbuild@0.18.20`, which is inside GHSA-67mh-4wv8-2f99 — a development-server flaw
+# that lets any website a developer visits issue requests to their local esbuild server and read the responses. It
+# reaches this project only through `drizzle-kit`, which still carries the deprecated `@esbuild-kit/*` pair alongside
+# the `tsx` that replaced them, and it was the sole finding of `pnpm audit`. Dev-only and low-consequence here, and
+# still worth closing: it is the difference between an audit that reports nothing and one that reports one line
+# everybody learns to scroll past. `pnpm db:generate` is verified against this override.
+#
+# Remove this the day `drizzle-kit` drops `@esbuild-kit/*` — or the day the deferred persistence layer is either built
+# or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. @see docs/roadmap.md.
+overrides:
+  '@esbuild-kit/core-utils>esbuild': '^0.25.0'
