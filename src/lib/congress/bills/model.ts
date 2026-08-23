@@ -594,6 +594,37 @@ export function compareBillsByRecency(a: LegislativeBill, b: LegislativeBill): n
 }
 
 /**
+ * Orders bills most-recently-*acted-on* first.
+ *
+ * The sibling of {@link compareBillsByRecency}, and the distinction between the two is the point rather than an
+ * accident of naming. "Recent" for a bill means two different things and a page usually wants exactly one of them: when
+ * it was *introduced* is a fact about a bill's age, and when it was last *acted on* is a fact about whether anything is
+ * currently happening to it. A member's sponsored list wants the first — it is a body of work, and ordering it by
+ * whichever bill a clerk touched last would scramble it. The home page wants the second, because it says "Latest
+ * Activity" and "a bill in motion" out loud.
+ *
+ * The fallback runs the opposite way to its sibling's for the same reason: the introduction date is the consolation
+ * prize here, not the preferred key. A bill with no recorded action at all is still legitimately ordered by the one
+ * event known to have happened to it.
+ *
+ * **Why this exists rather than trusting the fetch order.** The list endpoint sorts on `updateDate` and nothing
+ * else — a maintenance timestamp that moves when Congress.gov re-touches a row, which is *correlated* with legislative
+ * activity and is not the same claim. Sorting here is this app's standing rule that a list documented as "most recent
+ * first" is sorted rather than hoped for, applied to the one page whose headline is that ordering.
+ * @see docs/architecture.md, "compareIsoDatesDesc — one date order".
+ *
+ * @param a - One bill to compare.
+ * @param b - The other bill to compare.
+ * @returns A standard comparator result. Bills with no usable date at all sort last, together.
+ */
+export function compareBillsByActivity(a: LegislativeBill, b: LegislativeBill): number {
+  const dateA: string = a.latestAction.date ?? a.introducedDate ?? "";
+  const dateB: string = b.latestAction.date ?? b.introducedDate ?? "";
+
+  return compareIsoDatesDesc(dateA, dateB);
+}
+
+/**
  * One CRS-written summary of a bill, tied to the legislative stage it describes (`actionDesc`, e.g., "Introduced in
  * House"). Bills can accumulate several of these as they're amended — the most recent describes the bill as it stands
  * now, but earlier ones aren't deleted, since they describe real earlier versions of the text.

@@ -511,8 +511,34 @@ describe("getSearchResults", (): void => {
     await getSearchResults("anything");
 
     const requestedUrl: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.searchParams.get("sort")).toBe("updateDate+desc");
+    expect(requestedUrl.searchParams.get("sort")).toBe("updateDate desc");
     expect(requestedUrl.searchParams.get("limit")).toBe("250");
+  });
+
+  /**
+   * Asserted on the raw query string rather than through `searchParams.get`, which is the only way this can be
+   * asserted at all.
+   *
+   * Congress.gov honors exactly one sort value on this endpoint and silently ignores anything else — an unrecognized
+   * value yields an arbitrary order rather than an error, so a wrong one is invisible from the response. The value has
+   * to reach the wire as `updateDate+desc`, where the plus is an encoded space. `searchParams.get` decodes on the way
+   * out, so it reports `"updateDate desc"` whether the wire carried the working `+` or the broken `%2B`, and reports
+   * `"updateDate+desc"` only in the broken case. A reader can be forgiven for reading that assertion as the documented
+   * spelling and concluding it passes; it did, for a value the API was throwing away.
+   *
+   * The test above is kept anyway — it states the intent in the spelling the code uses. This one states what the
+   * transport does with it, which is the half that was wrong.
+   */
+  it("sends the sort separator as an encoded space, which is the spelling the API actually honors", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getSearchResults("anything");
+
+    const requestedUrl: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.search).toContain("sort=updateDate+desc");
+    expect(requestedUrl.search).not.toContain("%2B");
   });
 
   it("pins a direct citation match first, even when its own text wouldn't match the query", async (): Promise<void> => {

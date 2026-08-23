@@ -10,8 +10,10 @@
  *   published `legislationUrl` over this, but the list endpoint sends none, so the derivation still covers every card.
  * - `billIdentityKey` is the single answer to "is this the same bill?", so a live record and a route param naming the
  *   same bill have to produce the same key despite differing in case and in the type of `congress`.
- * - `compareBillsByRecency` has to stay total: a bill carrying no date at all must sort somewhere predictable rather
- *   than wherever an undefined comparison happens to put it.
+ * - `compareBillsByRecency` and `compareBillsByActivity` have to stay total: a bill carrying no date at all must sort
+ *   somewhere predictable rather than wherever an undefined comparison happens to put it. The pair also has to stay
+ *   *distinguishable* — they answer two different questions about the same bill, and a test that only ever feeds them
+ *   records whose two dates agree would pass on either one being quietly rewritten into the other.
  *
  * `BILL_TYPE_CODES` and `BILL_TYPE_PATH_SEGMENTS` are derived from the same map `congressGovBillUrl` reads, so they are
  * checked here too — the point of deriving them was that they can no longer fall out of step, and that only stays true
@@ -27,6 +29,7 @@ import {
   billStageLabels,
   billStages,
   CONGRESS_GOV_HOME,
+  compareBillsByActivity,
   compareBillsByRecency,
   congressGovAmendmentUrl,
   congressGovBillUrl,
@@ -229,6 +232,77 @@ describe("compareBillsByRecency", (): void => {
     const b: LegislativeBill = bill({ number: "2", introducedDate: "2025-01-10" });
 
     expect(compareBillsByRecency(a, b)).toBe(0);
+  });
+});
+
+describe("compareBillsByActivity", (): void => {
+  it("puts the more recently acted-on bill first", (): void => {
+    const stale: LegislativeBill = bill({ number: "1", latestAction: { text: "Referred.", date: "2026-04-27" } });
+    const active: LegislativeBill = bill({ number: "2", latestAction: { text: "Passed House.", date: "2026-08-20" } });
+
+    expect([stale, active].sort(compareBillsByActivity).map((b: LegislativeBill): string => b.number)).toEqual([
+      "2",
+      "1",
+    ]);
+  });
+
+  /**
+   * The distinction from `compareBillsByRecency` in one assertion: the same pair of bills, ordered oppositely by the
+   * two comparators. A bill introduced years ago and moved last week is old and active at once, and which of those a
+   * page means is a question about the page rather than about the bill.
+   */
+  it("orders on action rather than introduction, the opposite of compareBillsByRecency", (): void => {
+    const oldButMoving: LegislativeBill = bill({
+      number: "1",
+      introducedDate: "2025-01-03",
+      latestAction: { text: "Passed House.", date: "2026-08-20" },
+    });
+    const newButStalled: LegislativeBill = bill({
+      number: "2",
+      introducedDate: "2026-06-01",
+      latestAction: { text: "Referred to committee.", date: "2026-06-01" },
+    });
+    const pair: LegislativeBill[] = [newButStalled, oldButMoving];
+
+    expect([...pair].sort(compareBillsByActivity).map((b: LegislativeBill): string => b.number)).toEqual(["1", "2"]);
+    expect([...pair].sort(compareBillsByRecency).map((b: LegislativeBill): string => b.number)).toEqual(["2", "1"]);
+  });
+
+  it("falls back to the introduction date for a bill whose latest action carries none", (): void => {
+    const actionDated: LegislativeBill = bill({ number: "1", latestAction: { text: "Passed.", date: "2025-01-10" } });
+    const introOnly: LegislativeBill = bill({
+      number: "2",
+      introducedDate: "2026-05-01",
+      latestAction: { text: "Introduced in House." },
+    });
+
+    expect([actionDated, introOnly].sort(compareBillsByActivity).map((b: LegislativeBill): string => b.number)).toEqual(
+      ["2", "1"],
+    );
+    // Asserted in both argument positions rather than only through `sort`. The engine calls a comparator in whichever
+    // order it likes, so a fallback written into only one of the two operands would pass a sort-based assertion on
+    // roughly half of all inputs — which is the worst kind of passing.
+    expect(compareBillsByActivity(introOnly, actionDated)).toBeLessThan(0);
+    expect(compareBillsByActivity(actionDated, introOnly)).toBeGreaterThan(0);
+  });
+
+  it("sorts bills with no usable date last rather than ahead of everything dated", (): void => {
+    const undated: LegislativeBill = bill({ number: "1", latestAction: { text: "Referred." } });
+    const dated: LegislativeBill = bill({ number: "2", latestAction: { text: "Passed.", date: "2025-01-10" } });
+
+    expect([undated, dated].sort(compareBillsByActivity).map((b: LegislativeBill): string => b.number)).toEqual([
+      "2",
+      "1",
+    ]);
+    expect(compareBillsByActivity(undated, dated)).toBeGreaterThan(0);
+    expect(compareBillsByActivity(dated, undated)).toBeLessThan(0);
+  });
+
+  it("treats two bills sharing an action date as equal, so neither jumps the other", (): void => {
+    const a: LegislativeBill = bill({ number: "1", latestAction: { text: "Referred.", date: "2025-01-10" } });
+    const b: LegislativeBill = bill({ number: "2", latestAction: { text: "Passed.", date: "2025-01-10" } });
+
+    expect(compareBillsByActivity(a, b)).toBe(0);
   });
 });
 

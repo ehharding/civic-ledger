@@ -275,7 +275,7 @@ reader a maintenance timestamp as chronology.
 
 Congress.gov's `/v3/bill` endpoint can only be filtered by congress and bill type — it has **no full-text or keyword
 query parameter at all**. So `getSearchResults` approximates a broad search the only way the API allows: it fetches each
-supported Congress's most recently active bills (`sort=updateDate+desc`, up to the API's 250-per-request ceiling) and
+supported Congress's most recently touched bills (`sort=updateDate desc`, up to the API's 250-per-request ceiling) and
 matches the query against title, type, number, policy area, and latest action text — the same fields already shown on
 the card and the detail page (`matchesQuery` in `src/lib/congress/bills/search.ts`).
 
@@ -283,6 +283,21 @@ Two honest limits follow, and the result-count copy states them rather than impl
 
 - It cannot see a bill's full legislative text.
 - For a large or old Congress it sees only that Congress's most recently touched slice, not every bill introduced in it.
+
+**The sort separator is a space, and getting it wrong is silent.** `sort=updateDate+desc` is the *encoded*
+spelling — the plus is an encoded space, not part of the value — so the value handed to `URLSearchParams` has to be
+`updateDate desc`. Passing the documented string through literally percent-encodes the plus to `%2B`, and the endpoint
+does not reject the result: an unrecognized sort value is ignored, and the response comes back in an arbitrary order
+that is neither the endpoint's default nor sorted by anything. This app shipped that mistake and could not see it,
+because a wrong order and a right one are the same shape. It is pinned now by a test that reads the raw query string
+rather than `searchParams.get`, which decodes and therefore cannot tell the two apart — `RECENTLY_UPDATED_FIRST` in 
+`src/lib/congress/bills/reads.ts`.
+
+Worth knowing for anyone weighing a change here: **neither order sees more of a Congress than the other.** Both draw
+250 distinct bills whose latest actions span nearly the Congress's whole range — about 1.4% of the 119th either way.
+Which 250 differs, so individual queries gain and lose hits between them, and that is sampling luck rather than
+coverage. What the corrected order buys is that the slice is *defined*: it is the one this page describes, reproducible
+between two requests, and not a side effect of the API discarding an input it declined to complain about.
 
 A query that parses as a bill citation (`parseBillCitation` — "HR 284", "H.J.Res. 66", "119 HR 284") also gets a direct
 single-bill lookup, pinned first. That is the one case where the API can answer exactly rather than by approximation.
@@ -295,6 +310,19 @@ resolves to a page that can show real records once a key is configured. The boun
 `EARLIEST_COVERED_CONGRESS` in `src/lib/congress/congress-history.ts` — so it can move if coverage changes.
 
 ## What Each Directory Covers
+
+**Bills (`/` and `/bills`)** shows one page of the current Congress's most recently touched records, and then orders
+what it shows. The two halves are separate claims and both are needed. The *fetch* is ordered by `updateDate`, which is
+the only field the list endpoint sorts on and is a maintenance timestamp — it moves when Congress.gov re-touches a row,
+which is close to legislative activity without being it. The home page therefore re-orders the page it receives by
+latest action date (`compareBillsByActivity`) before choosing the bill it features and the three it lists beneath,
+because those sit under the words "Latest Activity" and "A Bill in Motion" and a heading is a claim.
+
+Neither half is the endpoint's default, and the default is the reason both are written down. `/v3/bill/{congress}`
+answers in *ascending* latest-action order — the least recently active records of a Congress, which for the 119th is
+several thousand bills whose only action is the day they were introduced. A page that leads with those is not a neutral
+page; it is a confident claim that nothing is happening in Congress, made by accident. This app made it, on its home
+page, for as long as it took someone to check the dates against the heading above them.
 
 **Members (`/members`)** lists whoever currently holds a seat, from the same `currentMember=true` request the chamber
 diagram uses — so it is a roster of *now*, not of everyone who served during a Congress, and vacant seats are absent

@@ -63,6 +63,29 @@ import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
  * @see upstream/mappers.ts for the upstream-to-internal translation they all run their results through.
  */
 
+/**
+ * The bill list endpoint's "most recently touched record first" order.
+ *
+ * **The separator is a space, and that is the whole point.** Congress.gov documents this parameter as
+ * `sort=updateDate+desc`, which is the *URL-encoded* spelling — the `+` is a literal encoded space, not part of the
+ * value. Passing the documented string through as a value means `buildCongressUrl` percent-encodes the plus to `%2B`,
+ * the API receives `updateDate+desc`, and — this is the part worth knowing — it does not reject it. An unrecognized
+ * sort value is silently ignored, and the endpoint answers in an arbitrary order that is neither the default nor
+ * sorted. Verified against the live API in August 2026: `updateDate+desc` and `updateDate+asc` return byte-identical
+ * pages, as does any other unsupported value, while the space-separated spelling orders correctly in both directions.
+ *
+ * That failure mode is why this is a named constant rather than a string literal at each call site. A sort the API
+ * drops on the floor looks exactly like a sort that worked, so the only defense is to spell it once and pin the
+ * spelling with a test that reads the query string this actually produces. @see the `sort` assertions in
+ * `reads.test.ts`.
+ *
+ * `updateDate` is the only field this endpoint sorts on. It records when Congress.gov last touched the row rather than
+ * when Congress last did anything, so it selects a recent slice without itself being chronology — which is why the home
+ * page re-orders what comes back by legislative activity instead of trusting this order to mean that.
+ * @see compareBillsByActivity
+ */
+const RECENTLY_UPDATED_FIRST: string = "updateDate desc";
+
 /** Max bills fetched per Congress when sweeping for a search — the API's own per-request ceiling. */
 const SEARCH_PAGE_LIMIT: number = MAX_API_PAGE_SIZE;
 
@@ -96,9 +119,14 @@ function previewBillsForCongress(congress: number): LegislativeBill[] {
  * surface bills from any Congress in the API's history depending on which records happened to update recently;
  * filtering by congress guarantees every bill returned actually belongs to the one requested.
  *
- * @param input - The API key, the Congress to read, the page window, and an optional Congress.gov sort hint (e.g.,
- *   `"updateDate+desc"`). The sort is omitted for ordinary browsing and passed by the search sweep, so each Congress's
- *   fetched page favors its most recently active bills.
+ * @param input - The API key, the Congress to read, the page window, and the Congress.gov sort to request.
+ *
+ *   **`sort` is required, and that is the fix rather than an inconvenience.** It was optional, one caller omitted it,
+ *   and omitting it is not a neutral choice: `/v3/bill/{congress}` defaults to *ascending* latest-action order — the
+ *   least recently active bills of a Congress, which for the 119th means several thousand records whose only action is
+ *   the day they were introduced. That page went to the home page's "Latest Activity" section and its featured "A Bill
+ *   in Motion" card. A defensible default for an archive is the wrong one for every surface in this app, all of which
+ *   lead with what is current, so the type no longer offers it. Callers pass {@link RECENTLY_UPDATED_FIRST}.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
  *   page render, an empty page for "Load More").
  */
@@ -107,12 +135,12 @@ async function fetchBillsPage(input: {
   offset: number;
   limit: number;
   congress: number;
-  sort?: string;
+  sort: string;
 }): Promise<LegislativeBill[] | null> {
   const url: URL = buildCongressUrl(`/bill/${input.congress}`, input.apiKey, {
     limit: String(input.limit),
     offset: String(input.offset),
-    ...(input.sort ? { sort: input.sort } : {}),
+    sort: input.sort,
   });
 
   const result: CongressRequestResult<CongressApiListResponse> = await requestCongressJson(
@@ -164,6 +192,7 @@ export async function getCongressSnapshotForCongress(congress: number): Promise<
     offset: 0,
     limit: DEFAULT_PAGE_SIZE,
     congress,
+    sort: RECENTLY_UPDATED_FIRST,
   });
 
   if (!bills || bills.length === 0) {
@@ -204,7 +233,13 @@ export async function getMoreBills(
   const apiKey: string | undefined = getCongressApiKey();
   if (!apiKey) return [];
 
-  const bills: LegislativeBill[] | null = await fetchBillsPage({ apiKey, offset, limit: DEFAULT_PAGE_SIZE, congress });
+  const bills: LegislativeBill[] | null = await fetchBillsPage({
+    apiKey,
+    offset,
+    limit: DEFAULT_PAGE_SIZE,
+    congress,
+    sort: RECENTLY_UPDATED_FIRST,
+  });
 
   return bills ?? [];
 }
@@ -446,7 +481,7 @@ export async function getSearchResults(query: string): Promise<BillSearchRespons
     Promise.all(
       congresses.map(
         (congress: number): Promise<LegislativeBill[] | null> =>
-          fetchBillsPage({ apiKey, offset: 0, limit: SEARCH_PAGE_LIMIT, congress, sort: "updateDate+desc" }),
+          fetchBillsPage({ apiKey, offset: 0, limit: SEARCH_PAGE_LIMIT, congress, sort: RECENTLY_UPDATED_FIRST }),
       ),
     ),
   ]);

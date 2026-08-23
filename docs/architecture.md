@@ -457,6 +457,19 @@ an upstream convention breaks silently the day the convention does, on a page wh
 telling a reader which of a member's bills is recent. The preview path sorts on the same rule, since a fixture's
 ordering is no more authoritative than an upstream one.
 
+The home page is the same rule with the failure actually realized. Its featured card and activity grid ran on the order
+the bill list arrived in, under headings reading "Latest Activity" and "A Bill in Motion" — and that order was ascending
+by latest action, so the two most prominent bills on the site were reliably among the *least* active in Congress. It now
+sorts by `compareBillsByActivity`. The comparator is deliberately a sibling of `compareBillsByRecency` rather than a
+reuse of it: "recent" for a bill means *introduced* lately on a member's page and *acted on* lately here, a member's
+body of work would be scrambled by the second, and a home page is wrong under the first. One name for both would have
+made the pages agree by hiding that they were asking different questions.
+
+The fixture ordering deserves the same suspicion the upstream ordering gets. `previewBills` already happens to be in
+descending activity order, so every existing assertion about the home page would pass against a component that did no
+sorting at all — which is why the test that pins this hands it a deliberately reversed snapshot. A test that only ever
+sees data already in the right order is testing the fixture.
+
 Normalization happens at the mapping boundary, not at the view, for the same reason. `normalizeJurisdiction` title-cases
 the represented state in `upstream/mappers.ts` alongside `normalizePartyName` and `type.toUpperCase()`, because the
 jurisdiction is the value the member directory's state filter is *keyed on*. If `"NEW YORK"` and `"New York"` ever

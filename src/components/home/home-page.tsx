@@ -8,7 +8,12 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { CongressSeatingChart } from "@/components/members/congress-seating-chart";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/bills/model";
+import {
+  billIdentityKey,
+  type CongressSnapshot,
+  compareBillsByActivity,
+  type LegislativeBill,
+} from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { CongressComposition } from "@/lib/congress/members/model";
 import { formatOrdinal } from "@/lib/format";
@@ -21,9 +26,16 @@ import { billHref } from "@/lib/routes";
  * list endpoint can surface a record from an older Congress whose data happened to update recently, and reading the
  * headline number off whatever arrived would make the page occasionally, confidently wrong about what year it is.
  *
+ * The featured card and the activity grid draw from one list ordered by legislative activity, and the grid starts where
+ * the featured card left off rather than at the top of it. They previously both started at the top, so the most active
+ * bill was drawn twice above the fold — once as the hero's journey and again as the first of three cards — which spent
+ * a third of the section restating what the reader had just scrolled past. Three cards below a hero should be three
+ * further bills.
+ *
  * @param composition - Both chambers' membership, for the seating chart.
- * @param snapshot - The current Congress's bills, whose first entry becomes the featured record.
- * @returns The hero and featured bill journey, the chamber diagram, the three most recent bills, and the static
+ * @param snapshot - The current Congress's bills. Ordered here by latest action rather than taken as it arrives — @see
+ *   compareBillsByActivity for why the fetch order is a near miss for what this page claims.
+ * @returns The hero and featured bill journey, the chamber diagram, the next three bills by activity, and the static
  *   learn/trust sections.
  */
 export function HomePage({
@@ -33,7 +45,12 @@ export function HomePage({
   composition: CongressComposition;
   snapshot: CongressSnapshot;
 }): JSX.Element {
-  const featuredBill: LegislativeBill | undefined = snapshot.bills[0];
+  // Both the featured card and the activity grid below read off this rather than off `snapshot.bills` directly. The
+  // snapshot arrives ordered by Congress.gov's `updateDate`, which is when a row was last touched and not when anything
+  // happened — near enough to pick a recent slice out of eighteen thousand records, not near enough to put an April
+  // action above an August one under a heading that says "Latest Activity". @see compareBillsByActivity.
+  const byActivity: LegislativeBill[] = [...snapshot.bills].sort(compareBillsByActivity);
+  const featuredBill: LegislativeBill | undefined = byActivity[0];
   const currentCongress: number = getCurrentCongress();
 
   return (
@@ -96,7 +113,7 @@ export function HomePage({
       </section>
 
       <section className="activity-grid" aria-label="Recent bill activity">
-        {snapshot.bills.slice(0, 3).map(
+        {byActivity.slice(1, 4).map(
           (bill: LegislativeBill): JSX.Element => (
             <BillCard bill={bill} key={billIdentityKey(bill)} />
           ),
