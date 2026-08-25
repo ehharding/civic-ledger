@@ -200,6 +200,16 @@
   -webkit-line-clamp: 3;
 }
 
+/* The date under the clamped action text. Quieter than the action itself and set on the card's smallest size, because
+   it qualifies that sentence rather than competing with it — the reader should land on what happened and pick up when
+   afterwards. @see BillCard, and `.date-label` in bill-detail.css, which is the same idea under a panel heading and
+   carries a heading-sized top margin this position has no use for. */
+.bill-card__action-date {
+  margin-top: var(--space-2);
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}
+
 .bill-card__footer {
   margin-top: var(--space-5);
   padding-top: var(--space-3);
@@ -221,6 +231,10 @@
    24px box; the icon is unaffected at 17px, centered inside it by `place-items`. */
 .bill-card__footer a {
   display: grid;
+  /* Holds the arrow against the right edge when it is the footer's only child, which is what a bill carrying no policy
+     area now leaves — `space-between` alone would centre a lone item. Redundant, and harmless, when the policy area is
+     there to be spaced away from. */
+  margin-left: auto;
   min-width: var(--space-6);
   min-height: var(--space-6);
   place-items: center;

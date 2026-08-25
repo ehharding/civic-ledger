@@ -437,9 +437,11 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
  * ceiling) and matches `query` against their title, type, number, policy area, and latest-action text — the same fields
  * `BillCard` and the bill detail page already surface.
  *
- * Two honest limits follow from that, and the UI states both: it cannot see a bill's full legislative text, and for a
- * large or old Congress it sees only that Congress's most recently touched slice, not literally every bill ever
- * introduced in it.
+ * Two honest limits follow from that, and the UI states both in `BillDirectory`'s scope note: it cannot see a bill's
+ * full legislative text, and for a large or old Congress it sees only that Congress's most recently touched slice, not
+ * literally every bill ever introduced in it. The second half is the one that is easy to drop, because the count in
+ * `congressesSearched` is a true number that reads like a wider claim than it is — sweeping every Congress and reading
+ * a slice of each is not the same as searching every bill, and a note naming only the range says the latter.
  *
  * When `query` parses as a bill citation ("HR 284", "H.J.Res. 66" — see `parseBillCitation`), a direct single-bill
  * lookup is also attempted, in the cited Congress or the current one, and pinned first when it resolves. That path is

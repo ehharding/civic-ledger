@@ -164,7 +164,7 @@ export function BillDirectory({
   const searchScopeNote: string | null = search.degraded
     ? "Broader search isn't available right now — showing matches from what's already loaded."
     : search.meta
-      ? `Matched against titles, policy areas, and latest actions across the ${congressRangeLabel}.${
+      ? `Matched against titles, policy areas, and latest actions — across the ${congressRangeLabel}, but only each Congress's most recently updated records rather than every bill it holds.${
           search.meta.truncated ? " Showing the most recent matches." : ""
         }`
       : null;
