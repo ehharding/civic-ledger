@@ -19,7 +19,7 @@ GitHub Pages cannot hold a server-side API key or run route handlers, so it is t
 
 ## Start Locally
 
-1. Use Node 24 and pnpm 11 (pinned in `.nvmrc` and `packageManager`).
+1. Use Node 24 and pnpm 12 (pinned in `.nvmrc` and `packageManager`).
 2. Install packages:
 
    ```bash

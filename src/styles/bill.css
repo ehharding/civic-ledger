@@ -83,7 +83,12 @@
   font-size: 0;
 }
 
-.bill-journey--compact .journey-dot {
+/* Doubled class to match the (0, 3, 0) of the `.is-complete`/`.is-current` dot rules above rather than sit below them
+   at (0, 2, 0). Nothing is being overridden — those rules set color and border, this one sets size — but a
+   lower-specificity selector for the same element after a higher-specificity one is the shape of a bug even when it is
+   not one here, and Biome's `noDescendingSpecificity` reads it as such. The modifier is only ever set alongside the
+   base class (@see bill-journey.tsx), so the extra class matches exactly what the single class already matched. */
+.bill-journey.bill-journey--compact .journey-dot {
   width: 18px;
   height: 18px;
   font-size: var(--text-4xs);
