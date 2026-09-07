@@ -27,7 +27,7 @@ Two pipelines exist for two different purposes. Only the first ships the product
 Workflow: `.github/workflows/deploy-vercel.yml`. This is the real deployment target. It keeps `CONGRESS_API_KEY`
 server-side, and dynamic routes, ISR, and the future `saved_bills`/auth work all function normally.
 
-1. Run `pnpm dlx vercel link` locally to create and link the Vercel project.
+1. Run `pnpm dlx --allow-build=esbuild vercel link` locally to create and link the Vercel project.
 2. Add repo secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` under **GitHub → Settings → Secrets and
    variables → Actions**. This is *not* the Vercel dashboard's environment variables, which is a separate place — see
    the next step.

@@ -5,8 +5,9 @@ name: Deploy (Vercel)
 # host like GitHub Pages can run. See docs/deployment.md for both pipelines and what each one can serve.
 #
 # Setup (one time):
-#   1. `pnpm dlx vercel link` locally to create/link the Vercel project. (Unpinned on purpose: this is a one-time
-#      interactive setup run on a person's own machine, not the pinned CLI the jobs below use. @see VERCEL_CLI.)
+#   1. `pnpm dlx --allow-build=esbuild vercel link` locally to create/link the Vercel project. (Unpinned on purpose:
+#      this is a one-time interactive setup run on a person's own machine, not the pinned CLI the jobs below use.
+#      @see VERCEL_CLI.)
 #   2. Add repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
 #   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the Vercel
 #      project settings — not as GitHub secrets — so the key never appears in Action logs.
@@ -38,6 +39,12 @@ concurrency:
 # refused outright — `ERR_PNPM_NO_MATURE_MATCHING_VERSION`, before a single deploy step runs — which is the guard
 # working, not a bug to route around. Bumping is a normal pull request; check the publish date first, and watch for a
 # CLI major, which is where `vercel build`'s output layout moves.
+#
+# Each call also passes `--allow-build=esbuild`. The CLI pulls `esbuild`, whose postinstall links its platform binary,
+# and a `dlx` install is its own throwaway project — so the `allowBuilds` list in `pnpm-workspace.yaml` does not reach
+# it the way `minimumReleaseAge` does. pnpm 12 turned a skipped build script from a warning into
+# `ERR_PNPM_IGNORED_BUILDS`, which failed this job at the first step, before anything was deployed. The flag names the
+# package that workspace file already trusts, so this states the same allowance rather than widening it.
 env:
   VERCEL_CLI: vercel@59.11.7
 
@@ -65,7 +72,7 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Pull Vercel Environment
-        run: pnpm dlx "$VERCEL_CLI" pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx --allow-build=esbuild "$VERCEL_CLI" pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -81,7 +88,7 @@ jobs:
       # masked org slug turns "uploading to organization ehharding" into "uploading to organization ***" in exactly the
       # failed-upload log someone is reading to find out which organization it tried.
       - name: Build via Vercel
-        run: pnpm dlx "$VERCEL_CLI" build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx --allow-build=esbuild "$VERCEL_CLI" build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -92,7 +99,7 @@ jobs:
       - name: Deploy to Vercel
         id: deploy
         run: |
-          url=$(pnpm dlx "$VERCEL_CLI" deploy --prebuilt ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(pnpm dlx --allow-build=esbuild "$VERCEL_CLI" deploy --prebuilt ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
