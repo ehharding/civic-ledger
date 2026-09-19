@@ -1,4 +1,4 @@
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 // The default build is a full Next.js server app (Vercel or any Node host): dynamic routes, ISR, and a server-only
