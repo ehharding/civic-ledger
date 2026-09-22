@@ -129,17 +129,6 @@ default — a few current positions, so they don't have to be relitigated per pu
   does not have: the code compiles, `pnpm check` passes, and the call is simply missing when it runs. The caret range in
   `package.json` and an `ignore` entry in `.github/dependabot.yml` both hold that ceiling, and `pnpm outdated` will keep
   reporting a newer "Latest" because of it. Move it when `.nvmrc` and `engines` move, in the same change.
-- **`@sentry/nextjs` is held at the 10.71 line by a `~` range, pending an upstream fix.** From `@sentry/server-utils`
-  10.72.0 — which `@sentry/nextjs` pulls in lockstep — the vendored orchestrion webpack plugin resolves its loader path
-  through a bundler shim that branches on `typeof document`. Under Node it reads `__filename` and is right; where a
-  `document` global exists it falls back to `document.baseURI`, hands `fileURLToPath` an `http:` URL, and throws
-  `ERR_INVALID_URL_SCHEME` while the module is still loading. This suite runs in `jsdom`, so `document` exists and every
-  test file reaching server code that imports Sentry fails to load — 21 of them, before one assertion runs. No test
-  change fixes it and Vitest is not at fault: `node -e "globalThis.document={baseURI:'http://x/'}; require(<that
-  file>)"` throws the same way with no test runner in the picture. Deliberately *not* given an `ignore` entry in
-  `.github/dependabot.yml`, unlike `@types/node` above — that ceiling is policy and permanent, this one is a bug waiting
-  on a release, and an ignored dependency is one nobody learns has been fixed. The weekly Dependabot pull request is the
-  probe: the day it goes green the hold is over and the range goes back to `^`.
 
 ## Code Conventions
 
