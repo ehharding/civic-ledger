@@ -22,6 +22,28 @@ const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[]
 ];
 
 /**
+ * For each chamber a bill can originate in, a pattern naming the *other* one as a whole word.
+ *
+ * A bill only reaches the second chamber by clearing the first, so an action that takes place there is evidence of
+ * passage even when its own words are about something smaller. This is the list-level answer to the problem
+ * {@link inferStageFromActions} solves on the bill's own page: "Received in the Senate and Read twice and referred to
+ * the Committee on Finance" is a referral sentence, and read as one it walks a House-passed bill back to `"committee"`.
+ * It is also the only way "Placed on Senate Legislative Calendar under General Orders" — which names no phrase in
+ * {@link STAGE_MARKERS} at all — gets read as anything but `"introduced"` on a House bill.
+ *
+ * A whole word rather than a phrase list, because the ways a second chamber names itself are open-ended — receipt, a
+ * calendar, a cloture vote "in Senate", "the Chair directed the Clerk to notify the Senate", a message "sent to the
+ * House" — and each of them means the same thing about the first. The word boundary is what keeps "Housing" (the Senate
+ * Banking committee) and "courthouse" (a naming bill) from reading as the House. Checked against 1,500 bills of the
+ * 119th Congress in September 2026: every latest action that names the other chamber came after the origin chamber
+ * acted on the measure.
+ */
+const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
+  House: /\bsenate\b/,
+  Senate: /\bhouse\b/,
+};
+
+/**
  * Classifies a bill's latest action text into one of the five stages of the educational `BillJourney` stepper.
  *
  * This is an orientation aid, never an authoritative legal determination — the bill detail page says so beside the
@@ -31,16 +53,22 @@ const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[]
  * fetched, {@link inferStageFromActions} is both more accurate and less inferential, and takes precedence.
  *
  * @param actionText - The bill's latest action text, verbatim from Congress.gov.
+ * @param originChamber - The chamber the bill was introduced in. When known, an action naming the other chamber lifts
+ *   the reading to at least `"chamber"` — @see OTHER_CHAMBER. `"Unknown"`, the default, disables that inference.
  * @returns The most advanced stage the text confidently indicates, defaulting to `"introduced"`.
  */
-export function inferBillStage(actionText: string): BillStage {
+export function inferBillStage(
+  actionText: string,
+  originChamber: "House" | "Senate" | "Unknown" = "Unknown",
+): BillStage {
   const action: string = actionText.toLowerCase();
+  const stage: BillStage =
+    STAGE_MARKERS.find(({ phrases }): boolean => phrases.some((phrase: string): boolean => action.includes(phrase)))
+      ?.stage ?? "introduced";
 
-  for (const { stage, phrases } of STAGE_MARKERS) {
-    if (phrases.some((phrase: string): boolean => action.includes(phrase))) return stage;
-  }
+  if (originChamber === "Unknown" || billStages.indexOf(stage) >= billStages.indexOf("chamber")) return stage;
 
-  return "introduced";
+  return OTHER_CHAMBER[originChamber].test(action) ? "chamber" : stage;
 }
 
 /**

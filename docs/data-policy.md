@@ -167,8 +167,13 @@ has fetched the full action history, so `inferStageFromActions` reads the Librar
 instead — and those disagree with the prose more often than they sound like they would. A House bill that passed the
 House and was then referred to a Senate committee reports "Received in the Senate and Read twice and referred to the
 Committee on …" as its latest action, which the prose classifier reads, correctly for the sentence and wrongly for the
-bill, as *In Committee*. The code for the passage is still in the history. So a card and the bill's page can show
-different stages for the same bill, and where they differ the page is the one that read more of the record.
+bill, as *In Committee*. The code for the passage is still in the history.
+
+The card recovers most of that case on its own, because the sentence names the wrong chamber for a referral: a House
+bill can only be in the Senate after passing the House. So `inferBillStage` is handed the bill's origin chamber, and an
+action naming the other one — as a whole word, so the Senate's "Banking, Housing" committee is not the House — lifts the
+reading to *Passed a Chamber*. That is still a reading of one sentence, and a card and the bill's page can still show
+different stages for the same bill; where they differ, the page is the one that read more of the record.
 
 The code list is deliberately four entries long — passed House, passed Senate, presented, enacted. No attempt is made
 to classify the several hundred other codes the endpoint uses, and floor activity is specifically *not* treated as

@@ -25,6 +25,41 @@ describe("inferBillStage", (): void => {
   it("uses a conservative introduced fallback", (): void => {
     expect(inferBillStage("Introduced in House.")).toBe("introduced");
   });
+
+  it("reads an action in the second chamber as passage of the first", (): void => {
+    // A referral sentence, and a calendar sentence that names no marker at all — both only possible after the House
+    // passed the bill.
+    const referral: string = "Received in the Senate and Read twice and referred to the Committee on Finance.";
+    const calendar: string = "Placed on Senate Legislative Calendar under General Orders. Calendar No. 592.";
+
+    expect(inferBillStage(referral, "House")).toBe("chamber");
+    expect(inferBillStage(calendar, "House")).toBe("chamber");
+    expect(inferBillStage("Message on Senate action sent to the House.", "Senate")).toBe("chamber");
+  });
+
+  it("does not read the origin chamber's own actions as passage", (): void => {
+    expect(inferBillStage("Placed on Senate Legislative Calendar under General Orders.", "Senate")).toBe("introduced");
+    expect(inferBillStage("Referred to the House Committee on the Judiciary.", "House")).toBe("committee");
+  });
+
+  it("matches the other chamber as a whole word only", (): void => {
+    // The Senate's Banking committee, and a naming bill for a Senate-origin measure — neither is the House.
+    const banking: string = "Read twice and referred to the Committee on Banking, Housing, and Urban Affairs.";
+    const courthouse: string = "Committee on Environment and Public Works. Ordered to be reported (courthouse naming).";
+
+    expect(inferBillStage(banking, "Senate")).toBe("committee");
+    expect(inferBillStage(courthouse, "Senate")).toBe("committee");
+  });
+
+  it("never lowers a stage the text establishes on its own", (): void => {
+    expect(inferBillStage("Presented to President.", "House")).toBe("president");
+    expect(inferBillStage("Became Public Law No: 119-7. Senate", "House")).toBe("law");
+  });
+
+  it("makes no cross-chamber inference when the origin is unknown", (): void => {
+    expect(inferBillStage("Received in the Senate.")).toBe("introduced");
+    expect(inferBillStage("Received in the Senate.", "Unknown")).toBe("introduced");
+  });
 });
 
 describe("inferStageFromActions", (): void => {

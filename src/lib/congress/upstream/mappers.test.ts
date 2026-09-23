@@ -138,6 +138,21 @@ describe("mapCongressBill", (): void => {
     expect(bill?.stage).toBe("committee");
   });
 
+  it("hands the origin chamber to the prose classifier, so a second-chamber referral reads as passage", (): void => {
+    const bill: LegislativeBill | null = mapCongressBill(
+      apiBill({
+        laws: undefined,
+        originChamber: "House",
+        latestAction: {
+          actionDate: "2026-09-15",
+          text: "Received in the Senate and Read twice and referred to the Committee on Finance.",
+        },
+      }),
+    );
+
+    expect(bill?.stage).toBe("chamber");
+  });
+
   it("ignores a half-written law rather than pinning a stage on it", (): void => {
     // "Public Law" with no number names no specific law, and a bare number names nothing at all. The action codes can
     // still establish enactment on their own, so a partial record is dropped rather than propped up.

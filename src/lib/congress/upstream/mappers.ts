@@ -125,13 +125,14 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
   const sponsor: CongressApiSponsor | undefined = bill.sponsors?.[0];
   // A bill is enacted at most once; the array is how the endpoint spells an optional field, not a collection to page.
   const enactedLaw: EnactedLaw | undefined = mapUsable(bill.laws, mapEnactedLaw)[0];
+  const originChamber: LegislativeBill["originChamber"] = asOriginChamber(bill.originChamber);
 
   return {
     congress: bill.congress,
     type: type.toUpperCase(),
     number: String(number),
     title: bill.title,
-    originChamber: asOriginChamber(bill.originChamber),
+    originChamber,
     introducedDate: bill.introducedDate,
     latestAction: {
       date: bill.latestAction?.actionDate ?? bill.updateDate,
@@ -141,7 +142,7 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     // A published law outranks a phrase match. `inferBillStage` reaches `"law"` by recognizing "became public law" in
     // one line of prose, which is right whenever that sentence is the latest action and silent whenever a later one
     // displaced it; `laws` is the record stating the outcome regardless of what the newest row happens to say.
-    stage: enactedLaw ? "law" : inferBillStage(actionText),
+    stage: enactedLaw ? "law" : inferBillStage(actionText, originChamber),
     // `legislationUrl` is the public congress.gov page, published by the item-level endpoint since August 2025;
     // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
     // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
