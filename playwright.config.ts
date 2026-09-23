@@ -63,5 +63,11 @@ export default defineConfig({
     // Reuse whatever is already listening locally; always start a fresh one in CI, where "already running" would mean a
     // leaked process from another job rather than the contributor's own dev server.
     reuseExistingServer: !process.env.CI,
+    // Ask the server to stop rather than killing it outright, which is what Playwright does when this is unset — a
+    // SIGKILL to the process group it spawned. That used to reach `next dev` too, but pnpm 12.6 starts a script in a
+    // process group of its own, and a SIGKILL cannot be forwarded: pnpm died, `next dev` was orphaned still holding the
+    // run's stdout, and the run never ended — a CI job that finished every test and then sat until its timeout, and a
+    // WebStorm run that never stopped. A SIGTERM is one pnpm passes along, so Next shuts down with it.
+    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
   },
 });
