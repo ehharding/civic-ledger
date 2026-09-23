@@ -1,3 +1,9 @@
+// @vitest-environment node
+//
+// Nothing here renders to a DOM, and jsdom's global scope has no `ReadableStream` — which `ImageResponse` constructs
+// its body from. Under the `vmThreads` pool each file runs in a context built from its environment's globals alone, so
+// this suite needs the Node environment to see the Web Streams API at all. @see `pool` in vitest.config.mts.
+
 /**
  * Covers the shared Open Graph card.
  *

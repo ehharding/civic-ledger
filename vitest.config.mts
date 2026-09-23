@@ -23,6 +23,24 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+
+    /**
+     * Builds jsdom once per worker instead of once per test file.
+     *
+     * Under the default `forks` pool every one of the ~100 files paid for a fresh jsdom — about 40% of all tracked
+     * time, which Vitest flags in its end-of-run summary. `vmThreads` keeps that one environment per worker and gives
+     * each file its own `vm` context on top of it, so module state, mocks, and globals stay isolated per file exactly
+     * as before. The run takes roughly half the time.
+     *
+     * The rejected alternative, `isolate: false`, removes the cost by sharing one module graph across files — which
+     * would let a `vi.mock` or a module-level cache in one suite leak into the next, the kind of order-dependent
+     * failure that costs far more than the seconds it saves.
+     *
+     * The trade `vmThreads` does make: a file sees only the globals its environment defines, not everything Node has.
+     * jsdom lacks the Web Streams API, so a suite that needs it and renders nothing opts into the Node environment with
+     * a `// @vitest-environment node` directive — `src/app/opengraph-image.test.tsx` is the one that does today.
+     */
+    pool: "vmThreads",
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["./vitest.setup.ts"],
 
