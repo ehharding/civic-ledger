@@ -18,7 +18,7 @@ type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
  * The four redaction callbacks, each recovered from the options bag for the same reason as {@link SentryInitOptions}.
  */
 type BeforeSend = NonNullable<SentryInitOptions["beforeSend"]>;
-type BeforeSendTransaction = NonNullable<SentryInitOptions["beforeSendTransaction"]>;
+type BeforeSendSpan = NonNullable<SentryInitOptions["beforeSendSpan"]>;
 type BeforeBreadcrumb = NonNullable<SentryInitOptions["beforeBreadcrumb"]>;
 type BeforeSendLog = NonNullable<SentryInitOptions["beforeSendLog"]>;
 
@@ -129,12 +129,17 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     tracesSampleRate: getTracesSampleRate(),
 
     /**
-     * Structured logs, which is how this app reports the failure it has the most of.
+     * Structured logs, which is how this app reports the failure it has the most of — and which need no option here.
      *
      * `requestCongressJson` handles every upstream failure and returns `{ outcome: "failed" }` so a page degrades
-     * instead of crashing — which means a Congress.gov outage throws nothing, reaches no error boundary, and without
-     * this is invisible to Sentry entirely. @see log.ts, which explains why those arrive as logs rather than as
-     * exceptions, and why that is the difference between an issue stream and a quota fire during an outage.
+     * instead of crashing — which means a Congress.gov outage throws nothing, reaches no error boundary, and would be
+     * invisible to Sentry entirely without the `Sentry.logger` calls in `log.ts`. @see log.ts, which explains why those
+     * arrive as logs rather than as exceptions, and why that is the difference between an issue stream and a quota fire
+     * during an outage.
+     *
+     * Since SDK v11 there is no `enableLogs` switch: calling `Sentry.logger.*` is itself the opt-in, and there is no way
+     * to turn it off again short of not calling it. That makes `beforeSendLog` below the only thing standing between a
+     * log line and the network, which is why it is kept in step with the other callbacks rather than treated as extra.
      *
      * Sampling is deliberately not applied. The tracing rate above can drop nine spans in ten because the tenth answers
      * the same question; a dropped error log is a failure nobody can count.
@@ -145,7 +150,6 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
      * lines `log.ts` already sends. The app logs through one boundary on purpose, so that what leaves it is reviewable
      * in a diff rather than inherited from whatever a dependency decided to print.
      */
-    enableLogs: true,
 
     /**
      * What the SDK is allowed to gather before any of this app's own code sees it.
@@ -181,6 +185,15 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
       // by *name* is unreliable because minifiers rename locals, which is exactly why this is off outright and why
       // `redactSecrets` also scrubs the key's literal value.
       stackFrameVariables: false,
+
+      // Off for categories this app does not produce today, because SDK v11 turned every one of them *on* by default.
+      // Stating them is what makes that a decision rather than an inheritance: `databaseQueryData` in particular is
+      // the one the deferred Postgres layer (see the Persistence Plan in docs/architecture.md) would start filling the
+      // day it lands, and query text is exactly where a reader's search terms would end up.
+      databaseQueryData: false,
+      genAI: { inputs: false, outputs: false },
+      queues: false,
+      graphQL: { document: false, variables: false },
     },
 
     /**
@@ -189,12 +202,17 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
      * All four are pure functions of their input and never throw: they run inside the SDK's own dispatch, where an
      * exception would be a crash in the error handler rather than a dropped field.
      *
+     * `beforeSendSpan` replaced `beforeSendTransaction` in SDK v11, which streams spans as they finish instead of
+     * batching them into a transaction event. The old hook still type-checks and is never called, so leaving it here
+     * would have been a redaction pass that silently stopped running. Spans cannot be dropped from this hook, only
+     * rewritten — which is all redaction needs.
+     *
      * `beforeSendLog` is the one to keep in step with the others. It is a separate hook on a separate
-     * pipeline — enabling `enableLogs` without it would open a fourth exit from this process that none of the redaction
-     * above covers, and it would open it quietly, since a log body looks like text nobody put a URL in until someone
-     * does. `log.ts` already redacts its own lines, so this is the same belt-and-braces arrangement as `dataCollection`
-     * and the callbacks: the module-level pass is what runs, and this is what still holds when a future caller forgets
-     * it.
+     * pipeline — calling `Sentry.logger` without it would open a fourth exit from this process that none of the
+     * redaction above covers, and it would open it quietly, since a log body looks like text nobody put a URL in until
+     * someone does. `log.ts` already redacts its own lines, so this is the same belt-and-braces arrangement as
+     * `dataCollection` and the callbacks: the module-level pass is what runs, and this is what still holds when a
+     * future caller forgets it.
      */
     // biome-ignore-start lint/nursery/useExplicitReturnType: these four are the one place in the app where an inferred
     // signature is the more precise one. Each `satisfies` clause types the parameter *and* the return from the SDK's
@@ -202,7 +220,7 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     // `Parameters<BeforeSend>[0]` and `ReturnType<BeforeSend>` around a body that is already exactly that, and would
     // stop tracking the SDK the next time it changes one of them. @see SentryInitOptions.
     beforeSend: ((event) => redactEvent(event, secrets)) satisfies BeforeSend,
-    beforeSendTransaction: ((event) => redactEvent(event, secrets)) satisfies BeforeSendTransaction,
+    beforeSendSpan: ((span) => redactEvent(span, secrets)) satisfies BeforeSendSpan,
     beforeBreadcrumb: ((breadcrumb) => redactEvent(breadcrumb, secrets)) satisfies BeforeBreadcrumb,
     beforeSendLog: ((log) => redactEvent(log, secrets)) satisfies BeforeSendLog,
     // biome-ignore-end lint/nursery/useExplicitReturnType: @see above.

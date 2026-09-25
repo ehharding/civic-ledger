@@ -1,9 +1,10 @@
 /**
  * What an error report is allowed to carry out of this app.
  *
- * Sentry's own documentation is explicit that, with `sendDefaultPii` off and every default in place, "the full request
- * URL of outgoing and incoming HTTP requests is always sent" — query string included. That default is fine for most
- * apps and wrong for this one twice over, for two unrelated reasons that happen to have the same fix:
+ * Sentry's own documentation was explicit, under the `sendDefaultPii` switch SDK v11 replaced with `dataCollection`,
+ * that with every default in place "the full request URL of outgoing and incoming HTTP requests is always sent" — query
+ * string included. v11's defaults collect more, not less. That default is fine for most apps and wrong for this one
+ * twice over, for two unrelated reasons that happen to have the same fix:
  *
  * 1. **A Congress.gov key travels in the query string.** `buildCongressUrl` appends `api_key=…` to every outbound URL,
  *    so an unfiltered breadcrumb, span, or captured request is a published credential. `docs/data-policy.md` already
@@ -59,9 +60,12 @@ const URL_KEYS: ReadonlySet<string> = new Set([
  * Keys dropped outright rather than redacted, because the whole value is the thing being refused.
  *
  * `query_string` is Sentry's dedicated field for exactly what this module exists to not collect, and `cookies` is not
- * something a reading surface over public records has any reason to attach to a crash report.
+ * something a reading surface over public records has any reason to attach to a crash report. `url.query` and
+ * `url.fragment` are the same refusal in OpenTelemetry's vocabulary: SDK v11 splits a span's URL into those attributes
+ * (retiring `http.query` and `http.target`), and a query string held on its own has no `?` for {@link redactUrl} to cut
+ * at — so it would otherwise reach the report with only the `api_key` pattern scrubbed and the search terms intact.
  */
-const DROPPED_KEYS: ReadonlySet<string> = new Set(["query_string", "cookies"]);
+const DROPPED_KEYS: ReadonlySet<string> = new Set(["query_string", "cookies", "url.query", "url.fragment"]);
 
 /**
  * Matches a Congress.gov credential wherever it appears inside a longer string.

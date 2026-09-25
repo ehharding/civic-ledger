@@ -46,7 +46,7 @@ concurrency:
 # `ERR_PNPM_IGNORED_BUILDS`, which failed this job at the first step, before anything was deployed. The flag names the
 # package that workspace file already trusts, so this states the same allowance rather than widening it.
 env:
-  VERCEL_CLI: vercel@59.25.4
+  VERCEL_CLI: vercel@59.26.0
 
 jobs:
   deploy:

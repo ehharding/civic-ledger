@@ -114,6 +114,16 @@ describe("redactEvent", (): void => {
     expect(redactEvent(event)).toEqual({ request: { url: "https://civic-ledger.example/bills" } });
   });
 
+  it("drops the query-string attributes SDK v11 splits a span's URL into", (): void => {
+    // `url.query` holds the string without its `?`, so cutting at the `?` would leave the search terms standing.
+    const span = {
+      name: "GET /bills",
+      attributes: { "url.path": "/bills", "url.query": "q=broadband", "url.fragment": "results" },
+    };
+
+    expect(redactEvent(span)).toEqual({ name: "GET /bills", attributes: { "url.path": "/bills" } });
+  });
+
   it("cuts the outbound Congress.gov URL a fetch breadcrumb carries", (): void => {
     // The single most likely way the key would have reached Sentry: every upstream read makes one of these.
     const breadcrumb = {

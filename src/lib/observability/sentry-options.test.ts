@@ -130,6 +130,17 @@ describe("sentryInitOptions", (): void => {
     expect(dataCollection?.stackFrameVariables).toBe(false);
   });
 
+  it("refuses the categories SDK v11 switched on by default, rather than inheriting them", (): void => {
+    // Unset, v11 collects all four. Database query text is the one that matters first: it is where a reader's search
+    // terms would land the day the deferred Postgres layer is built.
+    const { dataCollection } = sentryInitOptions();
+
+    expect(dataCollection?.databaseQueryData).toBe(false);
+    expect(dataCollection?.genAI).toEqual({ inputs: false, outputs: false });
+    expect(dataCollection?.queues).toBe(false);
+    expect(dataCollection?.graphQL).toEqual({ document: false, variables: false });
+  });
+
   it("stays switched off entirely when no DSN is configured", (): void => {
     // A supported state, not a misconfiguration: it is how the static demo ships and how a local checkout stays out of
     // the project's issue stream.
@@ -162,18 +173,31 @@ describe("sentryInitOptions", (): void => {
     expect(JSON.stringify(sent)).not.toContain("party=republican");
   });
 
-  it("redacts a transaction before it is sent, not only an error", (): void => {
+  it("redacts a span before it is sent, not only an error", (): void => {
     // Tracing is the path that carries outbound Congress.gov URLs most often, so leaving it out would have left the
-    // likeliest leak uncovered.
-    const transaction = {
-      transaction: "GET /bills",
-      contexts: { trace: { data: { "http.url": `https://api.congress.gov/v3/bill?api_key=${KEY}` } } },
+    // likeliest leak uncovered. The fixture is the streamed-span shape SDK v11 hands `beforeSendSpan` — `name` and
+    // `attributes` where v10's transaction had `description` and `data` — including the `url.query` attribute v11
+    // splits a query string into.
+    const span = {
+      name: `GET https://api.congress.gov/v3/bill?api_key=${KEY}`,
+      is_segment: false,
+      attributes: {
+        "sentry.op": "http.client",
+        "url.full": `https://api.congress.gov/v3/bill?api_key=${KEY}`,
+        "url.query": `format=json&api_key=${KEY}`,
+      },
     };
 
     // biome-ignore lint/suspicious/noExplicitAny: as above.
-    const sent = sentryInitOptions([KEY]).beforeSendTransaction?.(transaction as any, {} as any);
+    const sent = sentryInitOptions([KEY]).beforeSendSpan?.(span as any);
 
     expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).not.toContain("url.query");
+  });
+
+  it("no longer sets beforeSendTransaction, which SDK v11 never calls", (): void => {
+    // A hook that type-checks and never runs is worse than none: it reads, in review, as redaction that is in force.
+    expect(sentryInitOptions().beforeSendTransaction).toBeUndefined();
   });
 
   it("redacts a breadcrumb before it is recorded", (): void => {
@@ -185,16 +209,10 @@ describe("sentryInitOptions", (): void => {
     expect(JSON.stringify(sent)).not.toContain(KEY);
   });
 
-  it("turns structured logs on, which is the only way the app's commonest failure is reported at all", (): void => {
-    // `requestCongressJson` handles every upstream failure and returns `{ outcome: "failed" }` rather than throwing, so
-    // a Congress.gov outage reaches no error boundary and no `onRequestError`. Off, this option makes that failure
-    // invisible to Sentry entirely. @see src/lib/observability/log.ts.
-    expect(sentryInitOptions().enableLogs).toBe(true);
-  });
-
   it("redacts a log before it is sent, which is a fourth pipeline and a fourth hook", (): void => {
-    // The assertion that keeps `enableLogs` from being a leak. `beforeSend` and friends do not run over logs: enabling
-    // logs without this would open an exit from the process that none of the redaction above covers.
+    // The assertion that keeps `log.ts` from being a leak. `beforeSend` and friends do not run over logs, and since SDK
+    // v11 there is no switch to turn logs off: calling `Sentry.logger` is the opt-in, so this hook is the only
+    // redaction those lines get from the SDK.
     const log = {
       level: "error",
       message: `Failed while calling https://api.congress.gov/v3?api_key=${KEY}`,

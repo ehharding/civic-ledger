@@ -23,7 +23,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.75.2",
+    "@sentry/nextjs": "^11.0.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "date-fns": "^4.4.0",

@@ -508,8 +508,10 @@ URL with the key still on it. On a managed host a function log is a third-party 
 document makes applies to it. Every log line is now built in `src/lib/observability/log.ts`, redacted there, and written
 to both sinks from one place.
 
-Sentry's own documentation is explicit: with `sendDefaultPii` off and every other default in place, "the full request
-URL of outgoing and incoming HTTP requests is always sent," query string included. In this app that sentence describes
+Sentry's own documentation was explicit, back when the SDK had a `sendDefaultPii` switch: with it off and every other
+default in place, "the full request URL of outgoing and incoming HTTP requests is always sent," query string included.
+SDK v11 replaced that switch with per-category `dataCollection` settings whose defaults are *more* permissive, so the
+sentence understates the position now rather than overstating it. In this app that sentence describes
 two separate leaks that happen to have one fix:
 
 - **The Congress.gov key travels in the query string.** `buildCongressUrl` appends `api_key=…` to every outbound URL, so
@@ -524,15 +526,18 @@ rather than beside either caller, because a promise kept by two copies of a func
 someone edits one of them.
 
 What the error tracker is allowed to collect is set in `src/lib/observability/sentry-options.ts`, in code rather than in
-a Sentry project setting: query params, request and response headers, cookies, request bodies, user info, and captured
-local variables are all refused outright. The redaction callbacks then run over every event as a backstop, so a field a
-future SDK version adds is covered before anyone here has heard of it. There are four of them, not three — `beforeSend`,
-`beforeSendTransaction`, `beforeBreadcrumb`, and `beforeSendLog` — because structured logs are a separate pipeline that
-the first three do not touch. Turning logs on without the fourth would open an exit from this process that none of the
-scrubbing above covers, and would open it quietly, since a log body looks like text nobody put a URL in until someone
-does. Local variables get both treatments because the key can reach a stack frame with no `api_key=` prefix for a
-pattern to find — so the redactor also strips the key's literal value, which is the pass that makes this airtight rather
-than merely careful.
+a Sentry project setting: query params, request and response headers, cookies, request bodies, user info, captured local
+variables, database query text, GenAI inputs and outputs, queue payloads, and GraphQL documents are all refused
+outright — the last four for categories this app does not produce yet, because SDK v11 collects each of them unless told
+not to. The redaction callbacks then run over every event as a backstop, so a field a future SDK version adds is covered
+before anyone here has heard of it. There are four of them, not three — `beforeSend`, `beforeSendSpan`,
+`beforeBreadcrumb`, and `beforeSendLog` — because structured logs are a separate pipeline that the first three do not
+touch. (`beforeSendSpan` is the tracing hook since SDK v11 streamed spans individually; the `beforeSendTransaction` hook
+it replaced still type-checks and is never called.) Calling `Sentry.logger` without the fourth would open an exit from
+this process that none of the scrubbing above covers, and would open it quietly, since a log body looks like text nobody
+put a URL in until someone does. Local variables get both treatments because the key can reach a stack frame with no
+`api_key=` prefix for a pattern to find — so the redactor also strips the key's literal value, which is the pass that
+makes this airtight rather than merely careful.
 
 **No Session Replay.** It is the SDK's headline feature and the wrong feature for this product: it records the DOM, and
 the DOM here is the congressional record a reader was reading plus whatever they typed into a search box. Adding it
