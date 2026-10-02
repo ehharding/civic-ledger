@@ -49,6 +49,21 @@ const FALLBACK_ENVIRONMENT: string = "development";
 const DEFAULT_TRACES_SAMPLE_RATE: number = 0.1;
 
 /**
+ * Error messages that are never this app's failure, and are dropped before they reach the issue stream.
+ *
+ * Each entry is a *visitor's* environment misbehaving on a page that rendered fine, so there is nothing in this
+ * repository to fix — and an issue stream that fills with them is one that trains you to stop reading it. Matched as a
+ * substring of the message, which is how the SDK treats a string entry; keep each one specific enough that it cannot
+ * swallow a real failure that happens to share a word with it.
+ *
+ * - `Object Not Found Matching Id:` — Microsoft's link scanner (Outlook Safe Links and the Bing preview crawler it
+ *   shares a CefSharp host with) opens a mailed link in a headless browser and calls back into its own host object,
+ *   which rejects with a non-`Error` string the page never produces. The signature is a burst of page loads in a few
+ *   seconds, zero users, and no stack.
+ */
+const IGNORED_ERRORS: readonly string[] = ["Object Not Found Matching Id:"];
+
+/**
  * Reads the deployment's environment name — the label that separates a real production crash from someone's laptop.
  *
  * **Set `NEXT_PUBLIC_SENTRY_ENVIRONMENT` on the deployment.** It is listed as optional in `docs/deployment.md` because
@@ -127,6 +142,9 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
 
     environment: getSentryEnvironment(),
     tracesSampleRate: getTracesSampleRate(),
+
+    // A copy because the SDK's option type wants a mutable array and the list above is a constant. @see IGNORED_ERRORS.
+    ignoreErrors: [...IGNORED_ERRORS],
 
     /**
      * Structured logs, which is how this app reports the failure it has the most of — and which need no option here.

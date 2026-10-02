@@ -159,6 +159,14 @@ describe("sentryInitOptions", (): void => {
     expect(options.dsn).toBe(DSN);
   });
 
+  it("drops Microsoft's link-scanner rejection, which no reader of this app ever sees", (): void => {
+    // The exact message from a real Safe Links scan; the SDK matches a string entry as a substring of it.
+    const message: string = "Object Not Found Matching Id:1, MethodName:update, ParamCount:4";
+    const ignored = sentryInitOptions().ignoreErrors ?? [];
+
+    expect(ignored.some((pattern) => typeof pattern === "string" && message.includes(pattern))).toBe(true);
+  });
+
   it("redacts an error event before it is sent", (): void => {
     const event = {
       request: { url: "https://civic-ledger.example/members?party=republican&state=Ohio" },
