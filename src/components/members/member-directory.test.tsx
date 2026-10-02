@@ -3,6 +3,9 @@
  * count and scope note describe what is showing honestly, that filters compose and clear, that the view the URL asked
  * for is the view that renders, and that a preview roster doesn't claim to be a list of people currently holding seats.
  */
+// biome-ignore-all lint/nursery/useAwaitThenable: false positive since Biome 2.5.15, which resolves `act(async …)` to
+// React's `void` overload. TypeScript resolves it to the `Promise<T>` one, so the `await` is required. Remove once
+// fixed.
 import { act, type RenderResult, render, screen, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import type { ComponentProps, ReactElement } from "react";

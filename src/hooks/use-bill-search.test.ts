@@ -10,6 +10,9 @@
  *
  * Fake timers throughout, since the alternative is a suite that waits a real third of a second per search.
  */
+// biome-ignore-all lint/nursery/useAwaitThenable: false positive since Biome 2.5.15, which resolves `act(async …)` to
+// React's `void` overload. TypeScript resolves it to the `Promise<T>` one, so the `await` is required. Remove once
+// fixed.
 import { act, type RenderHookResult, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

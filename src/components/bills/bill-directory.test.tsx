@@ -4,6 +4,9 @@
  * states, and "Load More" pagination — including its three stopping conditions (short page, empty page, request
  * failure).
  */
+// biome-ignore-all lint/nursery/useAwaitThenable: false positive since Biome 2.5.15, which resolves `act(async …)` to
+// React's `void` overload. TypeScript resolves it to the `Promise<T>` one, so the `await` is required. Remove once
+// fixed.
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import userEvent from "@testing-library/user-event";
