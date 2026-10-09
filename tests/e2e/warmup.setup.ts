@@ -81,8 +81,17 @@ test("every route is compiled and its upstream reads are cached", async ({ reque
 
   for (const path of ROUTES) await warm(request, path);
 
+  const records: string[] = [];
   for (const { directory, href } of RECORD_ROUTES) {
     const match: RegExpMatchArray | null = (await warm(request, directory)).match(href);
-    if (match?.[1]) await warm(request, match[1]);
+    if (match?.[1]) records.push(await warm(request, match[1]));
   }
+
+  // One more hop, for the spec that follows the first bill's sponsor. Warming `/members` above compiled the member
+  // route, but its upstream reads are per person: the sponsor is almost never the directory's first member, so their
+  // page would otherwise be the one live Congress.gov round trip left in the suite — and a slow one outran the default
+  // assertion timeout locally while CI, with no key, never saw it. The bill's first member link is its sponsor line;
+  // the nav's `/members` has no ID and cannot match.
+  const sponsor: RegExpMatchArray | null = (records[0] ?? "").match(/href="(\/members\/[A-Za-z0-9-]+)"/);
+  if (sponsor?.[1]) await warm(request, sponsor[1]);
 });
