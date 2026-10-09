@@ -126,10 +126,21 @@
    the floor by the same e2e sweep. @see tests/e2e/layout.spec.ts. */
 .primary-nav a {
   padding-block: 3px;
+  /* Every destination carries the current section's underline, transparent until it is wanted, so hovering one fades
+     the rule in rather than snapping it on — and moving to a section lands on the same rule the hover previewed. The
+     geometry is stated here once for the same reason; the `[aria-current]` rule below only has to change colors. */
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  transition:
+    color 160ms ease,
+    text-decoration-color 160ms ease;
 }
 
 .primary-nav a:hover {
   color: var(--burgundy);
+  text-decoration-color: color-mix(in srgb, var(--burgundy) 40%, transparent);
 }
 
 /* The section the reader is currently inside.
@@ -152,10 +163,7 @@
  * and moves nothing. The offset clears the descenders on "Bills" and "Committees". */
 .primary-nav a[aria-current] {
   color: var(--navy-deep);
-  text-decoration: underline;
   text-decoration-color: var(--burgundy);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 6px;
 }
 
 /* The drawer toggle, and the scrim behind the drawer it opens. @see PrimaryNav.
@@ -267,6 +275,23 @@
   color: var(--ink-soft);
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--paper) 72%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.header-search:hover {
+  border-color: var(--line-dark);
+}
+
+/* The field's focus indicator. The input below sets `outline: 0` so the ring isn't drawn tight around a borderless line
+   of text inside the box; this draws it on the box the reader actually sees instead. Without it the field had no
+   visible focus state at all — a WCAG 2.4.7 failure on the one control in the header a keyboard user types into. */
+.header-search:focus-within {
+  border-color: color-mix(in srgb, var(--navy) 60%, var(--line));
+  background: var(--paper);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 45%, transparent);
 }
 
 .header-search input {

@@ -36,6 +36,12 @@ export default defineConfig({
     // A full trace on every run is a large artifact for a suite that usually passes. On the first retry it is recorded
     // exactly when something has already failed once, which is the only time anyone opens one.
     trace: "on-first-retry",
+    // Every check here reads the page at rest — a computed color, a bounding box, a focused element — and the app's
+    // entrance motion would otherwise put each of those briefly mid-flight: a section still fading in has a contrast
+    // that axe will faithfully measure and nobody actually reads. Reduced motion is a mode the app fully supports
+    // (every animation is gated on it; @see src/styles/motion.css), so this tests a real configuration rather than a
+    // stub.
+    reducedMotion: "reduce",
   },
   // Chromium only. The checks here are about this app's own markup, geometry, and keyboard model rather than about
   // engine differences, and every one of them would assert the same thing three times over on three engines for triple

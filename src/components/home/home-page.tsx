@@ -67,7 +67,7 @@ export function HomePage({
             <Link className="button button--primary" href="/bills">
               Explore Bills <ArrowRight aria-hidden="true" size={17} />
             </Link>
-            <Link className="button button--quiet" href="/learn">
+            <Link className="button button--secondary" href="/learn">
               Learn the Process
             </Link>
           </div>

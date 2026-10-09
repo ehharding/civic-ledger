@@ -44,6 +44,13 @@
   display: none;
 }
 
+/* The rule leaving a step the bill has already passed is drawn in that step's green, so the line reads as progress
+   filled in up to the current dot rather than as five equal stations. Every connector to the left of the current step
+   starts at a complete one, which is what makes this a single selector rather than a count. */
+.bill-journey .is-complete::after {
+  background: var(--green);
+}
+
 .journey-dot {
   z-index: 1;
   display: grid;
@@ -105,6 +112,84 @@
   border-width: 3px;
 }
 
+/* The stepper assembles itself on arrival: each dot settles in from slightly small, left to right, and the rule behind
+   it draws toward the next one just after. Read as one gesture, it is the bill's path being traced rather than a
+   diagram that was already there — and it is short enough (the fifth dot lands by ~600ms) to be over before anyone is
+   reading the labels under it.
+
+   Transform only, never opacity. A dot holds the step's number as text, and a sweep that samples a half-faded dot would
+   be measuring a contrast nobody actually sees for long; scaling leaves every color exactly as painted. `backwards`
+   rather than `both`, so once each animation ends the element holds no transform at all.
+
+   The current step on the two full-size steppers (the home page's featured card and a bill's own page) also breathes: a
+   soft burgundy ring that swells and fades every few seconds, which is the one place on either page that says "this is
+   where it is now" with movement. Not on the compact steppers — a directory of twenty cards all pulsing at once is a
+   page that won't sit still.
+
+   All of it gated on `no-preference` rather than switched off afterwards, so a reader who asked for reduced motion is
+   never handed an animation first. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Off the grid, and measured: 70ms per step puts the last dot down at 280ms + its own 420ms. Stated once per step as
+     a custom property so the dot, the rule leaving it (60ms behind, so the line is seen to come *from* the dot) and the
+     current step's pulse all count from the same moment. */
+  .bill-journey li:nth-child(2) {
+    --journey-step-delay: 70ms;
+  }
+
+  .bill-journey li:nth-child(3) {
+    --journey-step-delay: 140ms;
+  }
+
+  .bill-journey li:nth-child(4) {
+    --journey-step-delay: 210ms;
+  }
+
+  .bill-journey li:nth-child(5) {
+    --journey-step-delay: 280ms;
+  }
+
+  .journey-dot {
+    animation: journey-dot-in 420ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--journey-step-delay, 0ms) backwards;
+  }
+
+  .bill-journey li::after {
+    transform-origin: left center;
+    animation: journey-connect 360ms cubic-bezier(0.32, 0.72, 0, 1) calc(var(--journey-step-delay, 0ms) + 60ms)
+      backwards;
+  }
+
+  /* A second entry in the dot's own list rather than a separate rule, so the breathing starts once the entrance has
+     finished instead of fighting it for the same frames. */
+  .bill-journey:not(.bill-journey--compact) .is-current .journey-dot {
+    animation:
+      journey-dot-in 420ms cubic-bezier(0.34, 1.4, 0.64, 1) var(--journey-step-delay, 0ms) backwards,
+      journey-current-pulse 2.8s ease-out calc(var(--journey-step-delay, 0ms) + 600ms) infinite;
+  }
+}
+
+@keyframes journey-dot-in {
+  from {
+    transform: scale(0.55);
+  }
+}
+
+@keyframes journey-connect {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes journey-current-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--burgundy) 38%, transparent);
+  }
+
+  70%,
+  100% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--burgundy) 0%, transparent);
+  }
+}
+
 .activity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -138,7 +223,8 @@
     transition: none;
   }
 
-  .bill-card:hover {
+  .bill-card:hover,
+  .bill-card:hover .bill-card__footer a svg {
     transform: none;
   }
 }
@@ -244,4 +330,14 @@
   min-height: var(--space-6);
   place-items: center;
   color: var(--burgundy);
+}
+
+/* The arrow leans up and out while the card is hovered — the whole card is what the pointer is over, so the hint goes
+   to the one control in it that leads where the card does. */
+.bill-card__footer a svg {
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.bill-card:hover .bill-card__footer a svg {
+  transform: translate(2px, -2px);
 }

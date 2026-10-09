@@ -22,27 +22,50 @@
      variant below can correct it without restating the reset.
 
      It is a contrast rule as much as a visual one. `color-scheme: light dark` resolves `ButtonFace` to a mid grey, so
-     a quiet button carrying only a --navy text color sits on that grey at 2.37:1 in dark mode — a WCAG 1.4.3 failure
-     that a light-mode screenshot cannot show. Every variant below states the surface it wants; the ones that want none
-     get none, on both elements and in both palettes. @see tests/e2e/accessibility.spec.ts, which fails on a
+     a surfaceless button carrying only a --navy text color sits on that grey at 2.37:1 in dark mode — a WCAG 1.4.3
+     failure that a light-mode screenshot cannot show. Every variant below states the surface it wants; the ones that
+     want none get none, on both elements and in both palettes. @see tests/e2e/accessibility.spec.ts, which fails on a
      regression. */
   border: 0;
   background: transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--text-md);
   font-weight: 750;
   /* An `<a>` carries this already; a `<button>` does not — it defaults to an arrow, which quietly reads as "not
      clickable" on every one of these that is a real button. */
   cursor: pointer;
   transition:
-    transform 150ms ease,
-    background 150ms ease,
-    color 150ms ease;
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
 }
 
 .button:hover:not(:disabled),
 .secondary-link:hover {
   transform: translateY(-1px);
+}
+
+/* The press. Settling back below the resting position rather than only undoing the hover lift, so a click registers as
+   a thing that happened even on a control the pointer was already lifting. */
+.button:active:not(:disabled),
+.secondary-link:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 60ms;
+}
+
+/* An icon beside a label leans the way the control goes — right for a destination, down for "more of this list". The
+   nudge is the only motion either control's icon makes, and it is decoration: the label alone says where it leads. */
+.button svg,
+.secondary-link svg {
+  flex: 0 0 auto;
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.secondary-link:hover svg,
+.button--primary:hover:not(:disabled) svg {
+  transform: translateX(3px);
 }
 
 /* "Load More" spends every fetch disabled, which is why this matters here: a control that answers the
@@ -54,49 +77,85 @@
   opacity: 0.55;
 }
 
+/* The filled call to action. The ground is the flat --navy it always was; the sheen is a white wash laid *over* it as a
+   background image, which is what lets one rule serve both palettes — in dark mode --navy is a pale blue carrying dark
+   text, and a white wash lightens either ground by the same small step without touching the label's contrast. The inset
+   highlight and the navy-tinted drop shadow are what make it read as a raised object rather than a colored
+   rectangle. */
 .button--primary {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   color: var(--paper);
-  background: var(--navy);
+  background-color: var(--navy);
+  background-image: linear-gradient(to bottom, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 1px 2px color-mix(in srgb, var(--shadow-color) 18%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--navy) 55%, transparent);
 }
 
 .button--primary:hover:not(:disabled) {
-  background: var(--navy-deep);
+  background-color: var(--navy-deep);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 2px 4px color-mix(in srgb, var(--shadow-color) 16%, transparent),
+    0 12px 24px -8px color-mix(in srgb, var(--navy) 60%, transparent);
 }
 
-/* The one variant that adds no surface at all — hence the name, and hence its dependence on the reset above, which is
-   the only thing making its `<a>` and its `<button>` agree. */
-.button--quiet {
-  padding: var(--space-3) var(--space-2);
+/* The outlined companion to the primary: a paper ground with a hairline edge and a whisper of shadow, so it sits on
+   open page as a control rather than as a stray line of bold text. Worn beside the primary in the hero ("Learn the
+   Process") and on its own under the bill directory ("Load More Bills").
+
+   It replaces the borderless `--quiet` variant those two used to wear, which gave both nothing to sit on — the hero's
+   second action read as a caption to the first, and "Load More" as a footnote under the grid rather than as the control
+   that extends it. The label stays --navy-deep on --paper, the pairing every card heading already clears contrast with
+   in both palettes. */
+.button--secondary {
+  padding: calc(var(--space-3) - 1px) calc(var(--space-5) - 1px); /* less the border, to match the primary's box */
+  border: 1px solid var(--line-dark);
+  color: var(--navy-deep);
+  background-color: var(--paper);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-color) 7%, transparent);
+}
+
+.button--secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--navy) 55%, var(--line-dark));
   color: var(--navy);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--shadow-color) 30%, transparent);
 }
 
-.button--quiet:hover:not(:disabled) {
-  color: var(--burgundy);
-}
-
+/* The call to action that closes a reading card. A paper chip on the card's warm ground, so it reads as the panel's one
+   control rather than as a bordered word floating on it. */
 .secondary-link {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--warm-border);
   color: var(--navy);
+  background-color: color-mix(in srgb, var(--paper) 70%, transparent);
   white-space: nowrap;
 }
 
 .secondary-link:hover {
   border-color: var(--burgundy);
   color: var(--burgundy);
+  background-color: var(--paper);
 }
 
-/* The same reasoning the skip link, the seating chart, and the "Load More" spinner are already guarded by: the lift is
-   decoration, and a hover loses nothing by holding still. The color changes are kept — they carry the meaning. */
+/* The same reasoning the skip link, the seating chart, and the "Load More" spinner are already guarded by: the lift,
+   the press and the icon nudge are decoration, and a control loses nothing by holding still. The color and shadow
+   changes are kept — they carry the meaning. */
 @media (prefers-reduced-motion: reduce) {
   .button,
-  .secondary-link {
+  .secondary-link,
+  .button svg,
+  .secondary-link svg {
     transition: none;
   }
 
   .button:hover:not(:disabled),
-  .secondary-link:hover {
+  .secondary-link:hover,
+  .button:active:not(:disabled),
+  .secondary-link:active,
+  .secondary-link:hover svg,
+  .button--primary:hover:not(:disabled) svg {
     transform: none;
   }
 }

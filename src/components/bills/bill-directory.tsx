@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { type JSX, useCallback, useState } from "react";
 
 import { BillCard } from "@/components/bills/bill-card";
@@ -230,13 +230,15 @@ export function BillDirectory({
 
       {hasMore && !isSearchActive ? (
         <div className="directory-load-more">
-          <button className="button button--quiet" disabled={isLoadingMore} onClick={loadMore} type="button">
+          <button className="button button--secondary" disabled={isLoadingMore} onClick={loadMore} type="button">
             {isLoadingMore ? (
               <>
                 <Loader2 aria-hidden="true" className="spin" size={16} /> Loading More…
               </>
             ) : (
-              "Load More Bills"
+              <>
+                Load More Bills <ChevronDown aria-hidden="true" size={16} />
+              </>
             )}
           </button>
           {loadError ? (

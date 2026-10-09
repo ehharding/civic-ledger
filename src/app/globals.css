@@ -54,5 +54,6 @@
 @import "../styles/learn.css" layer(components);
 @import "../styles/glossary.css" layer(components);
 @import "../styles/states.css" layer(components);
+@import "../styles/motion.css" layer(components);
 
 @import "../styles/responsive.css" layer(overrides);

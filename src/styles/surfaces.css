@@ -41,3 +41,21 @@
   gap: var(--space-1-5);
   padding: var(--space-4) var(--space-5);
 }
+
+/* The two directory cards answer the pointer the way a bill card does — the edge picks up the teal of the app's
+   informational chrome and a soft shadow lifts the card off the grid — so the three directories feel like one surface.
+   No movement here, unlike `.bill-card`: these are dense grids of short cards, and a whole row shifting under a pointer
+   sweeping across it is busier than the hint is worth. The record cards and the tabs are left out deliberately; the
+   tabs carry their own hover, and a record card is read in place rather than chosen. */
+.committee-card,
+.member-card {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.committee-card:hover,
+.member-card:hover {
+  border-color: var(--teal-border);
+  box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--shadow-color) 22%, transparent);
+}

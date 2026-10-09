@@ -87,6 +87,27 @@
   color: var(--burgundy-deep);
 }
 
+/* The arrow leans toward where the link goes. Decoration only — the label carries the destination — so it holds still
+   under reduced motion, and the color change above is the hover that remains. */
+.text-link svg {
+  flex: 0 0 auto;
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.text-link:hover svg {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-link svg {
+    transition: none;
+  }
+
+  .text-link:hover svg {
+    transform: none;
+  }
+}
+
 .page-header {
   max-width: 700px;
   margin-bottom: var(--space-12);
