@@ -30,9 +30,25 @@ html {
 body {
   margin: 0;
   color: var(--ink);
+  /* A wash of light over the top of the page: the app's teal-blue from the upper right, a faint burgundy answering it
+     from the upper left, both fading out behind the hero. Every coordinate is a fixed length from the top edge, never a
+     percentage of the page's height. The single gradient this replaces sat `at 90% 3%`, and 3% of a 47,000px members
+     directory is 1,400px down — so it surfaced as a stray spotlight mid-grid, at a different height on every route. */
   background:
-    radial-gradient(circle at 90% 3%, color-mix(in srgb, var(--blue-pale) 62%, transparent), transparent 23rem),
+    radial-gradient(
+      ellipse 62rem 34rem at 92% -10rem,
+      color-mix(in srgb, var(--blue-pale) 80%, transparent),
+      color-mix(in srgb, var(--blue-pale) 30%, transparent) 55%,
+      transparent
+    ),
+    radial-gradient(
+      ellipse 48rem 28rem at 4% -12rem,
+      color-mix(in srgb, var(--burgundy) 7%, transparent),
+      color-mix(in srgb, var(--burgundy) 2%, transparent) 55%,
+      transparent
+    ),
     var(--canvas);
+  background-repeat: no-repeat;
   font-family: var(--sans), serif;
   font-size: 16px;
   line-height: 1.5;

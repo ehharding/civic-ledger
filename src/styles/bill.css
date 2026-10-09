@@ -276,7 +276,11 @@
   line-height: 1.12;
 }
 
-.bill-card h3 a:hover {
+/* The title goes burgundy while the card is hovered, not just the title — the whole card is the link (@see the
+   stretched link in surfaces.css), so the hover names where a click anywhere on it will go. The card half sits in
+   `:where()` so this weighs no more than `.bill-card__footer a` below; it targets a different link, but Biome's
+   `noDescendingSpecificity` compares the two as if it did not. */
+:where(.bill-card:hover) h3 a {
   color: var(--burgundy);
 }
 

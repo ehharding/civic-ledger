@@ -61,9 +61,10 @@
   line-height: 1.35;
 }
 
-/* Same hover as .member-card__name a and .bill-card h3 a — the one clickable thing in a card acknowledges the
-   pointer. */
-.committee-card__name a:hover {
+/* Same hover as .member-card__name a and .bill-card h3 a — the card is one click target, and its name says so while the
+   pointer is anywhere on it. The card half sits in `:where()` for the same Biome reason given beside the bill
+   card's. */
+:where(.committee-card:hover) .committee-card__name a {
   color: var(--burgundy);
 }
 

@@ -59,3 +59,42 @@
   border-color: var(--teal-border);
   box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--shadow-color) 22%, transparent);
 }
+
+/* The whole card opens its record, not only the title text.
+ *
+ * A "stretched link": the title's own link grows an absolutely positioned `::after` that covers the card, so clicking
+ * anywhere on it is clicking that link. Still exactly one link per card as far as assistive technology is
+ * concerned — the reason the member and committee cards carry no second link (@see MemberCard) holds — and
+ * middle-click, cmd-click and the link's context menu all keep working, which a JS click handler on the `<article>`
+ * would have broken.
+ *
+ * The trade is text selection: dragging across a card now starts a link drag rather than selecting its words. These are
+ * summaries of records whose full text is one click away, so the card being a target matters more than its copy being
+ * selectable in place. The record cards are deliberately not here, for the reason given above their hover rule. */
+.bill-card,
+.committee-card,
+.journey-card,
+.member-card {
+  position: relative;
+}
+
+.committee-card__name a::after,
+.journey-card__title a::after,
+.member-card__name a::after,
+.bill-card h3 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Above anything positioned later in the card that would otherwise paint over it and take the click — the journey
+     stepper's steps are `position: relative` for their connector lines. */
+  z-index: 1;
+}
+
+/* Anything else in a card that is its own link stays reachable above the overlay: the bill card's corner arrow, the
+   featured card's "View This Bill", and a portrait credit, whose attribution HTML can carry a link to its source. */
+.bill-card__footer a,
+.journey-card__link,
+.member-card__portrait-credit a {
+  position: relative;
+  z-index: 2;
+}

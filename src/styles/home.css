@@ -74,7 +74,7 @@
   line-height: 1.16;
 }
 
-.journey-card__title a:hover {
+.journey-card:hover .journey-card__title a {
   color: var(--burgundy);
 }
 
