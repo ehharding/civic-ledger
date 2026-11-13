@@ -193,7 +193,7 @@ async function expectDestinationsClearTheFloor(page: Page): Promise<void> {
 
   for (let index = 0; index < count; index += 1) {
     const link: Locator = links.nth(index);
-    const label: string = (await link.innerText()).trim();
+    const label: string = ((await link.textContent()) ?? "").trim();
     const box = await link.boundingBox();
 
     expect(box, `"${label}" has no box`).not.toBeNull();

@@ -1,7 +1,7 @@
 # Civic Ledger Documentation
 
 | Document                           | Read it for                                                                        |
-|------------------------------------|------------------------------------------------------------------------------------|
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
 | [architecture.md](architecture.md) | The shape of the system: boundaries, the Congress adapter, data flow, shared rules |
 | [data-policy.md](data-policy.md)   | What the product claims about congressional records, and what it refuses to claim  |
 | [deployment.md](deployment.md)     | The two pipelines, what each one can serve, and how to configure them              |
@@ -16,8 +16,8 @@ to work on it, including these conventions), [SECURITY](../SECURITY.md) (reporti
 The rule is **one home per fact**, decided by audience rather than by topic:
 
 | If it is…                                               | It belongs in…             |
-|---------------------------------------------------------|----------------------------|
-| Why *this line of code* is the way it is                | A doc comment on that code |
+| ------------------------------------------------------- | -------------------------- |
+| Why _this line of code_ is the way it is                | A doc comment on that code |
 | A rule that spans modules, or a boundary between them   | `architecture.md`          |
 | A claim or refusal about the data a reader sees         | `data-policy.md`           |
 | Something an operator does to ship or configure the app | `deployment.md`            |

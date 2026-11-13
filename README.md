@@ -19,7 +19,7 @@ GitHub Pages cannot hold a server-side API key or run route handlers, so it is t
 
 ## Start Locally
 
-1. Use Node 24 and pnpm 12 (pinned in `.nvmrc` and `packageManager`).
+1. Use Node 26 and pnpm 12 (pinned in `.nvmrc` and `packageManager`).
 2. Install packages:
 
    ```bash
@@ -78,7 +78,7 @@ pnpm exec playwright install chromium
 ## What Is Built
 
 | Route                                            | What it is                                                                           |
-|--------------------------------------------------|--------------------------------------------------------------------------------------|
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | `/`                                              | Civic dashboard with an interactive chamber diagram — one seat per sitting member    |
 | `/bills`, `/bills/[congress]`                    | Cross-Congress bill directory with search, filtering, and paging                     |
 | `/bills/[congress]/[type]/[number]`              | One bill: summary, text, actions, votes, committees, cosponsors, amendments, related |
@@ -188,7 +188,7 @@ Behind those routes:
 ## Documentation
 
 | Document                                     | Read it for                                                                   |
-|----------------------------------------------|-------------------------------------------------------------------------------|
+| -------------------------------------------- | ----------------------------------------------------------------------------- |
 | [docs/architecture.md](docs/architecture.md) | Boundaries, the Congress adapter, data flow, and shared rules                 |
 | [docs/data-policy.md](docs/data-policy.md)   | What this product claims about congressional records — and what it refuses to |
 | [docs/deployment.md](docs/deployment.md)     | The two pipelines and how to configure them                                   |

@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import CommitteePage, { generateMetadata, generateStaticParams } from "@/app/committees/[chamber]/[systemCode]/page";
+import { renderCommitteeRoute } from "@/app/committees/[chamber]/[systemCode]/render";
 import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees/model";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { committeeHref } from "@/lib/routes";
@@ -142,10 +143,10 @@ describe("CommitteePage", (): void => {
     // The whole point of the param: a committee page showing its reports is a place, so it has an address that brings
     // someone back to it.
     render(
-      await CommitteePage({
-        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
-        searchParams: Promise.resolve({ records: "reports" }),
-      }),
+      await renderCommitteeRoute(
+        Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        Promise.resolve({ records: "reports" }),
+      ),
     );
 
     expect(screen.getByRole("link", { name: /Reports Published/ })).toHaveAttribute("aria-current", "page");
@@ -155,10 +156,10 @@ describe("CommitteePage", (): void => {
   it("holds a page past the end of a collection inside it", async (): Promise<void> => {
     // A truncated or year-old shared link should land on a readable page rather than an empty one.
     render(
-      await CommitteePage({
-        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
-        searchParams: Promise.resolve({ records: "reports", page: "900" }),
-      }),
+      await renderCommitteeRoute(
+        Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        Promise.resolve({ records: "reports", page: "900" }),
+      ),
     );
 
     expect(screen.getAllByText(/PREVIEW Rept\./).length).toBeGreaterThan(0);
@@ -166,10 +167,10 @@ describe("CommitteePage", (): void => {
 
   it("degrades a stale collection param to the default view rather than failing", async (): Promise<void> => {
     render(
-      await CommitteePage({
-        params: Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
-        searchParams: Promise.resolve({ records: "roll-calls" }),
-      }),
+      await renderCommitteeRoute(
+        Promise.resolve({ chamber: firstCommittee.chamber, systemCode: firstCommittee.systemCode }),
+        Promise.resolve({ records: "roll-calls" }),
+      ),
     );
 
     expect(screen.getByRole("link", { name: /Bills Referred/ })).toHaveAttribute("aria-current", "page");
@@ -183,10 +184,10 @@ describe("CommitteePage", (): void => {
     ) as CommitteeProfile;
 
     render(
-      await CommitteePage({
-        params: Promise.resolve({ chamber: senate.chamber, systemCode: senate.systemCode }),
-        searchParams: Promise.resolve({ records: "nominations" }),
-      }),
+      await renderCommitteeRoute(
+        Promise.resolve({ chamber: senate.chamber, systemCode: senate.systemCode }),
+        Promise.resolve({ records: "nominations" }),
+      ),
     );
 
     expect(screen.getByText(/PREVIEW PN0001/)).toBeInTheDocument();

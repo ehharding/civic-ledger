@@ -21,7 +21,7 @@ computed rather than received says so.**
 
 ### The Official-Record Link Is Published Where It Can Be, Derived Where It Can't
 
-Congress.gov's `url` field on a bill record is a *self-referential API* link
+Congress.gov's `url` field on a bill record is a _self-referential API_ link
 (`https://api.congress.gov/v3/bill/119/hr/284?format=json`), not the public page a reader wants. Passing it through
 meant the bill page's "Open the Official Record" link — the single most important link in an app whose whole premise is
 provenance — served raw JSON, or a 403 to anyone without a key of their own. It is the one field on a bill this app
@@ -34,7 +34,7 @@ Two other things can supply that link, and `mapCongressBill` prefers them in thi
    published URL beats a derived one on the same rule that governs `laws`, `committeeWebsiteUrl`, and everything else
    in this document: a fact the publisher states outright cannot be wrong in the way a construction of ours can.
 2. **`congressGovBillUrl` (`src/lib/congress/bills/model.ts`) otherwise.** The derivation still earns its place, because
-   the *list* endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page
+   the _list_ endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page
    does. It builds the same string from the bill's own identity, which `mapCongressBill` already requires before it will
    map a record at all. An unrecognized bill type falls back to the Congress.gov home page rather than emitting a
    confidently wrong deep link.
@@ -52,14 +52,14 @@ upstream read fails. Preview content is fictional and is never presented as live
 - **The chamber diagram gets placeholders, not a fictional roster.** Every other fixture in this app is a small set of
   labeled fictional records; a seating chart can't work that way, because it needs a full chamber to lay out at all. A
   fabricated roster of 535 plausible names, parties, and districts is far easier to mistake for real data than a labeled
-  placeholder is — especially since a seating chart specifically invites a reader to go find their *own* representative.
+  placeholder is — especially since a seating chart specifically invites a reader to go find their _own_ representative.
   So the no-key path fills both chambers with unattributed "Preview Seat N" placeholders, and the party split behind
   them (`previewChamberPartySplits`) is deliberately round rather than realistic. A real-looking party balance would be
   a factual claim about the current Congress that a checked-in fixture has no way to keep true.
 - **Placeholder members exist where a placeholder roster still doesn't.** The seven fictional sponsors the preview bills
   already print do get member pages; the 535 placeholder seats do not, and are not links. Giving a page to a name the
   fixtures already name adds no claim they weren't already making. Two structural safeguards keep the fiction
-  unmistakable: the IDs (`PREVIEW-1`…) deliberately fail `isBioguideId`, so a placeholder is never sent upstream *and*
+  unmistakable: the IDs (`PREVIEW-1`…) deliberately fail `isBioguideId`, so a placeholder is never sent upstream _and_
   can never produce a link to a real person's biography; and placeholder members carry no official website, since a
   fabricated deep link is the easiest way for preview content to be taken for the record.
 - **No placeholder has a face.** The member directory shows portraits, which makes this the sharpest form of the rule
@@ -73,7 +73,7 @@ upstream read fails. Preview content is fictional and is never presented as live
   `src/lib/congress/bills/cosponsors.test.ts` asserts that membership rather than leaving it to whoever edits the
   fixtures next.
 - **A preview record never credits Congress.gov with a count.** This is sharper for cosponsors than for any other
-  collection, because a fixture bill genuinely *does* carry a cosponsor tally — the fixtures set one so the bill hero's
+  collection, because a fixture bill genuinely _does_ carry a cosponsor tally — the fixtures set one so the bill hero's
   meta row has a number to show. Passing it into the section's count sentence would print "Congress.gov records 12
   cosponsors on this bill" above three invented names, which is the same error the summary caption exists to prevent. So
   the section drops both published figures outright when the source is preview and states only what the page is showing.
@@ -98,7 +98,7 @@ upstream read fails. Preview content is fictional and is never presented as live
 
   The bill's own published `collectionCounts` are a second guard rather than this one, and they do not cover it. They
   let a section state both figures — "Congress.gov records 38 measures on this bill; this page shows 0" — but they come
-  from the *detail* endpoint, and the bill page reaches its record from the cached list snapshot whenever that endpoint
+  from the _detail_ endpoint, and the bill page reaches its record from the cached list snapshot whenever that endpoint
   is the thing that failed. In exactly the state where the sub-resource requests are most likely to be failing too,
   there is no count to check them against, which is why the flag rather than the count is the rule.
 
@@ -112,7 +112,7 @@ chart carries that caveat in its own caption rather than leaving a reader to ass
 - Members come from `/v3/member/congress/{congress}`. For the Congress currently seated the request carries
   `currentMember=true`, which makes it "who holds a seat right now" rather than "everyone who served at any point in
   this Congress" — without it, a member who resigned mid-term and their replacement both come back and the chamber
-  over-counts. For any *earlier* Congress the flag is `false`, which is Congress.gov's own recommendation and the only
+  over-counts. For any _earlier_ Congress the flag is `false`, which is Congress.gov's own recommendation and the only
   honest reading: a Congress that has risen has a closed roster, and the members who have since left office are part of
   it rather than absent from it. The 117th answers `currentMember=true` with 377 members against a true 557.
 - **Vacant seats are absent rather than drawn.** The API reports who holds a seat, not how many seats are authorized.
@@ -133,7 +133,7 @@ wants the primary source.
 
 **An enacted law is read, never inferred.** The detail endpoint publishes `laws` on a bill that became one —
 `{ "type": "Public Law", "number": "119-21" }` — and that field settles two things nothing else could. It establishes
-the *Became Law* stage outright, rather than by a classifier recognizing a phrase or a code; and it carries the public
+the _Became Law_ stage outright, rather than by a classifier recognizing a phrase or a code; and it carries the public
 law citation, which no classifier could have produced at all, since it appears nowhere else on the record this app
 reads. The citation is printed beside the stage cue, as text rather than as a link, on the same rule that governs
 committee reports below: congress.gov's URL for a public law is not published by the API and would have to be guessed.
@@ -149,7 +149,7 @@ They can diverge in two ways. A row this app declines is one it cannot render ho
 a row — and a collection longer than the single 250-record page this app requests is cut off at that page. Where the
 two figures differ, `describeBillCollection` names both ("Congress.gov records 59 actions on this bill; this page shows
 58") rather than presenting the shorter list as the whole of what the record holds. Where Congress.gov published no
-count at all — every bill from the *list* endpoint, every preview fixture, every failed read — the sentence claims only
+count at all — every bill from the _list_ endpoint, every preview fixture, every failed read — the sentence claims only
 what the page is showing and credits nobody.
 
 **Recorded votes are the one collection with no count to read**, and their sentence is worded accordingly. The figure
@@ -167,25 +167,25 @@ has fetched the full action history, so `inferStageFromActions` reads the Librar
 instead — and those disagree with the prose more often than they sound like they would. A House bill that passed the
 House and was then referred to a Senate committee reports "Received in the Senate and Read twice and referred to the
 Committee on …" as its latest action, which the prose classifier reads, correctly for the sentence and wrongly for the
-bill, as *In Committee*. The code for the passage is still in the history.
+bill, as _In Committee_. The code for the passage is still in the history.
 
 The card recovers most of that case on its own, because the sentence names the wrong chamber for a referral: a House
 bill can only be in the Senate after passing the House. So `inferBillStage` is handed the bill's origin chamber, and an
 action naming the other one — as a whole word, so the Senate's "Banking, Housing" committee is not the House — lifts the
-reading to *Passed a Chamber*. That is still a reading of one sentence, and a card and the bill's page can still show
+reading to _Passed a Chamber_. That is still a reading of one sentence, and a card and the bill's page can still show
 different stages for the same bill; where they differ, the page is the one that read more of the record.
 
 The code list is deliberately four entries long — passed House, passed Senate, presented, enacted. No attempt is made
-to classify the several hundred other codes the endpoint uses, and floor activity is specifically *not* treated as
+to classify the several hundred other codes the endpoint uses, and floor activity is specifically _not_ treated as
 passage: a bill can accumulate dozens of debate and motion rows without passing anything.
 
 **These three readings settle in one direction only: the most advanced wins.** `resolveBillStage` takes the further of
 what the record established and what the codes establish, rather than letting the later read overwrite the earlier one.
 That is not a tiebreak dressed up as a rule — it is what keeps the page from contradicting itself. A bill whose `laws`
-field names a public law and whose fetched action codes only reach *Passed a Chamber* would otherwise print "Public Law
+field names a public law and whose fetched action codes only reach _Passed a Chamber_ would otherwise print "Public Law
 119-21" beside a stepper that stopped one rung short. Nothing regresses under it, because neither classifier can be the
-*lower* reading by being wrong: the prose one only ever names a stage it recognizes, and the code one never returns
-anything below *Passed a Chamber*.
+_lower_ reading by being wrong: the prose one only ever names a stage it recognizes, and the code one never returns
+anything below _Passed a Chamber_.
 
 **A bill names its committees, from the committee record rather than from the referral sentence.** The page lists every
 committee that held the bill, each linking inward to that committee's own page here, with the relationship Congress.gov
@@ -256,7 +256,7 @@ published here as citations only." The count is this app's tally of a published 
 and the sentence is worded to say which it is.
 
 **An entry is kept on identity alone.** A related measure with no title is dropped, because a link with no label is not
-a row. An amendment is not, because its citation *is* its label. The bar is deliberately lower here, and the reason is
+a row. An amendment is not, because its citation _is_ its label. The bar is deliberately lower here, and the reason is
 arithmetic: applying the stricter one would silently discard fourteen entries in fifteen and leave the page showing
 thirty rows beneath a published count of 493.
 
@@ -289,19 +289,19 @@ Two honest limits follow, and the result-count copy states them rather than impl
 - It cannot see a bill's full legislative text.
 - For a large or old Congress it sees only that Congress's most recently touched slice, not every bill introduced in it.
 
-**The sort separator is a space, and getting it wrong is silent.** `sort=updateDate+desc` is the *encoded*
+**The sort separator is a space, and getting it wrong is silent.** `sort=updateDate+desc` is the _encoded_
 spelling — the plus is an encoded space, not part of the value — so the value handed to `URLSearchParams` has to be
 `updateDate desc`. Passing the documented string through literally percent-encodes the plus to `%2B`, and the endpoint
 does not reject the result: an unrecognized sort value is ignored, and the response comes back in an arbitrary order
 that is neither the endpoint's default nor sorted by anything. This app shipped that mistake and could not see it,
 because a wrong order and a right one are the same shape. It is pinned now by a test that reads the raw query string
-rather than `searchParams.get`, which decodes and therefore cannot tell the two apart — `RECENTLY_UPDATED_FIRST` in 
+rather than `searchParams.get`, which decodes and therefore cannot tell the two apart — `RECENTLY_UPDATED_FIRST` in
 `src/lib/congress/bills/reads.ts`.
 
 Worth knowing for anyone weighing a change here: **neither order sees more of a Congress than the other.** Both draw
 250 distinct bills whose latest actions span nearly the Congress's whole range — about 1.4% of the 119th either way.
 Which 250 differs, so individual queries gain and lose hits between them, and that is sampling luck rather than
-coverage. What the corrected order buys is that the slice is *defined*: it is the one this page describes, reproducible
+coverage. What the corrected order buys is that the slice is _defined_: it is the one this page describes, reproducible
 between two requests, and not a side effect of the API discarding an input it declined to complain about.
 
 A query that parses as a bill citation (`parseBillCitation` — "HR 284", "H.J.Res. 66", "119 HR 284") also gets a direct
@@ -317,20 +317,20 @@ resolves to a page that can show real records once a key is configured. The boun
 ## What Each Directory Covers
 
 **Bills (`/` and `/bills`)** shows one page of the current Congress's most recently touched records, and then orders
-what it shows. The two halves are separate claims and both are needed. The *fetch* is ordered by `updateDate`, which is
+what it shows. The two halves are separate claims and both are needed. The _fetch_ is ordered by `updateDate`, which is
 the only field the list endpoint sorts on and is a maintenance timestamp — it moves when Congress.gov re-touches a row,
 which is close to legislative activity without being it. The home page therefore re-orders the page it receives by
 latest action date (`compareBillsByActivity`) before choosing the bill it features and the three it lists beneath,
 because those sit under the words "Latest Activity" and "A Bill in Motion" and a heading is a claim.
 
 Neither half is the endpoint's default, and the default is the reason both are written down. `/v3/bill/{congress}`
-answers in *ascending* latest-action order — the least recently active records of a Congress, which for the 119th is
+answers in _ascending_ latest-action order — the least recently active records of a Congress, which for the 119th is
 several thousand bills whose only action is the day they were introduced. A page that leads with those is not a neutral
 page; it is a confident claim that nothing is happening in Congress, made by accident. This app made it, on its home
 page, for as long as it took someone to check the dates against the heading above them.
 
 **Members (`/members`)** lists whoever currently holds a seat, from the same `currentMember=true` request the chamber
-diagram uses — so it is a roster of *now*, not of everyone who served during a Congress, and vacant seats are absent
+diagram uses — so it is a roster of _now_, not of everyone who served during a Congress, and vacant seats are absent
 rather than listed. A member whose upstream record carries no Bioguide ID is dropped rather than shown as a card that
 opens nothing. Without a key it lists the same seven placeholder people the preview bills name, and says so instead of
 claiming they hold seats — some are marked as former members.
@@ -345,7 +345,7 @@ no credit; those keep the image, since discarding a real portrait over a field t
 something the API did supply.
 
 **Committees (`/committees`)** lists parent committees and folds subcommittees into them. Congress.gov's
-`/v3/committee/{congress}` endpoint returns subcommittees as *peers* of their parents: House Agriculture and its six
+`/v3/committee/{congress}` endpoint returns subcommittees as _peers_ of their parents: House Agriculture and its six
 subcommittees arrive as seven records in one flat array, distinguishable only by a `parent` field. Rendered as it
 arrives, that offers a reader a choice between "Livestock and Foreign Agriculture Subcommittee" and the Judiciary
 Committee as though they were comparable bodies. They are not — a subcommittee only means anything in relation to its
@@ -363,7 +363,7 @@ The same committee is published under two word orders depending on where you mee
 `officialName` all say `"Committee on Agriculture"`. A reader who copies a referral line off a bill page into the
 committee search box is searching for a string that appears nowhere in the list data.
 
-Rewriting the name for *display* would be wrong: "Committee" is part of the proper name of some bodies rather than a
+Rewriting the name for _display_ would be wrong: "Committee" is part of the proper name of some bodies rather than a
 suffix on a subject, so the rewrite turns the Joint Economic Committee into "Committee on Joint Economic". Nothing in
 the string distinguishes the two cases, and a project whose claim is that you can check it against the record should not
 be inventing names for the bodies in it. So the app displays whatever Congress.gov published, and `committeeSearchTerms`
@@ -422,7 +422,7 @@ by paging to the end. The committee's own figure stands only for collections tha
 **Reports and nominations get no outbound link, for the same reason committees don't.** Their congress.gov URLs look
 derivable from the record — `/congressional-report/{ordinal}-congress/{chamber}-report/{number}` — and cannot be
 verified from here, because congress.gov answers automated requests with a bot challenge. Each row prints the citation
-Congress.gov identifies the record by and stops there. Referred *bills* do link, but inward, to this app's own page for
+Congress.gov identifies the record by and stops there. Referred _bills_ do link, but inward, to this app's own page for
 the measure, which carries the verified outbound link onward.
 
 ## Editorial Content Cites Its Sources
@@ -510,7 +510,7 @@ to both sinks from one place.
 
 Sentry's own documentation was explicit, back when the SDK had a `sendDefaultPii` switch: with it off and every other
 default in place, "the full request URL of outgoing and incoming HTTP requests is always sent," query string included.
-SDK v11 replaced that switch with per-category `dataCollection` settings whose defaults are *more* permissive, so the
+SDK v11 replaced that switch with per-category `dataCollection` settings whose defaults are _more_ permissive, so the
 sentence understates the position now rather than overstating it. In this app that sentence describes
 two separate leaks that happen to have one fix:
 

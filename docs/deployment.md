@@ -6,10 +6,10 @@ static host in its normal configuration.
 
 Two pipelines exist for two different purposes. Only the first ships the product.
 
-| Target                        | Workflow                | Data                   | Purpose                       |
-|-------------------------------|-------------------------|------------------------|-------------------------------|
-| **GitHub Pages**              | `deploy-gh-pages.yml`   | Labeled preview only   | UI/UX preview, portfolio link |
-| **Vercel** (or any Node host) | `deploy-vercel.yml`     | Live Congress.gov      | The real deployment           |
+| Target                        | Workflow              | Data                 | Purpose                       |
+| ----------------------------- | --------------------- | -------------------- | ----------------------------- |
+| **GitHub Pages**              | `deploy-gh-pages.yml` | Labeled preview only | UI/UX preview, portfolio link |
+| **Vercel** (or any Node host) | `deploy-vercel.yml`   | Live Congress.gov    | The real deployment           |
 
 ## Platform Requirements
 
@@ -29,7 +29,7 @@ server-side, and dynamic routes, ISR, and the future `saved_bills`/auth work all
 
 1. Run `pnpm dlx --allow-build=esbuild vercel link` locally to create and link the Vercel project.
 2. Add repo secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` under **GitHub → Settings → Secrets and
-   variables → Actions**. This is *not* the Vercel dashboard's environment variables, which is a separate place — see
+   variables → Actions**. This is _not_ the Vercel dashboard's environment variables, which is a separate place — see
    the next step.
 3. Set `CONGRESS_API_KEY` (and `DATABASE_URL`, once persistence lands) as encrypted environment variables **in the
    Vercel project settings**, not as GitHub secrets, so the key never appears in Action logs. Set `NEXT_PUBLIC_SITE_URL`
@@ -42,8 +42,9 @@ server-side, and dynamic routes, ISR, and the future `saved_bills`/auth work all
 5. Turn on **Web Analytics** and **Speed Insights** in the Vercel project (their respective tabs). The client code is
    already in place; until they are enabled the injected scripts have nothing to report to, which is harmless. Nothing
    needs enabling on any other host — both components are simply absent there.
-6. **Turn off Vercel's own Git-integration auto-deploy** (Vercel dashboard → Project Settings → Git → disable automatic
-   deployments for the connected branch).
+6. **Vercel's own Git-integration auto-deploy is off**, via `"git": { "deploymentEnabled": false }` in `vercel.json`.
+   Nothing to do here: it is checked in. Do **not** disconnect the repository in Project Settings → Git to get the same
+   effect; the connection is what ties each deployment to its commit, and the setting above leaves it in place.
 
 Step 6 is not optional housekeeping. Vercel enables Git auto-deploy by default the moment a repo is imported, and it
 builds independently of the workflow above. Left on, every push deploys twice from two pipelines that do not build the
@@ -58,6 +59,32 @@ turns that check into a gate, and it belongs in the repository's settings rather
 is here because the alternative — a reader assuming the workflow is gated because a deploy workflow usually is — is a
 wrong assumption this file would otherwise have invited.
 
+### Keeping Server Work Bounded
+
+On 2026-10-10 Vercel paused this project's Hobby team for exceeding the plan's fair-use limit on **Fluid Active CPU**,
+and it was still paused more than a month later, serving `402 DEPLOYMENT_DISABLED` on every URL. The cause was not
+upstream traffic but rendering: every directory (`/bills`, `/bills/[congress]`, `/members`, `/committees`) and every
+committee page read its `searchParams`, which made each of them render on the server for every single visit. A crawler
+walking the sitemap, or every facet combination, paid a full render per URL.
+
+What keeps that bounded now:
+
+- **Plain routes are static.** None of those routes reads its query any more, so each is prerendered and regenerated at
+  most once per five-minute window. In `pnpm build`'s route table, the only `ƒ (Dynamic)` entries should be the
+  `/api/*` route handlers and the `/query/*` twins. A new `ƒ` anywhere else is a per-visit render, and worth a second
+  look before it ships.
+- **Only a URL carrying a view renders on demand.** `next.config.ts` rewrites a URL holding one of a route's own params
+  to its twin under `src/app/query/`, which renders the narrowed view server-side as the route used to. The rewrite is a
+  routing rule rather than a Proxy, so the static half costs no function invocation at all. A query the route ignores
+  (`?utm_source=`) is served the static page. @see `src/lib/query-routes.ts`.
+- **Crawlers are kept off the query variants.** `robots.txt` disallows `/query/` and each route's `?` form. Those pages
+  already canonicalize to the plain route, so they were never going to be indexed — they were only ever going to be
+  rendered.
+- **One deployment per push.** See step 6 above: two pipelines building every commit doubled build usage for nothing.
+
+If the team is paused again, the dashboard's **Usage** tab names the metric that tripped it. Upgrading to Pro lifts a
+pause; so, sometimes, does asking Vercel support to reset it once the cause is fixed.
+
 Any other Node-capable host (Railway, Render, Fly.io, a plain VPS) works the same way. Vercel is just the path with an
 official GitHub Action and zero server config.
 
@@ -68,8 +95,8 @@ runtime (`src/instrumentation.ts`, which imports `src/sentry.server.config.ts` a
 four are thin — the configuration itself lives in `src/lib/observability/sentry-options.ts`, which is where to look and
 where to change things.
 
-**Two channels, and the distinction matters when reading an incident.** *Issues* are crashes: something threw, an error
-boundary caught it, and there is a stack trace. *Logs* are handled failures, which in this app means almost
+**Two channels, and the distinction matters when reading an incident.** _Issues_ are crashes: something threw, an error
+boundary caught it, and there is a stack trace. _Logs_ are handled failures, which in this app means almost
 everything — `requestCongressJson` turns every upstream failure into `{ outcome: "failed" }` so a page degrades instead
 of crashing, which means a Congress.gov outage throws nothing, reaches no error boundary, and appears **only** as
 structured logs. An empty issue stream during an outage is the system working; the logs are where to look. They carry an
@@ -96,7 +123,7 @@ code that prevents that is not optional.
    `NEXT_PUBLIC_` is read at runtime by the deployed app, which is Vercel's environment.
 
    | Variable                                | Where                       | Required             | Purpose                                             |
-   |-----------------------------------------|-----------------------------|----------------------|-----------------------------------------------------|
+   | --------------------------------------- | --------------------------- | -------------------- | --------------------------------------------------- |
    | `NEXT_PUBLIC_SENTRY_DSN`                | Vercel env vars             | yes                  | Where events are sent. Unset means Sentry off.      |
    | `NEXT_PUBLIC_SENTRY_ENVIRONMENT`        | Vercel env vars             | strongly recommended | `production` / `preview`. See below.                |
    | `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Vercel env vars             | no                   | `0`–`1`. Defaults to `0.1`; a bad value falls back. |
@@ -126,7 +153,7 @@ code that prevents that is not optional.
    Create it as an **organization token**, at
    [Settings → Developer Settings → Organization Tokens](https://sentry.io/orgredirect/organizations/:orgslug/settings/auth-tokens/).
    Sentry offers three kinds and only this one is right for CI: its permissions are fixed to what CI tasks need and
-   cannot be widened, and it belongs to the organization rather than to a person — a *personal* token keeps working only
+   cannot be widened, and it belongs to the organization rather than to a person — a _personal_ token keeps working only
    as long as its owner's account does, which makes "the deploy stopped uploading source maps" a thing that happens
    months later for a reason nobody connects to a departure. The token is shown **once**, at creation; there is no way
    to read it back, so if it is lost the fix is to revoke it and issue another.
@@ -171,7 +198,7 @@ the workflow (`workflow_dispatch`) or letting it run on pushes to `main`.
 
 The build recipe itself lives in `.github/actions/build-static-demo`, a composite action this workflow shares with the
 `static-export` job in `ci.yml`. That sharing is the point: this is the one build a change can break while passing
-everything else, because `pnpm build` is the *server* build. A new route handler, a fresh `request.url` read, or a
+everything else, because `pnpm build` is the _server_ build. A new route handler, a fresh `request.url` read, or a
 dynamic API compiles, type-checks, and tests clean, then fails only under `output: "export"`. CI runs the identical
 recipe on every pull request, so that failure arrives before the change lands rather than on `main` afterward.
 
@@ -202,6 +229,8 @@ output, including the header's plain `<form action>`, the sitemap, and robots.tx
 - **Pre-renders a bounded set of pages** via `generateStaticParams`: every preview bill's detail page, one
   bill-directory page per Congress the fixtures cover, and a member page per placeholder member. A static export can't
   look up arbitrary bills, Congresses, or members on demand.
+- **Drops the `/query` twins** before building (`src/app/query`). They exist only to be reached through rewrites,
+  which a static export has no server to apply; every deep link in the demo renders the default view, as it always has.
 - **Drops all three route handlers** before building. `/api/bills` and `/api/bills/search` need to read the request URL
   (for `offset`/`congress`, or `q`), and `/api/health` is `force-dynamic` so its timestamp reflects real request
   time — none of which a static export has a server left to do. Pagination is only offered when live data is active

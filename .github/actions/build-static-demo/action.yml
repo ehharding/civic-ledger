@@ -26,8 +26,12 @@ runs:
     # has no server left to do; /api/health is force-dynamic so its timestamp reflects real request time on the primary
     # deployment. None of the three has a purpose in a preview-only demo. Removing them here is safe precisely because
     # this runs on a throwaway CI checkout — see docs/deployment.md before reproducing it on a working tree.
+    #
+    # src/app/query goes too. Those are the on-demand twins a server build rewrites a query-carrying URL to (see
+    # src/lib/query-routes.ts); the export has no rewrites and no server, serves every deep link as the default view,
+    # and could not prerender the twins' unbounded dynamic segments anyway.
     - name: Remove Routes Incompatible With Static Export
-      run: rm -rf src/app/api/bills src/app/api/health
+      run: rm -rf src/app/api/bills src/app/api/health src/app/query
       shell: bash
 
     - name: Build Static Export

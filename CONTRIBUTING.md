@@ -29,10 +29,10 @@ anything a control inherits from the user agent, because `tests/e2e/accessibilit
 check that reads the page as a browser paints it. Every data adapter change should include a fixture or unit test for
 the upstream shape it supports.
 
-`pnpm dev` is the loop you work in. `pnpm preview` builds and serves the *production* output on port 3001 — a different
+`pnpm dev` is the loop you work in. `pnpm preview` builds and serves the _production_ output on port 3001 — a different
 port on purpose, so it can run beside a dev server rather than fighting it for 3000. Reach for it when the thing you
 changed behaves differently once built: ISR and `revalidate`, the analytics gate, route segment caching, bundle size,
-or anything the dev overlay sits on top of. It is also what `pnpm build` succeeding does *not* tell you, which is
+or anything the dev overlay sits on top of. It is also what `pnpm build` succeeding does _not_ tell you, which is
 whether the built app is any good to look at.
 
 Both are declared in `.claude/launch.json`, which is checked in for the same reason `.nvmrc` is: how to run this app is
@@ -56,7 +56,7 @@ has already proven valid, or a handler guarding against state its own render con
 fabricating a value the app cannot produce, which pins the guard rather than the behavior. Mark them at the line with a
 `/* v8 ignore start */` … `/* v8 ignore stop */` pair and a stated reason, so the exclusion is visible in the diff that
 adds it. If a branch is reachable at all, write the test instead — and note that `v8 ignore next` is the wrong tool
-here: this project's coverage provider only honors the hint when the comment *begins* with it, and it ignores the count
+here: this project's coverage provider only honors the hint when the comment _begins_ with it, and it ignores the count
 in `next 2`.
 
 Two kinds of code are worth testing directly even when a component test already drags them over the line:
@@ -70,13 +70,13 @@ Two kinds of code are worth testing directly even when a component test already 
 
 **An unexpected `console.error` or `console.warn` fails the test that provoked it.** The guard is in `vitest.setup.ts`.
 It exists because a React duplicate-key warning once passed a fully green `pnpm check` and reached `main`: a warning is
-not an exception, so nothing failed, and Vitest only prints a *passing* test's console output to a TTY — so the line
+not an exception, so nothing failed, and Vitest only prints a _passing_ test's console output to a TTY — so the line
 appeared in an editor's run panel and in no pipeline anywhere. A key collision is not cosmetic (React may drop or
 duplicate the colliding children), so the fix was to make it fail rather than to print it louder.
 
 Two things pass through it. This app's own `[civic-ledger] …` lines are ignored, because the "degrades rather than
 crashes" suites write about fifty of them on purpose and each already has an assertion beside it. And a test that
-*means* to provoke a log line spies on the method — `vi.spyOn(console, "warn").mockImplementation(() => {})` — which
+_means_ to provoke a log line spies on the method — `vi.spyOn(console, "warn").mockImplementation(() => {})` — which
 replaces the guard for that test; that is what `log.test.ts`, `http.test.ts`, and the `unavailable` tests already did
 before the guard existed. If a test trips the guard, the question to ask is whether the warning is real, not how to
 silence it.
@@ -92,7 +92,7 @@ the product, or has to be found by someone who is not already reading the releva
 one component, or one CSS rule belongs beside it — read at the moment it is needed, and going stale visibly rather than
 quietly.
 
-Two rules follow, and both are about what a comment is *for*. A comment states why the code is the way it is, not what
+Two rules follow, and both are about what a comment is _for_. A comment states why the code is the way it is, not what
 it used to be: this project keeps no running decision log, and a note recording a previous shape is a note the next
 reader has to check against the code before trusting it. If a decision is worth recording and fits none of the rows in
 that table, that is a strong signal it is a code comment.
@@ -123,9 +123,9 @@ default — a few current positions, so they don't have to be relitigated per pu
   and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — @see the
   header of `tests/e2e/accessibility.spec.ts` for what stays with review.
 - **No Storybook yet.** Add it when the component inventory justifies it.
-- **`@types/node` is held at the Node major this project runs.** Its major version *is* a Node version — 24.x describes
+- **`@types/node` is held at the Node major this project runs.** Its major version _is_ a Node version — 24.x describes
   Node 24, 26.x describes Node 26 — so it is the one dependency here where "update to latest" is the wrong instinct.
-  `.nvmrc` and `engines` name Node 24, CI runs Node 24, and typings from a later major would declare APIs that runtime
+  `.nvmrc` and `engines` name Node 26, CI runs Node 26, and typings from a later major would declare APIs that runtime
   does not have: the code compiles, `pnpm check` passes, and the call is simply missing when it runs. The caret range in
   `package.json` and an `ignore` entry in `.github/dependabot.yml` both hold that ceiling, and `pnpm outdated` will keep
   reporting a newer "Latest" because of it. Move it when `.nvmrc` and `engines` move, in the same change.
@@ -135,7 +135,7 @@ default — a few current positions, so they don't have to be relitigated per pu
 - Biome is the formatter and linter; `lineWidth` is 120 and applies to prose in Markdown too. `pnpm lint` is the check
   and `pnpm format` is its fix — the latter runs `biome check --write`, not `biome format --write`, so it applies
   everything `pnpm lint` can fail on rather than only the whitespace half of it.
-- Prefer a doc comment that explains *why* over one that restates the signature. The comment density in
+- Prefer a doc comment that explains _why_ over one that restates the signature. The comment density in
   `src/lib/congress/` is the house style.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
   point is a wish.
@@ -147,7 +147,7 @@ default — a few current positions, so they don't have to be relitigated per pu
   doesn't say which directory the file is in. The grouping — Node builtins, then packages, a blank line, then this
   app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so `pnpm lint` reports a run-together
   block and `pnpm format` fixes it.
-- A new file goes in the folder named for its *subject*, not for whoever calls it — `src/components/bills/` for
+- A new file goes in the folder named for its _subject_, not for whoever calls it — `src/components/bills/` for
   anything that draws a bill, `src/lib/congress/members/` for anything that knows what a member is. Two exceptions,
   both stated in [Architecture](docs/architecture.md): `src/components/ui/` is for pieces that could render a record
   type they have never heard of, and `src/lib/congress/upstream/` is for the modules that talk to Congress.gov itself.

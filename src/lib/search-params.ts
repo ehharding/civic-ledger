@@ -43,6 +43,15 @@ import {
 export type RouteSearchParams = Record<string, string | string[] | undefined>;
 
 /**
+ * An empty query, as the already-resolved promise a route's renderer takes.
+ *
+ * What a static route hands its renderer in place of the request's own `searchParams`. Reading the real ones is what
+ * makes a route render on every request, so the static half of each query-aware route never touches them and renders
+ * the default view from this instead; its `/query` twin passes the real ones through. @see src/lib/query-routes.ts.
+ */
+export const NO_SEARCH_PARAMS: Promise<RouteSearchParams> = Promise.resolve({});
+
+/**
  * Reads one param, collapsing the repeated-param case.
  *
  * @param params - The route's resolved search params.

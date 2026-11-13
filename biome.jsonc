@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
   "files": {
     "includes": [
       "**",
@@ -47,7 +47,9 @@
         // What that costs, stated rather than buried: a genuinely gratuitous `bill["title"]` over a declared property
         // is no longer flagged. That is a readability nit rather than a defect, and it is the smaller half of this
         // trade by a wide margin.
-        "useLiteralKeys": "off"
+        "useLiteralKeys": "off",
+        // `.test()` over `.exec()`/`.match()` when only the boolean is used.
+        "useRegexpTest": "error"
       },
       "correctness": {
         // Reaching past `package.json` into a transitive dependency compiles, passes tests, and breaks the day the
@@ -78,12 +80,8 @@
         // `??` over `||` where the left side can legitimately be `0` or `""` — both of which this app has real values
         // for (a zero record count, an empty query).
         "useNullishCoalescing": "error",
-        // `.test()` over `.exec()`/`.match()` when only the boolean is used.
-        "useRegexpTest": "error",
         // `.startsWith()`/`.endsWith()` over an index comparison or a slice.
         "useStringStartsEndsWith": "error",
-        // The convention every suite in `src/` already keeps.
-        "useTestHooksOnTop": "error",
         // The most visible convention in this codebase: every function states what it returns. It is not
         // decoration — an inferred return type on an exported function is a signature that changes silently when the
         // body does. The one exemption in the tree carries a `biome-ignore` naming its reason. @see sentry-options.ts.
@@ -95,16 +93,24 @@
         // A lone `if` inside an `if` is one condition wearing two.
         "useCollapsedIf": "error",
         // `T[]` and `readonly T[]`, never `Array<T>` — the spelling every model in `src/lib` already uses.
-        "useConsistentArrayType": { "level": "error", "options": { "syntax": "shorthand" } },
+        "useConsistentArrayType": {
+          "level": "error",
+          "options": { "syntax": "shorthand" }
+        },
         // `type`, never `interface`. This app models data as unions and object types rather than as an inheritance
         // hierarchy, and declaration merging — the one thing `interface` offers that `type` does not — is a feature
         // nothing here wants: a second declaration of a model should be an error, not a silent extension of the first.
-        "useConsistentTypeDefinitions": { "level": "error", "options": { "style": "type" } },
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": { "style": "type" }
+        },
         // A rethrow that drops `cause` throws away the actual diagnosis. `describeCause` in `log.ts` exists precisely
         // because Node's own `fetch` keeps the useful half one level down a cause chain.
         "useErrorCause": "error",
         // `throw new Error(…)`, never `throw Error(…)`.
-        "useThrowNewError": "error"
+        "useThrowNewError": "error",
+        // The convention every suite in `src/` already keeps.
+        "useTestHooksOnTop": "error"
       },
       "suspicious": {
         // A duplicated `beforeEach` runs twice and reads as one.
@@ -133,7 +139,9 @@
       // types lands here for the same reason. Nothing in `src/` is a `.d.ts`, so the house rule still covers every
       // model in the app. @see env.d.ts, currently the only file this reaches.
       "includes": ["**/*.d.ts"],
-      "linter": { "rules": { "style": { "useConsistentTypeDefinitions": "off" } } }
+      "linter": {
+        "rules": { "style": { "useConsistentTypeDefinitions": "off" } }
+      }
     },
     {
       // Vitest suites say `it`, Playwright specs say `test`. Both are that framework's own idiom rather than a drift
@@ -142,8 +150,11 @@
       "includes": ["src/**/*.test.ts", "src/**/*.test.tsx"],
       "linter": {
         "rules": {
-          "nursery": {
-            "useConsistentTestIt": { "level": "error", "options": { "function": "it", "withinDescribe": "it" } }
+          "style": {
+            "useConsistentTestIt": {
+              "level": "error",
+              "options": { "function": "it", "withinDescribe": "it" }
+            }
           }
         }
       }

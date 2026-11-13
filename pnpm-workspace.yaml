@@ -3,7 +3,7 @@
 # stack trace naming `bill-detail.tsx:42` and one naming `page-4f2a9c.js:1:28471`. That upload is most of what an error
 # tracker is *for* on a minified bundle, so the script is allowed. It only ever runs when `SENTRY_AUTH_TOKEN` is set.
 allowBuilds:
-  '@sentry/cli': true
+  "@sentry/cli": true
   esbuild: true
   sharp: true
 
@@ -30,4 +30,4 @@ minimumReleaseAge: 1440
 # Remove this the day `drizzle-kit` drops `@esbuild-kit/*` — or the day the deferred persistence layer is either built
 # or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. @see docs/roadmap.md.
 overrides:
-  '@esbuild-kit/core-utils>esbuild': '^0.25.0'
+  "@esbuild-kit/core-utils>esbuild": "^0.25.0"

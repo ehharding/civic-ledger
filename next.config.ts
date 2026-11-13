@@ -1,6 +1,8 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
+import { type QueryRewrite, queryRewrites } from "@/lib/query-routes";
+
 // The default build is a full Next.js server app (Vercel or any Node host): dynamic routes, ISR, and a server-only
 // Congress.gov API key all require it.
 //
@@ -100,6 +102,11 @@ const nextConfig: NextConfig = {
         // the gap it leaves is a real one and a small one.
         headers: (): Promise<{ source: string; headers: { key: string; value: string }[] }[]> =>
           Promise.resolve([{ source: "/:path*", headers: [...SECURITY_HEADERS] }]),
+        // Sends a URL that carries a view in its query to that route's on-demand `/query` twin, so the route itself can
+        // stay static. A server feature like `headers()`, and gated off for the same reason: the export has no server,
+        // deletes the twins before building, and serves every deep link as the default view, as it always has.
+        // @see src/lib/query-routes.ts for why this is a rewrite rather than a Proxy, and why it is `beforeFiles`.
+        rewrites: (): Promise<{ beforeFiles: QueryRewrite[] }> => Promise.resolve({ beforeFiles: queryRewrites() }),
       }),
 };
 

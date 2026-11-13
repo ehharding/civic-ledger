@@ -12,7 +12,7 @@ depend on each other.
 ## Scope
 
 The product covers bills and their legislative path, members, and committees. Congress.gov offers far more collections —
-nominations, treaties, roll-call votes, the *Congressional Record* — but a broad clone would be harder to understand and
+nominations, treaties, roll-call votes, the _Congressional Record_ — but a broad clone would be harder to understand and
 more expensive to keep fresh than a focused surface is. Those are future verticals, not omissions; see
 [Roadmap](roadmap.md).
 
@@ -43,22 +43,22 @@ consistency one: the adapter gives the whole UI one stable type, one caching pol
 
 ## Boundaries
 
-| Layer                         | Responsibility                                        | Rule                                                              |
-|-------------------------------|-------------------------------------------------------|-------------------------------------------------------------------|
-| `src/app`                     | Routes, metadata, route handlers                      | Never expose the government API key.                              |
-| `src/components`              | Presentation and small user interactions              | Preserve visible preview/live provenance.                         |
-| `src/db`                      | User-owned data and future normalized snapshots       | Do not claim it is the source of truth for congressional records. |
-| `src/hooks`                   | Client-side behavior extracted from views             | Depend only on isomorphic modules, never on the server adapter.   |
-| `src/lib/api-contract.ts`     | The response bodies this app's own routes return      | One declaration per body; the handler and the caller share it.    |
-| `src/lib/api-query.ts`        | Validation of this app's own query params             | Parse, don't trust; every input resolves to a usable value.       |
-| `src/lib/routes.ts`           | In-app route construction                             | One definition per route shape; never build a route inline.       |
-| `src/lib/format.ts`           | Shared display and comparison rules                   | One collator and one date order for the whole app.                |
-| `src/lib/glossary.ts`         | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
-| `src/lib/lessons.ts`          | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |
-| `src/lib/metadata.ts`         | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
-| `src/lib/observability`       | What a report or log may carry off this machine       | Never the API key; never the reader's query string; one boundary. |
-| `src/lib/search-params.ts`    | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
-| `src/lib/congress`            | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
+| Layer                      | Responsibility                                        | Rule                                                              |
+| -------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------- |
+| `src/app`                  | Routes, metadata, route handlers                      | Never expose the government API key.                              |
+| `src/components`           | Presentation and small user interactions              | Preserve visible preview/live provenance.                         |
+| `src/db`                   | User-owned data and future normalized snapshots       | Do not claim it is the source of truth for congressional records. |
+| `src/hooks`                | Client-side behavior extracted from views             | Depend only on isomorphic modules, never on the server adapter.   |
+| `src/lib/api-contract.ts`  | The response bodies this app's own routes return      | One declaration per body; the handler and the caller share it.    |
+| `src/lib/api-query.ts`     | Validation of this app's own query params             | Parse, don't trust; every input resolves to a usable value.       |
+| `src/lib/routes.ts`        | In-app route construction                             | One definition per route shape; never build a route inline.       |
+| `src/lib/format.ts`        | Shared display and comparison rules                   | One collator and one date order for the whole app.                |
+| `src/lib/glossary.ts`      | Curated editorial vocabulary, and finding it in prose | Cover every term the lessons lean on; annotate, never rewrite.    |
+| `src/lib/lessons.ts`       | Curated editorial learning content                    | Cite primary sources; state what each lesson leaves out.          |
+| `src/lib/metadata.ts`      | How a page names itself to crawlers and shares        | One call per page; compose share tags, never assume inheritance.  |
+| `src/lib/observability`    | What a report or log may carry off this machine       | Never the API key; never the reader's query string; one boundary. |
+| `src/lib/search-params.ts` | Resolving each directory's deep link                  | Server-only; a stale link degrades to the default view.           |
+| `src/lib/congress`         | Fetch, normalize, cache, and classify API data        | Treat upstream fields as untrusted and maintain one stable model. |
 
 ### Inside `src/components`
 
@@ -82,16 +82,16 @@ anything up.
 `src/lib/congress/client.ts` is a barrel, not an implementation: it re-exports the adapter's public surface so routes,
 components, and tests import one stable path while the internals stay free to move.
 
-The directory is grouped by what a module is *about*: `upstream/` for everything that touches Congress.gov itself, then
+The directory is grouped by what a module is _about_: `upstream/` for everything that touches Congress.gov itself, then
 one folder per record type this app publishes. Four modules sit at the root because they belong to no single record
 type — the barrel, the vocabulary all three directories share, and the two that answer "which Congress?".
 
 Within a record-type folder, `model.ts` is the pure one: shapes, vocabulary, and display helpers, with no I/O. That
 naming is the rule rather than a coincidence, and it is what the folder buys — `bills/committees.ts` is a bill's
-committees, `committees/model.ts` is what a committee *is*, and neither name has to carry a prefix to say so.
+committees, `committees/model.ts` is what a committee _is_, and neither name has to carry a prefix to say so.
 
 | Module                      | Responsibility                                                                |
-|-----------------------------|-------------------------------------------------------------------------------|
+| --------------------------- | ----------------------------------------------------------------------------- |
 | `upstream/api-schema.ts`    | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
 | `upstream/http.ts`          | Key access, URL building, caching policy, one request helper, route guards.   |
 | `upstream/mappers.ts`       | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
@@ -149,7 +149,7 @@ page. Only a payload that isn't an object at all is rejected outright.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
 5. A reader can always leave for the official record: from a bill page to its public Congress.gov record, and from any
    member's page to their entry in the Biographical Directory. Seats in the chamber diagram and sponsor lines on bill
-   pages both link *inward* first, to that member's own page, which carries the outbound link onward.
+   pages both link _inward_ first, to that member's own page, which carries the outbound link onward.
 
 Point 5 is deliberate. The Biographical Directory answers "who is this person" but not "what else have they introduced,"
 and takes the reader off the site to do it. Nothing is lost by linking inward: the member page carries the
@@ -197,7 +197,7 @@ seat is unattributed and ID-less, so a preview directory built from the composit
 `previewMemberProfiles` instead.
 
 The portrait is the one field on `CongressMember` that the chamber diagram does not itself draw, and it is there because
-the *directory* built from the same composition does. It costs no extra request: `/v3/member/congress/{congress}`
+the _directory_ built from the same composition does. It costs no extra request: `/v3/member/congress/{congress}`
 publishes `depiction` on every list entry, which is unusual — nearly everything else the individual member page shows
 (`memberType`, per-term `congress`, leadership, the legislation counts) is item-level only, which is why the roster
 derives what it can from the jurisdiction instead. What it does cost is payload, measured rather than assumed: ~64 KB of
@@ -206,7 +206,7 @@ to row. See [Data Policy](data-policy.md#what-each-directory-covers) for the att
 
 ### Individual Records
 
-An *individual* member (`/members/[bioguideId]`) is a separate read in `members/profile.ts`, against a different
+An _individual_ member (`/members/[bioguideId]`) is a separate read in `members/profile.ts`, against a different
 endpoint: `/v3/member/{bioguideId}`, whose item-level record carries the per-term `congress` and `memberType` the list
 endpoint omits, plus the portrait and leadership history. It issues three requests concurrently — the member, their
 sponsored legislation, and their cosponsored legislation — and a failure in either legislation list still yields a page,
@@ -223,8 +223,8 @@ its summaries, its text versions, its actions, its cosponsors, its related measu
 independent reads, issued together.
 
 This is the mirror image of the committee page's referral list below, and it is the far cheaper direction. Asking a
-*committee* which bills it handled costs one request for the referrals plus one bill lookup per row, because that
-endpoint publishes no titles. Asking a *bill* which committees held it costs one request, and the committees arrive
+_committee_ which bills it handled costs one request for the referrals plus one bill lookup per row, because that
+endpoint publishes no titles. Asking a _bill_ which committees held it costs one request, and the committees arrive
 already named, chambered, and coded.
 
 The system code is the whole point. That a bill was referred to the Committee on Energy and Commerce was already on the
@@ -236,7 +236,7 @@ Two things the mapper does are worth knowing before changing them.
 
 **The order is the publisher's.** Congress.gov returns a bill's committees with the committee of primary jurisdiction
 first, which is a fact carried entirely by position — a sort applied here would destroy it silently while still looking
-like a working feature. Subcommittees *are* sorted alphabetically, because their order within a parent carries nothing.
+like a working feature. Subcommittees _are_ sorted alphabetically, because their order within a parent carries nothing.
 
 **An activity named `"Unknown"` is dropped.** The endpoint publishes that literal string on a large share of rows, often
 two or three of them beside one real activity. Printing it tells a reader nothing and reads as a gap in this app rather
@@ -252,7 +252,7 @@ recent Congresses, HR 1 of the 119th (493 amendments) and HR 3684 of the 117th (
 
 Three consequences follow, and each is a decision rather than an accident.
 
-**The completeness bar is identity alone.** `mapRelatedBill` drops a measure with no title, because the title *is* the
+**The completeness bar is identity alone.** `mapRelatedBill` drops a measure with no title, because the title _is_ the
 row. `mapBillAmendment` drops nothing but an entry it could not cite or link, because an amendment's row is labeled by
 its own citation. Applying the related-measures bar here would discard fourteen entries in fifteen and leave the section
 showing thirty rows under a published count of 493.
@@ -286,7 +286,7 @@ Three things about this are worth knowing before changing it.
 
 **The three endpoints are three shapes, not one parameterized path.** `/bills` nests its array under a hyphenated
 `committee-bills` key and reports its count in two places; the other two return theirs at the top level. What the three
-fetchers *do* share is stated once: the paging arithmetic, the cache tags, and the rule that a 404 is an empty
+fetchers _do_ share is stated once: the paging arithmetic, the cache tags, and the rule that a 404 is an empty
 collection while a transport failure is not. That last distinction is why `CommitteeRecordsResult` carries
 `unavailable` — a committee with no reports and a committee whose reports could not be fetched both render zero rows,
 and reporting the first when the truth is the second would be a false claim about the congressional record.
@@ -297,15 +297,15 @@ exists. That is the one reason the two reads are sequential rather than concurre
 trip to discover that a link overshot.
 
 **This is the one read in the adapter that costs more than a bounded handful of requests, and it is a deliberate
-trade.** The committee-bills endpoint publishes a congress, a type, a number, a relationship, and a date, and *no
-title*. A list reading "H.R. 10000 · Referred To · July 30, 2026" says which measures a committee handled and nothing
+trade.** The committee-bills endpoint publishes a congress, a type, a number, a relationship, and a date, and _no
+title_. A list reading "H.R. 10000 · Referred To · July 30, 2026" says which measures a committee handled and nothing
 about what they were, which for a product whose stated purpose is legibility is close to no feature at all. So each page
 issues one bill lookup per row on screen — never per record in the collection, so a committee with ten thousand
 referrals costs what one with twelve does — concurrently, on the bill's own cache tags, which it shares with that bill's
 own page. A failed lookup costs the title and nothing else: the row still names the measure, still says what the
 committee did with it, and still links to it, because the link is built from the identifier rather than from the title.
 
-What the page deliberately does *not* claim about these collections is in
+What the page deliberately does _not_ claim about these collections is in
 [Data Policy](data-policy.md#a-committees-records-are-paged-in-congressgovs-order-not-in-time).
 
 ## The Three Directories
@@ -322,7 +322,7 @@ structurally rather than by convention, in four separate places:
   type dropdown is not wearing a class named after members.
 - **URL behavior** — `useDirectoryUrlSync`: the two-way reconciliation described below.
 
-What each directory keeps for itself is what a view *means* — its param names, its facets, its orders, its comparators.
+What each directory keeps for itself is what a view _means_ — its param names, its facets, its orders, its comparators.
 A generic "filters" abstraction spanning one directory's three facets, another's two, and a third's one would fit worse
 than three explicit declarations and would make each directory harder to read in order to make them look alike.
 
@@ -352,18 +352,18 @@ Each directory's URL spelling lives beside its rules rather than in its route �
 `memberDirectoryQueryString` in `members/filter.ts`, `BILL_DIRECTORY_PARAMS`/`billDirectoryQueryString` in
 `bills/search.ts`, and the committee pair in `committees/filter.ts` — because those names cross a boundary the server
 and the browser both write to, and a param name typed twice is a link that looks right and restores nothing. Each also
-has one parser that *both* sides go through, so a route and a browser can never disagree about what a given link means.
+has one parser that _both_ sides go through, so a route and a browser can never disagree about what a given link means.
 
 **The server half** is `src/lib/search-params.ts`: it reads the request and resolves a starting view, so a shared link
 renders already narrowed on its first paint rather than flashing the full list. It also resolves the one deep link that
-is *not* a directory's — an individual committee's record view (`?records=`/`?page=`). That selects among the
+is _not_ a directory's — an individual committee's record view (`?records=`/`?page=`). That selects among the
 collections hanging off a single record rather than narrowing a list of them, but it is the same kind of thing for the
 reason that mattered about the others: a committee page showing the third page of its reports is a place, so it needs an
 address that brings someone back to it. Its controls are plain links rather than `useDirectoryUrlSync`, because they
 navigate — the records behind each live on a different Congress.gov endpoint and are fetched on the server, so there is
 no client-side state for a URL to mirror.
 
-**The browser half** is `useDirectoryUrlSync`, which reconciles in *both* directions — writing the URL as the reader
+**The browser half** is `useDirectoryUrlSync`, which reconciles in _both_ directions — writing the URL as the reader
 narrows, and following it when something else moves it, such as a soft navigation from the header's own nav link or a
 press of Back. A component that only writes the URL silently overwrites every change the router makes: from
 `/bills?q=broadband`, clicking "Bills" in the header soft-navigates without remounting the component, which then writes
@@ -374,7 +374,7 @@ that it is written once and shared rather than reimplemented per directory.
 Two mechanical choices make this cheap:
 
 - **`history.replaceState`, not a router navigation.** `router.replace` re-runs the route on the server. Doing that on
-  every keystroke would undo the entire point of a directory that narrows without a request. The URL here is a *record*
+  every keystroke would undo the entire point of a directory that narrows without a request. The URL here is a _record_
   of client state, not an instruction to fetch something, and it is written with the API meant for exactly that.
 - **`replace`, not `push`.** Typing seven letters into a search box should not leave seven entries for Back to walk out
   of.
@@ -384,22 +384,31 @@ link is exactly the kind of URL that gets hand-edited, truncated by a chat clien
 those should produce anything worse than the unfiltered page. `?state=` goes one step further and is validated against
 the jurisdictions the roster actually contains — matched case-insensitively, so `?state=ohio` resolves to the roster's
 own `"Ohio"` — because a value the control has no option for would leave the `<select>` showing one thing while the grid
-showed another. That is the specific reason `/members` resolves its URL *after* the roster rather than concurrently.
+showed another. That is the specific reason `/members` resolves its URL _after_ the roster rather than concurrently.
 
 **What this costs, named honestly:** `/members` is rendered on demand rather than prerendered, because a route that
 reads `searchParams` has to be. The alternative is reading the params in the browser and keeping the page static, at the
 price of every shared link rendering the full roster and then visibly narrowing after hydration — and of the link doing
 nothing at all without JavaScript. That trade goes the other way here, for the same reason the header's search is a real
 `<form>` rather than a click handler: a link should arrive at what it says it points to, on the first paint, whatever is
-or isn't running. The cost is a server render per visit, not a Congress.gov request per visit: the roster still comes
-through the shared five-minute cache.
+or isn't running.
+
+That cost used to be a server render on _every_ visit, narrowed or not, and on Vercel's Hobby plan it was enough to get
+the deployment paused. So each directory, and a committee's record view, is now two routes sharing one renderer
+(`render.tsx` beside each `page.tsx`). The route itself never reads its query and is prerendered on the five-minute
+window, so a visit with no view in its URL — nearly all of them, crawlers included — costs no render at all. A URL that
+does carry one of the route's params is rewritten (not redirected, so the address bar keeps it) to the route's twin
+under `src/app/query/`, which reads it and renders on demand exactly as the route used to. The rewrites are generated
+from one table, `src/lib/query-routes.ts`, whose keys a test holds to each parser's `*_PARAMS` constant; a param added
+to a parser and forgotten there would otherwise quietly serve its links the unfiltered static page. @see
+docs/deployment.md, "Keeping Server Work Bounded".
 
 **One window, five literals, one test.** That window is `REVALIDATE_SECONDS` in `congress/upstream/http.ts`, and the
 five routes that also declare a segment-level `revalidate` each restate it as a bare `300` rather than importing it.
 That is not a lapse: Next reads the segment export statically, so a variable — or even `60 * 10` — is ignored rather
 than honored. The duplication is therefore the framework's, and what this project owns is its ability to drift.
 `src/app/revalidate.test.ts` is the enforcement point; it reads every route's own export, asserts each against the
-constant, and separately walks `src/app` so a *new* route declaring its own window fails the suite until it is either
+constant, and separately walks `src/app` so a _new_ route declaring its own window fails the suite until it is either
 brought in line or listed as a deliberate exception.
 
 ## The Glossary Comes to the Reader
@@ -420,7 +429,7 @@ feature that quietly edits the congressional record in order to decorate it. @se
 **Matching tolerates inflection but not derivation.** Terms are stored in title case and met lower-cased, pluralized,
 and possessive, so the pattern accepts those and renders whatever the source wrote. It deliberately stops there:
 "cosponsorship" is a different claim from "cosponsor", and a stemmer that reached it would attach a definition that
-doesn't describe it. Only the *first* mention of each term in a block is annotated, since a paragraph with six dotted
+doesn't describe it. Only the _first_ mention of each term in a block is annotated, since a paragraph with six dotted
 underlines in it is harder to read than the jargon was.
 
 **Which terms a page ships is decided on the server.** `GlossaryProse` is a server component that renders a client one
@@ -439,14 +448,14 @@ everywhere, rather than one that applies wherever someone remembered to reach fo
 
 **`compareText` — one collator.** Alphabetical ordering runs through a locale-pinned `Intl.Collator`, never a bare
 `localeCompare`. The server sorts the roster before serializing it and the browser re-sorts the same list;
-`localeCompare` uses the *runtime's* locale, and where the two disagree the client-rendered order differs from the
+`localeCompare` uses the _runtime's_ locale, and where the two disagree the client-rendered order differs from the
 server-rendered one — a hydration mismatch across the whole grid. `"Ødegård"` sorts before `"Zimmerman"` under `en-US`
 and after it under `da-DK` or `sv-SE`. No sitting member's name triggers it today, which is exactly the point: the
 failure arrives with a new member rather than with a code change, and only for some readers. It matters most in the
 seating chart, which is laid out on the server and again in the browser, so a locale disagreement moves ~540 seats.
 
 **`compareIsoDatesDesc` — one date order.** Every date this app sorts on is fixed-width, zero-padded, and
-most-significant-field-first, so direct string comparison already *is* chronological order; collating them would cost
+most-significant-field-first, so direct string comparison already _is_ chronological order; collating them would cost
 more and buy nothing on ASCII digits. Undated records falling last stops being a special case in each caller and becomes
 a consequence of the ordering, since an empty string is less than every real timestamp.
 
@@ -459,9 +468,9 @@ ordering is no more authoritative than an upstream one.
 
 The home page is the same rule with the failure actually realized. Its featured card and activity grid ran on the order
 the bill list arrived in, under headings reading "Latest Activity" and "A Bill in Motion" — and that order was ascending
-by latest action, so the two most prominent bills on the site were reliably among the *least* active in Congress. It now
+by latest action, so the two most prominent bills on the site were reliably among the _least_ active in Congress. It now
 sorts by `compareBillsByActivity`. The comparator is deliberately a sibling of `compareBillsByRecency` rather than a
-reuse of it: "recent" for a bill means *introduced* lately on a member's page and *acted on* lately here, a member's
+reuse of it: "recent" for a bill means _introduced_ lately on a member's page and _acted on_ lately here, a member's
 body of work would be scrambled by the second, and a home page is wrong under the first. One name for both would have
 made the pages agree by hiding that they were asking different questions.
 
@@ -472,13 +481,13 @@ sees data already in the right order is testing the fixture.
 
 Normalization happens at the mapping boundary, not at the view, for the same reason. `normalizeJurisdiction` title-cases
 the represented state in `upstream/mappers.ts` alongside `normalizePartyName` and `type.toUpperCase()`, because the
-jurisdiction is the value the member directory's state filter is *keyed on*. If `"NEW YORK"` and `"New York"` ever
+jurisdiction is the value the member directory's state filter is _keyed on_. If `"NEW YORK"` and `"New York"` ever
 arrived on different records, the facet list would offer two New Yorks, each returning half the delegation, and neither
 would be wrong from the control's point of view.
 
 ## Crawlability
 
-`sitemap.ts` enumerates every supported Congress because that list is *computed* — `listCongresses` derives it from a
+`sitemap.ts` enumerates every supported Congress because that list is _computed_ — `listCongresses` derives it from a
 fixed constitutional cadence with no I/O — which is what lets the file stay `force-static` and work in the static
 export. Every learning module is listed on the same test: `lessons` is a local array, so reading it costs the file none
 of the "cheap and reliable" property that keeps individual records out. The route enumerates itself from the same array
@@ -487,7 +496,7 @@ in `generateStaticParams`, which is what makes a listed lesson URL and a prerend
 Individual member, bill, and committee pages stay out. They are bounded and individually useful, so they look like they
 belong; they don't, yet. Knowing who currently holds a seat requires a live Congress.gov request, which would make
 sitemap generation depend on an API key and a healthy upstream at build time — a meaningful new failure mode for a file
-whose entire job is to be cheaply and reliably generated. Each directory route *is* listed, needs no key to resolve, and
+whose entire job is to be cheaply and reliably generated. Each directory route _is_ listed, needs no key to resolve, and
 is a single crawlable page that links to every record beneath it, which is what a crawler actually needed. Revisit this
 alongside the scheduled-ingestion path below, where a roster will already be on hand locally.
 
@@ -523,7 +532,7 @@ history, notification delivery, or more than a few API-facing features.
 - Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
   hold a server render open indefinitely.
 - **The CRS summary sanitizer builds its output rather than patching its input.** `sanitizeSummaryHtml` walks the input
-  once and *builds* the output: text between recognized tags is escaped, and only an allow-listed tag is re-emitted as
+  once and _builds_ the output: text between recognized tags is escaped, and only an allow-listed tag is re-emitted as
   markup, so nothing passes through by default. Patching instead — one `.replace()` across the raw fragment, rewriting
   recognized tags and leaving everything else alone — is what makes overlapping tags exploitable. Given
   `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, such a pattern matches and strips the inner `<img …>` and
@@ -537,7 +546,7 @@ history, notification delivery, or more than a few API-facing features.
   out for the query string the two sections above already close: a narrowed directory's URL is a search log, and every
   cross-origin subresource the page loads — the Congress.gov member portraits on `/members`, most concretely — sends
   `Referer`. Browsers default to this value today, so stating it changes nothing and removes a promise's dependence on a
-  default this project does not control. Outbound *links* are covered separately, by `rel="noreferrer"` in
+  default this project does not control. Outbound _links_ are covered separately, by `rel="noreferrer"` in
   `OutboundLink` and in the summary sanitizer. There is no CSP; @see [the roadmap](roadmap.md#deferred-tooling) for
   what would have to be measured first. The static export sends none of these — `headers()` is a server feature, and
   the demo build has no server — which is why the config gates it rather than declaring it and letting Next warn.
@@ -552,14 +561,14 @@ history, notification delivery, or more than a few API-facing features.
 Everything below is swept automatically, in both color schemes, by `tests/e2e/accessibility.spec.ts` — every route
 shape the app serves, against WCAG 2.1 A and AA, in the Playwright job CI already runs. That covers the
 machine-checkable half: an unnamed control, an `aria-labelledby` pointing at nothing, a contrast ratio under threshold,
-a skipped heading level. The half a rule cannot judge — whether an accessible name is *useful*, whether focus order
+a skipped heading level. The half a rule cannot judge — whether an accessible name is _useful_, whether focus order
 makes sense, whether the chamber diagram's arrow-key model is discoverable — stays with `navigation.spec.ts`, which
 drives the keyboard directly, and with review. Sweeping the dark palette is not a courtesy: contrast is a property of
 the palette in force, so a `prefers-color-scheme: dark` token that fails is invisible to a light-mode run and to every
 reviewer who does not use dark mode.
 
 - Components retain keyboard focus styles, semantic landmarks, accessible form labels, contrast-conscious colors, and
-  real links. `--ink-faint` is the tightest of those colors and is sized against WCAG 1.4.3's 4.5:1 for *normal* text
+  real links. `--ink-faint` is the tightest of those colors and is sized against WCAG 1.4.3's 4.5:1 for _normal_ text
   rather than the 3:1 large text gets, because it carries ordinary body-size copy.
 - **A shared control class neutralizes the user agent's own chrome once.** `.button` and `.secondary-link` are worn by
   both `<a>` and `<button>` elements, which do not start from the same place — a button brings a `ButtonBorder` and a
@@ -575,7 +584,7 @@ reviewer who does not use dark mode.
   and `aria-controls`; focus is deliberately not moved on opening, because the panel is the toggle's next sibling and
   the next Tab already lands on the first destination. What the drawer borrows from a dialog is the Tab loop, which it
   needs because it has a scrim: without it, tabbing past the last destination walks into page content the reader can no
-  longer see. Escape closes it, and closing hands focus back to the toggle *only* when focus was inside the panel — a
+  longer see. Escape closes it, and closing hands focus back to the toggle _only_ when focus was inside the panel — a
   destination being chosen must not yank focus off the page it just asked for.
   - Which layout is in force is decided in CSS and never in React. The closed panel is `visibility: hidden` inside the
     drawer's own media query, so it leaves the tab order and the accessibility tree exactly where the drawer exists and
@@ -602,13 +611,13 @@ reviewer who does not use dark mode.
   through pages they never chose.
 - **Every facet option carries its count.** "Ohio (15)" is the difference between a list you can plan a narrowing with
   and one you have to probe. It also does quiet work for the party control, whose order is `partySeatingOrder` — the
-  same left-to-right order as the chamber diagram and its legend. That order is only legible *with* the counts;
+  same left-to-right order as the chamber diagram and its legend. That order is only legible _with_ the counts;
   reordering the parties by size instead would have made the control disagree with a chart the reader had just looked
   at. States and territories are grouped rather than interleaved, split by `isNonVotingJurisdiction` — the same
   distinction the chamber diagram draws, which makes it a fact about the chamber rather than an editorial grouping.
 - **A definition on hover is also a definition on focus, and is dismissible.** The glossary terms in the app's prose
   answer each clause of WCAG 1.4.13 (Content on Hover or Focus) at a named place in `GlossaryTermTip`: the trigger is a
-  real link, so focus opens the bubble as hover does; the pointer listeners sit on the wrapper that *contains* the
+  real link, so focus opens the bubble as hover does; the pointer listeners sit on the wrapper that _contains_ the
   bubble, so moving into the definition doesn't dismiss it; Escape closes it, listened for on the document rather than
   on the trigger, since a bubble opened by hovering has no focus inside it to hear a keypress; and nothing closes on a
   timer. The bubble also stays mounted while hidden, because a screen reader resolves `aria-describedby` at the moment

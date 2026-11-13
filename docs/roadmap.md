@@ -53,7 +53,7 @@ The committee directory and committee pages exist, but Congress.gov publishes no
 one. **This unblocks only when a citable source exists** — not when a plausible inference becomes available. See
 [The Committee Page Has No Roster](data-policy.md#the-committee-page-has-no-roster-and-no-deep-link) for why.
 
-Rechecked against the API's current committee endpoints in August 2026: still no membership resource. The *deep link*
+Rechecked against the API's current committee endpoints in August 2026: still no membership resource. The _deep link_
 half of that section is a separate problem and is unblocked — the item endpoint publishes `committeeWebsiteUrl`, and the
 committee page links it. The roster remains this one.
 

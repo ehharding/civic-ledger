@@ -1,61 +1,24 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
-import { CURRENT_CONGRESS_BILLS_HEADER } from "@/app/bills/header-copy";
-import { BillDirectory } from "@/components/bills/bill-directory";
-import { CongressSwitcher } from "@/components/bills/congress-switcher";
-import { PageHeader } from "@/components/layout/page-header";
-import { SiteShell } from "@/components/layout/site-shell";
-import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import { getCongressSnapshot } from "@/lib/congress/client";
-import { listCongresses } from "@/lib/congress/congress-history";
-import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { pageMetadata } from "@/lib/metadata";
-import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
+import { BILLS_METADATA, renderBillsRoute } from "@/app/bills/render";
+import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
  * The route segment's data-cache window, declared as on `/members` and `/committees` so all three directories state the
- * same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
- * visit and *not* an upstream request: the snapshot is fetched through the adapter's own five-minute cache
- * (`REVALIDATE_SECONDS` in `congress/upstream/http.ts`), shared across every visitor and every narrowing of this page.
+ * same thing about themselves. This route never reads its query, so it is prerendered and regenerated at most once per
+ * window — one render serves every visitor. A URL carrying `?q=` or `?stage=` is rewritten to `/query/bills` instead,
+ * which renders on demand. @see src/lib/query-routes.ts.
  */
 export const revalidate: number = 300;
 
-export const metadata: Metadata = pageMetadata({
-  title: "Bills",
-  description: "Browse and search bills and resolutions before Congress, by topic, citation, or legislative stage.",
-  path: "/bills",
-});
-
-/** Params for the bill directory route — the shareable `?q=`/`?stage=` view. */
-type BillsPageProps = {
-  searchParams: Promise<RouteSearchParams>;
-};
+export const metadata: Metadata = BILLS_METADATA;
 
 /**
- * Bill directory route for the *current* Congress.
+ * Bill directory route for the current Congress, in its default view.
  *
- * Any other Congress lives at `/bills/[congress]`, reachable from the switcher rendered here. The two fetches — the
- * deep-link query and the snapshot — are awaited together, since neither depends on the other.
- *
- * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
- *   @see resolveBillDirectoryQuery
- * @returns The directory page for the current Congress.
+ * @returns The unfiltered directory page. @see renderBillsRoute
  */
-export default async function BillsPage({ searchParams }: BillsPageProps): Promise<JSX.Element> {
-  const [initialView, snapshot] = await Promise.all([resolveBillDirectoryQuery(searchParams), getCongressSnapshot()]);
-
-  return (
-    <SiteShell>
-      <PageHeader {...CURRENT_CONGRESS_BILLS_HEADER} />
-      <CongressSwitcher congresses={listCongresses()} selected={getCurrentCongress()} />
-      <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
-      <BillDirectory
-        bills={snapshot.bills}
-        canLoadMore={snapshot.source === "live"}
-        initialQuery={initialView.query}
-        initialStage={initialView.stage}
-      />
-    </SiteShell>
-  );
+export default function BillsPage(): Promise<JSX.Element> {
+  return renderBillsRoute(NO_SEARCH_PARAMS);
 }

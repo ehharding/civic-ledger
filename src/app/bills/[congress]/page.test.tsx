@@ -32,6 +32,7 @@ vi.mock("next/navigation", async (importOriginal): Promise<typeof import("next/n
 });
 
 import CongressBillsPage, { generateMetadata, generateStaticParams } from "@/app/bills/[congress]/page";
+import { renderCongressBillsRoute } from "@/app/bills/[congress]/render";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
@@ -50,14 +51,14 @@ afterEach((): void => {
   else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
-/** Renders the route for one Congress, with an optional deep link. */
-async function renderPage(congress: string, searchParams: RouteSearchParams = {}): Promise<void> {
-  render(
-    await CongressBillsPage({
-      params: Promise.resolve({ congress }),
-      searchParams: Promise.resolve(searchParams),
-    }),
-  );
+/** Renders the route for one Congress in its default view — the static half, which never reads a query. */
+async function renderPage(congress: string): Promise<void> {
+  render(await CongressBillsPage({ params: Promise.resolve({ congress }) }));
+}
+
+/** Renders the route for one Congress with a deep link, as its `/query` twin does. */
+async function renderQueryPage(congress: string, searchParams: RouteSearchParams): Promise<void> {
+  render(await renderCongressBillsRoute(Promise.resolve({ congress }), Promise.resolve(searchParams)));
 }
 
 describe("generateStaticParams", (): void => {
@@ -82,7 +83,6 @@ describe("generateMetadata", (): void => {
   it("names the Congress and the calendar years it sat, so a shared link says when as well as which", async (): Promise<void> => {
     const metadata: Metadata = await generateMetadata({
       params: Promise.resolve({ congress: "118" }),
-      searchParams: Promise.resolve({}),
     });
 
     expect(metadata.title).toBe("118th Congress Bills");
@@ -93,7 +93,6 @@ describe("generateMetadata", (): void => {
   it("returns noindex not-found tags for a Congress outside the supported range", async (): Promise<void> => {
     const metadata: Metadata = await generateMetadata({
       params: Promise.resolve({ congress: String(EARLIEST_COVERED_CONGRESS - 1) }),
-      searchParams: Promise.resolve({}),
     });
 
     // The page itself 404s for this URL, and the tags have to agree rather than implying a page that isn't there.
@@ -104,7 +103,6 @@ describe("generateMetadata", (): void => {
   it("rejects a non-numeric segment in the metadata too, not just in the page", async (): Promise<void> => {
     const metadata: Metadata = await generateMetadata({
       params: Promise.resolve({ congress: "abc" }),
-      searchParams: Promise.resolve({}),
     });
 
     expect(metadata.title).toBe("Congress Not Found");
@@ -155,7 +153,7 @@ describe("CongressBillsPage", (): void => {
   });
 
   it("arrives already narrowed to the view a shared link asked for", async (): Promise<void> => {
-    await renderPage("118", { q: "broadband", stage: "law" });
+    await renderQueryPage("118", { q: "broadband", stage: "law" });
 
     expect(screen.getByRole("searchbox", { name: "Search bill records" })).toHaveValue("broadband");
     expect(screen.getByRole("button", { name: /Became Law/i })).toHaveAttribute("aria-pressed", "true");
@@ -165,7 +163,6 @@ describe("CongressBillsPage", (): void => {
     await expectNotFound((): Promise<unknown> => {
       return CongressBillsPage({
         params: Promise.resolve({ congress: String(EARLIEST_COVERED_CONGRESS - 1) }),
-        searchParams: Promise.resolve({}),
       });
     });
   });
@@ -174,7 +171,6 @@ describe("CongressBillsPage", (): void => {
     await expectNotFound((): Promise<unknown> => {
       return CongressBillsPage({
         params: Promise.resolve({ congress: String(getCurrentCongress() + 1) }),
-        searchParams: Promise.resolve({}),
       });
     });
   });
@@ -186,7 +182,6 @@ describe("CongressBillsPage", (): void => {
       await expectNotFound((): Promise<unknown> => {
         return CongressBillsPage({
           params: Promise.resolve({ congress: raw }),
-          searchParams: Promise.resolve({}),
         });
       });
     }

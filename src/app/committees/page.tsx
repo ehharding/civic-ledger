@@ -1,60 +1,23 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
-import { CommitteeDirectory } from "@/components/committees/committee-directory";
-import { PageHeader } from "@/components/layout/page-header";
-import { SiteShell } from "@/components/layout/site-shell";
-import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import { type CommitteeDirectoryResult, getCommitteeDirectory } from "@/lib/congress/client";
-import type { CommitteeDirectoryQuery } from "@/lib/congress/committees/filter";
-import { pageMetadata } from "@/lib/metadata";
-import { type RouteSearchParams, resolveCommitteeDirectoryQuery } from "@/lib/search-params";
+import { COMMITTEES_METADATA, renderCommitteesRoute } from "@/app/committees/render";
+import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
- * The route segment's data-cache window. Reading `searchParams` makes this render on demand rather than at build time,
- * which costs a server render per visit and *not* an upstream request: the committee list is fetched through the
- * adapter's own five-minute cache, shared across every visitor and every narrowing of this page. Same trade as
- * `/members`: a shared link should arrive already narrowed on its first paint rather than flashing the full list.
- * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ * The route segment's data-cache window. This route never reads its query, so it is prerendered and regenerated at most
+ * once per window. A URL carrying one of the directory's params is rewritten to `/query/committees` instead, which
+ * renders on demand. @see src/lib/query-routes.ts.
  */
 export const revalidate: number = 300;
 
-export const metadata: Metadata = pageMetadata({
-  title: "Committees",
-  description:
-    "Every standing, select, and joint committee of Congress — the bodies most bills are referred to and never leave.",
-  path: "/committees",
-});
-
-/** Params for the committee directory route — the shareable `?q=`/`?chamber=`/`?type=`/`?sort=` view. */
-type CommitteesPageProps = {
-  searchParams: Promise<RouteSearchParams>;
-};
+export const metadata: Metadata = COMMITTEES_METADATA;
 
 /**
- * Browsable committee directory route.
+ * Committee directory route, in its default view.
  *
- * The third way into the record, beside `/bills` and `/members`. A bill's most consequential moment is usually its
- * referral to a committee — "Referred to the House Committee on Transportation and Infrastructure" is the latest action
- * on a large share of everything Congress introduces — and this is where that sentence's subject becomes a page.
- *
- * @param searchParams - The requested view. @see CommitteesPageProps
- * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
+ * @returns The unfiltered directory page. @see renderCommitteesRoute
  */
-export default async function CommitteesPage({ searchParams }: CommitteesPageProps): Promise<JSX.Element> {
-  const { committees, congress, source, notice, retrievedAt }: CommitteeDirectoryResult = await getCommitteeDirectory();
-
-  const initialQuery: CommitteeDirectoryQuery = await resolveCommitteeDirectoryQuery(searchParams);
-
-  return (
-    <SiteShell>
-      <PageHeader
-        eyebrow="Committees"
-        title="Where Bills Actually Go."
-        description="Almost every bill is referred to a committee, and most never leave one. Browse the standing, select, and joint committees of Congress, and see what each has been called over the years."
-      />
-      <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
-      <CommitteeDirectory committees={committees} congress={congress} initialQuery={initialQuery} source={source} />
-    </SiteShell>
-  );
+export default function CommitteesPage(): Promise<JSX.Element> {
+  return renderCommitteesRoute(NO_SEARCH_PARAMS);
 }

@@ -1,77 +1,24 @@
 import type { Metadata } from "next";
 import type { JSX } from "react";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { SiteShell } from "@/components/layout/site-shell";
-import { MemberDirectory } from "@/components/members/member-directory";
-import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import { getMemberDirectory, type MemberDirectoryResult } from "@/lib/congress/client";
-import {
-  type JurisdictionOption,
-  listMemberJurisdictions,
-  type MemberDirectoryQuery,
-} from "@/lib/congress/members/filter";
-import { pageMetadata } from "@/lib/metadata";
-import { type RouteSearchParams, resolveMemberDirectoryQuery } from "@/lib/search-params";
+import { MEMBERS_METADATA, renderMembersRoute } from "@/app/members/render";
+import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
  * The route segment's data-cache window, declared as on `/bills` and `/committees` so all three directories state the
- * same thing about themselves. Reading `searchParams` makes this render on demand, which costs a server render per
- * visit and *not* an upstream request: the roster is fetched through the adapter's own five-minute cache
- * (`REVALIDATE_SECONDS` in `congress/upstream/http.ts`), shared across every visitor and every narrowing of this page.
- * That trade is deliberate — a shared link should arrive at what it says it points to on the first paint, rather than
- * rendering the full roster and visibly narrowing after hydration.
- * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ * same thing about themselves. This route never reads its query, so it is prerendered and regenerated at most once per
+ * window. A URL carrying one of the directory's params is rewritten to `/query/members` instead, which renders on
+ * demand. @see src/lib/query-routes.ts.
  */
 export const revalidate: number = 300;
 
-export const metadata: Metadata = pageMetadata({
-  title: "Members",
-  description: "Every member currently seated in the House and Senate, searchable by name, state, party, or chamber.",
-  path: "/members",
-});
-
-/** Params for the member directory route — the shareable `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=` view. */
-type MembersPageProps = {
-  searchParams: Promise<RouteSearchParams>;
-};
+export const metadata: Metadata = MEMBERS_METADATA;
 
 /**
- * Browsable member directory route.
+ * Member directory route, in its default view.
  *
- * The counterpart to `/bills`: that route is the way into the record, this is the way into the people who make it.
- * Every card links to `/members/[bioguideId]`, which is otherwise reachable only by finding a seat in the chamber
- * diagram or a bill the member happened to sponsor.
- *
- * Reads the same roster the home page's chamber diagram does, through the same cached call, so browsing here costs
- * nothing extra upstream within the five-minute window and the two views can't disagree about who is serving.
- * @see getMemberDirectory
- *
- * The URL's filters are resolved *after* the roster rather than alongside it, which is the one place this route reads
- * sequentially on purpose: `?state=` is validated against the jurisdictions the roster actually contains, so a link to
- * a state nobody currently represents opens the full directory instead of an empty grid claiming to be filtered.
- * @see resolveMemberDirectoryQuery
- *
- * @param searchParams - The requested view. @see MembersPageProps
- * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
+ * @returns The unfiltered directory page. @see renderMembersRoute
  */
-export default async function MembersPage({ searchParams }: MembersPageProps): Promise<JSX.Element> {
-  const { members, congress, source, notice, retrievedAt }: MemberDirectoryResult = await getMemberDirectory();
-
-  const initialQuery: MemberDirectoryQuery = await resolveMemberDirectoryQuery(
-    searchParams,
-    listMemberJurisdictions(members).map((option: JurisdictionOption): string => option.value),
-  );
-
-  return (
-    <SiteShell>
-      <PageHeader
-        eyebrow="People"
-        title="The People Who Write It."
-        description="Search every member of Congress by name, chamber, party, or the place they represent, then open anyone's record to see what they have put their name to."
-      />
-      <DataSourceNotice source={source} notice={notice} retrievedAt={retrievedAt} />
-      <MemberDirectory congress={congress} initialQuery={initialQuery} members={members} source={source} />
-    </SiteShell>
-  );
+export default function MembersPage(): Promise<JSX.Element> {
+  return renderMembersRoute(NO_SEARCH_PARAMS);
 }

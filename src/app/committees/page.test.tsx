@@ -10,6 +10,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import CommitteesPage, { metadata } from "@/app/committees/page";
+import { renderCommitteesRoute } from "@/app/committees/render";
 import type { CommitteeSummary } from "@/lib/congress/committees/model";
 import { previewCommitteeDirectory } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
@@ -26,9 +27,14 @@ afterEach((): void => {
   else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
-/** Renders the route with the given deep link. */
-async function renderPage(searchParams: RouteSearchParams = {}): Promise<void> {
-  render(await CommitteesPage({ searchParams: Promise.resolve(searchParams) }));
+/** Renders the route in its default view — the static half, which never reads a query. */
+async function renderPage(): Promise<void> {
+  render(await CommitteesPage());
+}
+
+/** Renders the route with the given deep link, as its `/query` twin does for a URL a rewrite sends there. */
+async function renderQueryPage(searchParams: RouteSearchParams): Promise<void> {
+  render(await renderCommitteesRoute(Promise.resolve(searchParams)));
 }
 
 describe("CommitteesPage", (): void => {
@@ -55,13 +61,13 @@ describe("CommitteesPage", (): void => {
   });
 
   it("arrives already narrowed to the view a shared ?q= link asked for", async (): Promise<void> => {
-    await renderPage({ q: "archives" });
+    await renderQueryPage({ q: "archives" });
 
     expect(screen.getByRole("searchbox", { name: /Search committees/ })).toHaveValue("archives");
   });
 
   it("falls back to the unfiltered view for facet params naming nothing", async (): Promise<void> => {
-    await renderPage({ chamber: "starfleet", type: "imaginary", sort: "sideways" });
+    await renderQueryPage({ chamber: "starfleet", type: "imaginary", sort: "sideways" });
 
     for (const committee of previewCommitteeDirectory()) {
       expect(screen.getByText(committee.name), committee.systemCode).toBeInTheDocument();

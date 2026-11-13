@@ -1,39 +1,34 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import type { JSX } from "react";
 
-import { BillDirectory } from "@/components/bills/bill-directory";
-import { CongressSwitcher } from "@/components/bills/congress-switcher";
-import { PageHeader } from "@/components/layout/page-header";
-import { SiteShell } from "@/components/layout/site-shell";
-import { DataSourceNotice } from "@/components/ui/data-source-notice";
-import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
-import { getCongressSnapshotForCongress } from "@/lib/congress/client";
-import { getCongressYearRange, listCongresses, parseCongressParam } from "@/lib/congress/congress-history";
-import { getCurrentCongress } from "@/lib/congress/current-congress";
+import {
+  type CongressBillsParams,
+  congressBillsMetadata,
+  renderCongressBillsRoute,
+} from "@/app/bills/[congress]/render";
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
-import { formatOrdinal } from "@/lib/format";
-import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
-import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
+import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
- * The route segment's data-cache window, matching `/bills` and the two other directories.
- * @see src/app/bills/page.tsx
+ * The route segment's data-cache window, matching `/bills` and the two other directories. This route never reads its
+ * query, so each Congress's directory is rendered once per window rather than once per visit; a URL carrying `?q=` or
+ * `?stage=` is rewritten to `/query/bills/[congress]` instead. @see src/lib/query-routes.ts.
  */
 export const revalidate: number = 300;
 
-/** Params for the per-Congress bill directory route (`/bills/[congress]`), plus its shareable deep link. */
+/** Params for the per-Congress bill directory route (`/bills/[congress]`). */
 type CongressBillsPageProps = {
-  params: Promise<{ congress: string }>;
-  searchParams: Promise<RouteSearchParams>;
+  params: CongressBillsParams;
 };
 
 /**
  * Pre-renders one bill-directory page per Congress the preview fixtures actually cover.
  *
- * In the default server build this is only a performance win — any other supported Congress still resolves live, on
- * demand. In a static export (`STATIC_EXPORT=true`, no API key) these are the *only* Congress-scoped directory pages
- * that can exist, since there's no server left to look anything else up at request time.
+ * In the default server build this is only a performance win — any other supported Congress is rendered on its first
+ * visit and then cached like these. In a static export (`STATIC_EXPORT=true`, no API key) these are the *only*
+ * Congress-scoped directory pages that can exist, since there's no server left to look anything else up at request
+ * time.
  *
  * @returns One params object per Congress covered by the fixtures, de-duplicated.
  */
@@ -43,70 +38,19 @@ export function generateStaticParams(): { congress: string }[] {
 }
 
 /**
- * Builds the per-Congress page title, description, and share tags.
- *
  * @param params - The route's `congress` param.
- * @returns e.g., `"118th Congress Bills"`, naming the calendar years that Congress sat so a shared link says *when* as
- *   well as which. An out-of-range Congress gets the `noindex` not-found metadata instead — the page itself renders a
- *   404 in that case, and the tags should agree rather than implying a page that isn't there.
+ * @returns The per-Congress metadata. @see congressBillsMetadata
  */
-export async function generateMetadata({ params }: CongressBillsPageProps): Promise<Metadata> {
-  const { congress: rawCongress } = await params;
-  const congress: number | null = parseCongressParam(rawCongress);
-
-  if (congress === null) return notFoundMetadata("Congress Not Found");
-
-  const { startYear, endYear } = getCongressYearRange(congress);
-  const ordinal: string = formatOrdinal(congress);
-
-  return pageMetadata({
-    title: `${ordinal} Congress Bills`,
-    description: `Bills and resolutions introduced in the ${ordinal} Congress (${startYear}–${endYear}).`,
-    path: `/bills/${congress}`,
-  });
+export function generateMetadata({ params }: CongressBillsPageProps): Promise<Metadata> {
+  return congressBillsMetadata(params);
 }
 
 /**
- * Bill directory for one specific Congress, reached from the switcher on `/bills` or by direct link (e.g.,
- * `/bills/118`).
+ * Bill directory for one specific Congress, in its default view.
  *
- * The current Congress resolves here too rather than redirecting to `/bills`, so every Congress the switcher lists
- * behaves identically and no entry is a special case.
- *
- * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
- *   @see parseCongressParam
- * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
- *   @see resolveBillDirectoryQuery
- * @returns The directory page for that Congress.
+ * @param params - The route's `congress` param.
+ * @returns The unfiltered directory page for that Congress. @see renderCongressBillsRoute
  */
-export default async function CongressBillsPage({
-  params,
-  searchParams,
-}: CongressBillsPageProps): Promise<JSX.Element> {
-  const [{ congress: rawCongress }, initialView] = await Promise.all([params, resolveBillDirectoryQuery(searchParams)]);
-  const congress: number | null = parseCongressParam(rawCongress);
-  if (congress === null) notFound();
-
-  const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(congress);
-  const { startYear, endYear } = getCongressYearRange(congress);
-  const isCurrent: boolean = congress === getCurrentCongress();
-
-  return (
-    <SiteShell>
-      <PageHeader
-        eyebrow="Legislation"
-        title={`The ${formatOrdinal(congress)} Congress.`}
-        description={`Search the ${isCurrent ? "current" : formatOrdinal(congress)} Congress's bills (${startYear}–${endYear}), then follow each record back to its official Congress.gov source.`}
-      />
-      <CongressSwitcher congresses={listCongresses()} selected={congress} />
-      <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
-      <BillDirectory
-        bills={snapshot.bills}
-        canLoadMore={snapshot.source === "live"}
-        congress={congress}
-        initialQuery={initialView.query}
-        initialStage={initialView.stage}
-      />
-    </SiteShell>
-  );
+export default function CongressBillsPage({ params }: CongressBillsPageProps): Promise<JSX.Element> {
+  return renderCongressBillsRoute(params, NO_SEARCH_PARAMS);
 }

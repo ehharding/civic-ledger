@@ -31,6 +31,7 @@ vi.mock("next/navigation", async (importOriginal): Promise<typeof import("next/n
 });
 
 import BillsPage, { metadata } from "@/app/bills/page";
+import { renderBillsRoute } from "@/app/bills/render";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
@@ -48,9 +49,14 @@ afterEach((): void => {
   vi.restoreAllMocks();
 });
 
-/** Renders the route with the given deep link. */
-async function renderPage(searchParams: RouteSearchParams = {}): Promise<void> {
-  render(await BillsPage({ searchParams: Promise.resolve(searchParams) }));
+/** Renders the route in its default view — the static half, which never reads a query. */
+async function renderPage(): Promise<void> {
+  render(await BillsPage());
+}
+
+/** Renders the route with the given deep link, as its `/query` twin does for a URL a rewrite sends there. */
+async function renderQueryPage(searchParams: RouteSearchParams): Promise<void> {
+  render(await renderBillsRoute(Promise.resolve(searchParams)));
 }
 
 describe("BillsPage", (): void => {
@@ -94,26 +100,26 @@ describe("BillsPage", (): void => {
   });
 
   it("arrives already narrowed to the view a shared ?q= link asked for", async (): Promise<void> => {
-    await renderPage({ q: "water" });
+    await renderQueryPage({ q: "water" });
 
     expect(screen.getByRole("searchbox", { name: "Search bill records" })).toHaveValue("water");
   });
 
   it("honors a ?stage= deep link on first paint", async (): Promise<void> => {
-    await renderPage({ stage: "law" });
+    await renderQueryPage({ stage: "law" });
 
     // Rendered narrowed rather than showing everything and filtering after hydration.
     expect(screen.getByRole("button", { name: /Became Law/i })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("falls back to the unfiltered view for a stage param naming nothing", async (): Promise<void> => {
-    await renderPage({ stage: "not-a-stage" });
+    await renderQueryPage({ stage: "not-a-stage" });
 
     expect(screen.getByRole("button", { name: /All Stages/i })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("takes the first value of a repeated param rather than rejecting the whole URL", async (): Promise<void> => {
-    await renderPage({ q: ["water", "broadband"] });
+    await renderQueryPage({ q: ["water", "broadband"] });
 
     expect(screen.getByRole("searchbox", { name: "Search bill records" })).toHaveValue("water");
   });

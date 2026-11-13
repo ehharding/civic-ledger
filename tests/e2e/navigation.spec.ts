@@ -570,3 +570,36 @@ test("a defined term in a lesson explains itself and leads to its glossary entry
   expect(entryBox).not.toBeNull();
   if (headerBox && entryBox) expect(entryBox.y).toBeGreaterThan(headerBox.y + headerBox.height);
 });
+
+// A narrowed directory URL is served by the route's on-demand `/query` twin, through a rewrite, so that the plain route
+// can stay static (src/lib/query-routes.ts). These pin the two things that arrangement has to preserve: the server, not
+// the browser, does the narrowing, and leaving a narrowed view for the plain route, which is now a *different* route
+// underneath, still lands on the unfiltered page.
+//
+// The first is asserted on the raw HTML response rather than on a rendered page, because that is the only place it can
+// be told apart from the browser narrowing after hydration — which `useDirectoryUrlSync` would do for a static page
+// too, after a visible flash of the full list.
+test("a shared narrowed link's HTML arrives already narrowed", async ({
+  request,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  expect(await (await request.get("/bills?stage=law")).text()).toMatch(/aria-pressed="true"[^>]*>Became Law/);
+  expect(await (await request.get("/bills")).text()).toMatch(/aria-pressed="true"[^>]*>All Stages/);
+  expect(await (await request.get("/members?q=preview")).text()).toContain('value="preview"');
+  expect(await (await request.get("/committees?q=preview")).text()).toContain('value="preview"');
+});
+
+test("the header's Bills link leaves a narrowed view for the unfiltered directory", async ({
+  page,
+}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  await page.goto("/bills?stage=law");
+  await expect(page.getByRole("button", { name: /Became Law/i })).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Bills" }).click();
+
+  await expect(page).toHaveURL(/\/bills$/);
+  await expect(page.getByRole("button", { name: /All Stages/i })).toHaveAttribute("aria-pressed", "true");
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/bills\?stage=law$/);
+  await expect(page.getByRole("button", { name: /Became Law/i })).toHaveAttribute("aria-pressed", "true");
+});

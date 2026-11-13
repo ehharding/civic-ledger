@@ -10,6 +10,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import MembersPage, { metadata } from "@/app/members/page";
+import { renderMembersRoute } from "@/app/members/render";
 import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
 import { previewMemberDirectory } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
@@ -26,9 +27,14 @@ afterEach((): void => {
   else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
-/** Renders the route with the given deep link. */
-async function renderPage(searchParams: RouteSearchParams = {}): Promise<void> {
-  render(await MembersPage({ searchParams: Promise.resolve(searchParams) }));
+/** Renders the route in its default view — the static half, which never reads a query. */
+async function renderPage(): Promise<void> {
+  render(await MembersPage());
+}
+
+/** Renders the route with the given deep link, as its `/query` twin does for a URL a rewrite sends there. */
+async function renderQueryPage(searchParams: RouteSearchParams): Promise<void> {
+  render(await renderMembersRoute(Promise.resolve(searchParams)));
 }
 
 describe("MembersPage", (): void => {
@@ -55,7 +61,7 @@ describe("MembersPage", (): void => {
   });
 
   it("arrives already narrowed to the view a shared ?q= link asked for", async (): Promise<void> => {
-    await renderPage({ q: "alvarez" });
+    await renderQueryPage({ q: "alvarez" });
 
     expect(screen.getByRole("searchbox", { name: /Search members/ })).toHaveValue("alvarez");
   });
@@ -65,13 +71,13 @@ describe("MembersPage", (): void => {
     const state: string | undefined = roster[0]?.state;
     expect(state).toBeDefined();
 
-    await renderPage({ state });
+    await renderQueryPage({ state });
 
     expect(screen.getByRole("combobox", { name: /place|state|jurisdiction/i })).toHaveValue(state);
   });
 
   it("opens the full directory for a ?state= naming a place nobody in the roster represents", async (): Promise<void> => {
-    await renderPage({ state: "Atlantis" });
+    await renderQueryPage({ state: "Atlantis" });
 
     // Not an empty grid claiming to be filtered: a shared link is exactly the kind of URL that gets opened a year later
     // against a roster that has since changed.
@@ -81,7 +87,7 @@ describe("MembersPage", (): void => {
   });
 
   it("falls back to the default view for a chamber, party, or sort param naming nothing", async (): Promise<void> => {
-    await renderPage({ chamber: "starfleet", party: "whig", sort: "sideways" });
+    await renderQueryPage({ chamber: "starfleet", party: "whig", sort: "sideways" });
 
     for (const member of previewMemberDirectory()) {
       expect(screen.getByText(member.name), member.bioguideId).toBeInTheDocument();
