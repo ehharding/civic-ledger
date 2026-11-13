@@ -45,8 +45,11 @@ concurrency:
 # it the way `minimumReleaseAge` does. pnpm 12 turned a skipped build script from a warning into
 # `ERR_PNPM_IGNORED_BUILDS`, which failed this job at the first step, before anything was deployed. The flag names the
 # package that workspace file already trusts, so this states the same allowance rather than widening it.
+#
+# The pin also caps the Node.js major `engines` may name: `vercel build` checks it against the CLI's own table. Raising
+# `engines.node` means checking this first.
 env:
-  VERCEL_CLI: vercel@63.1.0
+  VERCEL_CLI: vercel@65.14.0
 
 jobs:
   deploy:
