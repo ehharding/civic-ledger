@@ -4,7 +4,9 @@
  */
 import { describe, expect, it } from "vitest";
 
+import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { previewBills } from "@/lib/congress/upstream/fixtures";
 
 describe("getCurrentCongress", (): void => {
   it("matches known Congress/year pairs for dates well inside a term", (): void => {
@@ -25,12 +27,18 @@ describe("getCurrentCongress", (): void => {
     expect(getCurrentCongress(new Date("2027-01-02T23:59:59Z"))).toBe(119);
   });
 
-  it("rolls over to the next Congress at noon on January 3 of an odd year, not at New Year's", (): void => {
+  it("rolls over to the next Congress on January 3 of an odd year, not at New Year's", (): void => {
     expect(getCurrentCongress(new Date("2027-01-03T00:00:00Z"))).toBe(120);
     expect(getCurrentCongress(new Date("2027-06-01T00:00:00Z"))).toBe(120);
   });
 
   it("defaults to the system clock when no reference date is given", (): void => {
     expect(getCurrentCongress()).toBe(getCurrentCongress(new Date()));
+  });
+
+  // The suite's frozen clock (vitest.setup.ts) has to fall inside a Congress the preview fixtures cover, or every test
+  // that reads "the current Congress" from them would quietly find nothing.
+  it("resolves the suite's frozen clock to a Congress the preview fixtures cover", (): void => {
+    expect(previewBills.some((bill: LegislativeBill): boolean => bill.congress === getCurrentCongress())).toBe(true);
   });
 });

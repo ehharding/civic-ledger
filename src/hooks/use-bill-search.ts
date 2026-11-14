@@ -34,21 +34,12 @@ export type BillSearchState = {
 };
 
 /**
- * Runs the bill directory's debounced, cross-Congress search.
+ * Runs the bill directory's debounced, cross-Congress search:
  *
- * Extracted from `BillDirectory` so the component is left rendering and the asynchronous behavior — debouncing,
- * cancellation, out-of-order responses, and the offline fallback — is described and tested in one place rather than
- * interleaved with JSX.
- *
- * Three failure modes this guards against, all of which are easy to reintroduce by hand:
- *
- * - **Wasted requests while typing.** Nothing is sent until `SEARCH_DEBOUNCE_MS` after the last keystroke.
- * - **Stale results overwriting fresh ones.** Each effect run owns an `AbortController`; superseded requests are
- *   aborted rather than left to resolve and overwrite a newer answer.
- * - **Search going dead when the route isn't there.** The static GitHub Pages demo has no server at request time, so an
- *   unreachable route falls back to filtering the bills already loaded, using the same `matchesQuery` rules the server
- *   sweep uses. Narrower, but still useful — and `degraded` lets the UI say so instead of quietly implying it searched
- *   everything.
+ * - **Debounced** by `SEARCH_DEBOUNCE_MS` after the last keystroke.
+ * - **Cancels superseded requests** with an `AbortController`, so stale results can't overwrite fresh ones.
+ * - **Degrades** when the route is unreachable (the static demo), filtering the loaded bills with the same
+ *   `matchesQuery` rules and setting `degraded` so the UI says so.
  *
  * @param query - The raw search text, as typed. Trimmed internally; an empty or all-whitespace query performs no
  *   request at all and resets to the plain browse listing.

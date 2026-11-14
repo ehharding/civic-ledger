@@ -15,9 +15,8 @@
  *   *distinguishable* — they answer two different questions about the same bill, and a test that only ever feeds them
  *   records whose two dates agree would pass on either one being quietly rewritten into the other.
  *
- * `BILL_TYPE_CODES` and `BILL_TYPE_PATH_SEGMENTS` are derived from the same map `congressGovBillUrl` reads, so they are
- * checked here too — the point of deriving them was that they can no longer fall out of step, and that only stays true
- * if something asserts it.
+ * `BILL_TYPE_CODES` and `BILL_TYPE_PATH_SEGMENTS` are derived from the same map `congressGovBillUrl` reads, and are
+ * checked here to stay in step with it.
  */
 import { describe, expect, it } from "vitest";
 

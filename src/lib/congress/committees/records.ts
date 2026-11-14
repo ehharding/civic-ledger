@@ -4,53 +4,26 @@ import { parseEnumParam, toQueryString } from "@/lib/congress/directory-filter";
 import { formatCount } from "@/lib/format";
 
 /**
- * The three collections Congress.gov counts alongside a committee — the bills referred to it, the reports it published,
- * and the nominations sent to it — as records a reader can actually read, plus the URL rules that make one of them a
- * place you can link to.
+ * The three collections Congress.gov counts on a committee — referred bills, published reports, and nominations — as
+ * readable, linkable pages of records rather than bare counts. Pure and isomorphic so the URL rules can be tested
+ * without rendering and nothing pulls the server adapter into the client. Fetching lives in `activity.ts`.
  *
- * Each count is a heading over the records themselves rather than a figure a reader has to take on faith. The URLs the
- * API pairs the counts with are its own JSON endpoints and would 403 anyone who followed one, so they are not
- * offered — but the collections behind them are reachable with the key the rest of this app already holds, and that is
- * what makes "Bills Referred: 10,205" something a reader can open.
- *
- * Pure and isomorphic, exactly as `filter.ts` is, and for the same two reasons: the query-param rules are the
- * interesting part and deserve tests that don't render a component, and nothing here may drag the server-only
- * adapter — or the API key it reads — into a client bundle. The fetching lives in `activity.ts`.
- *
- * ## What this deliberately does not claim
- *
- * **These collections are not published in any documented order.** Sampling `hsag00`'s 10,205 referrals across their
- * whole range gives update timestamps of 2015, 2021, 2016, 2016, 2016, 2019, 2026 — ascending overall and emphatically
- * not monotonic — while the same committee's reports run oldest-ish to newest and the Senate Judiciary Committee's
- * nominations run the *other way*, newest first. The endpoint also accepts a `sort` parameter and ignores it.
- *
- * So this app pages through the sequence Congress.gov publishes and says so, rather than labeling either end "most
- * recent". That is the same rule the rest of the adapter holds — @see `compareBillsByRecency`, which sorts the member
- * page's legislation rather than trusting the order it arrived in — applied to a case where the ordering *cannot* be
- * repaired locally, because a page of twelve records out of ten thousand carries no information about where it sits in
- * time. A claim this app can't keep is one it doesn't make.
+ * **These collections have no reliable order.** Sampled referrals are roughly but not strictly ascending, reports
+ * differ, Senate nominations run newest first, and the endpoint ignores `sort`. A page of twelve out of ten thousand
+ * can't be re-sorted locally, so the app pages through the published sequence and says so, never claiming "most
+ * recent".
  */
 
 /**
- * The three record collections a committee accumulates.
- *
- * A closed union rather than free text because it is a URL param (`?records=reports`), a tab, and the discriminant of
- * {@link CommitteeRecords} all at once — three places a typo would fail differently and none of them loudly.
- *
- * Ordered as the page presents them, which is by how much they say about what a committee *does*: nearly every
- * committee has bills referred to it, most have published reports, and nominations are the Senate's alone.
+ * The three record collections a committee accumulates — a URL param (`?records=reports`), a tab, and the discriminant
+ * of {@link CommitteeRecords}. In page order: nearly every committee has referrals, most have reports, and only Senate
+ * committees have nominations.
  */
 export const committeeRecordKinds = ["bills", "reports", "nominations"] as const;
 
 export type CommitteeRecordKind = (typeof committeeRecordKinds)[number];
 
-/**
- * Which collection a bare committee URL shows.
- *
- * Bills, because a referral is the thing that happens to a committee most often and the one the page's own closing
- * callout is about. It is also the only one of the three every chamber has — a House committee's nominations list is
- * always empty, and defaulting to a tab that is empty for half the site's committees would read as a broken page.
- */
+/** Which collection a bare committee URL shows: bills, the only one every chamber's committees have. */
 export const DEFAULT_COMMITTEE_RECORD_KIND: CommitteeRecordKind = "bills";
 
 /**
@@ -66,11 +39,8 @@ export const committeeRecordKindLabels: Record<CommitteeRecordKind, string> = {
 };
 
 /**
- * What each collection *is*, in one sentence, for the line above the list.
- *
- * Each says what the record means and — for the two where it is easy to over-read — what it does not. A referral is the
- * beginning of a committee's consideration rather than a verdict on it, and a nomination reaching a committee says
- * nothing about whether it was ever voted on.
+ * What each collection *is*, for the line above the list — including, where it's easy to over-read, what it isn't (a
+ * referral isn't a verdict; a nomination reaching a committee says nothing about a vote).
  */
 export const committeeRecordKindDescriptions: Record<CommitteeRecordKind, string> = {
   bills:
@@ -81,13 +51,7 @@ export const committeeRecordKindDescriptions: Record<CommitteeRecordKind, string
     "Presidential nominations referred to this committee for consideration. Only Senate committees receive them, so the House's and joint committees' lists are always empty.",
 };
 
-/**
- * How each collection reads in a sentence about its absence.
- *
- * Separate from {@link committeeRecordKindLabels} because a heading and a clause genuinely differ here: "Bills
- * Referred" is the right tab and "records no bills referred for this committee" is not a sentence anyone would write.
- * The same split, for the same reason, as `committeeTypeLabels` and `committeeTypeNounPhrases`.
- */
+/** How each collection reads in a sentence about its absence, which differs from its tab label. */
 export const committeeRecordKindClauses: Record<CommitteeRecordKind, string> = {
   bills: "no bills referred to this committee",
   reports: "no reports published by this committee",
@@ -95,18 +59,9 @@ export const committeeRecordKindClauses: Record<CommitteeRecordKind, string> = {
 };
 
 /**
- * The count the committee's *own* record reports for one of its collections.
- *
- * The mapping from a collection to the field holding its count is stated here once, rather than in each of the two
- * places that needs it: the route, which reads the count *before* fetching so a requested page can be held inside the
- * collection without a wasted round trip (@see clampCommitteeRecordsPage), and the records section, which prints it on
- * every tab that is not the one currently open. Spelled out twice, a fourth collection would be a change to two files
- * with nothing failing if only one of them was made — and the symptom would be a tab reading "Not reported" over a
- * collection Congress.gov had counted perfectly well.
- *
- * This is deliberately *only* the committee's own figure. Where a collection has actually been fetched, its endpoint's
- * count is the authoritative one and the caller prefers it — @see countFor in `committee-records.tsx` for why the two
- * disagree and which one wins on screen.
+ * The count the committee's *own* record reports for one collection. Used by the route (to clamp the page before
+ * fetching — @see clampCommitteeRecordsPage) and by the tabs not currently open. Where a collection was fetched, its
+ * endpoint's count wins. @see countFor in `committee-records.tsx`
  *
  * @param profile - The committee whose counts to read.
  * @param kind - Which collection.
@@ -121,16 +76,9 @@ export function committeeReportedCount(profile: CommitteeProfile, kind: Committe
 }
 
 /**
- * One bill's relationship to this committee.
- *
- * The committee-bills endpoint publishes far less about a bill than the bill endpoints do — a congress, a type, a
- * number, a relationship, and a date, with **no title**. What it adds is the two fields no other endpoint carries:
- * *what this committee did with the measure* and *when*, which is the whole reason a committee's bill list is worth
- * reading rather than being a filtered view of `/bills`.
- *
- * `bill` is the missing half, filled in by a second lookup where one succeeds. @see withBillTitles for why it is
- * optional rather than required: a row that names a measure and links to it is still a usable row when the title lookup
- * fails, and dropping it would silently shorten a list whose length is stated right above it.
+ * One bill's relationship to this committee: what the committee did with it and when, which no other endpoint carries.
+ * The endpoint omits titles, so `bill` is filled by a second lookup and stays optional — a row still names and links
+ * the measure if that lookup fails. @see withBillTitles
  */
 export type CommitteeBillReferral = {
   congress: number;
@@ -146,11 +94,8 @@ export type CommitteeBillReferral = {
 };
 
 /**
- * One report the committee published.
- *
- * `citation` is the load-bearing field and the only one guaranteed present: `"H. Rept. 109-710"` is how the report is
- * named in the *Congressional Record*, in a bill's own history, and on Congress.gov's page for it. The rest is what the
- * list endpoint happens to carry beside it.
+ * One report the committee published. Only `citation` (`"H. Rept. 109-710"`, the form used everywhere the report is
+ * named) is guaranteed.
  */
 export type CommitteeReport = {
   /** e.g., `"H. Rept. 109-710"` — how Congress.gov names this report. Never empty. */
@@ -186,24 +131,14 @@ export type CommitteeNomination = {
 };
 
 /**
- * One page of one collection, as a discriminated union on {@link CommitteeRecordKind}.
- *
- * A union rather than three nullable arrays so the component renders exactly one list and the compiler proves it: with
- * three fields, "reports are showing but the bills array is populated" is a state the types permit and a `switch` has
- * to defend against. Here it cannot be constructed.
+ * One page of one collection, discriminated on {@link CommitteeRecordKind} so a mismatched kind and list can't be
+ * constructed.
  */
 export type CommitteeRecords = {
   [Kind in CommitteeRecordKind]: { kind: Kind; items: CommitteeRecordItem[Kind][] };
 }[CommitteeRecordKind];
 
-/**
- * Which record shape each collection holds.
- *
- * Stated as a map rather than left implicit in the union above, so {@link pageOfCommitteeRecords} can be generic over
- * the collection *and* have TypeScript keep its kind and its items correlated. Written as three separate union members,
- * a helper taking `Kind extends CommitteeRecordKind` sees `items` as "an array of any of the three", and reassembling a
- * record from it needs a cast that would defeat the point of discriminating them in the first place.
- */
+/** Which record shape each collection holds, so {@link pageOfCommitteeRecords} can keep kind and items correlated. */
 type CommitteeRecordItem = {
   bills: CommitteeBillReferral;
   reports: CommitteeReport;
@@ -211,11 +146,8 @@ type CommitteeRecordItem = {
 };
 
 /**
- * One resolved page of one collection: the records, and where they sit in the whole.
- *
- * Lives in this pure module rather than beside the fetcher that usually produces it, because the preview fixtures
- * produce one too — and a shape declared next to the live path and imported back by the fixtures would put a cycle
- * between the two, or an import of the server-only adapter into a module the client bundle can reach.
+ * One resolved page of one collection: the records, and where they sit in the whole. Here rather than beside the
+ * fetcher because the preview fixtures produce one too.
  */
 export type CommitteeRecordsResult = {
   /** The page's records, discriminated by which collection they came from. */
@@ -226,32 +158,16 @@ export type CommitteeRecordsResult = {
   pageCount: number;
   /** Congress.gov's own count for the whole collection, or `undefined` when it reported none. */
   total: number | undefined;
-  /**
-   * The request failed, which is *not* the same as the collection being empty.
-   *
-   * A committee that has published no reports and a committee whose reports could not be fetched both yield zero rows,
-   * and telling a reader the first when the truth is the second is exactly the kind of quiet false claim this app is
-   * built to avoid. @see CongressRequestResult, which draws the same distinction one layer down.
-   */
+  /** The request failed — not the same as an empty collection, though both yield zero rows. */
   unavailable: boolean;
 };
 
 /**
- * Slices a complete collection down to a single page and reports where that page sits.
+ * Slices a complete collection (the preview fixtures' case) down to one page, producing the same result shape as the
+ * live path.
  *
- * For callers that already hold every record — the preview fixtures, and any future local source — as opposed to the
- * live path, which asks Congress.gov for one page and never sees the rest. Both produce the same
- * {@link CommitteeRecordsResult}, which is what keeps the component free of any idea where its records came from.
- *
- * Generic over the *kind* with the item type read through {@link CommitteeRecordItem}, which is what makes the two
- * parameters correlated at every call site: `pageOfCommitteeRecords("reports", referrals, 1)` does not compile. That
- * correlation is where the safety actually is, and it is checked on the way in.
- *
- * The one assertion is on the way out. TypeScript cannot see that an object literal built from a still-generic `Kind`
- * and its matching items satisfies the union — correlated *reads* through a shared key are understood, correlated
- * *construction* is not — so reassembling the record needs either this assertion or a three-branch switch with three
- * identical bodies. The assertion is the smaller lie: it restates a correspondence the signature above has already
- * proven, in the single place a record is built, rather than spreading a defensive branch over three.
+ * The signature correlates `kind` and `items`, so `pageOfCommitteeRecords("reports", referrals, 1)` doesn't compile.
+ * The assertion on the way out restates that correlation, which TypeScript can't see when constructing the union.
  *
  * @typeParam Kind - Which collection this is.
  * @param kind - The collection's discriminant.
@@ -279,22 +195,14 @@ export function pageOfCommitteeRecords<Kind extends CommitteeRecordKind>(
 }
 
 /**
- * How many records one page of a committee's collection holds.
- *
- * The same twelve as `DEFAULT_PAGE_SIZE` and `MEMBER_LEGISLATION_LIMIT`, and shared with them in spirit rather than in
- * code: this is also the number of upstream lookups a bills page issues to fill in its titles, so it is a request
- * budget as well as a reading length.
- * @see withBillTitles.
+ * How many records one page of a committee's collection holds — also the number of title lookups a bills page issues,
+ * so it's a request budget too. @see withBillTitles
  */
 export const COMMITTEE_RECORDS_PAGE_SIZE: number = 12;
 
 /**
- * The furthest page this app will ask Congress.gov for.
- *
- * The committee-bills endpoint will happily answer an offset in the millions and spend real time doing it. The largest
- * collection observed is a little over ten thousand records, so this sits comfortably past every real list while
- * bounding what a hand-edited `?page=` can cost. Same reasoning, and the same shape, as `MAX_BILL_OFFSET` in
- * `src/lib/api-query.ts`.
+ * The furthest page this app requests — well past the largest real collection (~10,000 records), while bounding what a
+ * hand-edited `?page=` can cost. @see MAX_BILL_OFFSET
  */
 export const MAX_COMMITTEE_RECORDS_PAGE: number = 1_000;
 
@@ -302,8 +210,7 @@ export const MAX_COMMITTEE_RECORDS_PAGE: number = 1_000;
  * How many pages a collection of `total` records fills.
  *
  * @param total - The collection's record count, or `undefined` when Congress.gov didn't report one.
- * @returns The page count, at least `1`. An empty collection still has one page, because the page it has is the one
- *   that says it is empty — returning `0` would make "Page 1 of 0" reachable.
+ * @returns The page count, at least `1` — an empty collection still has the page that says it's empty.
  */
 export function committeeRecordsPageCount(total: number | undefined): number {
   if (total === undefined || !Number.isFinite(total) || total <= 0) return 1;
@@ -312,16 +219,11 @@ export function committeeRecordsPageCount(total: number | undefined): number {
 }
 
 /**
- * Holds a requested page inside the collection that exists.
- *
- * Separate from {@link parseCommitteeRecordsPage}, which cannot do this: the parser runs against the URL before
- * anything has been fetched, so it knows a page is a positive whole number but not whether the collection is that long.
- * This runs once the committee's own counts are in hand.
+ * Holds a requested page inside the collection, once its count is known (the URL parser runs before that).
  *
  * @param page - The requested page, already parsed to a positive whole number.
  * @param total - The collection's record count, or `undefined` when Congress.gov didn't report one.
- * @returns A page that exists. A `?page=` past the end lands on the last page rather than on an empty list, which is
- *   what a truncated or stale shared link most often is.
+ * @returns A page that exists; a `?page=` past the end (often a stale link) lands on the last page.
  */
 export function clampCommitteeRecordsPage(page: number, total: number | undefined): number {
   return Math.min(Math.max(1, page), committeeRecordsPageCount(total));
@@ -338,14 +240,8 @@ export function committeeRecordsOffset(page: number): number {
 }
 
 /**
- * The query-param names a committee page reads and writes.
- *
- * Named once, here, for exactly the reason `COMMITTEE_DIRECTORY_PARAMS` is: the route parses them out of the request
- * and the page's own tab and pager links write them back, and a param name typed twice is a link that looks right and
- * restores nothing.
- *
- * `records` rather than `tab` because it names the content and not the widget — the same URL should still read
- * correctly the day these stop being tabs.
+ * The query-param names a committee page reads and writes, named once so parsing and link-building agree. `records`
+ * names the content rather than the widget.
  */
 export const COMMITTEE_RECORDS_PARAMS = {
   kind: "records",
@@ -376,16 +272,11 @@ export function parseCommitteeRecordKind(raw: string | null | undefined): Commit
 }
 
 /**
- * Parses the `page` param.
- *
- * Hand-rolled rather than routed through `src/lib/api-query.ts`'s zod-backed parsers, and the direction of that
- * dependency is the reason: this module is isomorphic and the committee page's tab links are built in the browser as
- * well as on the server, so importing schema validation here would pull zod into the client bundle behind it. The rule
- * being applied is the same one — parse, don't trust, and resolve every input to something usable.
+ * Parses the `page` param. Hand-rolled rather than zod-backed, since this module also runs in the browser.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @returns A whole number between `1` and {@link MAX_COMMITTEE_RECORDS_PAGE}. Absent, non-numeric, zero, negative, and
- *   fractional values all resolve to the first page; an absurdly large one is clamped rather than sent upstream.
+ * @returns A whole number between `1` and {@link MAX_COMMITTEE_RECORDS_PAGE}; anything invalid resolves to `1`, and an
+ *   oversized value is clamped.
  */
 export function parseCommitteeRecordsPage(raw: string | null | undefined): number {
   const value: number = Number((raw ?? "").trim());
@@ -396,10 +287,8 @@ export function parseCommitteeRecordsPage(raw: string | null | undefined): numbe
 }
 
 /**
- * Reads a committee page's whole record view out of a URL's query string.
- *
- * The exact counterpart to {@link committeeRecordsQueryString}, and — as with the three directories — both sides of the
- * boundary go through it, so a route and a link cannot drift into disagreeing about what a URL means.
+ * Reads a committee page's record view out of a URL's query string — the inverse of
+ * {@link committeeRecordsQueryString}.
  *
  * @param params - The query string to read, already parsed.
  * @returns The view the URL asks for. Total: an absent, malformed, or stale param resolves to a usable default.
@@ -412,12 +301,8 @@ export function parseCommitteeRecordsQuery(params: URLSearchParams): CommitteeRe
 }
 
 /**
- * Serializes a record view back into a query string.
- *
- * Only non-default values are written, on the same contract every directory serializer in this app holds: a committee
- * page showing the first page of its bills has a clean `/committees/house/hsag00` URL rather than one carrying two
- * params that both say "the default". Param order is fixed rather than incidental, so the same view always produces the
- * same string — which is what makes these links comparable, cacheable, and stable in history.
+ * Serializes a record view back into a query string, writing only non-default values in a fixed order so the default
+ * view has a clean URL and each view has exactly one.
  *
  * @param query - The view to serialize.
  * @returns The query string including its leading `?`, or an empty string for the default view.
@@ -432,18 +317,12 @@ export function committeeRecordsQueryString(query: CommitteeRecordsQuery): strin
 }
 
 /**
- * How one record collection's page reads in the line above it.
- *
- * Lives here rather than in the component on the rule the whole committee model follows: what a reader is told about a
- * committee is display wording, so it belongs somewhere a unit test can reach it without rendering a page.
- *
- * The wording is careful about one thing in particular. It says which *slice of the published sequence* is on screen,
- * never that it is the newest or the oldest — @see this module's header for the sampling that rules that claim out.
+ * How one page of a collection reads in the line above it — which slice of the published sequence is shown, never
+ * "newest" or "oldest" (see this module's header).
  *
  * @param options - The record count, and where in it this page sits.
- * @returns e.g., `"Showing 13–24 of 10,205, in the order Congress.gov publishes them."` For a collection that fits on
- *   one page, the ordering clause is dropped: a sequence with nothing after it is not a sequence a reader has to reason
- *   about.
+ * @returns e.g., `"Showing 13–24 of 10,205, in the order Congress.gov publishes them."`; the ordering clause is dropped
+ *   when everything fits on one page.
  */
 export function describeCommitteeRecordsPage(options: {
   shown: number;

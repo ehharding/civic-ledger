@@ -22,29 +22,16 @@ function queryRouteDisallows(): string[] {
 export const dynamic = "force-static";
 
 /**
- * Crawlers whose only use of this site is collecting AI training data, denied the whole site.
+ * Crawlers whose only use of this site is AI training, denied the whole site. Training crawls are one cold render per
+ * bill page and send no readers back, which threatens the Hobby plan's limits.
  *
- * **This list exists because of one crawler.** In November 2026 GPTBot was 43,000 of 44,000 requests in a six-hour
- * window — about 98% of all traffic — walking every bill page since the 93rd Congress, one cold render at a time. That
- * single crawler was on course to cross the Hobby plan's function-invocation and Active CPU limits on its own, which is
- * what paused this project once already, and a paused Hobby project cannot always be unpaused without paying.
+ * Training-only tokens, never search or user-fetch agents (`OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`,
+ * `Googlebot`, `Bingbot` keep the `*` rules). A crawler matching a named group ignores `*`, so `disallow: "/"` is
+ * total.
  *
- * **Training crawlers only, never search or user-fetch agents.** A training crawler sends no readers back: what it
- * reads becomes model weights, not a link. Search and answer agents are the opposite — `OAI-SearchBot`, `ChatGPT-User`,
- * `PerplexityBot`, `Googlebot`, `Bingbot` are how a reader finds this site — so they are deliberately absent and keep
- * the `*` rules below. Each name here is a vendor's documented training-only token, distinct from that vendor's search
- * agent; `Google-Extended` and `Applebot-Extended` are pure opt-out tokens that fetch nothing themselves.
- *
- * Robots rules are advisory, and every crawler named here documents that it honors them. A crawler that matches a named
- * group follows only that group and ignores `*`, which is what makes `disallow: "/"` here total.
- *
- * **Short on purpose, and not the enforcement.** This file only binds crawlers polite enough to read it, so listing
- * every scraper ever seen buys little: the ones that ignore it are exactly the ones a longer list would add. What
- * actually stops them is the Vercel Firewall's AI Bots managed ruleset (AI Crawlers set to Deny), whose list Vercel
- * keeps current. This list is the well-documented, robots-honoring training crawlers, stated in the open. Add a name
- * when the dashboard's Bot Name breakdown shows it costing real requests, or when a vendor documents a new
- * training-only token. ai-robots-txt/ai.robots.txt on GitHub is a community-maintained catalogue to check a name
- * against, not to copy wholesale. @see docs/deployment.md, "Keeping Server Work Bounded".
+ * Short on purpose: robots.txt only binds polite crawlers; the Vercel Firewall's AI Bots ruleset is the enforcement.
+ * Add a name when the Bot Name breakdown shows real cost or a vendor documents a new training-only token.
+ * @see docs/deployment.md, "Keeping Server Work Bounded"
  */
 export const AI_TRAINING_CRAWLERS: readonly string[] = [
   "Applebot-Extended",

@@ -1,11 +1,8 @@
 import { expect } from "vitest";
 
 /**
- * Fixtures for the suites that prove a secret never escapes: the error boundaries, the logger, the redactor, and the
- * Sentry configuration.
- *
- * Each of those used to declare its own stand-in key, with a comment promising it matched the spelling the others used.
- * A promise in a comment is the thing that drifts, so the values live here instead.
+ * Shared fixtures for the suites that prove a secret never escapes: the error boundaries, the logger, the redactor, and
+ * the Sentry configuration. Shared so every suite checks for the same spelling of the key.
  */
 
 /** Stands in for a real Congress.gov key. Never a real one. */

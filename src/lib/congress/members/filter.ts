@@ -25,35 +25,13 @@ import {
 import { compareText } from "@/lib/format";
 
 /**
- * The member directory's narrowing rules: free-text matching plus the three facet filters, and the two helpers that
- * derive each facet's options from the roster actually in hand.
- *
- * Pure and isomorphic, exactly as `bills/search.ts` is for bills, and for the same two reasons: the rules are the
- * interesting part and deserve tests that don't render a component, and the browser has to be able to import them
- * without dragging in the server-only adapter — and the API key it reads — behind them.
- *
- * Unlike bill search, none of this needs a request. The roster is bounded (a seated Congress is a little over 540
- * people), the server already sent every row to draw the grid, and Congress.gov offers no member-search parameter to
- * defer to anyway — so filtering happens entirely in the browser, instantly, with no `/api` route between a keystroke
- * and its result.
+ * The member directory's rules: free-text matching, facet filters, ordering, facet options derived from the roster in
+ * hand, and the URL spelling of a view. Pure and isomorphic so it's testable without rendering and the browser can
+ * import it. The roster (~540 people) is already on the page, so filtering happens in the browser with no request.
  * @see docs/architecture.md, "Bills Search on the Server; Members and Committees Filter in the Browser".
  *
- * Three things live here beyond the filters themselves, all for the same reason — they are rules, not rendering:
- *
- * - **Ordering** ({@link sortMembers}), so "sorted by party" means one testable thing rather than whatever a component
- *   happened to implement.
- * - **Facet options** ({@link listMemberJurisdictions}, {@link listMemberPartyOptions}), derived from the roster in
- *   hand so a control can never offer a choice that returns nothing.
- * - **The URL spelling of a view** ({@link memberDirectoryQueryString} and the parsers beside it), which is shared
- *   across a boundary — the server reads it out of the request, the browser writes it back — and so belongs to neither
- *   side.
- *   @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
- *
- * What this file does *not* declare is the vocabulary every directory narrows itself with — the `ANY_FACET` sentinel,
- * the facet-option shape, the query-length cap, the total-parser rule, and the counting and ordering machinery the
- * facet lists and sorts are built from all live in `directory-filter.ts`, so the sameness this module shares with
- * `committees/filter.ts` and `bills/search.ts` is structural rather than asserted. What stays here is what is genuinely
- * about *members*: which facets exist, what they mean, and how two people compare.
+ * The vocabulary shared by every directory (`ANY_FACET`, facet options, query caps, counting) lives in
+ * `directory-filter.ts`; this file holds what's specific to members.
  */
 
 export type ChamberFilter = FacetFilter<CongressChamber>;
@@ -95,16 +73,11 @@ export function hasActiveMemberFilters(filters: MemberFilters): boolean {
 }
 
 /**
- * Whether `entry` matches free-text `query`.
- *
- * Matched against the member's name and the jurisdiction they represent — both the bare state name and the seat as it
- * reads on screen, so "Ohio", "9th district", "at-large", and "non-voting" all find what a person would expect them to.
- * Party is deliberately *not* searched: it has a dedicated filter beside the box, and matching it here would make
- * typing "d" return every Democrat in the chamber alongside everyone whose name happens to contain the letter.
+ * Whether `entry` matches free-text `query`: the name, the state, and the seat as displayed ("9th district",
+ * "at-large", "non-voting"). Party isn't searched — it has its own filter, and "d" would match every Democrat.
  *
  * @param entry - The directory row to test.
- * @param query - The raw search text. Matched case-insensitively; an empty or all-whitespace query matches everything,
- *   which is what makes clearing the box mean "show me everyone again".
+ * @param query - The raw search text, case-insensitive; blank matches everything.
  * @returns `true` when the row matches.
  */
 export function matchesMemberQuery(entry: MemberDirectoryEntry, query: string): boolean {
@@ -121,8 +94,7 @@ export function matchesMemberQuery(entry: MemberDirectoryEntry, query: string): 
  *
  * @param entries - The full directory, already ordered by the server.
  * @param filters - The current filter state.
- * @returns The matching rows, in the order they arrived — filtering never reorders, so narrowing a list never also
- *   shuffles it under the reader.
+ * @returns The matching rows, in their original order.
  */
 export function filterMembers(entries: MemberDirectoryEntry[], filters: MemberFilters): MemberDirectoryEntry[] {
   return entries.filter((entry: MemberDirectoryEntry): boolean => {
@@ -158,11 +130,8 @@ export const memberSortLabels: Record<MemberSort, string> = {
 };
 
 /**
- * Orders two members by the place they represent, then by seat within it.
- *
- * District order is the useful tiebreak rather than a nicety: a delegation listed 1st, 2nd, 3rd reads as the state's
- * map, while the same names alphabetized reads as nothing in particular. An at-large seat (`district` 0 or absent)
- * sorts first, since it *is* the whole state.
+ * Orders two members by the place they represent, then by district, with an at-large seat (`district` 0 or absent)
+ * first.
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.
@@ -194,12 +163,8 @@ const MEMBER_SORT_COMPARATORS: Record<MemberSort, (a: MemberDirectoryEntry, b: M
 };
 
 /**
- * Orders the roster.
- *
- * Every comparator falls through to {@link compareMembersByName}, so a sort never leaves a group of ties in whatever
- * arbitrary order they happened to arrive in — grouping by party still lists each party alphabetically. "Name (Z–A)"
- * needs no exemption from that fallback despite being the one order not anchored on the ascending name: names that tie
- * descending tie ascending too, so the tiebreak has nothing left to say about them.
+ * Orders the roster. Every order breaks ties by {@link compareMembersByName}, so grouping by party still lists each
+ * party alphabetically.
  *
  * @param entries - The rows to order. Left untouched; a new array is returned.
  * @param sort - The order to apply.
@@ -210,11 +175,7 @@ export function sortMembers(entries: MemberDirectoryEntry[], sort: MemberSort): 
 }
 
 /**
- * One selectable value in a facet control, with the number of members behind it.
- *
- * The shared {@link FacetOption}, re-exported under this directory's own name so the two sites that reach for it —
- * `listMemberJurisdictions` and `listMemberPartyOptions` — read as member-scoped where they are used. @see FacetOption
- * for why every facet option carries a count.
+ * One selectable facet value with its member count — {@link FacetOption} under a member-scoped name.
  *
  * @typeParam Value - The filter value this option sets.
  */
@@ -239,20 +200,11 @@ export const jurisdictionGroupLabels: Record<JurisdictionGroup, string> = {
 };
 
 /**
- * The jurisdictions present in a roster, for the state filter's options.
- *
- * Derived from the roster rather than hard-coded from a list of the fifty states, so the control offers exactly what
- * can actually be selected: territories and the District of Columbia appear because their Delegates do, and nothing is
- * offered that would return an empty grid.
- *
- * Grouped rather than presented as one alphabetical run of fifty-six entries. A flat list interleaves American Samoa,
- * the District of Columbia, Guam, and the rest among the states, so a reader scanning for a state passes items that
- * aren't one, and a reader looking for a territory has no way to find out which are even represented without reading
- * the whole list. The grouping is the same non-voting-seat distinction the chamber diagram already draws.
+ * The jurisdictions present in a roster, for the state filter — derived from the roster so nothing offered returns an
+ * empty grid. Grouped into states and non-voting jurisdictions so territories don't interleave with states.
  *
  * @param entries - The full directory.
- * @returns Every distinct jurisdiction with its member count, alphabetically within its group. Rows with no
- *   jurisdiction on file contribute nothing, since an unnamed place is not a place a reader can choose.
+ * @returns Every distinct jurisdiction with its count, alphabetical within its group. Rows without one are skipped.
  */
 export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): JurisdictionOption[] {
   // The one facet in the app whose values are not a union the model declares, so it counts and then orders the values
@@ -275,17 +227,10 @@ export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): Jurisd
 }
 
 /**
- * The parties present in a roster, for the party filter's options.
- *
- * Ordered by {@link partySeatingOrder} rather than alphabetically or by size, so the control reads in the same
- * left-to-right order as the home page's chamber diagram and its legend — the place most readers will have just seen
- * these same parties. That order is only legible once each option carries its count, which is the other half of why
- * these are {@link MemberFacetOption}s rather than bare values: "Democratic (213), Independent (2), Republican (220)"
- * is plainly the chart's order, while the same three words alone are plainly nothing in particular.
+ * The parties present in a roster, for the party filter, in {@link partySeatingOrder} to match the chamber diagram.
  *
  * @param entries - The full directory.
- * @returns Every party actually holding a seat, in seating order, with its count. A party nobody holds is omitted
- *   rather than offered as an option that can only ever return nothing.
+ * @returns Every party holding a seat, in seating order, with its count.
  */
 export function listMemberPartyOptions(entries: MemberDirectoryEntry[]): MemberFacetOption<PartyGroup>[] {
   return buildFacetOptions(
@@ -355,17 +300,12 @@ export function parseMemberSort(raw: string | null | undefined): MemberSort {
 }
 
 /**
- * Parses the `state` param against the jurisdictions actually in the roster.
- *
- * Validated against the roster rather than accepted as free text, and matched case-insensitively so a hand-typed
- * `?state=ohio` resolves to the roster's own `"Ohio"`. Both halves matter for the same reason: a value the control has
- * no option for would leave the select showing one thing while the grid showed another, which is a worse failure than
- * simply ignoring an unusable param.
+ * Parses the `state` param against the roster's jurisdictions, case-insensitively (`?state=ohio` → `"Ohio"`), so the
+ * select and the grid can't disagree.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
  * @param known - The jurisdictions present in the roster. @see listMemberJurisdictions
- * @returns The roster's spelling of the requested jurisdiction, or {@link ANY_FACET} when it isn't one the roster
- *   contains — so a link to a state whose delegation has since changed still opens a usable page.
+ * @returns The roster's spelling, or {@link ANY_FACET} when the roster doesn't contain it.
  */
 export function parseJurisdictionFilter(raw: string | null | undefined, known: Iterable<string>): StateFilter {
   const wanted: string = (raw ?? "").trim().toLowerCase();
@@ -379,16 +319,8 @@ export function parseJurisdictionFilter(raw: string | null | undefined, known: I
 }
 
 /**
- * Reads a whole directory view out of a URL's query string.
- *
- * The exact counterpart to {@link memberDirectoryQueryString}, and the only thing that turns a `/members` URL into a
- * view. Both sides of the boundary go through it: the route resolves the incoming request with it, and the browser
- * re-reads the address bar with it whenever the URL changes underneath the directory — a soft navigation to another
- * `/members` view, Back or Forward, or a shared link opened on a build with no server to resolve it. One parser means
- * those two readings cannot drift into disagreeing about what a link means.
- *
- * Total, like every parser it delegates to: an absent, malformed, or stale param resolves to a usable default rather
- * than an error, so a hand-edited or year-old link opens the unfiltered page at worst.
+ * Reads a directory view out of a URL's query string — the inverse of {@link memberDirectoryQueryString}, used by both
+ * the server and the browser. Total: anything absent, malformed, or stale resolves to a default.
  *
  * @param params - The query string to read, already parsed.
  * @param knownJurisdictions - The jurisdictions present in the roster being rendered, so `?state=` can only resolve to
@@ -411,11 +343,8 @@ export function parseMemberDirectoryQuery(
 }
 
 /**
- * Serializes a directory view back into a query string.
- *
- * Only non-default values are written, so an unnarrowed directory has a clean `/members` URL rather than one carrying
- * four params that all say "no". The parameter order is fixed rather than incidental, so the same view always produces
- * the same string — which is what makes these links comparable, cacheable, and stable in a browser's history.
+ * Serializes a directory view back into a query string, writing only non-default values in a fixed order so each view
+ * has exactly one URL.
  *
  * @param query - The view to serialize.
  * @returns The query string including its leading `?`, or an empty string when nothing is narrowed or reordered.

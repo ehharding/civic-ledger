@@ -3,6 +3,22 @@
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
+        <entry key="Biome Formatter Config">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="Biome Formatter Config" />
+              <option name="relativePathToSchema" value="https://biomejs.dev/schemas/latest/schema.json" />
+              <option name="applicationDefined" value="true" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="biome.jsonc" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
         <entry key="Claude Code Launch Preview">
           <value>
             <SchemaInfo>

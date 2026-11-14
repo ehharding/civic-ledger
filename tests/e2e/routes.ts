@@ -1,3 +1,8 @@
+import type { PlaywrightTestArgs, PlaywrightTestOptions } from "@playwright/test";
+
+/** The per-test fixtures a spec destructures (`page`, `request`, …). */
+export type TestFixtures = PlaywrightTestArgs & PlaywrightTestOptions;
+
 /**
  * Every page route with a shape of its own, at the URLs a reader actually meets them by — shared by the specs that
  * sweep each one, so the accessibility sweep and the layout checks cannot quietly come to cover different pages.
@@ -17,3 +22,9 @@ export const PAGE_ROUTES: readonly { path: string; name: string }[] = [
   // state's own clear action. @see DirectoryEmptyState.
   { path: "/members?q=zzznomatch", name: "member directory, empty" },
 ];
+
+/**
+ * A bill directory that lists preview fixtures on any date. CI runs without an API key, and `/bills` shows only the
+ * Congress currently seated — which stops matching the fixtures' Congress once a new one convenes.
+ */
+export const FIXTURE_CONGRESS_BILLS: string = "/bills/119";

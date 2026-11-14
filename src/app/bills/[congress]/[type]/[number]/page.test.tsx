@@ -16,6 +16,7 @@ import BillPage, { generateMetadata, generateStaticParams } from "@/app/bills/[c
 import { type BillRouteParams, type LegislativeBill, NO_LATEST_ACTION_TEXT } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 import { billHref } from "@/lib/routes";
+import { stubLiveApi } from "@/test/congress-api";
 import { expectNotFound } from "@/test/next-not-found";
 import { readerText } from "@/test/reader-text";
 
@@ -53,9 +54,7 @@ describe("generateMetadata", (): void => {
     // line, and the wrong thing in a link preview, where it is the entire summary someone sees before deciding whether
     // to open the page. This is the one caller that has to tell "no action text" apart from an action, which is why
     // `NO_LATEST_ACTION_TEXT` is exported rather than inlined at the mapper. @see generateMetadata.
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({ bill: { congress: 119, type: "hr", number: 284, title: "A Bill With No Actions Yet" } }),

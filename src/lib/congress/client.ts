@@ -1,26 +1,10 @@
 /**
- * The Congress.gov adapter's public surface — a barrel, not an implementation.
+ * The Congress.gov adapter's public surface — a barrel, so callers import from one place however the modules are split.
+ * Each module's role is tabulated in docs/architecture.md, "Inside the Congress Adapter".
  *
- * The adapter is split by responsibility across the rest of this directory, and the split is deliberately invisible to
- * callers: every route, component, and test imports from `@/lib/congress/client`, so the internal layout can keep
- * moving without a churn of import rewrites across the app. What each module is responsible for is tabulated once, in
- * [docs/architecture.md](../../../docs/architecture.md) under "Inside the Congress Adapter", rather than restated here
- * where a second copy would be free to fall out of step with the first.
- *
- * Everything re-exported here shares two guarantees: it never throws (upstream failure is an expected condition, not an
- * exception), and anything that can come from either live or preview data reports which it was, on the returned value
- * itself. That is what keeps `upstream/http.ts` and `bills/sub-resource.ts` off this surface — the key reader, the
- * cache window, and the request helpers are the transport those guarantees are built out of rather than reads that hold
- * them, so the modules that need them import them directly.
- *
- * `BillSubResource` is the one name from `sub-resource.ts` that does belong here, and it is not an exception to that
- * rule but an instance of it: it is the *shape* six of the reads below return, so a caller typing what it received
- * cannot get at it any other way. The function that produces it stays unexported, like the rest of the transport.
- *
- * `getSearchResults` is the one read below whose shape is *not* re-exported here, on the same rule read the other
- * way: that shape is also the body `/api/bills/search` sends, so it is declared in `@/lib/api-contract`, where a
- * browser can import it without importing this surface and the API key behind it. A caller can get at it, just not from
- * here.
+ * Everything here never throws and reports whether it's live or preview. The transport (`upstream/http.ts`,
+ * `sub-resource.ts`) isn't re-exported, except the `BillSubResource` shape the reads return. `getSearchResults`'s shape
+ * lives in `@/lib/api-contract` so the browser can import it.
  */
 export { getBillAmendments } from "@/lib/congress/bills/amendments";
 export { getBillCommittees } from "@/lib/congress/bills/committees";

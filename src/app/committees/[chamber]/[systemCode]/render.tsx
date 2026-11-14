@@ -41,22 +41,12 @@ export async function committeeMetadata(params: CommitteeParams): Promise<Metada
 }
 
 /**
- * Renders one committee's page.
+ * Renders one committee's page. Chamber and system code together identify it, as on Congress.gov. @see committeeHref
  *
- * Both segments are part of the identifier rather than one being decoration: Congress.gov's committee endpoint is keyed
- * on chamber *and* system code, so a URL carrying only the code would have to guess the chamber back before it could
- * look anything up. @see committeeHref, and `normalizeCommitteeChamberSegment` for the guard that keeps a malformed
- * segment from reaching Congress.gov.
+ * The records are fetched *after* the committee's record, because its counts clamp `?page=` before an offset goes
+ * upstream. @see clampCommitteeRecordsPage
  *
- * The committee's own record and the record view its URL asks for are resolved together, then the records themselves
- * are fetched second rather than alongside. That order is a dependency rather than a missed parallelization: a `?page=`
- * is only meaningful against a collection whose length is known, and the committee's own counts are what make it
- * possible to hold a requested page inside the collection *before* an offset goes upstream instead of after a wasted
- * round trip has proven it overshot.
- * @see clampCommitteeRecordsPage.
- *
- * Shared by `/committees/[chamber]/[systemCode]`, which passes no query and is therefore cached per committee, and its
- * `/query` twin, which passes the `?records=`/`?page=` view and renders on demand. @see src/lib/query-routes.ts.
+ * Shared by the cached route (no query) and its on-demand `/query` twin. @see src/lib/query-routes.ts
  *
  * @param params - The committee's route params, straight from the URL and therefore untrusted.
  * @param searchParams - The record view's query params, equally untrusted and equally parsed rather than read.

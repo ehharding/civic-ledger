@@ -99,27 +99,12 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
 }
 
 /**
- * One drawn seat.
+ * One drawn seat. With a Bioguide ID it's a real SVG `<a>` to the member's page (not `next/link`, which can't work in
+ * the SVG namespace); without one, as in preview mode, it's a `<circle>` that only locks the read-out.
+ * `data-seat-index` is on the outer element either way, for the chart's delegated handlers. @see seatIndexFromEvent
  *
- * A seat whose member has a Bioguide ID is a real SVG `<a>` to that member's page: it can be opened in a new tab,
- * copied, or followed by a crawler, none of which a scripted click handler offers. A seat without one — every seat in
- * preview mode, where the roster is deliberately unattributed — has nowhere to go, so it stays a `<circle>` whose
- * activation only locks the read-out.
- *
- * A plain SVG anchor rather than `next/link`, because inside `<svg>` React creates the element in the SVG namespace,
- * where Link's client-side navigation has nothing to attach to. A full page load is a fair trade for a control that
- * behaves like the link it is.
- *
- * `data-seat-index` sits on the outermost element either way, so the chart's delegated pointer, focus, and keyboard
- * handlers reach it identically for both forms.
- * @see seatIndexFromEvent
- *
- * **Memoized, which at this size is the difference between a chart that tracks the pointer and one that lags it.**
- * Every hover, focus, and arrow keypress changes one number on the parent, and the parent draws 441 of these. Without a
- * memo, a single mouse move across the chamber re-renders every seat — each one rebuilding its accessible name out of a
- * member record and formatting three floats — to change the class on two of them. Every prop here is a primitive except
- * `seat`, whose identity is stable because `buildChamberSeating` runs inside a `useMemo` keyed on the roster, so the
- * default shallow comparison is exactly the right one.
+ * Memoized because every hover or keypress changes the parent's state and the House draws 441 seats. Props are
+ * primitives plus `seat`, whose identity is stable (`buildChamberSeating` is memoized on the roster).
  *
  * @param seat - The seat to draw, carrying its member and resolved position.
  * @param chamber - The chamber it belongs to, which decides how the accessible name describes it.

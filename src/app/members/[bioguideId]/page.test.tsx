@@ -14,6 +14,7 @@ import MemberPage, { generateMetadata, generateStaticParams } from "@/app/member
 import { chamberLabels, formatMemberName, formatMemberTitle, type MemberProfile } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
 import { memberHref } from "@/lib/routes";
+import { stubLiveApi } from "@/test/congress-api";
 import { expectNotFound } from "@/test/next-not-found";
 
 /** The first preview profile, non-null-asserted once here under `noUncheckedIndexedAccess`. */
@@ -51,9 +52,7 @@ describe("generateMetadata", (): void => {
     // "…representing ." with nothing after it is worse than the plainer sentence, so a member whose jurisdiction is not
     // on file is described by the body they sit in. No fixture is seatless, so this one goes through the live path with
     // a record that carries no state.
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation(
         (): Promise<Response> =>
           Promise.resolve(

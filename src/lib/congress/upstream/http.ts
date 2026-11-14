@@ -7,12 +7,8 @@ import { isBioguideId } from "@/lib/congress/members/model";
 import { logError, logWarning } from "@/lib/observability/log";
 
 /**
- * The transport layer shared by every Congress.gov read in this app: key access, URL construction, caching policy, one
- * request helper, and the guards that keep route-derived values out of outbound URLs.
- *
- * Nothing here knows what a bill or a member *is* — that's `mappers.ts`'s job. Keeping the two apart means the caching
- * story, the error taxonomy, and the "never interpolate an unvalidated path segment" rule each live in exactly one
- * place instead of being restated at every endpoint.
+ * The transport layer for every Congress.gov read: key access, URL construction, caching policy, one request helper,
+ * and the guards that keep route-derived values out of outbound URLs. What the data *means* is `mappers.ts`'s job.
  */
 
 /** Base URL for every Congress.gov v3 request this app makes. */
@@ -26,30 +22,18 @@ export const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
 export const REVALIDATE_SECONDS: number = 300;
 
 /**
- * How long Next caches a response scoped to a Congress that has already ended, in seconds: one day.
+ * How long Next caches a response scoped to a Congress that has ended: one day. Its record is closed, so five-minute
+ * refreshes would only cost renders — but not frozen, since corrections and public-law numbers arrive for weeks after.
  *
- * A concluded Congress's record is closed. Its bills will never gain another action, cosponsor, or text version, so
- * re-reading them every five minutes buys nothing and costs a lot: each `/bills/[congress]` directory for a past
- * Congress, every bill page under it, and every Congress the search sweep reads would otherwise be regenerated on the
- * same five-minute clock as the current one, by crawlers as much as by readers.
- *
- * A day rather than forever, because "closed" is not quite "frozen": the Library of Congress still corrects records and
- * attaches public-law numbers for some weeks after a Congress adjourns. A day keeps those corrections arriving without
- * anyone having to remember to purge a cache.
- *
- * Two routes also export this as their segment `revalidate` (it has to be restated there as a literal, as
- * `src/app/revalidate.test.ts` explains), so that a page whose fetches never ran — rendered during an outage, or from
- * preview data — is still regenerated within a day rather than cached indefinitely.
- * @see revalidateSecondsForCongress
+ * Two routes restate this as their segment `revalidate` (as a literal — @see src/app/revalidate.test.ts) so a page
+ * rendered during an outage still refreshes within a day. @see revalidateSecondsForCongress
  */
 export const CONCLUDED_CONGRESS_REVALIDATE_SECONDS: number = 86_400;
 
 /**
- * The cache window for a request scoped to one Congress.
- *
- * The current Congress (and, defensively, any later number) keeps the shared five-minute window; an earlier one gets
- * the concluded window. A route's own window is the shortest of its segment `revalidate` and every fetch it makes, so
- * this is all it takes for `/bills/118` to be regenerated daily while `/bills/119` stays on five minutes.
+ * The cache window for a request scoped to one Congress: five minutes for the current (or a later) Congress, a day for
+ * a concluded one. A route takes the shortest window among its fetches, so this alone sets a past Congress's pages to
+ * daily.
  *
  * @param congress - The Congress the request is scoped to, as a number or an already-validated path segment.
  * @param currentCongress - The Congress now sitting. Defaults to today's; a parameter so tests can pin the boundary.
@@ -64,16 +48,11 @@ export function revalidateSecondsForCongress(
 }
 
 /**
- * A cache window of "none": the response is not stored in Next's Data Cache at all.
+ * A cache window of "none": the response isn't stored in Next's Data Cache. For requests whose result the rendering ISR
+ * page already holds, where a second (metered) copy is pure cost — a bill page makes eight requests.
  *
- * Only for a request whose result is already held by the ISR page that renders it. Storing it a second time is pure
- * cost on Vercel, where every Data Cache read and write is metered, and it is cost multiplied by the long tail: a bill
- * page makes eight requests, so a crawler walking past-Congress bills one page at a time bought eight cache writes per
- * page for entries nobody would ever read back before they expired.
- *
- * A `fetch` with no `cache` or `revalidate` option does not make an ISR route dynamic — Next treats it as "auto no
- * cache" and leaves the segment's own `revalidate` in charge (`patch-fetch.js`: "we don't consider autoNoCache to
- * switch to dynamic for ISR"). So the page is still cached for exactly as long as before; only the duplicate goes.
+ * This doesn't make an ISR route dynamic: Next treats an option-less `fetch` as "auto no cache" and leaves the
+ * segment's `revalidate` in charge.
  */
 export const UNCACHED: null = null;
 
@@ -81,12 +60,9 @@ export const UNCACHED: null = null;
 export type CacheWindow = number | typeof UNCACHED;
 
 /**
- * The cache window for a request made while rendering a single bill's own page.
- *
- * A concluded Congress's bill page is cached by its segment `revalidate` for a day, the same window its requests would
- * have been cached for, so those requests are {@link UNCACHED}. The current Congress keeps its five-minute fetch
- * window, because that window is what shortens the page's own: without it a sitting Congress's bill would sit a day
- * stale.
+ * The cache window for a request made while rendering a bill's own page. A concluded Congress's page is already cached
+ * a day by its segment, so its requests are {@link UNCACHED}; the current Congress keeps five minutes, which is what
+ * keeps its page fresh.
  *
  * @param congress - The bill's Congress.
  * @param currentCongress - The Congress now sitting. Defaults to today's; a parameter so tests can pin the boundary.
@@ -106,30 +82,15 @@ export function billPageCacheWindow(
 export const MAX_API_PAGE_SIZE: number = 250;
 
 /**
- * How long a single Congress.gov request may take before it is abandoned, in milliseconds.
- *
- * `fetch` has no timeout of its own: a connection that opens and then stalls hangs until the platform's own socket
- * timeout, which on a Node host is minutes and on some is never. That is the one upstream failure mode this adapter's
- * "nothing throws, everything degrades" design does *not* cover on its own — a request that never settles never reaches
- * the `catch` that would have turned it into `{ outcome: "failed" }`, so the page waits instead of falling back.
- *
- * The cost of that is worst exactly where the app fans out widest. `getSearchResults` awaits one request per supported
- * Congress — a couple of dozen of them, in parallel — so without a bound, the slowest single connection sets the
- * latency of the whole search, and one stalled socket holds the entire result set hostage. With one, that Congress
- * simply drops out of the sweep and the search returns what the rest of them found.
- *
- * Ten seconds is well past Congress.gov's normal response time for the largest page this app asks for (250 records)
- * while still being far short of how long a person will wait before assuming the page is broken.
+ * How long a single Congress.gov request may take before it's abandoned, in milliseconds. `fetch` has no timeout, and a
+ * stalled request never reaches the `catch` that turns it into a fallback. This matters most for the search sweep,
+ * where one stalled Congress would otherwise hold up the rest. Well past normal response times for a 250-record page.
  */
 export const REQUEST_TIMEOUT_MS: number = 10_000;
 
 /**
- * Reads the server-only Congress.gov API key.
- *
- * Read through this helper rather than `process.env` directly so every data path agrees on what "configured" means: a
- * key set to an empty or whitespace-only value (an easy thing to end up with when copying `.env.example`) counts as
- * *absent*, and takes the clearly labeled preview path rather than sending Congress.gov a blank key and surfacing the
- * resulting 403 as a mysterious outage.
+ * Reads the server-only Congress.gov API key. A blank or whitespace-only value (easy to copy from `.env.example`)
+ * counts as absent, so it takes the preview path instead of producing 403s.
  *
  * @returns The trimmed key, or `undefined` when none is usably configured.
  */
@@ -159,11 +120,8 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
 }
 
 /**
- * Issues a GET request against a Congress.gov v3 endpoint with this app's standard cache window, headers, and timeout.
- *
- * The abort signal is per-call rather than shared, since each request needs its own clock — and it is safe to pass
- * alongside `next.revalidate`: Next strips the signal when it re-requests a stale entry in the background, so a timeout
- * bounds the request a reader is actually waiting on without ever cancelling a revalidation.
+ * Issues a GET against a Congress.gov v3 endpoint with the standard cache window, headers, and timeout. The abort
+ * signal is per-call; Next strips it on background revalidation, so it only bounds requests a reader is waiting on.
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags, so a future revalidation hook can invalidate a whole family of requests at once.
@@ -189,12 +147,8 @@ export function fetchCongressGov(
 }
 
 /**
- * The outcome of one Congress.gov request, as a discriminated union.
- *
- * "Not found" is kept distinct from "failed" deliberately: a 404 is a *true answer* (this bill has no summaries yet),
- * while a 500 or a dropped connection means the app doesn't know. Several callers render those two very differently —
- * an empty section versus a preview-data fallback — so collapsing them into a single `null` would lose the distinction
- * the UI depends on.
+ * The outcome of one Congress.gov request. "Not found" is distinct from "failed": a 404 is a true answer (no summaries
+ * yet), while a 500 or dropped connection means the app doesn't know, and callers render those differently.
  *
  * @typeParam Payload - The validated payload shape for the endpoint being requested.
  */
@@ -204,11 +158,8 @@ export type CongressRequestResult<Payload> =
   | { outcome: "failed" };
 
 /**
- * Requests a Congress.gov endpoint and validates the response against `schema`.
- *
- * Every upstream read in this app funnels through here, so the whole error taxonomy — non-200 statuses, network
- * failures, unparseable JSON, and payloads whose shape doesn't match — collapses into one three-outcome union that
- * callers can exhaustively handle. This function never throws.
+ * Requests a Congress.gov endpoint and validates the response against `schema`. Every upstream read goes through here,
+ * collapsing status, network, parse, and shape failures into one three-outcome union. Never throws.
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags for the request.
@@ -219,10 +170,8 @@ export type CongressRequestResult<Payload> =
  * @returns `{ outcome: "ok", data }` with the validated payload, `{ outcome: "not-found" }` for a 404, or
  *   `{ outcome: "failed" }` for anything else.
  *
- * Every `failed` outcome is logged before it is returned, at a level that reflects which kind of failure it was — and
- * that logging is the *only* report these failures produce, because this function's contract is that it never throws.
- * A Congress.gov outage therefore reaches no error boundary and no `onRequestError`; it reaches Sentry as a structured
- * log or not at all. @see src/lib/observability/log.ts.
+ * Every `failed` outcome is logged at a level matching its kind — the only report it produces, since nothing throws.
+ * @see src/lib/observability/log.ts
  */
 export async function requestCongressJson<Payload>(
   url: URL,
@@ -326,16 +275,10 @@ export async function fetchAllPages<Page extends { pagination?: { count?: number
 const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
 
 /**
- * Summarizes a Zod failure as the field paths that failed, and nothing else.
- *
- * The whole `ZodError` is the wrong thing to log twice over: it is long enough to bury the line it is on, and its
- * issues can quote the received value — a Congress.gov response body, which is a public record and still not something
- * this app forwards wholesale to an error tracker to answer a question the paths already answer.
+ * Summarizes a Zod failure as just the failing field paths — the full error is long and can quote the response body.
  *
  * @param issues - The issues from a failed `safeParse`.
- * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated. The root is spelled `(root)`, since
- *   an empty path — which is what a wholly wrong top-level shape produces — would otherwise render as an empty string
- *   and read as a missing value rather than as the finding it is.
+ * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated, with the root spelled `(root)`.
  */
 function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): string {
   return issues
@@ -350,15 +293,9 @@ function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): strin
 export const BILL_LIST_CACHE_TAG: string = "congress-bills";
 
 /**
- * The two cache tags shared by every request scoped to one specific bill (detail lookup, summaries, text, actions,
- * committees).
- *
- * The identifier is normalized here rather than trusted from the caller, because the same bill reaches this function
- * spelled several ways: a route param arrives lower-cased (`/bills/119/hr/284`), a parsed search citation arrives
- * upper-cased (`parseBillCitation` returns `"HR"`), and the committee page's title lookups arrive already narrowed.
- * Untouched, those produce `bill-119-hr-284` and `bill-119-HR-284` for one bill — which costs nothing today, since
- * Next dedupes the underlying requests by URL, and would cost exactly the thing tags exist for the moment a
- * revalidation hook tries to invalidate one bill and reaches only some of its records.
+ * The two cache tags shared by every request scoped to one bill. The identifier is normalized because it arrives in
+ * several casings (`hr` from routes, `HR` from parsed citations), and one bill must have one tag to be invalidated as a
+ * whole.
  *
  * @param input - The bill's identifier, in any of the casings the app produces.
  * @returns The list tag and this bill's own tag, the latter in one canonical spelling.
@@ -383,17 +320,11 @@ export function memberCacheTags(bioguideId: string): string[] {
 }
 
 /**
- * Narrows a potentially user-influenced Bioguide ID to the exact path-segment format Congress.gov accepts, before it is
- * interpolated into an outbound URL.
- *
- * Same reasoning as {@link normalizeBillRouteParams}: this arrives from the URL bar, so validating the *shape* rather
- * than escaping means a malformed value can never reach Congress.gov at all.
+ * Validates a route's Bioguide ID before it goes into an outbound URL. @see normalizeBillRouteParams
  *
  * @param raw - The raw `bioguideId` route param.
- * @returns The upper-cased ID, or `null` when it isn't the letter-plus-six-digits form Congress.gov issues. A `null` is
- *   not the same as "not found": the preview fixtures use IDs that deliberately fail this guard and are resolved
- *   locally instead, never upstream.
- *   @see isBioguideId
+ * @returns The upper-cased ID, or `null` when malformed. Preview fixture IDs fail this deliberately and resolve
+ *   locally. @see isBioguideId
  */
 export function normalizeBioguideId(raw: string): string | null {
   const value: string = raw.trim().toUpperCase();
@@ -412,16 +343,11 @@ export function committeeCacheTags(systemCode: string): string[] {
 }
 
 /**
- * Narrows a potentially user-influenced committee system code to the exact path-segment format Congress.gov accepts,
- * before it is interpolated into an outbound URL.
- *
- * Same reasoning as {@link normalizeBioguideId}: this arrives from the URL bar, so validating the *shape* rather than
- * escaping means a malformed value can never reach Congress.gov at all.
+ * Validates a route's committee system code before it goes into an outbound URL. @see normalizeBillRouteParams
  *
  * @param raw - The raw `systemCode` route param.
- * @returns The lower-cased code, or `null` when it isn't the letters-then-two-digits form Congress.gov issues. A `null`
- *   is not the same as "not found": the preview fixtures use codes that deliberately fail this guard and are resolved
- *   locally instead, never upstream. @see isCommitteeSystemCode
+ * @returns The lower-cased code, or `null` when malformed. Preview fixture codes fail this deliberately and resolve
+ *   locally. @see isCommitteeSystemCode
  */
 export function normalizeSystemCode(raw: string): string | null {
   const value: string = raw.trim().toLowerCase();
@@ -429,11 +355,7 @@ export function normalizeSystemCode(raw: string): string | null {
 }
 
 /**
- * Narrows a route's chamber segment to one Congress.gov's committee endpoint accepts.
- *
- * The committee endpoint takes the chamber in the path (`/committee/house/hsag00`), which makes this the same class of
- * guard as the two above — and the same closed union the app already models, so no separate list of accepted spellings
- * can drift out of step with it.
+ * Validates a route's chamber segment, which the committee endpoint takes in its path (`/committee/house/hsag00`).
  *
  * @param raw - The raw `chamber` route param.
  * @returns The chamber, or `null` when the segment names none.
@@ -443,14 +365,7 @@ export function normalizeCommitteeChamberSegment(raw: string): CommitteeChamber 
   return committeeChambers.find((chamber: CommitteeChamber): boolean => chamber === value) ?? null;
 }
 
-/**
- * The only bill/resolution type path segments Congress.gov's bill endpoint accepts.
- *
- * Re-exported from `bills/model.ts` rather than restated here: this list and the citation parser's upper-cased one are
- * the same eight types viewed in two cases, and a copy of it in each module is a copy that can be updated in one place
- * and not the other.
- * @see BILL_TYPE_PATH_SEGMENTS
- */
+/** The bill type path segments Congress.gov's bill endpoint accepts. @see BILL_TYPE_PATH_SEGMENTS */
 export const BILL_PATH_TYPES: ReadonlySet<string> = BILL_TYPE_PATH_SEGMENTS;
 
 const CONGRESS_SEGMENT_PATTERN: RegExp = /^\d{1,3}$/;
@@ -465,16 +380,11 @@ export type NormalizedBillRoute = {
 };
 
 /**
- * Narrows potentially user-influenced bill route params to the exact path-segment formats Congress.gov accepts, before
- * any of them is interpolated into an outbound URL.
- *
- * These values arrive from the URL bar, so they're untrusted input by definition. Validating the *shape* (digits, and
- * one of eight known type codes) rather than escaping means a malformed segment can never reach Congress.gov at all —
- * it can't traverse the path, smuggle a query param, or turn one endpoint's request into another's.
+ * Validates bill route params before they go into an outbound URL. Checking the *shape* (digits and a known type code)
+ * rather than escaping means a malformed segment never reaches Congress.gov — no path traversal or smuggled query.
  *
  * @param input - Raw `congress` / `type` / `number` params, typically straight from the route.
- * @returns The normalized segments (type lower-cased), or `null` when any segment is malformed — which callers should
- *   treat exactly as they treat a 404, since a bill that can't be named can't exist.
+ * @returns The normalized segments (type lower-cased), or `null` when any is malformed — treat that as a 404.
  */
 export function normalizeBillRouteParams(input: BillRouteParams): NormalizedBillRoute | null {
   const congress: string = input.congress.trim();

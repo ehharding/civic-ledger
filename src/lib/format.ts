@@ -1,30 +1,15 @@
 /**
  * The collator every alphabetical ordering in this app runs through.
  *
- * Pinned to one locale rather than left to `localeCompare`'s default, which is the *runtime's* locale — and the runtime
- * differs on the two sides of this app. The server orders a roster or a committee list before serializing it; the
- * browser re-orders the same list as the reader narrows. Where those two locales disagree the client-rendered order
- * differs from the server-rendered one, which is a hydration mismatch across an entire grid. The disagreement is real
- * rather than theoretical: `"Ødegård"` sorts before `"Zimmerman"` under `en-US` and after it under `da-DK` or `sv-SE`,
- * because those alphabets place Ø past Z. No sitting member's name triggers it today, which is exactly why it is worth
- * pinning — the failure would arrive with a new member rather than with a code change, and only for some readers.
- *
- * Constructed once rather than per comparison, which also matters at this size: ordering a full roster is a few
- * thousand comparisons, and every bare `localeCompare` call builds a collator of its own.
- *
- * Lives here, in the module every other layer already depends on, rather than beside any one of the models that order
- * things. One collator is what makes the guarantee above hold *everywhere* an ordering happens instead of only where
- * someone remembered to reach for it.
+ * Pinned to one locale because the server and browser both sort the same lists, and differing runtime locales would
+ * cause hydration mismatches (`"Ødegård"` sorts before `"Zimmerman"` in `en-US` but after it in `da-DK`). Built once,
+ * since each bare `localeCompare` builds its own.
  */
 const textCollator: Intl.Collator = new Intl.Collator("en-US");
 
 /**
- * Orders two strings the way a reader of English expects.
- *
- * Collated rather than compared with `<`, so text carrying diacritics or apostrophes (Núñez, O'Halleran, Coeur d'Alene)
- * sorts where a reader expects rather than where its code points fall. Use this for anything a person reads as a name
- * or a place; ISO dates and other machine-formatted strings should be compared directly, since collation costs more and
- * buys nothing on ASCII digits.
+ * Orders two strings the way a reader of English expects (Núñez, O'Halleran). Use for names and places; compare ISO
+ * dates directly.
  *
  * @param a - One string to compare.
  * @param b - The other string to compare.
@@ -35,22 +20,12 @@ export function compareText(a: string, b: string): number {
 }
 
 /**
- * Orders two ISO date strings newest first.
+ * Orders two ISO date strings newest first — the one newest-first ordering in the app. Plain string comparison is
+ * chronological for fixed-width ISO dates and timestamps.
  *
- * Compared directly rather than through {@link compareText} or a `Date`. Every date this app sorts on is either a bare
- * `YYYY-MM-DD` (bill actions, CRS summaries) or a full ISO 8601 timestamp (bill text versions, committee history), and
- * both forms are fixed-width, zero-padded, and most-significant-field-first — so plain string comparison already *is*
- * chronological order. Collating them would cost more and buy nothing on ASCII digits, and constructing a `Date` per
- * comparison would buy nothing at all.
- *
- * Every newest-first ordering in the app goes through this one function, so "what happens to an undated record" has a
- * single answer rather than one per caller.
- *
- * @param a - One date to compare. An absent date should be passed as an empty string.
+ * @param a - One date to compare. Pass an absent date as an empty string.
  * @param b - The other date to compare.
- * @returns A standard comparator result. Undated records sort last, together, and fall out of the comparison rather
- *   than needing a special case: an empty string is less than every real timestamp, and this order puts the greater
- *   value first.
+ * @returns A standard comparator result. Undated records (empty strings) sort last.
  */
 export function compareIsoDatesDesc(a: string, b: string): number {
   if (a === b) return 0;
@@ -59,9 +34,6 @@ export function compareIsoDatesDesc(a: string, b: string): number {
 
 /**
  * Chooses the singular or plural form of a noun for a count.
- *
- * Stated once rather than inline at each count label (`n === 1 ? "Member" : "Members"`), which is the kind of thing
- * that quietly ends up saying "1 Members" the first time a new counter is added.
  *
  * @param count - How many of the thing there are.
  * @param singular - The singular noun, cased as it should appear.
@@ -123,22 +95,16 @@ function titleCaseWord(word: string, isEdge: boolean): string {
 }
 
 /**
- * Title-cases a short label, collapsing any irregular whitespace on the way through.
- *
- * Written for the free-text place names Congress.gov publishes, which are not guaranteed to arrive in one consistent
- * case — and where two spellings of the same jurisdiction would otherwise become two separate entries in a filter
- * control. @see normalizeJurisdiction, the only caller, which is where that boundary actually sits.
- *
- * Three rules make it safe to run over names rather than only over lower-cased input:
+ * Title-cases a short label and collapses irregular whitespace, for Congress.gov's free-text place names.
+ * @see normalizeJurisdiction, the only caller.
  *
  * - A word that is already mixed case (`"McCarthy"`) is left exactly as it arrived, since that casing was a decision.
  * - A dotted initialism (`"u.s."`) becomes `"U.S."` rather than `"U.s."`.
  * - Small words stay lower case in the middle of a label (`"District of Columbia"`) but not at either end.
  *
  * @param value - The label to case.
- * @returns The title-cased label, or an empty string for blank input. An all-caps word with internal capitals
- *   (`"MCCARTHY"`) becomes `"Mccarthy"` — the information needed to do better isn't in the string, which is why this is
- *   scoped to place names rather than offered as a general name formatter.
+ * @returns The title-cased label, or an empty string for blank input. `"MCCARTHY"` becomes `"Mccarthy"`, which is why
+ *   this is for place names, not people.
  */
 export function toTitleCase(value: string): string {
   const words: string[] = value.trim().split(/\s+/).filter(Boolean);
@@ -150,15 +116,9 @@ export function toTitleCase(value: string): string {
 }
 
 /**
- * Formats a positive integer with its English ordinal suffix: 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 22nd, …
+ * Formats a positive integer with its English ordinal suffix, including the teens exception (111th, not "111st").
  *
- * The 11th/12th/13th exception is why this can't just switch on the last digit — Congress numbers eventually reach the
- * hundreds (the 111th, 112th, and 113th Congresses already have), where a naive last-digit check would wrongly produce
- * "111st", "112nd", "113rd".
- *
- * @param value - The number to format. Fractional or negative input is not expected (every caller passes a Congress
- *   number or a district number) and is normalized to its absolute whole part rather than producing something like
- *   "2.5th".
+ * @param value - The number to format; normalized to its absolute whole part.
  * @returns The number with its ordinal suffix, e.g., `formatOrdinal(119)` → `"119th"`.
  */
 export function formatOrdinal(value: number): string {
@@ -180,15 +140,8 @@ export function formatOrdinal(value: number): string {
 }
 
 /**
- * The date formatter every displayed date in this app is rendered through.
- *
- * Hoisted to module scope on exactly the reasoning stated for {@link textCollator} above, and it pays off in the same
- * kind of place: a committee's records page renders twenty dated rows, a member's page one per term plus one per bill
- * card, and a bill's page one per text version. `new Intl.DateTimeFormat(…)` resolves a locale and builds a pattern
- * every time it is called, which is the expensive part — `format` itself is cheap — so constructing one per date was
- * paying that cost once per row for a formatter that never varies.
- *
- * @see formatDate for why `timeZone: "UTC"` is load-bearing rather than decorative.
+ * The date formatter every displayed date runs through, built once since construction is the expensive part.
+ * @see formatDate for why `timeZone: "UTC"` matters.
  */
 const dateFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -198,12 +151,8 @@ const dateFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat("en-US", {
 });
 
 /**
- * Formats an ISO date for display, e.g., "July 14, 2026".
- *
- * `timeZone: "UTC"` is deliberate, not decorative: `Intl.DateTimeFormat` renders in the *runtime's local timezone* by
- * default, not UTC. Without pinning it, a text-version datetime like "2022-02-15T05:00:00Z" renders as "February 14" on
- * any machine set to a timezone west of UTC — which is most of the US. The date silently rolls back a day depending on
- * where the code happens to run, and server and browser can disagree about the same record.
+ * Formats an ISO date for display, e.g., "July 14, 2026". Rendered in UTC, since the runtime's local timezone would
+ * shift "2022-02-15T05:00:00Z" to February 14 across most of the US, and server and browser could disagree.
  *
  * @param value - Either a bare `YYYY-MM-DD` date (as bill actions and CRS summaries use) or a full ISO 8601 datetime
  *   (as bill text versions use). Bare dates are anchored at midday UTC so no timezone can shift them across a day
@@ -219,23 +168,11 @@ export function formatDate(value: string): string {
   return dateFormatter.format(date);
 }
 
-/**
- * The number formatter every count in this app is printed through.
- *
- * Constructed once for the same reason {@link textCollator} is, and it matters in the same place: a committee's records
- * page prints a count per collection tab and two more in its pager, above a list whose every row already calls
- * {@link formatDate}. `Intl` constructors are the expensive half of `Intl` — building a formatter costs far more than
- * using one — and `toLocaleString` builds a fresh one on every single call.
- */
+/** The number formatter every count runs through, built once (`toLocaleString` builds one per call). */
 const countFormatter: Intl.NumberFormat = new Intl.NumberFormat("en-US");
 
 /**
  * Formats a whole number with thousands separators, e.g., `10205` → `"10,205"`.
- *
- * Five-figure counts are ordinary here — a long-lived committee has tens of thousands of bills referred to it — and an
- * unseparated "10205" is a number a reader has to count the digits of. Stated once rather than as a `toLocaleString`
- * call per site, on the rule the rest of this module holds: a display decision that lives in one place is one that
- * applies everywhere.
  *
  * @param value - The count to format.
  * @returns The separated number.
@@ -265,12 +202,8 @@ const SPELLED_NUMBERS: readonly string[] = [
 ];
 
 /**
- * Spells a small whole number in title case, for a heading that counts something derived.
- *
- * This exists so a count in display copy can be *derived* rather than typed. A heading reading "Three Walkthroughs"
- * over a list built from a registry is a second, hand-maintained copy of that registry's length — and the failure mode
- * is silent: adding a fourth module leaves the heading confidently wrong, on the page whose whole subject is being
- * checkable. The same rule `lessonNumber` follows for a lesson's position, applied to the count above the list.
+ * Spells a small whole number in title case, so a heading like "Three Walkthroughs" is derived from its list rather
+ * than typed and left to go stale.
  *
  * @param value - The count to spell. Fractional or negative input is normalized to its absolute whole part.
  * @returns The number in words and title case for zero through ten, and the digits for anything larger — where spelling

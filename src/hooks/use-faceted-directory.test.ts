@@ -1,11 +1,10 @@
 /**
  * Covers useFacetedDirectory directly, rather than only incidentally through the two directories that use it.
  *
- * The hook holds the twenty lines both faceted directories used to spell out for themselves, and the reason to test it
- * on its own is that the interesting cases are the ones neither component makes easy to reach: that `update` patches
- * one facet without disturbing the others, that `clear` restores the caller's own "no filters" value rather than an
- * emptied object, and that `isFiltered` is asked of the caller rather than inferred — a filter that happens to match
- * everything is still a filter.
+ * The interesting cases are the ones neither component makes easy to reach: that `update` patches one facet without
+ * disturbing the others, that `clear` restores the caller's own "no filters" value rather than an emptied object, and
+ * that `isFiltered` is asked of the caller rather than inferred — a filter that happens to match everything is still a
+ * filter.
  *
  * A deliberately made-up pair of types, not the member or committee ones. The hook is generic over both halves of a
  * view, and testing it against a real directory's filters would let an accidental dependence on that directory's shape

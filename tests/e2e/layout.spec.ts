@@ -1,7 +1,7 @@
-import type { Locator, Page, PlaywrightTestArgs, PlaywrightTestOptions } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-import { PAGE_ROUTES } from "./routes";
+import { PAGE_ROUTES, type TestFixtures } from "./routes";
 
 /**
  * The enforcement point for the half of the accessibility baseline that `accessibility.spec.ts` cannot see.
@@ -66,7 +66,7 @@ test.describe("reflow", (): void => {
   for (const route of PAGE_ROUTES) {
     test(`${route.name} does not scroll sideways at ${REFLOW_WIDTH}px`, async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
+    }: TestFixtures): Promise<void> => {
       await page.goto(route.path);
       await expect(page).toHaveTitle(/Civic Ledger/);
 
@@ -110,7 +110,7 @@ test.describe("reflow", (): void => {
  */
 test("the footer sits at the bottom of the window on a page too short to fill it", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.setViewportSize({ width: 1280, height: 1400 });
   await page.goto("/no-such-route");
 
@@ -129,7 +129,7 @@ test("the footer sits at the bottom of the window on a page too short to fill it
  */
 test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`, async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   // 641px: one pixel above the drawer breakpoint, so this is the row at its most cramped — the nav pinned right beside
   // the wordmark, sharing a line with it.
   await page.setViewportSize({ width: 641, height: 900 });
@@ -148,7 +148,7 @@ test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`
  */
 test(`the drawer's toggle and destinations meet the ${MIN_TARGET}px target-size floor`, async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.setViewportSize({ width: REFLOW_WIDTH, height: 900 });
   await page.goto("/");
 

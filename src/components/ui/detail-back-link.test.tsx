@@ -1,9 +1,6 @@
 /**
- * Covers the back link all three detail pages open with.
- *
- * Four lines of markup, and every one of them is a contract that three pages used to hold separately: the glyph stays
- * decorative, the accessible name is the destination rather than "Back", and the class is the one `layout.css` styles.
- * Those are exactly the things a copied block drifts on without anything looking wrong.
+ * Covers the back link all three detail pages open with: the glyph stays decorative, the accessible name is the
+ * destination rather than "Back", and the class is the one `layout.css` styles.
  */
 import { render, screen } from "@testing-library/react";
 import type { Route } from "next";

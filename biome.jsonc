@@ -17,74 +17,46 @@
     "indentWidth": 2,
     "lineWidth": 120
   },
-  // Everything beyond `recommended` below is a convention this repository already keeps, promoted to a rule that keeps
-  // it. What they buy is the same thing the import grouping below buys: the next diff that breaks the habit fails
-  // `pnpm lint` rather than depending on a reviewer noticing.
-  //
-  // That is also the bar for adding one. A rule the tree does not already satisfy is a rule this project has not
-  // actually decided to follow, and turning it on converts a real question into a mechanical one. Two near-misses are
-  // worth naming, since both look like obvious additions and neither is:
-  //
-  //   - `style/noInferrableTypes` would strip the explicit annotation off every `const x: string = "…"` in the repo,
-  //     which is the opposite of the house style — @see `useExplicitReturnType` below, and CONTRIBUTING's type rule.
-  //   - `suspicious/noUnnecessaryConditions` does not model `noUncheckedIndexedAccess`, which tsconfig.json turns on,
-  //     so it reports every `arr[i] ?? …` guard that the compiler *requires*.
+  // Each rule beyond `recommended` enforces a convention the tree already follows. Two that look like obvious additions
+  // are deliberately left off:
+  //   - `style/noInferrableTypes` contradicts the house style of annotating every `const x: string = "…"`.
+  //   - `suspicious/noUnnecessaryConditions` doesn't model `noUncheckedIndexedAccess`, so it flags required guards.
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
       "complexity": {
-        // Off because tsconfig.json turns on `noPropertyAccessFromIndexSignature`, and the two disagree by
-        // construction: that flag permits a dot only where a property is actually *declared*, so every bracket access
-        // left in this tree is one the compiler required — and this rule reports each of them as a simplification, with
-        // an "unsafe fix" that reintroduces the type error. There is no ordering of the two that leaves both happy.
-        //
-        // The compiler is the right owner of that decision, because it is deciding something real. `attributes.cause`
-        // and `attributes["cause"]` look interchangeable and are not: the first claims `cause` is part of a declared
-        // shape, the second says it is a key in a bag. @see env.d.ts, whose whole guarantee — that a misspelled
-        // environment variable stops compiling — is this flag applied to `process.env`.
-        //
-        // What that costs, stated rather than buried: a genuinely gratuitous `bill["title"]` over a declared property
-        // is no longer flagged. That is a readability nit rather than a defect, and it is the smaller half of this
-        // trade by a wide margin.
+        // Off: tsconfig's `noPropertyAccessFromIndexSignature` requires bracket access on index signatures (that's
+        // what makes a misspelled env var fail to compile — @see env.d.ts), and this rule would "fix" those back into
+        // type errors.
         "useLiteralKeys": "off",
         // `.test()` over `.exec()`/`.match()` when only the boolean is used.
         "useRegexpTest": "error"
       },
       "correctness": {
-        // Reaching past `package.json` into a transitive dependency compiles, passes tests, and breaks the day the
-        // package that pulled it in bumps a range nobody here reviewed. `tests/e2e/accessibility.spec.ts` already
-        // documents refusing to import `axe-core` for exactly this reason; this is that reasoning as a check.
+        // Importing a transitive dependency breaks whenever the package that pulls it in changes its range.
         "noUndeclaredDependencies": "error"
       },
       "nursery": {
-        // Nursery rules are explicitly unstable. Each one here is included because it either catches a real defect
-        // class or states a rule this project already follows — and because a nursery rule that changes under us fails
-        // loudly in CI rather than quietly, which is the acceptable failure mode for the value.
+        // Unstable by definition, but a nursery rule that changes fails CI loudly rather than quietly.
 
         // Monkey-patching a builtin is invisible from every file that depends on the patch.
         "noExtendNative": "error",
-        // The defect class `bill-directory.tsx`'s `loadMore` avoids by hand: a promise nobody awaits swallows its own
-        // rejection and reports success. Every async path in this app either awaits or handles.
+        // An unawaited promise swallows its own rejection.
         "noFloatingPromises": "error",
-        // The same class one level subtler — an async function handed somewhere that expects a synchronous one, most
-        // often a `.filter()` predicate, where the returned promise is always truthy.
+        // e.g., an async `.filter()` predicate, whose returned promise is always truthy.
         "noMisusedPromises": "error",
         // `await` on a non-thenable is either a stray keyword or a signature that changed underneath the caller.
         "useAwaitThenable": "error",
-        // The compiler catches a missing `case` only when the value is a closed union *and* the switch has no
-        // `default`. This catches the rest, which matters in an app whose models are almost entirely closed unions.
+        // The compiler only catches a missing `case` when the switch has no `default`.
         "useExhaustiveSwitchCases": "error",
         // `.includes()` over `.indexOf(x) !== -1`.
         "useIncludes": "error",
-        // `??` over `||` where the left side can legitimately be `0` or `""` — both of which this app has real values
-        // for (a zero record count, an empty query).
+        // `??` over `||`, since `0` and `""` are real values here (a zero count, an empty query).
         "useNullishCoalescing": "error",
         // `.startsWith()`/`.endsWith()` over an index comparison or a slice.
         "useStringStartsEndsWith": "error",
-        // The most visible convention in this codebase: every function states what it returns. It is not
-        // decoration — an inferred return type on an exported function is a signature that changes silently when the
-        // body does. The one exemption in the tree carries a `biome-ignore` naming its reason. @see sentry-options.ts.
+        // An inferred return type is a signature that changes silently when the body does.
         "useExplicitReturnType": "error"
       },
       "style": {
@@ -97,19 +69,15 @@
           "level": "error",
           "options": { "syntax": "shorthand" }
         },
-        // `type`, never `interface`. This app models data as unions and object types rather than as an inheritance
-        // hierarchy, and declaration merging — the one thing `interface` offers that `type` does not — is a feature
-        // nothing here wants: a second declaration of a model should be an error, not a silent extension of the first.
+        // `type`, never `interface`: a second declaration of a model should be an error, not a silent merge.
         "useConsistentTypeDefinitions": {
           "level": "error",
           "options": { "style": "type" }
         },
-        // A rethrow that drops `cause` throws away the actual diagnosis. `describeCause` in `log.ts` exists precisely
-        // because Node's own `fetch` keeps the useful half one level down a cause chain.
+        // A rethrow that drops `cause` throws away the diagnosis (Node's `fetch` keeps it one level down).
         "useErrorCause": "error",
         // `throw new Error(…)`, never `throw Error(…)`.
         "useThrowNewError": "error",
-        // The convention every suite in `src/` already keeps.
         "useTestHooksOnTop": "error"
       },
       "suspicious": {
@@ -119,11 +87,9 @@
         "noEvolvingTypes": "error",
         // `it.only` / `describe.only` left in a file turns a green suite into a green *subset* of one.
         "noFocusedTests": "error",
-        // The architectural guard for the layering `docs/architecture.md` describes: models know nothing of transport,
-        // transport knows nothing of components. A cycle is that layering having quietly stopped being true.
+        // Guards the layering in `docs/architecture.md`: models → transport → components, never back.
         "noImportCycles": "error",
-        // A skipped test is a coverage gap that reports as a pass. This project runs at a 100% threshold; a `.skip`
-        // that survives review is the one way to be under it and not know.
+        // A skipped test is a coverage gap that reports as a pass.
         "noSkippedTests": "error",
         // `new Error()` with no message reaches an operator as a stack and nothing else.
         "useErrorMessage": "error"
@@ -132,21 +98,14 @@
   },
   "overrides": [
     {
-      // Ambient declaration files are the one place `interface` is not a style choice. Their purpose is to *merge* with
-      // declarations this project does not own — Node's `ProcessEnv`, a library's types — and `type` cannot merge, so
-      // the rule below would forbid the only spelling that works. Scoped to `.d.ts` rather than suppressed per file,
-      // because this is a category rather than an exception: every ambient file that ever augments someone else's
-      // types lands here for the same reason. Nothing in `src/` is a `.d.ts`, so the house rule still covers every
-      // model in the app. @see env.d.ts, currently the only file this reaches.
+      // Ambient declarations (e.g., env.d.ts) augment types this project doesn't own, which only `interface` can do.
       "includes": ["**/*.d.ts"],
       "linter": {
         "rules": { "style": { "useConsistentTypeDefinitions": "off" } }
       }
     },
     {
-      // Vitest suites say `it`, Playwright specs say `test`. Both are that framework's own idiom rather than a drift
-      // between them, so the rule is scoped to the half where one spelling is right instead of being turned off across
-      // the repo or made to pick a winner between two tools.
+      // Vitest suites use `it`; Playwright specs use `test`, its own idiom.
       "includes": ["src/**/*.test.ts", "src/**/*.test.tsx"],
       "linter": {
         "rules": {
@@ -166,15 +125,8 @@
       "semicolons": "always"
     }
   },
-  // The enforcement point for CONTRIBUTING's import rule. That file already says imports use the `@/` alias and never a
-  // relative path, and every module in `src/` already opened with third-party imports, a blank line, then the app's
-  // own — in about ninety percent of files. The other ten percent is what an unenforced convention looks like after a
-  // year: no reader can tell whether a run-together import block is a deliberate exception or a diff nobody caught.
-  //
-  // Stating the grouping here makes `pnpm lint` the answer to that question and `--write` the fix, which is what the
-  // "name the enforcement point when you state a rule" line in CONTRIBUTING asks for. The order below reads outward
-  // from the runtime: Node builtins, then packages, then this app, then anything relative — with `:PATH:` last and
-  // empty by design, so a relative import that slips in lands visibly at the bottom rather than sorted into the middle.
+  // Enforces CONTRIBUTING's import grouping: builtins, packages, then `@/` app imports. `:PATH:` is last and should
+  // stay empty, so a stray relative import lands visibly at the bottom.
   "assist": {
     "actions": {
       "source": {

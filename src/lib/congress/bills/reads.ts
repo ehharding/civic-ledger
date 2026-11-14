@@ -53,40 +53,25 @@ import {
 import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
 
 /**
- * Everything this app reads about *bills*: list snapshots, pagination, single-bill lookup, the CRS summary and official
- * text sub-resources, and cross-Congress search.
+ * Everything this app reads about *bills*: list snapshots, pagination, single-bill lookup, sub-resources, and
+ * cross-Congress search. Every export holds two invariants:
  *
- * Two invariants hold for every exported function here, and the rest of the app is written assuming them:
- *
- * 1. **Nothing throws.** Upstream failure is a normal, expected condition, not an exception — a page should degrade to
- *    clearly labeled preview data, never to an error boundary.
- * 2. **Provenance travels with the data.** Anything that can come from either live or preview data says which it was,
- *    on the same object, so no caller can render one while claiming the other.
+ * 1. **Nothing throws.** Upstream failure degrades to labeled preview data, never an error boundary.
+ * 2. **Provenance travels with the data**, so no caller can render preview data as live.
  *
  * @see upstream/http.ts for the transport and caching policy these functions share.
  * @see upstream/mappers.ts for the upstream-to-internal translation they all run their results through.
  */
 
 /**
- * The bill list endpoint's "most recently touched record first" order.
+ * The bill list endpoint's "most recently touched first" order.
  *
- * **The separator is a space, and that is the whole point.** Congress.gov documents this parameter as
- * `sort=updateDate+desc`, which is the *URL-encoded* spelling — the `+` is a literal encoded space, not part of the
- * value. Passing the documented string through as a value means `buildCongressUrl` percent-encodes the plus to `%2B`,
- * the API receives `updateDate+desc`, and — this is the part worth knowing — it does not reject it. An unrecognized
- * sort value is silently ignored, and the endpoint answers in an arbitrary order that is neither the default nor
- * sorted. Verified against the live API in August 2026: `updateDate+desc` and `updateDate+asc` return byte-identical
- * pages, as does any other unsupported value, while the space-separated spelling orders correctly in both directions.
- *
- * That failure mode is why this is a named constant rather than a string literal at each call site. A sort the API
- * drops on the floor looks exactly like a sort that worked, so the only defense is to spell it once and pin the
- * spelling with a test that reads the query string this actually produces. @see the `sort` assertions in
+ * **The separator is a space.** The docs' `updateDate+desc` is the URL-encoded form; passing it as a value sends `%2B`,
+ * which the API silently ignores, returning an unsorted page. Spelled once here and pinned by the `sort` assertions in
  * `reads.test.ts`.
  *
- * `updateDate` is the only field this endpoint sorts on. It records when Congress.gov last touched the row rather than
- * when Congress last did anything, so it selects a recent slice without itself being chronology — which is why the home
- * page re-orders what comes back by legislative activity instead of trusting this order to mean that.
- * @see compareBillsByActivity
+ * `updateDate` (the only sortable field) is when Congress.gov last touched the row, not legislative activity, so the
+ * home page re-sorts. @see compareBillsByActivity
  */
 const RECENTLY_UPDATED_FIRST: string = "updateDate desc";
 
@@ -98,9 +83,6 @@ const MAX_SEARCH_RESULTS: number = 60;
 
 /**
  * Locates a matching fixture in `previewBills` by natural bill identifier.
- *
- * Matching goes through `billIdentityKey` rather than comparing three fields by hand, so the normalization rules
- * (case-insensitive type, numeric-or-string congress) are defined once and can't drift between call sites.
  *
  * @param input - The bill's route params.
  * @returns The matching preview fixture, or `undefined` when none covers that bill.
@@ -116,21 +98,14 @@ function previewBillsForCongress(congress: number): LegislativeBill[] {
 }
 
 /**
- * Fetches one page of the bill list for a specific Congress.
- *
- * Filtered explicitly by congress via the URL path (a documented filter — see `BillEndpoint.md`) rather than calling
- * the unfiltered `/v3/bill` list. That unfiltered list isn't sorted by congress number or introduction date, so it can
- * surface bills from any Congress in the API's history depending on which records happened to update recently;
- * filtering by congress guarantees every bill returned actually belongs to the one requested.
+ * Fetches one page of the bill list for a specific Congress, filtered by path. The unfiltered `/v3/bill` list mixes
+ * bills from every Congress.
  *
  * @param input - The API key, the Congress to read, the page window, and the Congress.gov sort to request.
  *
- *   **`sort` is required, and that is the fix rather than an inconvenience.** It was optional, one caller omitted it,
- *   and omitting it is not a neutral choice: `/v3/bill/{congress}` defaults to *ascending* latest-action order — the
- *   least recently active bills of a Congress, which for the 119th means several thousand records whose only action is
- *   the day they were introduced. That page went to the home page's "Latest Activity" section and its featured "A Bill
- *   in Motion" card. A defensible default for an archive is the wrong one for every surface in this app, all of which
- *   lead with what is current, so the type no longer offers it. Callers pass {@link RECENTLY_UPDATED_FIRST}.
+ *   `sort` is required because `/v3/bill/{congress}` defaults to *ascending* latest-action order — a Congress's least
+ *   active bills — and every surface in this app leads with what is current. Callers pass
+ *   {@link RECENTLY_UPDATED_FIRST}.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
  *   page render, an empty page for "Load More").
  */
@@ -161,15 +136,11 @@ async function fetchBillsPage(input: {
 }
 
 /**
- * Fetches the first page of a specific Congress's bills.
+ * Fetches the first page of a specific Congress's bills — the implementation behind both {@link getCongressSnapshot}
+ * and `/bills/[congress]`.
  *
- * This is the shared implementation behind both the current-Congress homepage/directory ({@link getCongressSnapshot})
- * and the `/bills/[congress]` route, so both share one caching policy and one fallback story rather than drifting
- * apart.
- *
- * Falls back to the labeled preview fixtures whenever live data isn't available — no key configured, or the upstream
- * request failed or returned nothing. The preview fallback is itself scoped to the requested Congress, so a Congress
- * with no fixture data honestly reports an empty, labeled result rather than borrowing bills from elsewhere.
+ * Falls back to preview fixtures when there's no key or the request fails or is empty. The fallback is scoped to the
+ * requested Congress, so one without fixtures reports an empty, labeled result rather than borrowing bills.
  *
  * @param congress - The Congress to read (e.g., `119`).
  * @returns A snapshot that always states its own provenance. Read `source` rather than assuming success; this never
@@ -228,8 +199,8 @@ export async function getCongressSnapshot(): Promise<CongressSnapshot> {
  * @param offset - How many bills the client already has; becomes the upstream `offset`.
  * @param congress - Which Congress to page through. Defaults to the current one, so single-argument callers are
  *   unaffected.
- * @returns The next page, or an empty array when no key is configured or the request fails — either way the UI simply
- *   stops offering more results, which is the honest outcome in both cases.
+ * @returns The next page, or an empty array when no key is configured or the request fails, so the UI stops offering
+ *   more.
  */
 export async function getMoreBills(
   offset: number,
@@ -258,30 +229,21 @@ export type BillLookupResult = {
 };
 
 /**
- * Looks up a single bill directly, rather than searching only the first page of the list snapshot. This lets any real
- * bill resolve correctly, not just the dozen most recently returned by the list endpoint.
- *
- * Also reports the source the result actually came from, so callers — namely the bill detail page — can render an
- * accurate `DataSourceNotice` without a second, separate snapshot fetch.
+ * Looks up a single bill directly, reporting the source the result came from.
  *
  * @param input - The bill's route params, straight from the URL.
- * @returns The lookup result. A `bill` of `undefined` means "no such record" and should render as a 404; it never means
- *   "something went wrong", because a transient failure falls back to a snapshot search and then to preview data before
- *   giving up.
+ * @returns The lookup result. A `bill` of `undefined` means "no such record" (a 404), never a failure — a transient
+ *   failure falls back to a snapshot search and then preview data first.
  */
 export function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
   return lookUpBillOnce(input.congress, input.type, input.number);
 }
 
 /**
- * {@link getBillById}, memoized for one server render.
- *
- * The bill page reads the bill twice, once in `generateMetadata` and once in the page itself. Next's own `fetch`
- * memoization would normally make that one request, but it steps aside for any `fetch` carrying an `AbortSignal`
- * (`dedupe-fetch.js`), and every request here carries the timeout's. With the Data Cache answering the second read that
- * cost only a cache read; for a bill page it no longer does (@see billPageCacheWindow), so this is what keeps it at one
- * upstream call. Keyed on the three strings rather than the params object, since React's `cache` compares arguments by
- * identity and the two callers each hold their own.
+ * {@link getBillById}, memoized for one server render. The bill page reads the bill in both `generateMetadata` and the
+ * page, and Next's `fetch` dedupe skips requests carrying an `AbortSignal` (ours all do), while concluded-Congress bill
+ * requests skip the Data Cache (@see billPageCacheWindow). Keyed on the three strings because `cache` compares by
+ * identity.
  */
 const lookUpBillOnce = cache(
   (congress: string, type: string, number: string): Promise<BillLookupResult> => lookUpBill({ congress, type, number }),
@@ -315,16 +277,9 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
     return { bill: bill ?? undefined, source: "live", retrievedAt };
   }
 
-  // A transient failure shouldn't be indistinguishable from "not found"; fall back to a snapshot search, then to
-  // preview data as a last resort.
-  //
-  // The snapshot is scoped to *this bill's* Congress rather than the current one, and that is the whole reason this
-  // branch does anything at all for a bill outside the seated Congress. `getCongressSnapshot()` here read the current
-  // Congress's first page, which by construction cannot contain a 117th-Congress bill — so the `find` below could
-  // never hit, and the wasted round trip then handed back its own `source: "live"`. That combination is the specific
-  // failure this function's contract forbids: `bill: undefined` labeled `live` is read by the route as "no such record"
-  // and rendered as a hard 404, so a momentary Congress.gov blip told a reader that a bill that exists does not. Scoped
-  // correctly, the fallback either finds the bill or degrades to preview, and both are honest.
+  // A transient failure mustn't read as "not found": fall back to a snapshot search, then preview data. The snapshot is
+  // scoped to *this bill's* Congress — the current Congress's page can't contain an older bill, and a `live` miss would
+  // render as a 404 for a bill that exists.
   const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(Number(route.congress));
   const key: string = billIdentityKey(input);
   const bill: LegislativeBill | undefined =
@@ -337,16 +292,11 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
 }
 
 /**
- * Fetches every CRS summary on file for a bill, most recent first.
- *
- * A bill can have several — one per stage it's reached (introduced, reported, passed, and so on) — since the text, and
- * so the summary, changes as the bill is amended. Earlier summaries aren't stale duplicates; they describe real earlier
- * versions of the text.
+ * Fetches every CRS summary on file for a bill, most recent first — one per stage the text has reached.
  *
  * @param input - The bill's route params.
- * @returns Every summary on file, newest first. In preview mode this is a single clearly labeled fictional summary (see
- *   `previewSummaries`), or an empty array for a fixture without one. Empty and flagged unavailable on failure, so the
- *   section never credits the Congressional Research Service with not having written something. @see BillSubResource.
+ * @returns Every summary, newest first. In preview mode, the fixture's labeled summary if it has one. Empty and flagged
+ *   unavailable on failure. @see BillSubResource
  */
 export async function getBillSummaries(input: BillRouteParams): Promise<BillSubResource<BillSummary>> {
   if (!getCongressApiKey()) {
@@ -376,24 +326,15 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSubR
 }
 
 /**
- * Fetches a bill's full action history, most recent first.
+ * Fetches a bill's full action history, most recent first. The stage stepper reads its action codes
+ * (@see inferStageFromActions), and it's the only source of Senate roll calls.
  *
- * This is the record behind two things the bill page can otherwise only approximate. The stepper reads the Library of
- * Congress's own action codes rather than guessing a stage from one line of prose (@see inferStageFromActions) — which
- * matters most for a bill that has passed one chamber and been referred to a committee in the other, where the latest
- * action names only the referral. And the roll-call votes taken on the bill are named here and nowhere else in this API
- * for the Senate, since there is no `senate-vote` endpoint to ask.
- *
- * The list is deliberately not deduplicated. Congress.gov reports the same event from several source systems at once,
- * and which system recorded an action is part of the record rather than noise — the near-duplicate rows say that the
- * chamber's floor log and the Library of Congress both captured the same moment. Only the *votes* are deduplicated,
- * where repetition would read as two separate roll calls. @see collectRecordedVotes.
+ * Not deduplicated: which source system recorded an action is part of the record. Only votes are deduplicated.
+ * @see collectRecordedVotes
  *
  * @param input - The bill's route params.
- * @returns Every action on file, newest first. Empty and answered in preview mode and on a 404; empty and flagged
- *   unavailable on failure. The distinction reaches further here than in the other collections: the stage stepper and
- *   the recorded-vote panel are both derived from these actions, so an unread history is a page that cannot say where
- *   the bill is *or* whether anyone voted on it. @see BillSubResource.
+ * @returns Every action, newest first. Empty and answered in preview mode and on a 404; empty and flagged unavailable
+ *   on failure. @see BillSubResource
  */
 export async function getBillActions(input: BillRouteParams): Promise<BillSubResource<BillAction>> {
   return fetchBillSubResource(input, {
@@ -406,16 +347,12 @@ export async function getBillActions(input: BillRouteParams): Promise<BillSubRes
 }
 
 /**
- * Fetches every official text version on file for a bill (e.g., "Introduced in House", "Engrossed in House"), most
- * recent first, each with links to its Formatted Text / PDF / XML renderings on Congress.gov.
- *
- * These are links to the official record, not text this app fetches and re-hosts itself — consistent with the "the
- * source of truth stays upstream" stance in `docs/data-policy.md`.
+ * Fetches every official text version for a bill, most recent first, each linking to its renderings on Congress.gov.
+ * The app links to the text rather than re-hosting it.
  *
  * @param input - The bill's route params.
- * @returns Every text version on file, newest first. Always empty in preview mode — deliberately, since fixtures don't
- *   fabricate links to specific documents that don't exist. Empty and flagged unavailable on failure. @see
- *   BillSubResource.
+ * @returns Every text version, newest first. Always empty in preview mode (fixtures don't fabricate document links).
+ *   Empty and flagged unavailable on failure. @see BillSubResource
  */
 export async function getBillTextVersions(input: BillRouteParams): Promise<BillSubResource<BillTextVersion>> {
   return fetchBillSubResource(input, {
@@ -428,11 +365,7 @@ export async function getBillTextVersions(input: BillRouteParams): Promise<BillS
 }
 
 /**
- * Sorts search matches for display.
- *
- * A citation-lookup hit (identified by `pinnedKey`, if any) always sorts first, since it's an exact, deliberate match
- * rather than an incidental text one; everything else sorts by latest-action date, most recent first, the same as every
- * other date-ordered list in this adapter.
+ * Sorts search matches for display: an exact citation hit (`pinnedKey`) first, then by latest action, newest first.
  *
  * @param a - One bill to compare.
  * @param b - The other bill to compare.
@@ -454,26 +387,14 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
 }
 
 /**
- * Searches for bills matching free-text `query` across every Congress this app supports browsing.
+ * Searches for bills matching `query` across every supported Congress.
  *
- * Congress.gov's API has no full-text search endpoint (see `docs/data-policy.md`) — its list endpoint can be filtered
- * by congress and bill type, but not by keyword. This approximates a broad search the only way the API allows: it
- * sweeps each supported Congress's most recently active bills (sorted by `updateDate`, up to the API's own per-request
- * ceiling) and matches `query` against their title, type, number, policy area, and latest-action text — the same fields
- * `BillCard` and the bill detail page already surface.
+ * Congress.gov has no keyword search, so this sweeps each Congress's most recently updated bills (up to the API's
+ * per-request ceiling) and matches title, type, number, policy area, and latest action. The UI states both limits: no
+ * full text, and only a recent slice of each Congress — `congressesSearched` counts Congresses, not every bill.
  *
- * Two honest limits follow from that, and the UI states both in `BillDirectory`'s scope note: it cannot see a bill's
- * full legislative text, and for a large or old Congress it sees only that Congress's most recently touched slice, not
- * literally every bill ever introduced in it. The second half is the one that is easy to drop, because the count in
- * `congressesSearched` is a true number that reads like a wider claim than it is — sweeping every Congress and reading
- * a slice of each is not the same as searching every bill, and a note naming only the range says the latter.
- *
- * When `query` parses as a bill citation ("HR 284", "H.J.Res. 66" — see `parseBillCitation`), a direct single-bill
- * lookup is also attempted, in the cited Congress or the current one, and pinned first when it resolves. That path is
- * exact and instant rather than depending on the swept text happening to contain a literal match.
- *
- * Every swept Congress reuses the same cached page fetch as ordinary browsing, so concurrent and repeated searches
- * within the cache window cost the upstream API nothing extra.
+ * A query that parses as a citation ("HR 284" — see `parseBillCitation`) also gets a direct lookup, pinned first. The
+ * sweep reuses browsing's cached page fetches, so repeated searches cost nothing extra upstream.
  *
  * @param query - The raw search text, as typed.
  * @returns Matching bills (citation hit first, then newest-first), capped at {@link MAX_SEARCH_RESULTS}, with the

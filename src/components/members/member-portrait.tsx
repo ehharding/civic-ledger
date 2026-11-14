@@ -21,30 +21,16 @@ const VARIANTS = {
 } as const;
 
 /**
- * A member's official portrait, with the credit line Congress.gov's terms require beside it.
+ * A member's official portrait with the credit line Congress.gov's terms require — always rendered (small, not hidden),
+ * since it's the condition for showing the image. Shared by the directory card and the member page.
  *
- * Shared by the directory card and the member's own page, so the one place this app injects Congress.gov's credit HTML
- * is written once.
- *
- * A plain `<img>` rather than `next/image`, deliberately: `next/image` would need every congress.gov portrait host
- * allow-listed in `next.config.ts`, where an un-listed host is a hard runtime error rather than a missing picture — the
- * opposite of how the rest of this app degrades — and the static export disables optimization anyway. `loading="lazy"`
- * matters most in the directory: several hundred cards, of which a reader sees a dozen, so the rest are never fetched
- * until they are scrolled to.
- *
- * The credit is rendered rather than omitted for space. It is the condition on showing the image at all, and a grid is
- * exactly where it would be tempting to drop — several hundred identical "Image courtesy of the Member" lines look like
- * noise right up until the one that says something else. It is styled small and quiet, not hidden: a credit only
- * sighted readers cannot see is not a credit.
+ * A plain lazy `<img>` rather than `next/image`, which would hard-error on any un-allow-listed portrait host, and the
+ * static export disables optimization anyway.
  *
  * @param depiction - The portrait and its credit, as the adapter mapped them.
- * @param alt - The image's alternative text. Empty on a card, where the member's name is the very next thing and the
- *   link, so describing the image would announce the same person twice; descriptive on the member's page, where the
- *   portrait is the only place the person is depicted.
+ * @param alt - Alternative text: empty on a card (the name follows), descriptive on the member page.
  * @param variant - Which surface is drawing it, which decides its class names and size.
- * @returns The portrait and its credit, or `null` when Congress.gov publishes no image for this member — which is every
- *   preview placeholder, a small number of live records, and many members who left before the photo collection was
- *   digitized.
+ * @returns The portrait and its credit, or `null` when there's no image (every preview placeholder, and some records).
  */
 export function MemberPortrait({
   depiction,

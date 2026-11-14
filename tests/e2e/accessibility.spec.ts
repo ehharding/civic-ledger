@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import type { Page, PlaywrightTestArgs, PlaywrightTestOptions, TestInfo } from "@playwright/test";
+import type { Page, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
-import { PAGE_ROUTES } from "./routes";
+import { PAGE_ROUTES, type TestFixtures } from "./routes";
 
 /**
  * The enforcement point for the accessibility baseline in `docs/architecture.md`.
@@ -88,7 +88,7 @@ for (const scheme of ["light", "dark"] as const) {
     for (const route of PAGE_ROUTES) {
       test(`${route.name} has no WCAG 2.1 AA violations`, async ({
         page,
-      }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+      }: TestFixtures, testInfo: TestInfo): Promise<void> => {
         await page.goto(route.path);
         await expectNoViolations(page, testInfo);
       });
@@ -101,7 +101,7 @@ for (const scheme of ["light", "dark"] as const) {
      */
     test("the open navigation drawer has no WCAG 2.1 AA violations", async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+    }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto("/");
       await page.getByRole("button", { name: "Menu" }).click();
@@ -120,7 +120,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("a bill record has no WCAG 2.1 AA violations", async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+    }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/bills");
       await page.locator(".bill-card h3 a").first().click();
       await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
@@ -130,7 +130,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("a member record has no WCAG 2.1 AA violations", async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+    }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/members");
       await page.locator(".member-card h3 a").first().click();
       await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
@@ -140,7 +140,7 @@ for (const scheme of ["light", "dark"] as const) {
 
     test("a committee record has no WCAG 2.1 AA violations", async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {
+    }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/committees");
       await page.locator(".committee-card h3 a").first().click();
       await expect(page).toHaveURL(/\/committees\/(house|senate|joint)\/[a-z0-9-]+$/);

@@ -1,11 +1,6 @@
 /**
- * Covers the app's console boundary.
- *
- * Two properties carry this file. The first is that a log line is *redacted* — this module exists because `redact.ts`
- * was wired into Sentry's callbacks and nothing else, which left `console` as the one path out of this process with no
- * scrubbing on it, on a host where a function log is a third-party sink like any other. The second is that logging
- * *cannot throw*: every caller is a `catch` block whose whole purpose is to keep a degraded page rendering, so a
- * reporting failure that took the request with it would be strictly worse than no reporting at all.
+ * Covers the app's console boundary: every log line is redacted (a function log is a third-party sink too), and logging
+ * never throws, since every caller is a `catch` keeping a degraded page rendering.
  *
  * @see redact.test.ts for the scrubbing itself, and sentry-options.test.ts for the `beforeSendLog` backstop.
  */

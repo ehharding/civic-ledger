@@ -51,21 +51,9 @@ type CommitteeRecordsSectionProps = {
 };
 
 /**
- * How many records each collection holds.
- *
- * **Congress.gov publishes two different answers to this for the same collection, and this is where that is resolved.**
- * The House Agriculture Committee's own record reports `bills.count: 17795`, while its bills endpoint reports
- * `pagination.count: 10205` for the very same collection. Reports agree between the two; bills do not.
- *
- * The collection endpoint's count wins for whichever collection is on screen, because it is the one a reader can check:
- * it is what the pager is built from and what the last page actually ends at, and printing 17,795 above a list that
- * runs out after 10,205 would be this page contradicting itself in a way anyone paging to the end could catch. The
- * committee's own figure stands for the two collections that have not been fetched, since it is the only figure in hand
- * for them.
- *
- * The visible consequence, stated rather than hidden: the bills tab reads 10,205 while bills are showing and 17,795
- * while reports are. Preferring the committee's figure everywhere would trade that for a contradiction visible on a
- * single screen, which is the worse of the two.
+ * How many records each collection holds. Congress.gov can disagree with itself — House Agriculture's record says
+ * 17,795 bills, its bills endpoint 10,205 — so the fetched collection's own count wins on screen (it's what the pager
+ * ends at), and the committee's figure stands for unfetched tabs. A tab's number can therefore change as you switch.
  *
  * @param profile - The committee whose counts to read.
  * @param kind - Which collection this tab opens.
@@ -321,24 +309,11 @@ function PagerStep({
 }
 
 /**
- * The pager: two steps back, the page field, two steps forward.
+ * The pager: two steps back, a page-number field, two steps forward. No numbered run, since collections reach hundreds
+ * of pages; the field jumps anywhere.
  *
- * Deliberately not a numbered run: these collections reach five figures, so a full pagination control would either be
- * truncated with ellipses nobody can aim at or be a thousand links in the page source. What a numbered run is actually
- * *for* is getting somewhere that isn't adjacent, and stepping one page at a time is a poor answer to that when there
- * are 851 of them. The field is the direct answer: type a number, land on it, from either end of the collection in one
- * move.
- *
- * **It is a real `<form>` with `method="get"`, not a scripted jump.** That is the same commitment every other control
- * in this section makes — the tabs and the four steps are all `next/link`s rather than click handlers — carried to the
- * one control a link can't express, because its destination isn't known until the reader types it. A GET form submits
- * natively, so this works with JavaScript disabled, and what it produces is an ordinary shareable committee URL rather
- * than a state only this page can restore.
- *
- * Two consequences of that choice, stated rather than hidden. Submitting navigates the document instead of routing on
- * the client, which costs a moment the four steps beside it don't. And a reader who types `1` lands on `?page=1` — a
- * URL the route reads correctly but that the link builders would have written bare. A form can only submit the field
- * it has, and neither is worth trading native submission for.
+ * The field is a native GET `<form>`, so it works without JavaScript and yields a shareable URL. The costs: a full
+ * document navigation, and `?page=1` where the link builders would write a bare URL.
  *
  * @param props - The committee, the current view, and how many pages the collection fills.
  * @returns The pager, or `null` when the collection fits on one page and there is nowhere to go.

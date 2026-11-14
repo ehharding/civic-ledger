@@ -78,14 +78,9 @@ import type {
 import { compareIsoDatesDesc } from "@/lib/format";
 
 /**
- * Translation from Congress.gov's wire shapes into this app's stable internal model.
- *
- * Every mapper here follows the same contract: it returns `null` when a record is missing something the app genuinely
- * depends on, so callers can filter incomplete records out rather than render a broken card. "Genuinely depends on" is
- * deliberately narrow — a bill with no policy area is fine, a bill with no title is not.
- *
- * Nothing in this module performs I/O, which is what makes the interesting half of the adapter (what counts as a usable
- * record, how a chamber is inferred, how summaries are ordered) directly unit-testable without stubbing a fetch.
+ * Translation from Congress.gov's wire shapes into this app's internal model. Each mapper returns `null` when a record
+ * lacks something the app genuinely needs (a title, yes; a policy area, no), so callers filter it out. No I/O, so it's
+ * unit-testable without stubbing `fetch`.
  */
 
 /** A member paired with the chamber they sit in — the shape `mapCongressMember` returns before grouping. */
@@ -106,11 +101,8 @@ export function asOriginChamber(value?: string): LegislativeBill["originChamber"
 }
 
 /**
- * Maps a raw Congress.gov API bill into the app's stable {@link LegislativeBill} shape.
- *
- * Handles both endpoint dialects: the list endpoint spells the identifier `type`/`number`, the single-bill detail
- * endpoint spells it `billType`/`billNumber`. Accepting either is what lets one mapper — and so one definition of a
- * complete record — cover every bill this app displays.
+ * Maps a raw Congress.gov bill into {@link LegislativeBill}. Accepts both the list endpoint's `type`/`number` and the
+ * detail endpoint's `billType`/`billNumber`, so one mapper defines a complete record.
  *
  * @param bill - A validated bill object from either the list or detail endpoint.
  * @returns The mapped bill, or `null` when it lacks a congress, title, type, or number.
@@ -166,11 +158,8 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
  * Reads the publisher's own sizes for the collections hanging off a bill.
  *
  * @param bill - A validated bill object from either endpoint.
- * @returns The counts, or `undefined` when the record published none — which is every bill from the *list* endpoint,
- *   and is deliberately not the same as an object holding only `undefined`s. A caller that has one of these knows
- *   Congress.gov answered the question; a caller that has `undefined` knows it was never asked, and the bill page says
- *   different things in the two cases. Same rule as {@link mapCommitteeNomination}'s `latestAction`: a value is carried
- *   only when it says something.
+ * @returns The counts, or `undefined` when none were published (every list-endpoint bill) — not an object of
+ *   `undefined`s, since the page distinguishes "never asked" from "asked".
  */
 function mapBillCollectionCounts(bill: CongressApiBill): BillCollectionCounts | undefined {
   const counts: BillCollectionCounts = {
@@ -186,16 +175,11 @@ function mapBillCollectionCounts(bill: CongressApiBill): BillCollectionCounts | 
 }
 
 /**
- * Reads the publisher's two cosponsor figures.
- *
- * Kept out of {@link mapBillCollectionCounts} because the two are not the same kind of fact: that function reports how
- * long a collection is, and this one reports a pair whose *difference* is the interesting part. Folding a withdrawal
- * count into a list of lengths would make the page's "Congress.gov records N" sentence claim something it doesn't mean.
+ * Reads the publisher's two cosponsor figures — a pair whose difference matters, unlike the collection lengths in
+ * {@link mapBillCollectionCounts}.
  *
  * @param bill - A validated bill object from either endpoint.
- * @returns The tally, or `undefined` when the record published neither figure — which is every bill from the list
- *   endpoint. Same rule as {@link mapBillCollectionCounts}: an object of `undefined`s would say "asked and got
- *   nothing", and `undefined` says "never asked", and the page distinguishes them.
+ * @returns The tally, or `undefined` when neither figure was published (every list-endpoint bill).
  */
 function mapCosponsorTally(bill: CongressApiBill): BillCosponsorTally | undefined {
   const tally: BillCosponsorTally = {
@@ -210,9 +194,7 @@ function mapCosponsorTally(bill: CongressApiBill): BillCosponsorTally | undefine
  * Maps one entry from a bill's `/cosponsors` collection.
  *
  * @param cosponsor - A validated cosponsor entry.
- * @returns The mapped cosponsor, or `null` without a name — the one field that makes a row a row. A missing
- *   `bioguideId` is *not* disqualifying, unlike on the member directory: there, the id is the page a card opens and a
- *   card opening nothing is broken; here the name still says who signed on, and only the link is lost.
+ * @returns The mapped cosponsor, or `null` without a name. A missing `bioguideId` only costs the link.
  */
 export function mapBillCosponsor(cosponsor: CongressApiCosponsor): BillCosponsor | null {
   if (!cosponsor.fullName) return null;
@@ -248,9 +230,7 @@ export function mapRelatedBillRelationship(detail: CongressApiRelationshipDetail
  * Maps one entry from a bill's `/relatedbills` collection.
  *
  * @param related - A validated related-bill entry.
- * @returns The mapped reference, or `null` when it lacks the congress, type, number, or title an inward link and its
- *   label are built from. The same completeness bar {@link mapCongressBill} applies, and for the same reason: a related
- *   measure a reader cannot open is worse than one that isn't listed.
+ * @returns The mapped reference, or `null` without the congress, type, number, or title its link and label need.
  */
 export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | null {
   if (!related.congress || !related.type || related.number === undefined || !related.title) return null;
@@ -272,12 +252,8 @@ export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | n
 /**
  * Maps one entry from a bill's `/amendments` collection.
  *
- * **The completeness bar is identity alone, which is deliberately lower than {@link mapRelatedBill}'s.** A related
- * measure with no title is dropped, because the title is the row — there is nothing to label the link with. An
- * amendment's row is labeled by its own citation ("S.Amdt. 2849"), which the identity fields already provide, so an
- * entry carrying nothing but identity is still a complete, openable reference rather than a stub. Dropping those would
- * discard roughly fourteen entries in fifteen on a heavily amended bill and leave the section quietly claiming that a
- * bill amended five hundred times was amended thirty.
+ * Only identity is required — lower than {@link mapRelatedBill}'s bar — because an amendment is labeled by its citation
+ * ("S.Amdt. 2849"). Requiring more would drop about fourteen in fifteen entries.
  *
  * @param amendment - A validated amendment entry.
  * @returns The mapped reference, or `null` without the congress, type, and number its citation and its link are both
@@ -309,9 +285,8 @@ export function mapBillAmendment(amendment: CongressApiBillAmendment): BillAmend
  * Maps the law a bill became.
  *
  * @param law - A validated entry from a detail-endpoint bill's `laws` array.
- * @returns The mapped law, or `null` unless it carries both halves of the citation. "Public Law" with no number names
- *   no specific law, and a bare "119-21" names nothing at all — and the stage this pins is one the action codes can
- *   still establish on their own, so a half-record is dropped rather than propped up.
+ * @returns The mapped law, or `null` unless it carries both the type and the number. The action codes can still
+ *   establish the stage without it.
  */
 export function mapEnactedLaw(law: CongressApiLaw): EnactedLaw | null {
   const type: string = (law.type ?? "").trim();
@@ -362,9 +337,8 @@ export function mapCongressTextVersion(version: CongressApiTextVersion): BillTex
  * Maps a raw recorded-vote reference from a bill action.
  *
  * @param vote - A validated `recordedVotes[]` entry.
- * @returns The mapped reference, or `null` unless it carries everything needed to *name and reach* the vote — a
- *   recognizable chamber, a roll number, a congress, and the chamber's own URL. A row missing any of those can't be
- *   rendered as a link to a specific tally, and a roll call a reader can't open is worse than one not listed.
+ * @returns The mapped reference, or `null` without a recognizable chamber, roll number, congress, and the chamber's
+ *   URL — everything needed to name and reach the vote.
  */
 export function mapRecordedVote(vote: CongressApiRecordedVote): RecordedVote | null {
   const chamber: CongressChamber | null = normalizeChamberName(vote.chamber);
@@ -400,12 +374,8 @@ export function mapCongressAction(action: CongressApiAction): BillAction | null 
 }
 
 /**
- * Collects every distinct roll-call vote referenced anywhere in a bill's action history.
- *
- * Deduplication is the point rather than a tidy-up. Congress.gov reports the same event from several source systems at
- * once, so a single roll call arrives attached to two or three separate actions — HR 1 in the 119th Congress lists roll
- * 190 twice, once from House floor actions and once from the Library of Congress. Listing it twice would read as two
- * votes on the same question.
+ * Collects every distinct roll-call vote in a bill's action history. Congress.gov reports each event from several
+ * source systems, so one roll call can arrive on two or three actions; listing it twice would read as two votes.
  *
  * @param actions - The bill's actions, in any order.
  * @returns One entry per distinct vote, most recent first.
@@ -423,17 +393,12 @@ export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVo
 }
 
 /**
- * Maps a raw member-list entry into the app's {@link CongressMember} shape, paired with the chamber that member sits
- * in.
- *
- * Chamber comes from the *last* recognizable entry in `terms.item[]` — a member who moved from the House to the Senate
- * should be seated in the Senate. List-level term entries don't carry a congress number to match on, so "most recent
- * term" is the closest available reading, and it's the correct one for a request already scoped to the members
- * currently serving in one Congress.
+ * Maps a member-list entry into {@link CongressMember}, paired with their chamber — taken from the *last* recognizable
+ * term, so a member who moved from the House to the Senate sits in the Senate. (List-level terms carry no Congress to
+ * match on.)
  *
  * @param member - A validated entry from the member list endpoint.
- * @returns The member and their chamber, or `null` when the record has no name or no recognizable chamber — either way
- *   there's no defensible seat to draw.
+ * @returns The member and their chamber, or `null` without a name or a recognizable chamber.
  */
 export function mapCongressMember(member: CongressApiMember): SeatedMember | null {
   const name: string | undefined = member.name?.trim();
@@ -465,20 +430,11 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
 }
 
 /**
- * Maps a member's portrait and the credit line that has to travel with it.
- *
- * One function for both member endpoints, which publish the same two fields — so the sanitizing happens once and a
- * directory card and a member's own page cannot end up treating a credit line differently.
- *
- * The attribution is sanitized here rather than at render time, on the rule the CRS summaries already follow: no
- * unsanitized markup ever exists inside this app's own model, so no renderer has to remember to be careful. It is a
- * fragment rather than plain text because Congress.gov writes some credits as a link to the holding archive.
+ * Maps a member's portrait and its credit line, for both member endpoints. The credit is sanitized here so no
+ * unsanitized markup exists in the model; it's HTML because some credits link to the holding archive.
  *
  * @param depiction - The validated `depiction` object, if the record carried one.
- * @returns The portrait, or `undefined` without an image URL — a credit line with no picture beneath it is not a
- *   portrait, and a record that publishes only an attribution has nothing to show. A portrait whose *credit* is missing
- *   is kept, because the API genuinely publishes those and dropping the image would be discarding a real record over a
- *   field the publisher chose not to fill in.
+ * @returns The portrait, or `undefined` without an image URL. A portrait with no credit is kept.
  */
 export function mapMemberDepiction(depiction: CongressApiDepiction | undefined): MemberDepiction | undefined {
   const imageUrl: string = (depiction?.imageUrl ?? "").trim();
@@ -515,17 +471,12 @@ export function mapMemberTerm(term: CongressApiMemberDetailTerm): MemberTerm | n
 }
 
 /**
- * Maps a raw member item-endpoint record into the app's {@link MemberProfile} shape.
- *
- * Terms are sorted newest first and drive three separate things the rest of the page depends on — the member's chamber,
- * their title, and their represented jurisdiction — so a member who moved between chambers, or whose state is only
- * recorded per-term, still reads correctly. The top-level `state`/`district` fields are preferred when present and the
- * most recent term fills in for them when they aren't.
+ * Maps a member item-endpoint record into {@link MemberProfile}. Terms are sorted newest first and supply the chamber,
+ * title, and (when the top-level fields are absent) the jurisdiction.
  *
  * @param member - A validated record from the member item endpoint.
  * @param bioguideId - The ID that was looked up, used when the payload itself omits one.
- * @returns The mapped profile, or `null` when the record carries no name or no recognizable term — without a chamber
- *   there's no way to describe the seat, and without a name there's nothing to title the page with.
+ * @returns The mapped profile, or `null` without a name or a recognizable term.
  */
 export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: string): MemberProfile | null {
   const name: string = (member.invertedOrderName ?? member.directOrderName ?? "").trim();
@@ -577,15 +528,11 @@ export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadership
 }
 
 /**
- * Maps a reference to a committee named from inside another committee's record — a `parent`, or an entry in a
- * `subcommittees` array.
- *
- * Also the identity rule every other committee mapper starts from, so one committee's code is normalized one way
- * whichever endpoint it arrived through.
+ * Maps a committee reference (a `parent` or a `subcommittees` entry). Also the identity rule every other committee
+ * mapper starts from.
  *
  * @param ref - A validated committee reference.
- * @returns The mapped reference, or `null` when it carries no code or no name. A subcommittee with no code cannot be
- *   opened and one with no name cannot be labeled, and either way there is nothing to put in a list.
+ * @returns The mapped reference, or `null` without a code (can't open it) or a name (can't label it).
  */
 export function mapCommitteeRef(ref: Pick<CongressApiCommitteeRef, "systemCode" | "name">): CommitteeRef | null {
   const systemCode: string = (ref.systemCode ?? "").trim().toLowerCase();
@@ -650,19 +597,13 @@ export function mapCommitteeHistory(entry: CongressApiCommitteeHistory): Committ
 }
 
 /**
- * Maps a raw committee item-endpoint record into the app's {@link CommitteeProfile} shape.
- *
- * Two of this record's fields don't come from the record. The **chamber** is taken from the path that was requested,
- * because the item endpoint doesn't return one — the chamber is in the URL, so the response doesn't restate it. The
- * **name** is read out of `history`, for the same reason: unlike every list entry, an item record carries no `name`
- * field at all, and its current formal name is the most recent history entry's. Both are resolved here rather than in
- * the fetcher so one definition of "what is this committee called" covers every page that renders one.
+ * Maps a committee item-endpoint record into {@link CommitteeProfile}. The item record has no chamber (it's in the
+ * requested path) and no `name` (its current name is the latest `history` entry's), so both are supplied here.
  *
  * @param committee - A validated record from the committee item endpoint.
  * @param systemCode - The code that was looked up, used when the payload itself omits one.
  * @param chamber - The chamber whose endpoint was asked, since the record doesn't say.
- * @returns The mapped profile, or `null` when no history entry names the committee — with no name there is nothing to
- *   title the page with, and inventing one from the system code would be a guess printed as a fact.
+ * @returns The mapped profile, or `null` when no history entry names the committee.
  */
 export function mapCommitteeProfile(
   committee: CongressApiCommitteeDetail,
@@ -703,15 +644,8 @@ export function mapCommitteeProfile(
 }
 
 /**
- * The activity name Congress.gov publishes when it has recorded that *something* happened and not what.
- *
- * These are common — a bill's committee record routinely carries two or three of them alongside one real activity.
- * Printing "Unknown" beside a committee's name tells a reader nothing they could act on and reads as a gap in this app
- * rather than in the record, so the row is dropped instead.
- *
- * Dropping it is not editing the record: nothing is renamed, reinterpreted, or attributed to the committee that the
- * publisher didn't attribute. What is declined is the printing of a non-answer. The committee itself still appears,
- * with whatever it *did* name, and with no activity line at all when it named none.
+ * The activity name Congress.gov uses when it recorded that *something* happened but not what. Common, and useless to a
+ * reader, so those activity rows are dropped; the committee itself still appears.
  */
 const UNNAMED_COMMITTEE_ACTIVITY: string = "unknown";
 
@@ -748,9 +682,8 @@ export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): 
  * Maps one committee a bill was before.
  *
  * @param committee - A validated entry from `GET /v3/bill/{congress}/{type}/{number}/committees`.
- * @returns The mapped committee, or `null` without a code, a name, or a recognizable chamber. All three are
- *   load-bearing rather than decorative: the code and the chamber together *are* the inward link, and this app's whole
- *   reason for showing a referral is that a reader can follow it.
+ * @returns The mapped committee, or `null` without a code, a name, or a recognizable chamber — the code and chamber
+ *   form the inward link.
  */
 export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommittee | null {
   const ref: CommitteeRef | null = mapCommitteeRef(committee);
@@ -778,9 +711,7 @@ export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommi
  * Maps one entry in a committee's bill list.
  *
  * @param referral - A validated entry from the committee-bills endpoint.
- * @returns The mapped referral, or `null` when it names no congress, type, or number. Those three *are* the record
- *   here: unlike a bill from the bill endpoints, this one carries no title to fall back on, so a referral missing any
- *   part of its identifier names nothing at all and could neither be linked nor labeled.
+ * @returns The mapped referral, or `null` without a congress, type, or number — with no title, those are the record.
  */
 export function mapCommitteeBillReferral(referral: CongressApiCommitteeBill): CommitteeBillReferral | null {
   const number: string | number | undefined = referral.number;
@@ -802,9 +733,7 @@ export function mapCommitteeBillReferral(referral: CongressApiCommitteeBill): Co
  * Maps one entry in a committee's report list.
  *
  * @param report - A validated entry from the committee-reports endpoint.
- * @returns The mapped report, or `null` when it carries no citation. The citation is how a report is named everywhere
- *   it is referred to — in a bill's history, in the *Congressional Record*, on Congress.gov's own page for it — so a
- *   report without one is a row this app has no honest way to label.
+ * @returns The mapped report, or `null` without a citation, which is how a report is named everywhere.
  */
 export function mapCommitteeReport(report: CongressApiCommitteeReport): CommitteeReport | null {
   const citation: string = (report.citation ?? "").trim();
@@ -845,14 +774,8 @@ export function mapCommitteeNomination(nomination: CongressApiCommitteeNominatio
 }
 
 /**
- * Normalizes a Congress.gov timestamp to the ISO 8601 spelling the rest of this app assumes.
- *
- * The committee-reports endpoint is the one place in this API that sends `"2015-03-20 00:05:31+00:00"` — a space where
- * every other endpoint sends a `T`. That is not a cosmetic difference: `formatDate` splits on the presence of a `T` to
- * decide whether it is holding a bare date or a datetime, so the space form takes the bare-date branch, has
- * `"T12:00:00Z"` appended to a string that already carries a time, and renders as the unparsed original. One `replace`
- * at the boundary is the whole fix, and it belongs here on the rule the rest of this module follows: normalization
- * happens where the upstream shape is translated, never at the view.
+ * Normalizes a Congress.gov timestamp to ISO 8601. The committee-reports endpoint sends `"2015-03-20 00:05:31+00:00"`
+ * with a space, which `formatDate` would misread as a bare date.
  *
  * @param value - The upstream timestamp, if any.
  * @returns The timestamp with its date and time joined by `T`, or `undefined` when there was none.

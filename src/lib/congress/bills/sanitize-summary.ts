@@ -70,33 +70,16 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
 }
 
 /**
- * A minimal allow-list sanitizer for the small, consistent HTML that CRS bill summaries use — not a general-purpose
- * sanitizer. The Congress.gov API itself notes this markup isn't always well-formed (see the "HTML codes may not be
- * valid" caveat in BillEndpoint.md), so this works tag-by-tag with a regex rather than assuming a parseable DOM tree;
- * malformed nesting just renders a little oddly rather than breaking anything.
+ * A minimal allow-list sanitizer for the small HTML vocabulary of CRS bill summaries — not a general-purpose one. The
+ * API warns this markup may be malformed, so it works tag-by-tag rather than assuming a parseable tree.
  *
- * **The output is assembled rather than patched, and that distinction is the whole security property.** The input is
- * walked once; text between recognized tags is escaped, and only a recognized, allow-listed tag is re-emitted as
- * markup. A `<` that begins no valid tag becomes `&lt;` and renders as the visible character it is. Nothing passes
- * through by default, so there is no path by which unmatched input reaches the browser as markup.
+ * **The output is assembled, not patched — that's the security property.** Text is escaped and only allow-listed tags
+ * are re-emitted, so nothing unmatched reaches the browser as markup. A `.replace()` that strips tags is exploitable:
+ * in `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, stripping the inner `<img>` splices a live one.
  *
- * Patching instead — a single `.replace()` over the input — leaves any text the tag pattern *doesn't* match untouched
- * in the output, and overlapping tags exploit exactly that gap. Given
- * `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, the inner `<img …>` matches and is stripped, and the
- * leftover `<i` and `mg src=x onerror=alert(1)>` fragments close up around each other into a live, executing
- * `<img onerror>`: stripping a dangerous tag makes a dangerous tag. Building the output closes that whole class rather
- * than the particular payloads known to find it.
- *
- * Every tag not on `ALLOWED_TAGS` is dropped (its own markup is removed, but any text between an opening and closing
- * pair is kept as plain text). Every attribute is dropped except `href` on `<a>`, which is kept only if it's an
- * absolute `http(s)` link (so `javascript:` and other unsafe schemes never survive) and always gets
- * `target="_blank" rel="noreferrer"` added, matching how every other outbound link in this app behaves.
- *
- * This deliberately keeps the project dependency-free (see `CONTRIBUTING.md`'s "Tooling Stays Small") rather than
- * pulling in a full DOM-based sanitizer for a narrow, well-understood input shape. That tradeoff is worth revisiting if
- * this is ever pointed at markup from a less predictable source than Congress.gov — a hand-written sanitizer is only as
- * good as the bypasses someone has thought to test, and the tests beside this file are the record of which ones have
- * been.
+ * Disallowed tags are dropped (their inner text kept). Every attribute is dropped except an absolute `http(s)` `href`
+ * on `<a>`, which also gets `target="_blank" rel="noreferrer"`. Hand-written to stay dependency-free; revisit if it's
+ * ever pointed at less predictable markup.
  *
  * @param html - The raw summary fragment as Congress.gov returned it.
  * @returns A fragment safe to render with `dangerouslySetInnerHTML`: allow-listed tags only, no attributes except a

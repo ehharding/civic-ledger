@@ -1,28 +1,14 @@
 import { compareText } from "@/lib/format";
 
 /**
- * The committee domain model: the closed unions the rest of the app switches on, the three committee shapes it renders,
- * and the helpers that decide how a committee reads on screen.
- *
- * The counterpart to `members/model.ts`, and deliberately built on the same three rules:
- *
- * - **Upstream free text is narrowed at the boundary.** Congress.gov publishes `chamber` and `committeeTypeCode` as
- *   strings; a value nobody anticipated degrades to a documented fallback rather than leaking an unstyled label into
- *   the UI.
- * - **Display wording lives here, not in a component**, so what a reader (or a screen reader) is told about a committee
- *   is unit-tested rather than only reachable through a rendered page.
- * - **Nothing here performs I/O.** Both sides of the app import this module — the browser filters the directory with
- *   it — so it must not drag the server-only adapter, or the API key it reads, into the client bundle.
+ * The committee domain model, built on the same rules as `members/model.ts`: upstream free text is narrowed at the
+ * boundary, display wording lives here so it can be unit-tested, and nothing performs I/O (the browser imports this to
+ * filter the directory).
  */
 
 /**
- * The chambers a committee can belong to.
- *
- * Wider than `CongressChamber` by one, and that difference is the whole reason this is its own union rather than a
- * reuse: a *member* sits in the House or the Senate and nowhere else, while a committee can be joint — the Joint
- * Economic Committee and the Joint Committee on Taxation are neither chamber's, and folding them into either would be a
- * factual error rather than a rounding. These values are also the path segments Congress.gov's committee endpoint
- * accepts, which is why they are lower-case here and go into the route unchanged.
+ * The chambers a committee can belong to — `CongressChamber` plus "joint", for bodies like the Joint Economic
+ * Committee. Also the path segments Congress.gov's committee endpoint accepts, so they go into routes unchanged.
  */
 export const committeeChambers = ["house", "senate", "joint"] as const;
 
@@ -51,9 +37,7 @@ export const committeeChamberShortLabels: Record<CommitteeChamber, string> = {
  * Narrows Congress.gov's committee `chamber` string to a {@link CommitteeChamber}.
  *
  * @param chamber - The upstream chamber string ("House", "Senate", "Joint", or "NoChamber"), if any.
- * @returns The matching chamber, or `null` for anything unrecognized — including the API's own `"NoChamber"`, which it
- *   uses for records that are not a committee of either body. Callers drop those rather than filing them under a
- *   chamber they do not belong to.
+ * @returns The matching chamber, or `null` for anything unrecognized (including `"NoChamber"`), so callers drop it.
  */
 export function normalizeCommitteeChamber(chamber?: string): CommitteeChamber | null {
   const value: string = (chamber ?? "").trim().toLowerCase();
@@ -66,29 +50,15 @@ export function normalizeCommitteeChamber(chamber?: string): CommitteeChamber | 
 }
 
 /**
- * The kinds of committee this app groups by.
- *
- * Congress.gov's `committeeTypeCode` is free text whose documented values are "Commission or Caucus", "Joint", "Other",
- * "Select", "Special", "Standing", "Subcommittee", and "Task Force". Those collapse to five here, because the
- * distinctions this app drops are ones a reader has no use for: "Special" and "Select" name the same thing in the two
- * chambers' own usage, and "Other" and "Task Force" are residual buckets that only ever hold a handful of bodies.
- * Anything unrecognized becomes `"other"` rather than a new, unstyled group.
- *
- * "Subcommittee" is deliberately absent. A subcommittee's *kind* is a fact about its parent, and this app models the
- * parent relationship structurally — @see CommitteeSummary.parent — so a type that only ever restated it would be a
- * second, silently-drifting answer to the same question.
+ * The kinds of committee this app groups by. Congress.gov's eight `committeeTypeCode` values collapse to five:
+ * "Special" and "Select" mean the same thing in the two chambers, "Task Force" joins "Other", and anything unknown is
+ * `"other"`. "Subcommittee" is absent because that's modeled structurally. @see CommitteeSummary.parent
  */
 export const committeeTypes = ["standing", "select", "joint", "commission", "other"] as const;
 
 export type CommitteeType = (typeof committeeTypes)[number];
 
-/**
- * How each type reads as a noun phrase, for a sentence rather than a chip.
- *
- * Separate from {@link committeeTypeLabels} because a label and a noun phrase genuinely differ here: "Commission or
- * Caucus" is the right chip and "Commission or Caucus committee" is not a thing anyone would write, while "Other" is a
- * fine chip and no kind of sentence at all.
- */
+/** How each type reads in a sentence, which differs from its chip label (e.g., "Other" isn't a noun phrase). */
 export const committeeTypeNounPhrases: Record<CommitteeType, string> = {
   standing: "Standing committee",
   select: "Select committee",
@@ -106,13 +76,7 @@ export const committeeTypeLabels: Record<CommitteeType, string> = {
   other: "Other",
 };
 
-/**
- * One sentence on what each kind of committee *is*.
- *
- * The reason this app has a committees section at all: "Standing" and "Select" are the two words that decide whether a
- * body is a permanent part of how Congress works or a temporary one convened for a single purpose, and a directory that
- * prints the label without ever saying what it means teaches a reader nothing they did not already know.
- */
+/** One sentence on what each kind of committee *is* — e.g., whether it's permanent or convened for one purpose. */
 export const committeeTypeDescriptions: Record<CommitteeType, string> = {
   standing:
     "A permanent committee, created by a chamber's own rules. Standing committees hold jurisdiction over a subject area for as long as the rules stand, and are where most bills are referred.",
@@ -126,15 +90,11 @@ export const committeeTypeDescriptions: Record<CommitteeType, string> = {
 };
 
 /**
- * Narrows Congress.gov's `committeeTypeCode` to a {@link CommitteeType}.
- *
- * Prefix and substring matching rather than exact equality, for the same reason `normalizePartyName` matches on stems:
- * the upstream values arrive with inconsistent spacing and casing across endpoints ("Commission or Caucus" on one,
- * "commission" on another), and matching loosely absorbs that without an exhaustive list of spellings.
+ * Narrows Congress.gov's `committeeTypeCode` to a {@link CommitteeType}. Matches loosely, since spacing and casing vary
+ * across endpoints ("Commission or Caucus" vs "commission").
  *
  * @param type - The upstream `committeeTypeCode` or `type`, if any.
- * @returns The matching type, or `"other"` for anything unrecognized — never a thrown error, since a new category
- *   appearing upstream should change a label, not take down the page.
+ * @returns The matching type, or `"other"` for anything unrecognized.
  */
 export function normalizeCommitteeType(type?: string): CommitteeType {
   const value: string = (type ?? "").trim().toLowerCase();
@@ -148,16 +108,9 @@ export function normalizeCommitteeType(type?: string): CommitteeType {
 }
 
 /**
- * The shape of a Congress.gov committee system code — the stable identifier this app keys committees on, e.g.
- * `"hsag00"` for the House Committee on Agriculture and `"hsag14"` for one of its subcommittees.
- *
- * Used both as a route guard (these arrive from the URL bar, so they are untrusted by definition) and to decide whether
- * an official-record reference can honestly be offered. The preview fixtures deliberately use codes that *cannot* match
- * this pattern, so a placeholder committee can never be presented as a real one.
- *
- * Deliberately looser than the four-letters-plus-two-digits form every code observed today takes: the pattern's job is
- * to make a value safe to interpolate into an outbound path, and a real code that a too-tight guard rejected would be a
- * 404 on a committee that exists.
+ * The shape of a Congress.gov committee system code, e.g. `"hsag00"` (House Agriculture) or `"hsag14"` (a
+ * subcommittee). Guards the route and official-record references; preview fixture codes deliberately can't match.
+ * Looser than the observed four-letters-two-digits form: its job is safe interpolation, not rejecting real codes.
  */
 const SYSTEM_CODE_PATTERN: RegExp = /^[a-z]{2,8}\d{2}$/;
 
@@ -172,11 +125,8 @@ export function isCommitteeSystemCode(value: string | undefined): boolean {
 }
 
 /**
- * A committee named from inside another committee's record — a `parent` on a subcommittee, or an entry in a parent's
- * `subcommittees` array. Just enough to name it and link to it.
- *
- * One shape rather than one per direction, mirroring {@link congressApiCommitteeRefSchema} and the single
- * `mapCommitteeRef` that maps both spellings — so a third field earning its way in is one edit rather than two.
+ * A committee named from inside another committee's record — a subcommittee's `parent`, or an entry in a parent's
+ * `subcommittees`. Just enough to name and link it; one shape for both directions. @see mapCommitteeRef
  */
 export type CommitteeRef = {
   systemCode: string;
@@ -192,11 +142,8 @@ export type CommitteeRef = {
 export type Subcommittee = CommitteeRef;
 
 /**
- * One row of the browsable committee directory (`/committees`).
- *
- * The committee counterpart to `MemberDirectoryEntry`, and it holds the same line: a row nobody can open is dead weight
- * in a directory whose whole purpose is to reach a committee's page, so `systemCode` is required and a record without
- * one is dropped at the boundary rather than rendered as an inert card.
+ * One row of the committee directory (`/committees`). `systemCode` is required because a row that can't be opened is
+ * dropped, as with `MemberDirectoryEntry`.
  */
 export type CommitteeSummary = {
   /** Congress.gov's stable identifier, e.g., `"hsag00"`. Lower-cased, since it is also a URL path segment. */
@@ -214,12 +161,8 @@ export type CommitteeSummary = {
 };
 
 /**
- * One entry in a committee's history: the name it went by, and the span it went by it.
- *
- * The most genuinely educational thing Congress.gov publishes about a committee, and the reason the detail page exists
- * rather than the directory linking straight out. A committee's jurisdiction is rewritten by renaming it — "Committee
- * on Education and Labor" becoming "Committee on Education and the Workforce" and back again is a record of which party
- * held the chamber, not a clerical tidy-up — and that story is invisible from a name alone.
+ * One entry in a committee's history: a name it went by, and when. Renamings track shifts in jurisdiction and party
+ * control, which is much of what the committee page teaches.
  */
 export type CommitteeHistoryEntry = {
   /** The committee's formal name during this span. */
@@ -235,15 +178,8 @@ export type CommitteeHistoryEntry = {
 };
 
 /**
- * Everything the individual committee page renders.
- *
- * A superset of {@link CommitteeSummary}, on the same reasoning that makes `MemberProfile` a superset of
- * `MemberDirectoryEntry`: the directory serializes a few hundred summaries into one page payload and so stays
- * deliberately minimal, while this is fetched one at a time and can afford the whole record.
- *
- * Note what is *not* here: a roster. Congress.gov's committee endpoint publishes no membership, so this app does not
- * claim one — inferring who sits on a committee from anything else available would be a fabrication wearing the same
- * typeface as the surrounding facts.
+ * Everything the committee page renders — the full record, fetched one at a time. There's no roster because
+ * Congress.gov publishes none, and inferring one would be fabrication.
  */
 export type CommitteeProfile = CommitteeSummary & {
   /** Whether the committee exists in the current Congress. A disbanded committee's page is still a useful page. */
@@ -268,11 +204,8 @@ export type CommitteeProfile = CommitteeSummary & {
 };
 
 /**
- * One thing a committee did with a bill, as the bill's own committee record states it.
- *
- * The vocabulary is Congress.gov's, printed verbatim — "Referred To", "Reported By", "Markup By", "Hearings By" — on
- * the same rule the committee page's referral rows already follow: a relationship the publisher recorded is not
- * paraphrased into a status this app invented.
+ * One thing a committee did with a bill, in Congress.gov's own words ("Referred To", "Reported By", "Markup By", …),
+ * printed verbatim rather than paraphrased.
  */
 export type BillCommitteeActivity = {
   name: string;
@@ -288,16 +221,8 @@ export type BillSubcommittee = {
 };
 
 /**
- * One committee a bill was before, and what that committee did with it.
- *
- * The mirror image of {@link CommitteeBillReferral}, which the committee page reads from the other end — and much the
- * cheaper direction. Answering "which committees held this bill" costs one request and arrives with names attached,
- * where answering "which bills did this committee hold" costs one lookup per row to recover the titles the
- * committee-bills endpoint omits.
- *
- * It is also the one shape in this app that carries a committee's chamber *and* its system code together on a record
- * that isn't a committee record: the committee item endpoint states no chamber at all, so a bill's referral is what
- * makes an inward link buildable without a second round trip.
+ * One committee a bill was before, and what it did with it — the mirror of {@link CommitteeBillReferral}. Carries both
+ * chamber and system code, so the bill page can link inward without another request.
  */
 export type BillCommittee = {
   systemCode: string;
@@ -314,35 +239,16 @@ export type BillCommittee = {
 };
 
 /**
- * Congress.gov's own index of committees — where a reader is sent to verify a committee against the official record.
- *
- * Deliberately the index rather than a per-committee deep link, and this is a decision rather than an omission.
- * Congress.gov's committee URLs are of the form `/committee/house-agriculture/hsag00`: a *name slug* followed by the
- * system code. The slug is not published by the API, and building one from the committee's name is guesswork — the list
- * endpoint says "Agriculture Committee" while the slug says "house-agriculture", and the two diverge further the longer
- * the name gets. A guessed slug that happens to be wrong produces a link that looks authoritative and lands on a 404,
- * which is a worse outcome for a project whose whole claim is that you can check it than sending a reader one click
- * further than strictly necessary.
- *
- * So the committee page links here and prints the system code beside it, which is the thing that actually identifies
- * the committee on the destination. This is the same rule the preview fixtures follow for bills — @see
- * `CONGRESS_GOV_HOME` in bills/model.ts — applied for a different reason: not "this record isn't real", but "this URL
- * isn't knowable from what the API gives us".
- *
- * The rule is about congress.gov specifically. The committee's *own* site is linkable, because the API publishes that
- * URL rather than leaving it to be guessed. @see CommitteeProfile.websiteUrl.
+ * Congress.gov's committee index, where a reader verifies a committee. Not a deep link: committee URLs include a name
+ * slug (`/committee/house-agriculture/hsag00`) the API doesn't publish, and a guessed slug risks an
+ * authoritative-looking 404. The page prints the system code beside this link instead. The committee's own site is
+ * linked directly, since the API publishes it. @see CommitteeProfile.websiteUrl
  */
 export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committees";
 
 /**
- * Orders committees alphabetically by name.
- *
- * Collated through the app's one pinned collator, for exactly the reason `compareMembersByName` is: the server orders
- * the directory before serializing it and the browser re-orders the same list as the reader narrows, and two runtimes
- * disagreeing about alphabetical order is a hydration mismatch across the whole grid. @see compareText in format.ts.
- *
- * Declared structurally so it orders any named committee shape — a summary, a profile, a subcommittee — rather than
- * only the one it was written for.
+ * Orders any committee shape alphabetically by name, through the app's pinned collator so server and browser agree.
+ * @see compareText
  *
  * @param a - One committee to compare.
  * @param b - The other committee to compare.
@@ -353,19 +259,11 @@ export function compareCommitteesByName(a: { name: string }, b: { name: string }
 }
 
 /**
- * The strings a committee should be findable by, given the name Congress.gov publishes for it.
+ * The strings a committee should be findable by. The list endpoint says `"Agriculture Committee"` where referral lines
+ * and official names say `"Committee on Agriculture"`, so both forms match.
  *
- * **Never displayed.** This exists because the same committee is published under two different word orders depending on
- * where you meet it: the list endpoint says `"Agriculture Committee"`, while a bill's referral line, the chambers' own
- * sites, and the committee's item-level `officialName` all say `"Committee on Agriculture"`. A reader who pastes a
- * referral line into the search box is searching for a string that appears nowhere in the list data, and would be told
- * the committee doesn't exist.
- *
- * The rewrite is confined to *matching*, and doing it for display instead would be wrong: "Committee" is part of the
- * proper name of some bodies rather than a suffix on a subject, so moving it turns the Joint Economic Committee into
- * "Committee on Joint Economic". There is no reliable way to tell those two cases apart from the string alone, so this
- * app displays whatever Congress.gov published, where an extra variant that reads oddly costs nothing because nobody
- * ever sees it.
+ * Matching only, never display: for some bodies "Committee" is part of the proper name (the Joint Economic Committee),
+ * and the rewritten form would be wrong on screen.
  *
  * @param name - The upstream name.
  * @returns The name itself, plus the leading form when one can be derived. Both lower-cased, since the only caller
@@ -386,16 +284,8 @@ export function committeeSearchTerms(name: string): string[] {
 /**
  * The one-line description of a committee, in plain English.
  *
- * Lives in the model rather than being assembled at the call site, on the rule the rest of this file and
- * `members/model.ts` both follow: what a reader is told about a committee is display wording, so it belongs somewhere
- * it can be unit-tested rather than somewhere it can only be reached by rendering a page. A route's `generateMetadata`
- * composing this sentence by indexing two label tables by hand is exactly what the rule exists to keep out of route
- * files.
- *
- * @param committee - The committee to describe. Takes the shared summary fields, so a profile serves as well as a
- *   directory row.
- * @returns e.g., `"Standing committee of the House of Representatives."` — a complete sentence, since its only caller
- *   is a page description and a fragment would read as a truncation.
+ * @param committee - The committee to describe; a summary or a profile.
+ * @returns A complete sentence, e.g., `"Standing committee of the House of Representatives."`.
  */
 export function describeCommittee(committee: Pick<CommitteeSummary, "chamber" | "type">): string {
   // "the House of Representatives" and "the Senate" take the article; "both chambers" does not.
@@ -409,8 +299,7 @@ export function describeCommittee(committee: Pick<CommitteeSummary, "chamber" | 
  * A committee's history span, in plain English.
  *
  * @param entry - The history entry to describe.
- * @returns e.g., `"1975–1995"`, or `"1975–present"` for the span still in effect. An empty string when the entry
- *   carries no start date, so callers can omit the line rather than print a dash with nothing around it.
+ * @returns e.g., `"1975–1995"` or `"1975–present"`; an empty string when there's no start date.
  */
 export function formatCommitteeHistoryYears(entry: CommitteeHistoryEntry): string {
   const start: string = committeeHistoryYear(entry.startDate);
@@ -421,11 +310,8 @@ export function formatCommitteeHistoryYears(entry: CommitteeHistoryEntry): strin
 }
 
 /**
- * The year out of a committee-history timestamp.
- *
- * These arrive as full ISO 8601 timestamps (`"1975-01-14T00:00:00Z"`), and the day and hour of a committee's renaming
- * are noise beside the year it happened in. Read off the string rather than through a `Date`, which would shift the
- * year across a timezone for a January or December date.
+ * The year out of a committee-history timestamp (`"1975-01-14T00:00:00Z"`). Read off the string, since a `Date` could
+ * shift a January or December date across a year boundary by timezone.
  *
  * @param value - The upstream timestamp, if any.
  * @returns The four-digit year, or an empty string when the value carries no recognizable one.

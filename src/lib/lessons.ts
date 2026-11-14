@@ -4,29 +4,14 @@ import { type BillStage, billStageLabels, billStages } from "@/lib/congress/bill
 import { CONGRESS_GOV_COMMITTEES } from "@/lib/congress/committees/model";
 
 /**
- * The learning modules reached from `/learn`, and the content of each one.
+ * The learning modules reached from `/learn` — hand-curated editorial content, kept here so it can be unit-tested. The
+ * tests beside this file hold three rules:
  *
- * Hand-curated editorial content, not sourced from the Congress.gov API — the same reason `glossary.ts` sits in
- * `src/lib` rather than `src/lib/congress`. Unlike a glossary entry, **a lesson cites its sources**: a definition is
- * something anyone could check in a dictionary, while a five-step explanation of how a chamber records a vote is a
- * claim, and a project whose entire premise is that you can verify what it tells you should not make claims a reader
- * cannot follow anywhere.
- *
- * Three rules hold across every lesson below, and the tests beside this file are what keep them:
- *
- * - **Every source is a primary one, and names its publisher.** house.gov, senate.gov, clerk.house.gov, congress.gov,
- *   and the National Archives' transcription of the Constitution. No secondary explainers, and nothing behind a
- *   paywall — a citation a reader cannot open is decoration.
- * - **Every lesson states what it leaves out**, in its own `limits`, rendered on the page rather than left in a doc.
- *   These are simplifications by design; a simplification that doesn't say so is just an inaccuracy.
- * - **A lesson never misstates what this app shows, in either direction.** The voting module is the sharp case: a
- *   bill's page names each recorded vote taken on it and links the chamber's own record, and the arithmetic — the
- *   counts, the margins, the individual positions — stays at the chambers. The lesson draws exactly that line, since a
- *   reader told the app holds nothing would not go looking for what it does hold.
- *
- * Content lives here rather than in the route files on the rule `congress/committees/model.ts` states for display
- * wording: what a reader is told should be somewhere it can be unit-tested, not somewhere reachable only by rendering a
- * page.
+ * - **Every source is primary and names its publisher** (house.gov, senate.gov, clerk.house.gov, congress.gov, the
+ *   National Archives), with nothing paywalled.
+ * - **Every lesson states what it leaves out**, in `limits`, rendered on the page.
+ * - **A lesson never misstates what this app shows**, in either direction — e.g., the voting lesson says bill pages
+ *   name and link recorded votes while the tallies stay with the chambers.
  */
 
 /**

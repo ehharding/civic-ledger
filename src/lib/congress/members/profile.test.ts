@@ -9,7 +9,7 @@ import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMemberProfile, type MemberProfileResult } from "@/lib/congress/client";
 import type { MemberProfile } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
-import { jsonResponse } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 
 /**
  * A fetch mock that answers every call with a *fresh* `Response`.
@@ -101,8 +101,7 @@ describe("getMemberProfile without an API key", (): void => {
 
 describe("getMemberProfile with an API key", (): void => {
   it("maps a live item-endpoint record, including its bare terms array", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(alwaysRespond(liveMemberPayload())));
+    stubLiveApi(vi.fn().mockImplementation(alwaysRespond(liveMemberPayload())));
 
     const result: MemberProfileResult = await getMemberProfile("L000174");
 
@@ -118,9 +117,7 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("also accepts the nested terms.item shape, in case the endpoints ever align", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation(
         alwaysRespond(
           liveMemberPayload({
@@ -137,9 +134,8 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("never sends a malformed Bioguide ID upstream", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     const result: MemberProfileResult = await getMemberProfile("../../bill/119/hr/284");
 
@@ -149,8 +145,7 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("treats a 404 as 'no such member' rather than falling back to a placeholder", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const result: MemberProfileResult = await getMemberProfile("Z999999");
 
@@ -159,8 +154,7 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("falls back to labeled placeholders when the request fails outright", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: MemberProfileResult = await getMemberProfile("L000174");
 
@@ -170,9 +164,7 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("still returns the profile when only the legislation lists fail", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((url: URL): Promise<Response> => {
         if (String(url).includes("legislation")) return Promise.resolve(jsonResponse({}, 500));
         return Promise.resolve(jsonResponse(liveMemberPayload()));
@@ -230,8 +222,7 @@ describe("getMemberProfile with an API key", (): void => {
 
 describe("getMemberProfile with an unusable live payload", (): void => {
   it("treats a 200 carrying no member as nobody by that ID", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(alwaysRespond({})));
+    stubLiveApi(vi.fn().mockImplementation(alwaysRespond({})));
 
     const result: MemberProfileResult = await getMemberProfile("L000174");
 
@@ -242,10 +233,8 @@ describe("getMemberProfile with an unusable live payload", (): void => {
   });
 
   it("treats a member record with no usable term as nobody by that ID", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     // A name but no term naming a recognizable chamber — there is no way to describe the seat, so there is no page.
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi
         .fn()
         .mockImplementation(

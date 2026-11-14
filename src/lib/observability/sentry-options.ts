@@ -3,14 +3,8 @@ import type * as Sentry from "@sentry/nextjs";
 import { redactEvent } from "@/lib/observability/redact";
 
 /**
- * The option bag `Sentry.init` accepts, recovered from the function rather than imported by name.
- *
- * `@sentry/nextjs` re-exports the three runtime SDKs and their integrations, but not the option type itself — it
- * declares it locally for `init`'s own signature and stops there. Deriving it from the function keeps this file
- * correct through a version that renames or restructures it, and avoids reaching past the installed package into
- * `@sentry/core`, which is a transitive dependency this project does not declare and should not import from.
- *
- * The same reasoning, and the same shape, as `SpeedInsightsEvent` in `site-analytics.tsx`.
+ * The option bag `Sentry.init` accepts, derived from the function because `@sentry/nextjs` doesn't export the type (and
+ * `@sentry/core` is an undeclared transitive dependency).
  */
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
 
@@ -23,16 +17,10 @@ type BeforeBreadcrumb = NonNullable<SentryInitOptions["beforeBreadcrumb"]>;
 type BeforeSendLog = NonNullable<SentryInitOptions["beforeSendLog"]>;
 
 /**
- * The single `Sentry.init` configuration, shared by all three runtimes.
+ * The single `Sentry.init` configuration, shared by all three runtimes so every rule about what leaves the process
+ * holds everywhere. The three Next.js entry points only call `Sentry.init(sentryInitOptions(…))`.
  *
- * One object rather than three, because every rule that matters here is a rule about what leaves the process, and a
- * rule enforced in the browser but not on the server is not enforced. The three entry points Next.js requires
- * (`instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`) are deliberately thin: they call
- * `Sentry.init(sentryInitOptions(…))` and nothing else, so there is one place to read and one place to change.
- *
- * Every default this overrides is overridden for a stated reason. Sentry's defaults are sensible for a product whose
- * URLs are opaque and whose outbound requests carry credentials in headers; this app is neither.
- * @see redact.ts.
+ * Defaults are overridden because this app's URLs carry credentials and searches. @see redact.ts
  */
 
 /** The environment name reported with every event, when nothing more specific is configured. */
@@ -49,32 +37,18 @@ const FALLBACK_ENVIRONMENT: string = "development";
 const DEFAULT_TRACES_SAMPLE_RATE: number = 0.1;
 
 /**
- * Error messages that are never this app's failure, and are dropped before they reach the issue stream.
+ * Error messages from a visitor's environment, never this app, dropped before reaching the issue stream. Matched as
+ * substrings, so keep each specific.
  *
- * Each entry is a *visitor's* environment misbehaving on a page that rendered fine, so there is nothing in this
- * repository to fix — and an issue stream that fills with them is one that trains you to stop reading it. Matched as a
- * substring of the message, which is how the SDK treats a string entry; keep each one specific enough that it cannot
- * swallow a real failure that happens to share a word with it.
- *
- * - `Object Not Found Matching Id:` — Microsoft's link scanner (Outlook Safe Links and the Bing preview crawler it
- *   shares a CefSharp host with) opens a mailed link in a headless browser and calls back into its own host object,
- *   which rejects with a non-`Error` string the page never produces. The signature is a burst of page loads in a few
- *   seconds, zero users, and no stack.
+ * - `Object Not Found Matching Id:` — Microsoft's link scanner (Outlook Safe Links / Bing preview) rejecting inside its
+ *   own headless host.
  */
 const IGNORED_ERRORS: readonly string[] = ["Object Not Found Matching Id:"];
 
 /**
- * Reads the deployment's environment name — the label that separates a real production crash from someone's laptop.
- *
- * **Set `NEXT_PUBLIC_SENTRY_ENVIRONMENT` on the deployment.** It is listed as optional in `docs/deployment.md` because
- * nothing breaks without it, which undersells it: what breaks is the labeling, quietly, and a production issue stream
- * labeled "development" is worse than one with no environments at all.
- *
- * The `NEXT_PUBLIC_VERCEL_ENV` fallback is a convenience, not a guarantee. A bare `VERCEL_ENV` is useless here because
- * this function also runs in the browser bundle, where only `NEXT_PUBLIC_`-prefixed values are inlined — and Vercel's
- * published list of system environment variables documents `VERCEL_ENV` without promising the prefixed twin. Where the
- * platform does supply it the fallback works; where it does not, this silently reports "development" from production,
- * which is exactly why the explicit variable is the supported path rather than the tidy one.
+ * Reads the deployment's environment name. **Set `NEXT_PUBLIC_SENTRY_ENVIRONMENT` on the deployment**: without it,
+ * production may be labeled "development". The `NEXT_PUBLIC_VERCEL_ENV` fallback isn't guaranteed by Vercel, and a bare
+ * `VERCEL_ENV` isn't inlined into the browser bundle.
  *
  * @returns The configured environment, or {@link FALLBACK_ENVIRONMENT}.
  */
@@ -89,15 +63,8 @@ export function getSentryEnvironment(): string {
 }
 
 /**
- * Reads the DSN that tells the SDK where to report.
- *
- * Read through a helper for the same reason `getCongressApiKey` is: a value set to an empty or whitespace-only string
- * (an easy thing to end up with after copying `.env.example`) counts as *absent*, so the SDK stays off rather than
- * initializing against a DSN it cannot use.
- *
- * Absence is a supported state, not a misconfiguration. It is how the static GitHub Pages demo ships without reporting,
- * and how a local checkout stays out of the project's issue stream — the same "no key configured, take the quiet path"
- * shape the Congress.gov adapter already uses.
+ * Reads the DSN that tells the SDK where to report. Blank counts as absent, which is a supported state: the Pages demo
+ * and local checkouts don't report.
  *
  * @returns The trimmed DSN, or `undefined` when none is usably configured.
  */
@@ -147,26 +114,12 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     ignoreErrors: [...IGNORED_ERRORS],
 
     /**
-     * Structured logs, which is how this app reports the failure it has the most of — and which need no option here.
+     * Structured logs need no option: calling `Sentry.logger.*` (from `log.ts`) is the opt-in, which makes
+     * `beforeSendLog` below the only filter between a log line and the network. Logs aren't sampled — a dropped error
+     * log is a failure nobody can count.
      *
-     * `requestCongressJson` handles every upstream failure and returns `{ outcome: "failed" }` so a page degrades
-     * instead of crashing — which means a Congress.gov outage throws nothing, reaches no error boundary, and would be
-     * invisible to Sentry entirely without the `Sentry.logger` calls in `log.ts`. @see log.ts, which explains why those
-     * arrive as logs rather than as exceptions, and why that is the difference between an issue stream and a quota fire
-     * during an outage.
-     *
-     * Since SDK v11 there is no `enableLogs` switch: calling `Sentry.logger.*` is itself the opt-in, and there is no way
-     * to turn it off again short of not calling it. That makes `beforeSendLog` below the only thing standing between a
-     * log line and the network, which is why it is kept in step with the other callbacks rather than treated as extra.
-     *
-     * Sampling is deliberately not applied. The tracing rate above can drop nine spans in ten because the tenth answers
-     * the same question; a dropped error log is a failure nobody can count.
-     *
-     * **No `consoleLoggingIntegration`, deliberately.** The SDK offers to forward every `console.*` call in the process
-     * as a log, which sounds like what `log.ts` does and is not: that sweep includes Next's, React's, and every
-     * dependency's console output, none of it redacted by anything here, and it would arrive as a second copy of the
-     * lines `log.ts` already sends. The app logs through one boundary on purpose, so that what leaves it is reviewable
-     * in a diff rather than inherited from whatever a dependency decided to print.
+     * No `consoleLoggingIntegration`: it would forward every dependency's unredacted console output, duplicating what
+     * `log.ts` already sends.
      */
 
     /**
@@ -215,28 +168,14 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     },
 
     /**
-     * The backstop. @see redact.ts for what each of these removes and why.
+     * The backstop, covering every exit: events, breadcrumbs, spans, and logs. @see redact.ts
      *
-     * All four are pure functions of their input and never throw: they run inside the SDK's own dispatch, where an
-     * exception would be a crash in the error handler rather than a dropped field.
-     *
-     * `beforeSendSpan` replaced `beforeSendTransaction` in SDK v11, which streams spans as they finish instead of
-     * batching them into a transaction event. The old hook still type-checks and is never called, so leaving it here
-     * would have been a redaction pass that silently stopped running. Spans cannot be dropped from this hook, only
-     * rewritten — which is all redaction needs.
-     *
-     * `beforeSendLog` is the one to keep in step with the others. It is a separate hook on a separate
-     * pipeline — calling `Sentry.logger` without it would open a fourth exit from this process that none of the
-     * redaction above covers, and it would open it quietly, since a log body looks like text nobody put a URL in until
-     * someone does. `log.ts` already redacts its own lines, so this is the same belt-and-braces arrangement as
-     * `dataCollection` and the callbacks: the module-level pass is what runs, and this is what still holds when a
-     * future caller forgets it.
+     * All four are pure and never throw, since they run inside the SDK's dispatch. In SDK v11, `beforeSendSpan` is the
+     * span hook (`beforeSendTransaction` still type-checks but is never called). `beforeSendLog` backs up the redaction
+     * `log.ts` already does.
      */
-    // biome-ignore-start lint/nursery/useExplicitReturnType: these four are the one place in the app where an inferred
-    // signature is the more precise one. Each `satisfies` clause types the parameter *and* the return from the SDK's
-    // own hook type, which is derived above rather than named — so spelling either out by hand would mean writing
-    // `Parameters<BeforeSend>[0]` and `ReturnType<BeforeSend>` around a body that is already exactly that, and would
-    // stop tracking the SDK the next time it changes one of them. @see SentryInitOptions.
+    // biome-ignore-start lint/nursery/useExplicitReturnType: each `satisfies` clause already types parameter and return
+    // from the SDK's own hook type; spelling them out would stop tracking the SDK. @see SentryInitOptions.
     beforeSend: ((event) => redactEvent(event, secrets)) satisfies BeforeSend,
     beforeSendSpan: ((span) => redactEvent(span, secrets)) satisfies BeforeSendSpan,
     beforeBreadcrumb: ((breadcrumb) => redactEvent(breadcrumb, secrets)) satisfies BeforeBreadcrumb,

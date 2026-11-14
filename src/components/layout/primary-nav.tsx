@@ -66,44 +66,19 @@ export function navCurrent(pathname: string | null, href: string): "page" | true
 /**
  * The header's primary navigation: a row of links on a laptop, a slide-out drawer on a phone.
  *
- * **One nav, two layouts, no second copy of the links.** The `<nav>` below is the same element in both
- * arrangements — below 640px the stylesheet takes it out of flow, parks it off the right edge, and slides it back in
- * when the toggle says so. The alternative most sites reach for is a second markup block for small screens, which puts
- * two landmarks with the same accessible name in the document, doubles the destination list, and gives every test that
- * asks for "the primary navigation" two answers. The drawer here is a *presentation* of the one nav, so nothing
- * downstream — the `aria-current` marking, the e2e journeys, the target-size sweep — has to learn about the breakpoint.
+ * - **One nav, two layouts.** Below 640px the stylesheet turns the same `<nav>` into a drawer, so there's never a
+ *   second landmark or link list.
+ * - **CSS decides the layout.** This component only knows open/closed; the closed drawer is `visibility: hidden` inside
+ *   its media query, so the links leave the tab order only where the drawer exists.
+ * - **No JavaScript, no drawer.** The toggle and drawer are scoped to `@media (scripting: enabled)`, leaving a plain
+ *   wrapped row otherwise. @see the drawer block in src/styles/responsive.css.
+ * - **A disclosure, not a modal.** `aria-expanded`/`aria-controls` on the toggle; focus isn't moved on open (the panel
+ *   follows the toggle in the DOM). Tab loops within the open drawer because a scrim covers the page; Escape closes it
+ *   and returns focus to the toggle if focus was inside.
  *
- * **Which layout is in force is decided in CSS, not here, and that is load-bearing.** This component knows only that
- * the drawer is open or closed; it never asks how wide the window is. What that buys is that the closed state is
- * expressed as `visibility: hidden` inside the drawer's own media query, so the links leave the tab order and the
- * accessibility tree exactly where the drawer exists and nowhere else. A React-side `inert` or `hidden` on the panel
- * would have to know the breakpoint to avoid hiding the desktop row, and would be wrong for the whole window between a
- * resize and the next render.
- *
- * **Without JavaScript the drawer does not exist, and the nav is unchanged.** The toggle and the drawer layout are
- * scoped to `@media (scripting: enabled)`, so a browser with scripting off keeps the wrapped row this header had
- * before — no button that does nothing, no five links behind a control that cannot open. That is the same commitment
- * the header's search form and the glossary bubble already make: a reader should reach what a page points at whatever
- * is or isn't running. @see the drawer block in src/styles/responsive.css.
- *
- * **It is a disclosure, not a modal.** The panel keeps the `navigation` landmark rather than becoming a
- * `role="dialog"`, and the toggle carries `aria-expanded`/`aria-controls` — the pattern for a control that reveals
- * content that follows it. Focus is deliberately *not* moved on opening: the panel is the toggle's next sibling in the
- * DOM, so the next Tab already lands on the first destination, and a reader who opened the menu by pointer is not
- * yanked anywhere. What the drawer does borrow from a dialog is the Tab loop, because it comes with a scrim: without
- * it, tabbing past the last destination walks into page content the reader can no longer see. Escape closes it, and
- * closing hands focus back to the toggle whenever it was inside the panel — anywhere else, focus is somewhere the
- * reader put it deliberately and is left alone.
- *
- * The current-section marking is carried by `aria-current` alone, with no parallel `is-current` class, for the reason
- * the committee record tabs already state: the attribute is what holds the meaning, so it should be what the stylesheet
- * selects on rather than a second answer to the same question. @see the `.primary-nav a[aria-current]` rule in
- * src/styles/layout.css, which is deliberately keyed to the attribute's *presence* so both values it can take are
- * styled the same — the distinction between them is for assistive technology, not for the eye.
- *
- * A client component only because of the above, plus knowing which destination is current, which means reading the
- * open path through {@link usePathname}. It is split out of {@link SiteHeader} rather than pulling the whole header
- * across the boundary so the wordmark and the search form stay server-rendered.
+ * The current section is marked by `aria-current` alone, which the stylesheet selects on by presence
+ * (@see `.primary-nav a[aria-current]` in layout.css). A client component for the drawer state and {@link usePathname};
+ * split from {@link SiteHeader} so the rest of the header stays server-rendered.
  *
  * @returns The drawer toggle, its scrim, and the primary navigation landmark — three siblings of the header's grid, so
  *   the header can lay them out without a wrapper that would have to be undone at every breakpoint.

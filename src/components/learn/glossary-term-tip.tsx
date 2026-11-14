@@ -74,37 +74,15 @@ type GlossaryTermTipProps = {
 };
 
 /**
- * A word in the app's prose that carries its own definition.
+ * A word in the app's prose that carries its own definition, shown where the reader met it.
  *
- * The half of the glossary that comes to the reader rather than waiting on `/learn` to be visited: someone who meets
- * "markup" or "cloture" in a lesson or in a bill's latest action gets the definition where they met the word, without
- * losing their place in what they were reading.
+ * **A link first, a tooltip second.** The term links to its `/learn` entry, so it works without JavaScript or hover;
+ * the bubble is an enhancement. It meets WCAG 1.4.13: it opens on focus as on hover; it's hoverable (listeners sit on
+ * the wrapper that contains the bubble — hence the lint suppression below); Escape closes it (listened for on the
+ * document, since a hover-opened bubble has no focus inside); and nothing closes on a timer.
  *
- * **It is a link first and a tooltip second, and that order is the design.** The visible term is an anchor to its own
- * entry on `/learn`, so the feature still works with JavaScript off, on a touch screen where there is no hover, and for
- * anyone who wants the full entry rather than a passing glance. The hover-and-focus bubble is an enhancement layered on
- * top of a control that already did something.
- *
- * Four things WCAG 1.4.13 (Content on Hover or Focus) asks of a bubble like this, and where each one is:
- *
- * - **Reachable without a pointer.** The trigger is a real link, so it takes focus in the tab order and the bubble
- *   opens on focus exactly as it does on hover.
- * - **Hoverable.** The listeners sit on the wrapper, which contains the bubble, so moving the pointer off the word and
- *   into the definition does not dismiss the thing being read.
- * - **Dismissible.** Escape closes it, listened for on the document rather than on the trigger — a bubble opened by
- *   hovering is one the keyboard has no focus inside, so a handler on the link would never hear the keypress.
- * - **Persistent.** Nothing closes on a timer.
- *
- * The bubble stays in the DOM whether or not it is showing, and `aria-describedby` always points at it. That is not an
- * oversight: a screen reader announces a description at the moment focus arrives, and a bubble mounted by a state
- * update lands *after* that moment. Keeping it mounted and hiding it in CSS means the definition is announced on focus
- * regardless of what the visual state has caught up to.
- *
- * The pointer listeners sit on the outer `<span>` rather than on the link, which is what the lint suppression below is
- * about. They have to: the wrapper is what also contains the bubble, so listening on the link would fire a leave the
- * instant the pointer crossed from the word into the definition it opened — the "hoverable" requirement above, failed.
- * The wrapper is a positioning box with no behavior of its own, and every affordance a person actually operates
- * (focus, activation, the accessible name) belongs to the real link inside it.
+ * The bubble stays mounted and `aria-describedby` always points at it, so a screen reader announces the definition the
+ * moment focus arrives rather than after a state update.
  *
  * @param props - @see GlossaryTermTipProps
  * @returns The linked term and its definition bubble.

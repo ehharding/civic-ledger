@@ -9,24 +9,11 @@ import { logError } from "@/lib/observability/log";
 import "./globals.css";
 
 /**
- * The last-resort boundary, for a failure in the root layout itself.
+ * The last-resort boundary, for a failure in the root layout itself, which `error.tsx` can't catch. It replaces the
+ * whole document — hence its own `<html>` and `<body>`, and no `SiteShell`, which might be what failed.
  *
- * `error.tsx` handles everything inside the layout, which is nearly every failure this app can have. It cannot handle a
- * throw in the root layout, because it renders *inside* the thing that just failed. Next.js's answer is this file: it
- * replaces the entire document, which is why it carries its own `<html>` and `<body>` and why it is the one component
- * here that cannot use `SiteShell` — the shell is a plausible source of the error it is reporting.
- *
- * Reaching this page at all means something structural broke, and that is precisely the failure least likely to be
- * noticed without a report: there is no error boundary left above it and, in production, no console anyone is watching.
- * So capturing here is not belt-and-braces — it is the only signal this failure has.
- *
- * The same rule as `error.tsx` holds and matters more, not less: the error is reported, never rendered. Nothing about
- * the failure reaches the DOM, because a root-layout failure is exactly where a half-initialized value carrying an
- * upstream URL is most likely to be the thing that threw. `src/lib/observability/redact.ts` decides what the report
- * itself may carry.
- *
- * Styling is deliberately minimal and inherits the app's own stylesheet, so this reads as the same product rather than
- * as a browser error page — but it depends on nothing that could have been what broke.
+ * Reporting here is the only signal such a failure has. As in `error.tsx`, the error is reported, never rendered
+ * (@see src/lib/observability/redact.ts). Minimal styling that depends on nothing that could have broken.
  *
  * @param error - The caught error, including Next's `digest`.
  * @returns A complete, self-contained HTML document.

@@ -1,15 +1,8 @@
 import { type BillAction, type BillStage, billStages } from "@/lib/congress/bills/model";
 
 /**
- * Phrases that indicate a bill has reached a given stage, checked in order — most advanced first, so a bill whose
- * action text mentions both a committee and enactment is read as enacted rather than as still in committee.
- *
- * Kept as data rather than a chain of `if` statements so the whole classifier is legible at a glance: adding a phrase
- * is a one-line change that can't accidentally reorder the precedence the rest of it depends on.
- *
- * Deliberately conservative. Congress.gov's action text is prose written for humans, and this only ever drives a
- * learning cue — anything it doesn't confidently recognize falls through to "introduced" rather than guessing at
- * something more advanced.
+ * Phrases that indicate a bill has reached a stage, most advanced first so text mentioning both a committee and
+ * enactment reads as enacted. Conservative: anything unrecognized falls through to "introduced".
  */
 const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[] = [
   { stage: "law", phrases: ["became public law", "became private law", "signed by president"] },
@@ -22,21 +15,10 @@ const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[]
 ];
 
 /**
- * For each chamber a bill can originate in, a pattern naming the *other* one as a whole word.
- *
- * A bill only reaches the second chamber by clearing the first, so an action that takes place there is evidence of
- * passage even when its own words are about something smaller. This is the list-level answer to the problem
- * {@link inferStageFromActions} solves on the bill's own page: "Received in the Senate and Read twice and referred to
- * the Committee on Finance" is a referral sentence, and read as one it walks a House-passed bill back to `"committee"`.
- * It is also the only way "Placed on Senate Legislative Calendar under General Orders" — which names no phrase in
- * {@link STAGE_MARKERS} at all — gets read as anything but `"introduced"` on a House bill.
- *
- * A whole word rather than a phrase list, because the ways a second chamber names itself are open-ended — receipt, a
- * calendar, a cloture vote "in Senate", "the Chair directed the Clerk to notify the Senate", a message "sent to the
- * House" — and each of them means the same thing about the first. The word boundary is what keeps "Housing" (the Senate
- * Banking committee) and "courthouse" (a naming bill) from reading as the House. Checked against 1,500 bills of the
- * 119th Congress in September 2026: every latest action that names the other chamber came after the origin chamber
- * acted on the measure.
+ * For each origin chamber, a whole-word pattern naming the *other* one. A bill only reaches the second chamber by
+ * clearing the first, so "Received in the Senate and … referred to the Committee on Finance" means a House bill passed
+ * the House, though it reads as a referral. Whole-word so "Housing" and "courthouse" don't match; checked against 1,500
+ * bills of the 119th Congress.
  */
 const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
   House: /\bsenate\b/,
@@ -44,13 +26,8 @@ const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
 };
 
 /**
- * Classifies a bill's latest action text into one of the five stages of the educational `BillJourney` stepper.
- *
- * This is an orientation aid, never an authoritative legal determination — the bill detail page says so beside the
- * stepper, and links to the official record for anything definitive. @see STAGE_MARKERS for the precedence order.
- *
- * Reads one line of prose, which is all a *list*-level record carries. Where the full action history has been
- * fetched, {@link inferStageFromActions} is both more accurate and less inferential, and takes precedence.
+ * Classifies a bill's latest action text into a `BillJourney` stage — an orientation aid, not a legal determination.
+ * Where the full action history is available, {@link inferStageFromActions} is more accurate.
  *
  * @param actionText - The bill's latest action text, verbatim from Congress.gov.
  * @param originChamber - The chamber the bill was introduced in. When known, an action naming the other chamber lifts
@@ -72,19 +49,9 @@ export function inferBillStage(
 }
 
 /**
- * Library of Congress action codes that establish a stage outright, rather than suggesting one.
- *
- * These four are the standardized codes the Library of Congress assigns (`sourceSystem.code` 9) at the moments the
- * stepper is about. They are matched instead of the parallel chamber-system codes (`E20000`, `H37300`, …) because the
- * chamber systems report procedural detail rather than milestones, and their coverage differs between the two floors.
- *
- * Deliberately short. Every code here means one specific thing that maps to exactly one stage, and there is no attempt
- * to classify the several hundred other codes the endpoint uses — the prose classifier already handles the low end of
- * the ladder ("Referred to the Committee on…") unambiguously, and a half-decoded taxonomy would be a worse foundation
- * than a small certain one.
- *
- * Notably absent: any code for `"Floor"`. A bill can accumulate dozens of floor actions — debate, motions, quorum
- * calls — without passing anything, so floor activity is not passage and is not treated as it.
+ * Library of Congress action codes (`sourceSystem.code` 9) that establish a stage outright. Chamber-system codes are
+ * procedural and inconsistent between floors, so they're ignored. Deliberately short: each maps to exactly one stage.
+ * There's no floor code, since floor activity isn't passage.
  */
 const STAGE_ACTION_CODES: Readonly<Record<string, BillStage>> = {
   /** Became Public Law / Signed by President. */
@@ -98,21 +65,12 @@ const STAGE_ACTION_CODES: Readonly<Record<string, BillStage>> = {
 };
 
 /**
- * Reads a bill's stage out of its full action history, rather than inferring it from one line of prose.
- *
- * This exists because the latest action is frequently *not* the most advanced one. A House bill that passed the House
- * and was then referred to a Senate committee reports "Received in the Senate and Read twice and referred to the
- * Committee on …" as its latest action — which {@link inferBillStage} reads, correctly for the sentence and wrongly for
- * the bill, as `"committee"`. The action history still contains the code for the passage, so the stepper can show that
- * the bill cleared a chamber instead of quietly walking it backwards.
- *
- * The most advanced recognized stage wins regardless of where it sits in the list, for the same reason: the endpoint's
- * order is chronological, not procedural, and a later action is not a more advanced one.
+ * Reads a bill's stage out of its full action history. The latest action often isn't the most advanced (a referral
+ * after passage), so the most advanced recognized code wins regardless of position.
  *
  * @param actions - The bill's actions, in any order.
- * @returns The most advanced stage any action establishes, or `null` when none of them carries a recognized code — in
- *   which case the caller should fall back to {@link inferBillStage}, since "no code matched" is not evidence that a
- *   bill is merely introduced.
+ * @returns The most advanced stage any action establishes, or `null` when none carries a recognized code — then fall
+ *   back to {@link inferBillStage}.
  */
 export function inferStageFromActions(actions: readonly BillAction[]): BillStage | null {
   let best: BillStage | null = null;
@@ -137,19 +95,9 @@ export function inferStageFromActions(actions: readonly BillAction[]): BillStage
 }
 
 /**
- * Settles on the stage to show for a bill, given everything known about it.
- *
- * Takes the *more advanced* of the two readings rather than letting the action history overwrite the record's own, and
- * that direction is load-bearing. `mapCongressBill` sets `"law"` from the detail endpoint's published `laws`
- * field — the record stating an outcome outright — and an overwrite would discard it in favor of whatever the action
- * codes happened to establish, so a page could print "Public Law 119-21" beside a stepper that stopped at *Passed a
- * Chamber*. One page cannot say both.
- *
- * Taking the maximum costs nothing in the other direction, because neither reading can be the *lower* one by being
- * wrong: {@link inferBillStage} only ever reaches for a stage it can name, and {@link inferStageFromActions} never
- * returns anything below `"chamber"`. The case the action history exists to fix resolves as it should — prose says
- * `"committee"` because the latest action names a referral, the codes say `"chamber"` because the bill passed one, and
- * the more advanced of those is the true one.
+ * Settles on the stage to show for a bill: the *more advanced* of the record's stage and the action history's. An
+ * overwrite could drop a published `"law"` and show "Public Law 119-21" beside an unfinished stepper; neither reading
+ * errs low, so the maximum is safe.
  *
  * @param fallback - The stage carried on the bill record itself: published where the record names a law, and inferred
  *   from the latest action's prose otherwise.

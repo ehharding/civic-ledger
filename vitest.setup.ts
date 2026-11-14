@@ -8,50 +8,46 @@ afterEach((): void => {
 });
 
 /**
- * Starts every test with no Congress.gov key, whatever the shell running the suite exports.
+ * The instant every test runs at. It sits inside the 119th Congress, the one the preview fixtures model, so anything
+ * derived from "now" — `getCurrentCongress()`, the default Congress of every read, relative dates — gives the same
+ * answer on any day the suite runs. `current-congress.test.ts` checks that this still lands on the fixtures' Congress.
  *
- * A developer with a real key in their environment would otherwise run a different suite from CI's: every test that
- * didn't set the key itself would take the live path instead of the preview one, and a test that forgot to stub `fetch`
- * would spend that key against the real API. A suite that wants a key stubs one — `vi.stubEnv` — and gets it back out
- * of the environment after the test, below.
+ * Only `Date` is replaced; timers stay real unless a test calls `vi.useFakeTimers()`, which keeps this instant as its
+ * starting time. A test that needs a different "now" calls `vi.setSystemTime` itself.
+ */
+const TEST_NOW: Date = new Date("2026-07-15T12:00:00Z");
+
+/**
+ * Every test starts frozen at {@link TEST_NOW} and with no Congress.gov key, whatever the shell exports — so a
+ * developer with a real key runs the same suite CI does, and a test that forgot to stub `fetch` can't spend that key. A
+ * test that wants a key stubs one with `vi.stubEnv`.
  */
 beforeEach((): void => {
+  vi.setSystemTime(TEST_NOW);
   vi.stubEnv("CONGRESS_API_KEY", undefined);
 });
 
 /**
- * Undoes every `vi.stubEnv` and `vi.stubGlobal` once each test finishes, so no suite has to. Spies are restored too, in
- * the console guard's teardown below, which has to control the order that happens in.
- *
- * Most suites set `CONGRESS_API_KEY` or replace `fetch`, and each used to save the original and restore it by hand in
- * its own `afterEach` — twenty near-identical copies, any one of which could forget a branch and leak a key, or a
- * missing one, into whatever test ran next in the same worker. Setting both through Vitest's stubs and restoring them
- * here makes that leak impossible rather than merely unlikely. A test stubs and moves on.
- *
- * Here rather than as `unstubEnvs`/`unstubGlobals` in `vitest.config.mts`: those options restore *before* each test,
- * which leaves the last test of a file's stubs in place for the next file that shares the worker.
+ * Undoes every clock change, `vi.stubEnv`, and `vi.stubGlobal` after each test, so no suite has to. Done here rather
+ * than with `unstubEnvs`/`unstubGlobals` in `vitest.config.mts`, which restore *before* each test and so leak a file's
+ * last stubs into the next file sharing the worker.
  */
 afterEach((): void => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 
 /**
- * The prefix this app's own log lines carry, which are the only console output a passing run may produce.
- *
- * Duplicated from `LOG_PREFIX` in `src/lib/observability/log.ts` rather than imported, because importing application
- * code into the setup file would load the observability module — and with it Sentry — before a single test has decided
- * whether it wants that. `vitest.config.mts` matches the same string in its `onConsoleLog` hook, and `log.test.ts` pins
- * the value, so a change there fails a test rather than quietly disarming this.
+ * The prefix on this app's own log lines — the only console output a passing test may produce. Mirrors `LOG_PREFIX` in
+ * `src/lib/observability/log.ts` rather than importing it, since importing app code here would load Sentry before any
+ * test has chosen to; `log.test.ts` pins the value so the two can't drift.
  */
 const APP_LOG_PREFIX: string = "[civic-ledger]";
 
-/**
- * The console methods a React warning can arrive on. `warn` is included because jsdom uses it for markup complaints.
- */
+/** The console methods React and jsdom warn on. */
 const GUARDED_LEVELS = ["error", "warn"] as const;
 
-/** What a guarded call recorded: which method it came in on, and the message it carried. */
 type CapturedLine = { level: (typeof GUARDED_LEVELS)[number]; message: string };
 
 const originals: Map<string, typeof console.error> = new Map();
@@ -60,26 +56,10 @@ let captured: CapturedLine[] = [];
 /**
  * Fails any test that provokes an unexpected `console.error` or `console.warn`.
  *
- * This exists because of a bug that reached `main` through a fully green `pnpm check`. A test rendered the same
- * amendment fixture twice, React warned that two children shared the key `119-SAMDT-2850`, and nothing failed — the
- * warning is not an exception, so the suite passed, and it was invisible in CI besides. Vitest only prints a passing
- * test's console output to a TTY, so the line showed up in an editor's run panel and in no pipeline anywhere. The
- * comment on `onConsoleLog` in `vitest.config.mts` claimed those warnings were "exactly the lines worth seeing"; they
- * were, and nobody was seeing them.
- *
- * A React key collision is not cosmetic. React is explicit that it may drop or duplicate the colliding children, so a
- * test that provokes one is asserting against a tree the framework does not promise to build. Printing that louder
- * would not have helped — output nobody reads is the thing that failed here. Turning it into a failed test is the only
- * form of it that cannot be scrolled past.
- *
- * **Opting out is deliberate and already idiomatic.** A test that expects a log line spies on the method
- * (`vi.spyOn(console, "warn").mockImplementation(…)`), which replaces this guard for that test and records
- * nothing — so the suites that assert on a log line keep working against the real thing, exactly as they did before.
- * That is the same escape hatch they were already using, rather than a new one this adds.
- *
- * The app's own `[civic-ledger]` lines pass through untouched. Roughly fifty of them are written deliberately by the
- * "degrades rather than crashes" tests, and they are handled failures with an assertion already standing beside
- * them — which is why `vitest.config.mts` hides them from the output and why they cannot fail a test here.
+ * Warnings such as a React duplicate-key collision don't throw, and Vitest only prints a passing test's output to a
+ * TTY, so without this they pass silently in CI. A test that expects a log line spies on the method
+ * (`vi.spyOn(console, "warn").mockImplementation(…)`), which replaces this guard for that test. The app's own prefixed
+ * lines always pass through.
  */
 beforeEach((): void => {
   captured = [];
@@ -98,15 +78,12 @@ beforeEach((): void => {
 });
 
 afterEach((): void => {
-  // Every `vi.spyOn` a test made, undone here so no suite has to — and undone *first*. A spy on `console.warn` was
-  // installed over this guard's wrapper, so restoring it puts the wrapper back; doing that after the loop below would
-  // leave a stale wrapper in place for the next test to wrap again.
+  // Restore spies first: a spy on `console.warn` sits over the guard's wrapper, so undoing it afterwards would leave a
+  // stale wrapper for the next test to wrap again.
   vi.restoreAllMocks();
 
   for (const level of GUARDED_LEVELS) {
     const original: typeof console.error | undefined = originals.get(level);
-    // Restored by assignment rather than by `vi.restoreAllMocks`, since the wrapper above is a plain assignment and not
-    // a spy.
     if (original) console[level] = original;
   }
 

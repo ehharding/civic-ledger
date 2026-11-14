@@ -22,25 +22,13 @@ export const MEMBERS_METADATA: Metadata = pageMetadata({
 });
 
 /**
- * Renders the browsable member directory.
+ * Renders the member directory, from the same cached roster as the home page's chamber diagram, so the two can't
+ * disagree. @see getMemberDirectory
  *
- * The counterpart to `/bills`: that route is the way into the record, this is the way into the people who make it.
- * Every card links to `/members/[bioguideId]`, which is otherwise reachable only by finding a seat in the chamber
- * diagram or a bill the member happened to sponsor.
- *
- * Reads the same roster the home page's chamber diagram does, through the same cached call, so browsing here costs
- * nothing extra upstream within the five-minute window and the two views can't disagree about who is serving.
- * @see getMemberDirectory
- *
- * The URL's filters are resolved *after* the roster rather than alongside it, which is the one place this route reads
- * sequentially on purpose: `?state=` is validated against the jurisdictions the roster actually contains, so a link to
- * a state nobody currently represents opens the full directory instead of an empty grid claiming to be filtered.
+ * The URL's filters resolve *after* the roster, since `?state=` is validated against the jurisdictions it contains.
  * @see resolveMemberDirectoryQuery
  *
- * Shared by `/members`, which passes no query and is therefore static, and `/query/members`, which passes the request's
- * own and renders on demand — so a shared link still arrives narrowed on its first paint rather than rendering the full
- * roster and visibly narrowing after hydration. @see src/lib/query-routes.ts, and docs/architecture.md, "A Narrowed
- * Directory Is a Place, So It Has a URL".
+ * Shared by the static `/members` (no query) and the on-demand `/query/members`. @see src/lib/query-routes.ts
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.

@@ -921,11 +921,9 @@ describe("BillDetail related measures", (): void => {
   });
 
   it("makes no claim about the record in any section whose request went unanswered", (): void => {
-    // The regression guard for this file's whole reason to carry `BillSubResource`. When the bill itself resolves from
-    // the cached list snapshot but its seven sub-resource requests fail, the bill carries no `collectionCounts` to
-    // check an empty list against — and every one of these sections would otherwise print a confident,
-    // Congress.gov-attributed sentence about a record the app never read. `source` is "live" precisely because that is
-    // the state that used to license those sentences.
+    // When the bill resolves from the cached list snapshot but its sub-resource requests fail, there are no
+    // `collectionCounts` to check an empty list against, so each section must say it couldn't load rather than make a
+    // Congress.gov-attributed claim about a record the app never read. `source` is "live" to make that the hard case.
     renderBill({
       actions: unanswered(),
       committees: unanswered(),

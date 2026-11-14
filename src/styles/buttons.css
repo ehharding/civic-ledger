@@ -103,12 +103,8 @@
 
 /* The outlined companion to the primary: a paper ground with a hairline edge and a whisper of shadow, so it sits on
    open page as a control rather than as a stray line of bold text. Worn beside the primary in the hero ("Learn the
-   Process") and on its own under the bill directory ("Load More Bills").
-
-   It replaces the borderless `--quiet` variant those two used to wear, which gave both nothing to sit on — the hero's
-   second action read as a caption to the first, and "Load More" as a footnote under the grid rather than as the control
-   that extends it. The label stays --navy-deep on --paper, the pairing every card heading already clears contrast with
-   in both palettes. */
+   Process") and on its own under the bill directory ("Load More Bills"). The edge keeps a secondary action reading as a
+   control rather than as a caption. --navy-deep on --paper clears contrast in both palettes. */
 .button--secondary {
   padding: calc(var(--space-3) - 1px) calc(var(--space-5) - 1px); /* less the border, to match the primary's box */
   border: 1px solid var(--line-dark);

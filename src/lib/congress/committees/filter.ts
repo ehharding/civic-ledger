@@ -20,23 +20,8 @@ import {
 } from "@/lib/congress/directory-filter";
 
 /**
- * The committee directory's narrowing rules: free-text matching, the two facet filters, the orders the list can be read
- * in, and the URL spelling of a view.
- *
- * Pure and isomorphic, exactly as `members/filter.ts` is, and for the same two reasons: the rules are the interesting
- * part and deserve tests that don't render a component, and the browser has to import them without dragging the
- * server-only adapter — and the API key it reads — in behind them.
- *
- * This is deliberately the *same* design as the member directory's rather than a new one. A reader who has narrowed one
- * directory should find the next one already familiar, and a maintainer who has read one of these modules should
- * recognize the second immediately: same wildcard sentinel, same facet-option shape, same total parsers, same
- * only-write-what-isn't-default serialization. Where this one is smaller — two facets rather than three — it is because
- * a committee has fewer facts worth filtering on, not because it took a different approach.
- *
- * All of those shared things come from `directory-filter.ts` rather than being declared again here — the sentinel, the
- * facet-option shape, the total parsers, the query-string tail, and the counting and ordering machinery the type facet
- * and the sorts are built from — so that sameness is something the type system holds rather than something this
- * paragraph promises. What stays here is what is genuinely about *committees*.
+ * The committee directory's rules: free-text matching, two facet filters, ordering, and the URL spelling of a view.
+ * Pure and isomorphic, and the same design as `members/filter.ts`, with the shared vocabulary in `directory-filter.ts`.
  */
 
 export type CommitteeChamberFilter = FacetFilter<CommitteeChamber>;
@@ -69,20 +54,11 @@ export function hasActiveCommitteeFilters(filters: CommitteeFilters): boolean {
 }
 
 /**
- * Whether `committee` matches free-text `query`.
- *
- * Matched against both spellings of the name — Congress.gov's own `"Agriculture Committee"` and the leading form
- * `"Committee on Agriculture"` that a bill's referral line uses — so a reader who types what they see on the card and a
- * reader who pastes a referral line off a bill page both find the same committee. @see committeeSearchTerms, which
- * explains why that second form is matched but never displayed.
- *
- * Chamber and type are deliberately *not* searched: each has a dedicated control beside the box, and matching them here
- * would make typing "s" return every Senate and every Standing committee alongside everything whose name happens to
- * contain the letter.
+ * Whether `committee` matches free-text `query`, against both name forms (@see committeeSearchTerms). Chamber and type
+ * aren't searched — they have their own controls, and "s" would match every Senate and Standing committee.
  *
  * @param committee - The row to test.
- * @param query - The raw search text. Matched case-insensitively; an empty or all-whitespace query matches everything,
- *   which is what makes clearing the box mean "show me everything again".
+ * @param query - The raw search text, case-insensitive; blank matches everything.
  * @returns `true` when the row matches.
  */
 export function matchesCommitteeQuery(committee: CommitteeSummary, query: string): boolean {
@@ -97,8 +73,7 @@ export function matchesCommitteeQuery(committee: CommitteeSummary, query: string
  *
  * @param committees - The full directory, already ordered by the server.
  * @param filters - The current filter state.
- * @returns The matching rows, in the order they arrived — filtering never reorders, so narrowing a list never also
- *   shuffles it under the reader.
+ * @returns The matching rows, in their original order.
  */
 export function filterCommittees(committees: CommitteeSummary[], filters: CommitteeFilters): CommitteeSummary[] {
   return committees.filter((committee: CommitteeSummary): boolean => {
@@ -141,11 +116,7 @@ const COMMITTEE_SORT_COMPARATORS: Record<CommitteeSort, (a: CommitteeSummary, b:
 };
 
 /**
- * Orders the directory.
- *
- * Every comparator falls through to {@link compareCommitteesByName}, so grouping by chamber still lists each chamber
- * alphabetically rather than in whatever arbitrary order the group happened to arrive in. "Name (Z–A)" needs no
- * exemption from that fallback: names that tie descending tie ascending too.
+ * Orders the directory, breaking ties by {@link compareCommitteesByName}.
  *
  * @param committees - The rows to order. Left untouched; a new array is returned.
  * @param sort - The order to apply.
@@ -156,21 +127,15 @@ export function sortCommittees(committees: CommitteeSummary[], sort: CommitteeSo
 }
 
 /**
- * One selectable value in a facet control, with the number of committees behind it.
- *
- * The shared {@link FacetOption}, re-exported under this directory's own name so {@link listCommitteeTypeOptions} reads
- * as committee-scoped where it is used. @see FacetOption for why every facet option carries a count.
+ * One selectable facet value with its committee count — {@link FacetOption} under a committee-scoped name.
  *
  * @typeParam Value - The filter value this option sets.
  */
 export type CommitteeFacetOption<Value> = FacetOption<Value>;
 
 /**
- * The committee types present in a list, for the type filter's options.
- *
- * Ordered by the declaration order of {@link committeeTypes} — standing first, residual "other" last — rather than
- * alphabetically or by size, so the control reads from the most consequential kind of committee to the least. Derived
- * from the list in hand, so the control can never offer a choice that returns nothing.
+ * The committee types present in a list, for the type filter, in {@link committeeTypes} order (standing first, "other"
+ * last).
  *
  * @param committees - The full directory.
  * @returns Every type actually present, with its count.
@@ -242,14 +207,8 @@ export function parseCommitteeSort(raw: string | null | undefined): CommitteeSor
 }
 
 /**
- * Reads a whole directory view out of a URL's query string.
- *
- * The exact counterpart to {@link committeeDirectoryQueryString}. Both sides of the boundary go through it — the route
- * resolves the incoming request with it, and the browser re-reads the address bar with it whenever the URL changes
- * underneath the directory — so the two readings cannot drift into disagreeing about what a link means.
- *
- * Total, like every parser it delegates to: an absent, malformed, or stale param resolves to a usable default rather
- * than an error, so a hand-edited or year-old link opens the unfiltered page at worst.
+ * Reads a directory view out of a URL's query string — the inverse of {@link committeeDirectoryQueryString}, used by
+ * both the server and the browser. Total: anything absent, malformed, or stale resolves to a default.
  *
  * @param params - The query string to read, already parsed.
  * @returns The view the URL asks for.
@@ -266,11 +225,8 @@ export function parseCommitteeDirectoryQuery(params: URLSearchParams): Committee
 }
 
 /**
- * Serializes a directory view back into a query string.
- *
- * Only non-default values are written, so an unnarrowed directory has a clean `/committees` URL rather than one
- * carrying three params that all say "no". The parameter order is fixed rather than incidental, so the same view always
- * produces the same string — which is what makes these links comparable, cacheable, and stable in history.
+ * Serializes a directory view back into a query string, writing only non-default values in a fixed order so each view
+ * has exactly one URL.
  *
  * @param query - The view to serialize.
  * @returns The query string including its leading `?`, or an empty string when nothing is narrowed or reordered.

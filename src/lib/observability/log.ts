@@ -5,42 +5,20 @@ import { redactSecrets } from "@/lib/observability/redact";
 /**
  * The one way this app writes a log line, in every runtime.
  *
- * Before this module there were three `console.error` calls with three different prefixes, and between them they had
- * two problems that a fourth call would have inherited:
+ * Upstream failures never throw (`requestCongressJson` turns them into `{ outcome: "failed" }`), so they never reach an
+ * error boundary or `onRequestError`; this log is their only report. Each line is redacted here and sent to both
+ * `console` and Sentry's structured logs, since a function log is a third-party sink like any other
+ * (`docs/data-policy.md`).
  *
- * 1. **They went nowhere anyone reads.** `requestCongressJson` catches every upstream failure — a 503 from
- *    Congress.gov, a revoked key, a stalled socket, a payload whose shape no longer matches `api-schema.ts` — and turns
- *    it into `{ outcome: "failed" }` so the page can degrade instead of crashing. That is the right behavior for a
- *    reader and it means the app's single most likely failure mode never throws, never reaches an error boundary, and
- *    never reaches `onRequestError`. The site quietly serves fallback content and the only trace is a line in a
- *    function log nobody is tailing. An error tracker that reports every failure *except* the common one is not
- *    reporting.
- * 2. **They were the one path out of this process with no redaction on it.** `redact.ts` is careful, thorough, and
- *    wired exclusively into Sentry's callbacks. `console.error(…, error)` bypassed all of it — and on a managed host a
- *    function log is a third-party sink like any other. The rule in `docs/data-policy.md` is about what leaves this
- *    process, not about which SDK carries it.
- *
- * So every log line is built here, redacted here, and sent to both places: `console` for whoever is tailing a terminal
- * or a log drain, and Sentry's structured logs for whoever is querying an incident afterwards. The two are the same
- * text by construction rather than by discipline.
- *
- * **Logs, not exceptions, for upstream trouble.** `Sentry.captureException` is deliberately not called from here. A
- * search sweep fans out one request per Congress — a couple of dozen in parallel — so a Congress.gov outage produces
- * hundreds of failures a minute, and filing each as an issue would bury the issue stream and exhaust the quota that
- * keeps this integration switched on at all (the same arithmetic `DEFAULT_TRACES_SAMPLE_RATE` is built on). Structured
- * logs are the right shape for high-volume, low-novelty facts: searchable, aggregatable, and attached to the trace that
- * produced them. Genuine crashes still call `captureException` from the error boundaries, where they belong.
+ * **Logs, not exceptions.** An outage fails dozens of parallel search requests a minute; filing each as an issue would
+ * bury real ones and exhaust the quota. Genuine crashes still reach `captureException` from the error boundaries.
  *
  * @see sentry-options.ts, which turns logs on and puts `beforeSendLog` in front of them.
  */
 
 /**
- * The prefix on every console line this module writes.
- *
- * One string rather than the per-module tags it replaces (`[congress]`, `[error-boundary]`, `[global-error-boundary]`),
- * because the thing worth grepping a mixed log drain for is "a line this application wrote on purpose" — Next, React,
- * and the Sentry SDK all write to the same stream. What the line is *about* is the `event` attribute, which is a field
- * rather than a naming convention and can therefore be filtered on rather than matched by eye.
+ * The prefix on every console line this module writes, marking lines this app wrote on purpose in a stream shared with
+ * Next, React, and Sentry. What a line is *about* goes in the filterable `event` attribute.
  */
 const LOG_PREFIX: string = "[civic-ledger]";
 
@@ -69,17 +47,11 @@ export type LogAttributes = Record<string, string | number | boolean>;
 export type LogDetails = {
   /** Structured fields, recorded alongside the message and searchable in Sentry. */
   attributes?: LogAttributes;
-
   /** The caught value, when there is one. Described rather than logged whole — @see describeCause. */
   cause?: unknown;
-
   /**
-   * Literal values that must never appear in the line, forwarded to {@link redactSecrets}.
-   *
-   * Passed by the caller rather than read here, which is the same division `sentry.server.config.ts` and
-   * `instrumentation-client.ts` already make: the module holding a secret is the one that declares it. Reading
-   * `getCongressApiKey` in this file instead would import the upstream adapter into every client bundle that logs, and
-   * would make this module and `http.ts` — its main caller — import each other.
+   * Literal values that must never appear in the line, forwarded to {@link redactSecrets}. Passed by the caller, since
+   * reading the key here would pull the upstream adapter into client bundles and create an import cycle with `http.ts`.
    */
   secrets?: readonly string[];
 };
@@ -89,10 +61,9 @@ export type LogDetails = {
  *
  * @param cause - Anything a `catch` can bind, which is genuinely anything.
  * @param secrets - Literal values to strip, forwarded to {@link redactSecrets}.
- * @returns A single-line description, capped at {@link MAX_CAUSE_LENGTH}, or `undefined` when there was nothing to
- *   describe. `Error`s are rendered as `Name: message`, following the `cause` chain so the useful half of a wrapped
- *   `fetch` failure survives; anything else is stringified defensively, since a thrown value can have a `toString` that
- *   itself throws and a logger is the last place that should be the thing that fails.
+ * @returns A single line capped at {@link MAX_CAUSE_LENGTH}, or `undefined` when there's nothing to describe. `Error`s
+ *   render as `Name: message` following the `cause` chain (where `fetch` keeps the useful half); anything else is
+ *   stringified defensively, since even `toString` can throw.
  */
 export function describeCause(cause: unknown, secrets: readonly string[] = []): string | undefined {
   if (cause === undefined || cause === null) return undefined;
@@ -183,11 +154,7 @@ function emit(level: "warn" | "error", message: string, details: LogDetails): vo
 }
 
 /**
- * Records something that went wrong and was handled.
- *
- * The level for everything on the "the app is behaving as designed under bad conditions" side of the line: Congress.gov
- * returned a 503, a request timed out, a search sweep came back short. Individually unremarkable and worth counting; a
- * page still rendered.
+ * Records something that went wrong and was handled — a 503, a timeout, a short search sweep. A page still rendered.
  *
  * @param message - A fixed summary. @see emit
  * @param details - Attributes, cause, and secrets.
@@ -197,11 +164,8 @@ export function logWarning(message: string, details: LogDetails = {}): void {
 }
 
 /**
- * Records something that should not happen and needs someone to look.
- *
- * Reserved for failures that indicate a defect rather than weather — an upstream payload that no longer matches the
- * schema this app validates against, which means either Congress.gov changed its contract or this app read it wrong,
- * and in both cases some part of a page is silently empty until someone changes code.
+ * Records a defect rather than weather — e.g., a payload that fails schema validation, meaning Congress.gov changed its
+ * contract or this app reads it wrong, and part of a page stays empty until code changes.
  *
  * @param message - A fixed summary. @see emit
  * @param details - Attributes, cause, and secrets.

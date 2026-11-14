@@ -1,11 +1,8 @@
 import { compareText, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
 
 /**
- * The party groupings this app renders. Congress.gov publishes a free-text `partyName` whose documented values are
- * "Democratic", "Independent", "Independent Democrat", "Libertarian", and "Republican" — this closed union is what the
- * rest of the app switches on, so a new or misspelled upstream label degrades to "other" instead of leaking an
- * unstyled, unlabeled value into the UI. The member's verbatim upstream label is preserved separately on
- * `CongressMember.partyName`, so nothing is *lost* by grouping — only normalized for color and tally purposes.
+ * The party groupings this app renders. Congress.gov's `partyName` is free text, so a new or misspelled label groups as
+ * "other" rather than reaching the UI unstyled. The verbatim label is kept on `CongressMember.partyName`.
  */
 export const partyGroups = ["democratic", "republican", "independent", "libertarian", "other"] as const;
 
@@ -21,11 +18,8 @@ export const partyGroupLabels: Record<PartyGroup, string> = {
 };
 
 /**
- * The left-to-right order parties are seated in on the chart, matching the convention nearly every published chamber
- * diagram uses (Democratic caucus on the viewer's left, Republican on the right, everyone else between them).
- *
- * This is a *presentational* convention, not a record of where anyone actually sits — see the note on
- * `buildChamberSeating` in seating.ts, and the caption the chart renders alongside itself.
+ * The left-to-right order parties are seated in on the chart, following the usual chamber-diagram convention. A
+ * presentational choice, not where anyone actually sits. @see buildChamberSeating
  */
 export const partySeatingOrder: readonly PartyGroup[] = [
   "democratic",
@@ -39,8 +33,7 @@ export const partySeatingOrder: readonly PartyGroup[] = [
  * Where `party` falls in {@link partySeatingOrder}.
  *
  * @param party - The party group to rank.
- * @returns Its index in the seating order, or one past the end for anything unlisted — so an unrecognized group sorts
- *   last rather than throwing or silently sorting first.
+ * @returns Its index in the seating order, or one past the end for anything unlisted.
  */
 export function partySeatingRank(party: PartyGroup): number {
   const rank: number = partySeatingOrder.indexOf(party);
@@ -48,15 +41,9 @@ export function partySeatingRank(party: PartyGroup): number {
 }
 
 /**
- * The class that tints an element by party.
- *
- * Four different things carry this — a seat in the chamber diagram, the diagram's read-out, the legend's swatch, and a
- * member's party line on both their card and their page — and each needs a *different* CSS property tinted (`fill`,
- * `color`, `background`). Rather than each restating the five-way party-to-color mapping in its own property, they all
- * wear this one class, which sets a `--party-color` custom property that each of their own rules then reads.
- *
- * Built here rather than interpolated at each call site so the coupling between `PartyGroup` and the stylesheet is
- * greppable from both ends: this is the only place that knows the class prefix.
+ * The class that tints an element by party. It sets a `--party-color` custom property, which seats, swatches, and party
+ * lines each apply to whichever property they need (`fill`, `color`, `background`). The only place that knows the class
+ * prefix.
  *
  * @param party - The group to tint for.
  * @returns The tint class, e.g., `"party-tint--democratic"`. @see src/styles/party.css for the mapping itself.
@@ -68,15 +55,11 @@ export function partyTintClass(party: PartyGroup): string {
 /**
  * Narrows Congress.gov's free-text party label to a {@link PartyGroup}.
  *
- * Prefix matching (rather than exact equality) is deliberate: the API's own documentation lists both "Democratic" and
- * "Democrat" across its member endpoints, describes "Independent Democrat" as a distinct value, and contains a
- * long-standing "Republication" typo in its element table. Matching on the stem absorbs all of those without needing an
- * exhaustive list of spellings. "Independent Democrat" is checked first so it groups as independent rather than being
- * swallowed by the democratic branch.
+ * Matches on prefixes because the API uses both "Democratic" and "Democrat" and documents a "Republication" typo.
+ * "Independent" is checked first so "Independent Democrat" groups as independent.
  *
  * @param partyName - The upstream `partyName`, if any.
- * @returns The matching group, or `"other"` for anything unrecognized — never a thrown error, since a new party label
- *   appearing upstream should degrade a color swatch, not take down the page.
+ * @returns The matching group, or `"other"` for anything unrecognized.
  */
 export function normalizePartyName(partyName?: string): PartyGroup {
   const value: string = (partyName ?? "").trim().toLowerCase();
@@ -98,21 +81,11 @@ const partyCodes: Readonly<Record<string, PartyGroup>> = {
 };
 
 /**
- * Narrows a party value that may arrive as a one-letter abbreviation rather than a name.
+ * Narrows a party value that may be a one-letter code. Sponsor and cosponsor records send `"D"` where member records
+ * send `"Democratic"`.
  *
- * The member endpoints send `"Democratic"`; the *sponsor* and *cosponsor* records send `"D"`. That is one field with
- * two dialects, and {@link normalizePartyName} only speaks the longer one — a bare `"R"` matches none of its stems and
- * falls through to `"other"`, which is how a Republican cosponsor ends up tinted the neutral gray reserved for parties
- * this app doesn't recognize.
- *
- * Handled here rather than by adding single letters to `normalizePartyName`'s stem list, so the two dialects stay
- * visibly separate: a caller reaching for this one is saying its data came from a sponsorship record, which is exactly
- * where the abbreviation appears.
- *
- * @param party - The upstream party value, in either dialect.
- * @returns The matching group. Anything longer than one character is handed to {@link normalizePartyName}, so this is
- *   safe to use wherever the dialect is uncertain, and an unrecognized letter degrades to `"other"` rather than
- *   throwing.
+ * @param party - The upstream party value, in either form.
+ * @returns The matching group. Longer values go through {@link normalizePartyName}; an unknown letter is `"other"`.
  */
 export function normalizePartyCode(party?: string): PartyGroup {
   const value: string = (party ?? "").trim().toLowerCase();
@@ -141,8 +114,7 @@ export const chamberShortLabels: Record<CongressChamber, string> = {
  * Narrows Congress.gov's chamber string to a {@link CongressChamber}.
  *
  * @param chamber - The upstream chamber string ("House of Representatives" or "Senate"), if any.
- * @returns The matching chamber, or `null` for anything unrecognized — so callers drop the record rather than seat a
- *   member in a chamber that doesn't exist.
+ * @returns The matching chamber, or `null` for anything unrecognized, so callers drop the record.
  */
 export function normalizeChamberName(chamber?: string): CongressChamber | null {
   const value: string = (chamber ?? "").trim().toLowerCase();
@@ -154,13 +126,9 @@ export function normalizeChamberName(chamber?: string): CongressChamber | null {
 }
 
 /**
- * The six jurisdictions whose House seat carries no floor vote — the five territorial Delegates plus Puerto Rico's
- * Resident Commissioner. Congress.gov's *list*-level member records don't include the `memberType` field that would say
- * so directly (that's item-level only, which would mean one extra request per member), but the represented jurisdiction
- * determines it unambiguously, so it's derived from `state` instead.
- *
- * Variant spellings are included because the represented-jurisdiction string is upstream free text, and a missed
- * variant would silently miscount a non-voting seat as a voting one.
+ * The six jurisdictions whose House seat carries no floor vote — five territorial Delegates and Puerto Rico's Resident
+ * Commissioner. List-level records lack `memberType`, but the jurisdiction determines it. Variant spellings are listed
+ * because the jurisdiction is free text.
  */
 const NON_VOTING_HOUSE_JURISDICTIONS: ReadonlySet<string> = new Set<string>([
   "american samoa",
@@ -187,20 +155,11 @@ export function isNonVotingJurisdiction(state?: string): boolean {
 }
 
 /**
- * Normalizes the free-text jurisdiction Congress.gov publishes into one canonical spelling.
- *
- * This is the same kind of boundary normalization {@link normalizePartyName} performs, and it exists for a concrete
- * reason rather than a cosmetic one: the represented jurisdiction is the value the member directory's filter is keyed
- * on, so `"NEW YORK"` and `"New York"` arriving on different records would split one state into two options that each
- * return half the delegation. Casing it once, here, means the model holds one spelling and every downstream consumer —
- * the facet list, the filter comparison, the card, the seat description — agrees by construction.
- *
- * Applied only to full jurisdiction *names*. Two-letter postal codes (which is what a bill's sponsor record carries)
- * are deliberately left alone elsewhere; title-casing `"OH"` would produce `"Oh"`.
+ * Normalizes a free-text jurisdiction name to one spelling, so `"NEW YORK"` and `"New York"` don't become two filter
+ * options. For full names only — title-casing a postal code like `"OH"` would give `"Oh"`.
  *
  * @param state - The upstream state, territory, or district name, if any.
- * @returns The title-cased name, or `undefined` when the record carries nothing usable — so an absent jurisdiction
- *   stays absent rather than becoming an empty string that reads as a real, blank option.
+ * @returns The title-cased name, or `undefined` when there's nothing usable.
  */
 export function normalizeJurisdiction(state?: string): string | undefined {
   const normalized: string = toTitleCase(state ?? "");
@@ -208,15 +167,8 @@ export function normalizeJurisdiction(state?: string): string | undefined {
 }
 
 /**
- * A member's official portrait, with the credit line Congress.gov's terms require wherever it is shown.
- *
- * One type for both the list-level and item-level records, because the API publishes the same two fields on each — so a
- * directory card and a member's own page cannot end up disagreeing about what a portrait is or what has to appear
- * beside it.
- *
- * **`attribution` is optional and that is not a formality.** A small number of records genuinely carry an image with no
- * credit (three of the 500 members sampled in August 2026), so every renderer has to cope with its absence rather than
- * assume a caption is always available.
+ * A member's official portrait, with the credit line Congress.gov's terms require wherever it is shown. The same on
+ * list- and item-level records. `attribution` is genuinely absent on a few records, so renderers must handle that.
  */
 export type MemberDepiction = {
   imageUrl: string;
@@ -228,24 +180,12 @@ export type MemberDepiction = {
 };
 
 /**
- * One seated member of Congress, normalized from the Congress.gov member list endpoint.
+ * One seated member of Congress, from the member list endpoint.
  *
- * Everything except `name` and `party` is optional because the list endpoint genuinely omits fields (`district` is
- * Senate-irrelevant; `bioguideId` is absent from the preview placeholders), and because this shape is serialized into
- * the page payload once per seat — it deliberately carries only what the surfaces built from a composition actually
- * display, rather than the full upstream record. Chamber isn't a field here: it's implied by the `ChamberComposition`
- * a member is grouped under.
- *
- * Those surfaces are the chamber diagram and the member directory, and `depiction` is the one field only *one* of them
- * uses. `/members` renders it; the diagram draws dots and never reads it, but is built from the same composition and so
- * serializes it anyway. That cost was measured rather than assumed before being accepted: across the 119th Congress in
- * August 2026 the portraits and credit lines are ~64 KB of JSON and ~4 KB over the wire, because they are
- * near-identical row to row and compress accordingly.
- *
- * Splitting the shape to spare the home page those 4 KB would cost the property architecture.md calls out as the whole
- * point of the shared read — that the two views cannot disagree about who is serving — and would trade it for less than
- * a single portrait's worth of bytes. The alternative to carrying it here is not "a smaller payload"; it is one request
- * per member, ~540 of them, which is the rule the rest of the list-level record already lives by.
+ * Kept small because it's serialized once per seat: only what the chamber chart and member directory display. Most
+ * fields are optional because the list endpoint omits them (and placeholders have no `bioguideId`). Chamber is implied
+ * by the `ChamberComposition` the member sits in. The chart receives it without `depiction`
+ * (@see compositionForSeating).
  */
 export type CongressMember = {
   /** Biographical Directory ID (e.g., "L000174") — the stable key for linking out to an official biography. */
@@ -260,22 +200,13 @@ export type CongressMember = {
   /** House only. `0` means the state, territory, or district has a single at-large seat. */
   district?: number;
   /**
-   * Their official portrait, when Congress.gov publishes one.
-   *
-   * Never set on a preview placeholder, and that is a policy rather than a gap in the fixtures: a placeholder seat is
-   * deliberately unattributed, and giving one a real person's face is the single most convincing way preview content
-   * could be taken for the record. @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
+   * Their official portrait, when Congress.gov publishes one. Never set on a preview placeholder: a real face would
+   * make fiction look like the record. @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
    */
   depiction?: MemberDepiction;
 };
 
-/**
- * The party fields the display helpers below read.
- *
- * Declared structurally rather than as `CongressMember` so the same helpers serve both the compact list-level {@link
- * CongressMember} the chart draws and the fuller {@link MemberProfile} the member page renders — one definition of how
- * a party reads on screen, not two that can drift apart.
- */
+/** The party fields the display helpers below read — structural, so they serve every member shape. */
 export type MemberPartyFields = {
   party: PartyGroup;
   partyName?: string;
@@ -319,11 +250,8 @@ export type CongressComposition = {
 };
 
 /**
- * The same composition with each member's portrait left off — the shape the seating chart is handed.
- *
- * The chart is a client component, so everything passed to it is serialized into the page's RSC payload, and it draws
- * seats, not faces. Every member's `depiction` (an image URL and an attribution line, ~540 times) was dead weight in
- * the homepage's payload: about a seventh of the page's compressed size, on the page served most often.
+ * The same composition without portraits — what the seating chart is handed. The chart is a client component that draws
+ * seats, not faces, so ~540 portraits would only bloat the home page's payload.
  *
  * @param composition - The full composition, as resolved server-side.
  * @returns A copy without `depiction` on any member. Everything else is untouched.
@@ -344,9 +272,7 @@ export function compositionForSeating(composition: CongressComposition): Congres
  * Tallies members by party.
  *
  * @param members - The chamber's members.
- * @returns One tally per party that actually holds a seat, ordered by {@link partySeatingOrder} so the legend reads
- *   left-to-right in the same order the chart is drawn. Parties with no seats are omitted rather than rendered as a row
- *   of zeroes.
+ * @returns One tally per party holding a seat, in {@link partySeatingOrder} so the legend matches the chart.
  */
 export function tallyPartyCounts(members: CongressMember[]): PartyTally[] {
   const counts: Map<PartyGroup, number> = new Map<PartyGroup, number>();
@@ -414,11 +340,7 @@ export function formatMemberSeat(member: MemberSeatFields, chamber: CongressCham
 }
 
 /**
- * The full one-line description of a seat.
- *
- * Used as each seat's accessible name in the chamber chart and as the heading of the detail panel's read-out. Kept in
- * the model rather than the component so the exact wording a screen reader announces is unit-tested alongside
- * everything else, instead of only reachable through a rendered chart.
+ * The full one-line description of a seat — each chart seat's accessible name and the read-out's heading.
  *
  * @param member - The member holding the seat.
  * @param chamber - The chamber they sit in.
@@ -436,12 +358,8 @@ export function formatMemberSummary(
 }
 
 /**
- * The shape of a real Biographical Directory ID: one letter followed by six digits (e.g., `"L000174"`).
- *
- * Used both as a route guard — these arrive from the URL bar, so they're untrusted by definition — and to decide
- * whether an official-biography link can honestly be offered. The preview fixtures deliberately use IDs that *cannot*
- * match this pattern (see `previewMemberProfiles`), so a placeholder member can never be handed a link to a real
- * person's biography.
+ * The shape of a real Biographical Directory ID: one letter and six digits (e.g., `"L000174"`). Guards the member route
+ * and official-biography links; preview fixture IDs deliberately can't match it.
  */
 const BIOGUIDE_ID_PATTERN: RegExp = /^[A-Z]\d{6}$/;
 
@@ -456,15 +374,11 @@ export function isBioguideId(value: string | undefined): boolean {
 }
 
 /**
- * The member's page in the Biographical Directory of the United States Congress.
- *
- * Preferred over a congress.gov member URL because that form embeds a name slug that can change; a Bioguide ID never
- * does. This is the same directory Congress.gov's own member pages cite.
+ * The member's page in the Biographical Directory of the United States Congress — stable, unlike congress.gov member
+ * URLs, which embed a name slug.
  *
  * @param bioguideId - The member's Biographical Directory ID, e.g., `"L000174"`.
- * @returns The absolute URL of their official biography, or `undefined` when the ID isn't one the Biographical
- *   Directory could resolve — which is how a preview placeholder is prevented from linking out as though it were a real
- *   person.
+ * @returns The biography URL, or `undefined` for an ID that isn't well-formed (including every preview placeholder).
  */
 export function bioguideUrl(bioguideId: string): string | undefined {
   if (!isBioguideId(bioguideId)) return undefined;
@@ -480,13 +394,7 @@ export type MemberLeadershipRole = {
   congress?: number;
 };
 
-/**
- * One term a member has served.
- *
- * Only available from the *item*-level member endpoint — the list endpoint's term entries carry chamber and years but
- * no congress number and no `memberType`, which is why the chart derives what it can from the jurisdiction instead (see
- * {@link isNonVotingJurisdiction}).
- */
+/** One term a member has served. Item-level endpoint only; list-level terms lack the Congress and `memberType`. */
 export type MemberTerm = {
   chamber: CongressChamber;
   congress?: number;
@@ -499,13 +407,7 @@ export type MemberTerm = {
   district?: number;
 };
 
-/**
- * Everything the individual member page renders about one person.
- *
- * A superset of {@link CongressMember} rather than a replacement for it: the chart serializes one `CongressMember` per
- * seat into the home page's payload, ~540 of them, so that shape stays deliberately minimal. This one is fetched for a
- * single member at a time and can afford the full record.
- */
+/** Everything the member page renders about one person — the full item-level record, fetched one at a time. */
 export type MemberProfile = {
   bioguideId: string;
   /** Last-name-first, as Congress.gov's `invertedOrderName` — the form that sorts and matches the chart's labels. */
@@ -535,18 +437,8 @@ export type MemberProfile = {
 };
 
 /**
- * One row of the browsable member directory (`/members`).
- *
- * A third member shape, deliberately, sitting between the other two: {@link CongressMember} is what the chamber chart
- * draws (no chamber field — it's implied by the composition a member is grouped under — and no guaranteed ID, since a
- * placeholder seat has none), while {@link MemberProfile} is the whole item-level record and far more than a list row
- * needs. A directory row is the small set of facts a person scans and filters on, plus the two things a list of *links*
- * can't do without: a chamber to filter by and an ID to open.
- *
- * `bioguideId` is required here for that reason. A row nobody can open is dead weight in a directory whose entire
- * purpose is to reach a person's page, so a record without one is dropped at the boundary rather than rendered as an
- * inert entry.
- * @see buildMemberDirectory
+ * One row of the member directory (`/members`): what a reader scans and filters on, plus a chamber and an ID to open.
+ * `bioguideId` is required because a row that can't be opened is dropped. @see buildMemberDirectory
  */
 export type MemberDirectoryEntry = {
   bioguideId: string;
@@ -557,25 +449,13 @@ export type MemberDirectoryEntry = {
   state?: string;
   district?: number;
   chamber: CongressChamber;
-  /**
-   * Their official portrait, when Congress.gov publishes one.
-   *
-   * The one field here that isn't a fact a reader *filters* on — it is the fact they scan by. A directory of people
-   * that cannot show a face is the one directory in this app whose subject the reader might already recognize on sight,
-   * and the list endpoint publishes the image, so showing it costs nothing upstream. @see MemberDepiction
-   */
+  /** Their official portrait, when published. @see MemberDepiction */
   depiction?: MemberDepiction;
 };
 
 /**
- * Orders members alphabetically by their last-name-first name.
- *
- * Collated through the app's one pinned collator rather than compared with `<`, so names carrying diacritics or
- * apostrophes (Núñez, O'Halleran) sort where a reader expects rather than where their code points fall.
- * @see compareText in format.ts, which explains why the locale is fixed rather than left to the runtime's.
- *
- * Declared structurally so it can order any named member shape — a directory entry, a `CongressMember`, a profile —
- * rather than only the one it was written for.
+ * Orders any member shape alphabetically by last-name-first name, through the app's collator so names like Núñez and
+ * O'Halleran sort as a reader expects. @see compareText
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.
@@ -589,9 +469,8 @@ export function compareMembersByName(a: { name: string }, b: { name: string }): 
  * The title a member holds, for headings and prose.
  *
  * @param profile - The member to title.
- * @returns Congress.gov's own `memberType` from the most recent term when there is one — which is the only thing that
- *   distinguishes a Delegate or the Resident Commissioner from a Representative — otherwise the chamber's generic
- *   title.
+ * @returns The most recent term's `memberType` (which distinguishes Delegates and the Resident Commissioner), otherwise
+ *   the chamber's generic title.
  */
 export function formatMemberTitle(profile: MemberProfile): string {
   const memberType: string = (profile.terms[0]?.memberType ?? "").trim();
@@ -604,8 +483,7 @@ export function formatMemberTitle(profile: MemberProfile): string {
  * The member's name as it should read in prose.
  *
  * @param profile - The member to name.
- * @returns Their reading-order name when the record carries one, otherwise the last-name-first form — never an empty
- *   string, since a page with no name on it is worse than one with an awkwardly ordered name.
+ * @returns Their reading-order name when published, otherwise the last-name-first form.
  */
 export function formatMemberName(profile: MemberProfile): string {
   const direct: string = (profile.directOrderName ?? "").trim();
@@ -626,11 +504,8 @@ export function formatTermYears(term: MemberTerm): string {
 }
 
 /**
- * How long a member has served, across every term on file.
- *
- * Deliberately reports the *span* from their earliest term to now (or to their last term's end) rather than summing
- * term lengths: service can be non-contiguous, and "in Congress since 1975" is both the more useful fact and the one
- * that can't be quietly wrong about a gap the way a summed total can.
+ * How long a member has served: the span from their earliest term, not a sum of term lengths, since service can have
+ * gaps.
  *
  * @param profile - The member whose service to describe.
  * @returns e.g., `"Serving since 2019"` or `"Served 1975–2023"`. An empty string when no term carries a start year.
@@ -666,11 +541,8 @@ export function formatSeatShare(count: number, total: number): string {
 }
 
 /**
- * Plain-English description of how a chamber's seats break down.
- *
- * In the House this spells out the split between voting members and the six Delegates and Resident Commissioner who
- * hold a seat but no floor vote — a distinction a chamber diagram otherwise quietly erases by drawing all 441 seats
- * identically.
+ * Plain-English description of how a chamber's seats break down, including the House's six non-voting seats, which the
+ * diagram draws like any other.
  *
  * @param chamber - The chamber composition to describe.
  * @returns e.g., `"441 seats — 435 voting, 6 non-voting"`, or simply `"100 seats"` where every seat votes.

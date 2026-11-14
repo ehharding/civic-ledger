@@ -1,16 +1,22 @@
-import type { Mock } from "vitest";
+import { type Mock, vi } from "vitest";
 
 /**
- * Helpers for suites that drive the Congress.gov adapter through a stubbed `fetch`.
+ * Helpers for suites that drive the Congress.gov adapter through a stubbed `fetch`, so a fake upstream answer has one
+ * shape everywhere.
  *
- * Every one of those suites used to declare its own copy of both functions below, word for word. They live here so the
- * shape of a fake upstream answer is decided once — a fixture that should look like Congress.gov should look like it
- * the same way everywhere.
- *
- * The API key itself is deliberately not wrapped. A suite sets it with `vi.stubEnv("CONGRESS_API_KEY", …)` and never
- * restores it: `vitest.setup.ts` unstubs every environment variable and global after each test, so a forgotten restore
- * cannot leak a key, or a missing one, into the next test.
+ * Stubs set here are undone after each test by `vitest.setup.ts`.
  */
+
+/**
+ * Puts the adapter on its live path: configures a Congress.gov key and replaces `fetch` with `fetchMock`.
+ *
+ * @returns `fetchMock`, so a test can stub and keep a handle in one line.
+ */
+export function stubLiveApi<FetchMock extends Mock>(fetchMock: FetchMock): FetchMock {
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
 
 /**
  * A `Response` carrying `body` as JSON, the way Congress.gov answers.

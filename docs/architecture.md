@@ -72,10 +72,8 @@ member's page, and grouping by route would have to pick one of the three or inve
 subject puts it in `bills/` because that is what it draws, wherever it is drawn. The test for `ui/` is the same rule
 read backwards — a component belongs there when it could render a record type it has never heard of.
 
-Unlike the adapter below, the filenames did not lose their prefixes in the move. A component file is named for the one
-component it exports, so `bills/bill-card.tsx` holds `BillCard`; shortening it to `bills/card.tsx` would buy a little
-brevity at the import site and cost the property that you can go from a name in a stack trace to a path without looking
-anything up.
+Unlike the adapter's modules, component files keep their prefixes: each is named for the one component it exports
+(`bills/bill-card.tsx` holds `BillCard`), so a name in a stack trace maps straight to a path.
 
 ### Inside the Congress Adapter
 
@@ -395,15 +393,14 @@ nothing at all without JavaScript. That trade goes the other way here, for the s
 `<form>` rather than a click handler: a link should arrive at what it says it points to, on the first paint, whatever is
 or isn't running.
 
-That cost used to be a server render on _every_ visit, narrowed or not, and on Vercel's Hobby plan it was enough to get
-the deployment paused. So each directory, and a committee's record view, is now two routes sharing one renderer
-(`render.tsx` beside each `page.tsx`). The route itself never reads its query and is prerendered on the five-minute
-window, so a visit with no view in its URL — nearly all of them, crawlers included — costs no render at all. A URL that
-does carry one of the route's params is rewritten (not redirected, so the address bar keeps it) to the route's twin
-under `src/app/query/`, which reads it and renders on demand exactly as the route used to. The rewrites are generated
-from one table, `src/lib/query-routes.ts`, whose keys a test holds to each parser's `*_PARAMS` constant; a param added
-to a parser and forgotten there would otherwise quietly serve its links the unfiltered static page. @see
-docs/deployment.md, "Keeping Server Work Bounded".
+To keep that cost off visits that don't need it (per-visit renders are what threaten Vercel's Hobby limits), each
+directory, and a committee's record view, is two routes sharing one renderer (`render.tsx` beside each `page.tsx`). The
+route itself never reads its query and is prerendered on the five-minute window, so a visit with no view in its URL —
+nearly all of them, crawlers included — costs no render at all. A URL that does carry one of the route's params is
+rewritten (not redirected, so the address bar keeps it) to the route's twin under `src/app/query/`, which reads it and
+renders on demand. The rewrites are generated from one table, `src/lib/query-routes.ts`, whose keys a test holds to each
+parser's `*_PARAMS` constant; a param added to a parser and forgotten there would otherwise quietly serve its links the
+unfiltered static page. @see docs/deployment.md, "Keeping Server Work Bounded".
 
 **Two windows, six literals, one test.** The windows are `REVALIDATE_SECONDS` (five minutes) and
 `CONCLUDED_CONGRESS_REVALIDATE_SECONDS` (one day, for a Congress that has ended) in `congress/upstream/http.ts`. The

@@ -3,29 +3,12 @@ import type { JSX } from "react";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 
 /**
- * The one sentence a record section prints when it has nothing to list, and the rule that decides which sentence.
+ * The sentence every record section prints when it has nothing to list — one of three, decided here for all of them:
  *
- * Eleven sections across the bill, member, and committee pages have to answer the same question — a collection came
- * back empty, so what does the reader get told? — and the answer is never "nothing", because an empty panel reads as a
- * bug in this app rather than as a fact about the record. It is one of three sentences, and which one is not a wording
- * choice:
- *
- * - **When the request failed, the section says so and claims nothing else.** This is the branch that has to come
- *   first, because the other two are both statements about Congress and this is the case where the app has none to
- *   make. An empty collection and an unanswered request look identical at the call site — both are a list of length
- *   zero — which is exactly why the distinction is carried on the value rather than inferred here. @see
- *   BillSubResource.
- * - **On preview data, the section says it is waiting for live records.** A fixture holds three invented cosponsors
- *   and no summaries; saying "the Congressional Research Service hasn't published a summary" over that would credit a
- *   real institution with the absence of invented content. Preview copy never makes a claim about the congressional
- *   record. @see docs/data-policy.md.
- * - **On live data, the section says why an absence is ordinary.** Most bills carry no companion measure, most
- *   questions are settled by voice vote, and a resolution taken up on the floor never acquires a referral. A bare "none
- *   found" turns each of those into an apparent gap.
- *
- * Eleven sections through one branch, rather than eleven each spelling it out: a rule stated in one place is one that
- * cannot be got backwards in the twelfth section, and it is a rule whose failure mode is a false claim about the
- * congressional record rather than a typo.
+ * - **Request failed:** say so and claim nothing else (checked first). @see BillSubResource
+ * - **Preview data:** say it's waiting for live records, never making a claim about the real record.
+ *   @see docs/data-policy.md
+ * - **Live data:** explain why the absence is ordinary (most bills have no companion; most votes are voice votes).
  */
 
 /**

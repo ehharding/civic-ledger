@@ -1,25 +1,14 @@
 import { type ZodCatch, type ZodNumber, type ZodOptional, type ZodString, z } from "zod";
 
 /**
- * Runtime shapes for the Congress.gov v3 responses this app reads.
+ * Runtime shapes for the Congress.gov v3 responses this app reads, so every payload is inspected before the mappers
+ * touch it. Validation only ever narrows — it never fails a payload the app could have used:
  *
- * `src/lib/congress` is the layer whose stated job is to treat upstream fields as untrusted (see
- * `docs/architecture.md`), and a bare `as CongressApiListResponse` cast does nothing at runtime — it only tells
- * TypeScript to stop asking. These schemas make that boundary real: every payload is actually inspected before the
- * mappers touch it.
+ * - **Objects are loose**, since Congress.gov returns (and adds) far more fields than this app reads.
+ * - **Fields are optional and `.catch(undefined)`**, so one mistyped field degrades to `undefined` rather than
+ *   rejecting the record. Only a non-object payload fails outright.
  *
- * Two conventions run through every schema here, and both exist so validation can only ever narrow what reaches the
- * mappers — never turn a payload the app could have coped with into a failed read:
- *
- * - **Objects are loose.** Congress.gov returns far more fields than this app reads, and adds new ones over time.
- *   Unknown keys are preserved rather than treated as errors.
- * - **Fields are optional and `.catch(undefined)`.** A single field arriving as the wrong type (a `null` title, a
- *   string where a number belongs) degrades that one field to `undefined` — which every mapper already handles — rather
- *   than rejecting the whole record. Only a payload that isn't an object at all fails outright, which is the one case
- *   where there was never anything usable to salvage.
- *
- * @see mapCongressBill and its siblings in `mappers.ts`, which decide what a *usable* record is once the shape is
- *   known.
+ * What counts as a *usable* record is decided by the mappers. @see mapCongressBill
  */
 
 /** An optional string that degrades to `undefined` rather than failing validation. */
@@ -69,31 +58,15 @@ export const congressApiBillSchema = z.looseObject({
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
   // Only populated on the detail endpoint — the list endpoint doesn't return any of these.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
-  /**
-   * The cosponsor count, and separately the count *including* anyone who later withdrew.
-   *
-   * Two figures rather than one because a withdrawal is a real event on the record, and the `/cosponsors` collection
-   * lists only who is currently signed on. Where the two disagree, someone took their name off — a fact the bill page
-   * states in words rather than leaving as an unexplained gap between a heading and a list.
-   * @see BillCosponsorTally
-   */
+  /** The cosponsor count, and the count including withdrawals. @see BillCosponsorTally */
   cosponsors: z
     .looseObject({ count: optionalNumber, countIncludingWithdrawnCosponsors: optionalNumber })
     .optional()
     .catch(undefined),
   laws: z.array(congressApiLawSchema).optional().catch(undefined),
   /**
-   * The collections this app fetches separately, each described here as `{ count, url }`.
-   *
-   * Only the counts are read. The `url` is the collection's own *API* endpoint and is skipped for exactly the reason
-   * `bill.url` is — it serves JSON, and 403s without a key of the reader's own — while the path this app requests is
-   * built from the bill's already-validated identity instead. @see fetchBillSubResource
-   *
-   * The counts matter because they are the publisher's own answer to "how many of these are there", and until they
-   * were read the bill page could only offer its own tally of the rows it managed to fetch and map. Those agree almost
-   * always and not quite always: a row the mapper drops, or a collection longer than the one 250-record page this app
-   * requests, makes the two diverge — and the sentence stating the number attributed it to Congress.gov either way.
-   * @see BillCollectionCounts
+   * The collections fetched separately, each `{ count, url }`. Only the published counts are read; the `url` is an API
+   * link, and the app builds its own path from the validated identity. @see BillCollectionCounts
    */
   actions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   committees: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
@@ -153,12 +126,8 @@ export const congressApiTextResponseSchema = z.looseObject({
 });
 
 /**
- * One roll-call vote referenced by a bill action.
- *
- * This is the *only* place either chamber's recorded votes reach this app. Congress.gov publishes a dedicated
- * `/house-vote` resource, but there is no `senate-vote` counterpart (the path 404s), so a bill's own action record is
- * the one surface where a Senate roll call can be named at all. What arrives here is a reference — chamber, roll
- * number, and a link to the chamber's own tally — never the tally itself.
+ * One roll-call vote referenced by a bill action — a reference with a link to the chamber's tally, never the tally. The
+ * only place recorded votes reach this app, since Congress.gov has no Senate vote resource.
  */
 export const congressApiRecordedVoteSchema = z.looseObject({
   chamber: optionalString,
@@ -172,13 +141,8 @@ export const congressApiRecordedVoteSchema = z.looseObject({
 /**
  * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/actions`.
  *
- * `actionCode` is typed as a string because the endpoint mixes numeric-looking codes (`"8000"`) with alphanumeric ones
- * (`"H37300"`, `"Intro-H"`) in the same field, and quietly coercing the first kind to a number would break equality
- * against the codes {@link inferStageFromActions} matches on.
- *
- * `sourceSystem` matters more than it looks: the same event is reported by several systems at once — the Library of
- * Congress (code 9), House floor actions (code 2), and committee systems — so a bill's action list contains deliberate
- * near-duplicates rather than a clean sequence. Only the Library of Congress rows carry the standardized codes.
+ * `actionCode` stays a string: it mixes `"8000"` with `"H37300"` and `"Intro-H"`. Each event is reported by several
+ * source systems, so the list has near-duplicates; only Library of Congress rows carry the standardized codes.
  */
 export const congressApiActionSchema = z.looseObject({
   actionCode: optionalString,
@@ -215,16 +179,8 @@ export const congressApiBillSubcommitteeSchema = z.looseObject({
 });
 
 /**
- * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/committees`.
- *
- * Deliberately *not* {@link congressApiCommitteeSchema}, on the same reasoning that keeps
- * {@link congressApiCommitteeBillSchema} separate from {@link congressApiBillSchema}: this describes a *relationship
- * between a bill and a committee*, not a committee. It carries `activities` and nested `subcommittees` that no
- * committee record has, and none of the `parent`/`committeeTypeCode` fields a directory row is built from.
- *
- * Unlike the committee item endpoint, this one *does* state the chamber, which is what lets a bill page link straight
- * to this app's own `/committees/{chamber}/{systemCode}` page without a second request to discover where the committee
- * sits.
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/committees` — a bill–committee relationship, not a
+ * committee, so not {@link congressApiCommitteeSchema}. It states the chamber, which lets the bill page link inward.
  */
 export const congressApiBillCommitteeSchema = z.looseObject({
   systemCode: optionalString,
@@ -241,17 +197,8 @@ export const congressApiBillCommitteesResponseSchema = z.looseObject({
 });
 
 /**
- * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/cosponsors`.
- *
- * `isOriginalCosponsor` is the field that makes this collection worth listing rather than counting. A member who signed
- * on the day a bill was introduced and one who joined eight months later are both "cosponsors", and only the record
- * distinguishes them — so the distinction is read here rather than inferred from whether `sponsorshipDate` happens to
- * match the bill's `introducedDate`, which is a comparison this app would be making up.
- *
- * `sponsorshipWithdrawnDate` is documented and is genuinely rare — no bill sampled while this was written carried one.
- * It is read anyway, on the same rule as everything else in this file: a field that arrives is mapped, and a field that
- * doesn't degrades to `undefined` rather than to a wrong claim. @see congressApiBillSchema's `cosponsors` for the
- * counts that say a withdrawal happened even when the collection no longer lists the member.
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/cosponsors`. `isOriginalCosponsor` is read rather than
+ * inferred from dates. `sponsorshipWithdrawnDate` is rare but documented.
  */
 export const congressApiCosponsorSchema = z.looseObject({
   bioguideId: optionalString,
@@ -269,26 +216,15 @@ export const congressApiCosponsorsResponseSchema = z.looseObject({
   cosponsors: z.array(congressApiCosponsorSchema).optional().catch(undefined),
 });
 
-/**
- * One statement of *how* two measures are related, and — crucially — who said so.
- *
- * `identifiedBy` is the reason this endpoint fits a provenance-first product at all. A relationship between two bills
- * is an editorial judgment, not a legislative act, and this field names the body that made it: the Congressional
- * Research Service, or the House, or the Senate. The bill page prints the attribution beside the relationship rather
- * than presenting "related" as a property the measures simply have. @see RelatedBillRelationship
- */
+/** One statement of how two measures are related, and who said so (`identifiedBy`). @see RelatedBillRelationship */
 export const congressApiRelationshipDetailSchema = z.looseObject({
   type: optionalString,
   identifiedBy: optionalString,
 });
 
 /**
- * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/relatedbills`.
- *
- * A bill reference rather than a bill: it carries enough identity to build this app's own link
- * (`congress`/`type`/`number`), the title to label it, and the other measure's latest action — but none of the sponsor,
- * policy-area, or collection-count fields {@link congressApiBillSchema} describes. Kept separate for the same reason
- * {@link congressApiBillCommitteeSchema} is: this describes a *relationship between two bills*, not a bill.
+ * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/relatedbills` — a reference with identity, title, and
+ * latest action, not a full bill.
  */
 export const congressApiRelatedBillSchema = z.looseObject({
   congress: optionalNumber,
@@ -307,18 +243,10 @@ export const congressApiRelatedBillsResponseSchema = z.looseObject({
 /**
  * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/amendments`.
  *
- * **Nearly every field here is absent on nearly every entry, and that is the endpoint's shape rather than an unlucky
- * sample.** Across the two largest amended bills in recent Congresses — 493 amendments to HR 1 in the 119th, 539 to
- * HR 3684 in the 117th — only about one entry in fifteen carries a `purpose` or a `latestAction`, and fewer than one in
- * fifty carries a `description`. What every entry does carry is identity: `congress`, `type`, and `number`. So this
- * collection is a list of *references* to amendments, the way the recorded-vote schema is a list of references to
- * tallies, and the section built on it is written to say that plainly rather than to look sparse.
- * @see mapBillAmendment, which drops nothing for missing prose and everything for missing identity.
- *
- * `purpose` and `description` are two different fields rather than one spelled two ways. `purpose` is the amendment's
- * own statement of what it does ("To strike a provision relating to…"); `description` is the longer contextual note the
- * House attaches to an amendment printed in a report. Senate amendments carry the first, House amendments frequently
- * carry both, and the mapper prefers `purpose` because it is the amendment's own voice.
+ * Mostly references: on heavily amended bills only about one entry in fifteen has a `purpose` or `latestAction`, and
+ * fewer than one in fifty a `description`; every entry has `congress`, `type`, and `number`. `purpose` is the
+ * amendment's own statement; `description` is the House's longer note, and the mapper prefers `purpose`.
+ * @see mapBillAmendment
  */
 export const congressApiBillAmendmentSchema = z.looseObject({
   congress: optionalNumber,
@@ -336,13 +264,8 @@ export const congressApiBillAmendmentsResponseSchema = z.looseObject({
 });
 
 /**
- * One term entry inside a *list*-level member record.
- *
- * List-level member records are a smaller shape than item-level ones: there's no `memberType` ("Representative" /
- * "Delegate" / "Senator") and no per-term `congress`, and `terms.item[]` carries only chamber/startYear/endYear. That's
- * why chamber is read from the last recognizable term rather than from a term matched on congress number, and why
- * non-voting House seats are derived from the represented jurisdiction (see `isNonVotingJurisdiction`) — the
- * alternative is one extra request per member, ~540 of them.
+ * One term entry inside a *list*-level member record: chamber and years only, with no `memberType` or `congress`. Hence
+ * chamber comes from the last term and non-voting seats from the jurisdiction. @see isNonVotingJurisdiction
  */
 export const congressApiMemberTermSchema = z.looseObject({
   chamber: optionalString,
@@ -351,16 +274,8 @@ export const congressApiMemberTermSchema = z.looseObject({
 });
 
 /**
- * A member's official portrait and the credit line the API's terms require alongside it.
- *
- * Shared by the list and item endpoints, which publish the same two fields — and that is worth stating plainly, because
- * it is the one place the list record is *not* the poorer of the two. Almost everything else the member page shows
- * (`memberType`, per-term `congress`, leadership, the legislation counts) is item-level only; the portrait is not, so a
- * roster can show faces without the one-request-per-member that rule usually implies.
- *
- * `attribution` is separately optional from `imageUrl` rather than bundled with it, because the API genuinely ships
- * portraits without one — three of the 500 members sampled in August 2026 (list *and* item alike, so it is a fact about
- * those records rather than about an endpoint). Anything rendering the image has to handle a missing credit.
+ * A member's official portrait and its required credit line, published on both list and item records (so a roster can
+ * show faces without per-member requests). `attribution` is genuinely absent on a few records.
  */
 export const congressApiDepictionSchema = z.looseObject({
   imageUrl: optionalString,
@@ -393,12 +308,8 @@ export const congressApiMemberListResponseSchema = z.looseObject({
 });
 
 /**
- * One term entry inside an *item*-level member record.
- *
- * Richer than its list-level counterpart above: item-level terms carry the `congress` they belong to and the
- * `memberType` that distinguishes a Delegate or the Resident Commissioner from a Representative — neither of which the
- * list endpoint returns. That difference is the whole reason the member page fetches the item endpoint rather than
- * reusing what the chamber chart already has.
+ * One term entry inside an *item*-level member record, which adds the `congress` and the `memberType` (distinguishing
+ * Delegates and the Resident Commissioner) that list-level terms lack.
  */
 export const congressApiMemberDetailTermSchema = z.looseObject({
   chamber: optionalString,
@@ -417,14 +328,8 @@ export const congressApiLeadershipSchema = z.looseObject({
 });
 
 /**
- * Shape of `GET /v3/member/{bioguideId}` (the member *item* endpoint).
- *
- * Note the `terms` shape: the list endpoint nests them under `terms.item[]`, while this endpoint returns a bare array.
- * Both forms are accepted here rather than assumed, so a future upstream alignment in either direction can't silently
- * empty out a member's service history.
- *
- * `birthYear` is typed as a string because that is how the API returns it (`"1940"`), and coercing it here would only
- * move the parsing somewhere less obvious.
+ * Shape of `GET /v3/member/{bioguideId}` (the member *item* endpoint). `terms` is a bare array here but nested under
+ * `terms.item[]` on the list endpoint; both are accepted. `birthYear` arrives as a string (`"1940"`).
  */
 export const congressApiMemberDetailSchema = z.looseObject({
   bioguideId: optionalString,
@@ -564,13 +469,8 @@ export const congressApiCommitteeDetailResponseSchema = z.looseObject({
 const congressApiPaginationSchema = z.looseObject({ count: optionalNumber });
 
 /**
- * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/bills`.
- *
- * Deliberately *not* {@link congressApiBillSchema}, which the member endpoints' legislation lists reuse. That schema
- * describes a bill; this describes a *relationship between a bill and a committee*, and the two differ in both
- * directions — there is no `title`, `sponsors`, `latestAction`, or `policyArea` here, and `relationshipType` appears on
- * nothing else. Sharing a schema across the two would have meant a type promising a title that this endpoint never
- * sends.
+ * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/bills` — a bill–committee relationship with a
+ * `relationshipType` and no title, so not {@link congressApiBillSchema}.
  */
 export const congressApiCommitteeBillSchema = z.looseObject({
   congress: optionalNumber,
@@ -601,12 +501,8 @@ export const congressApiCommitteeBillsResponseSchema = z.looseObject({
 });
 
 /**
- * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/reports`.
- *
- * `updateDate` arrives in this endpoint's own spelling — `"2015-03-20 00:05:31+00:00"`, a space where every other
- * endpoint in this API sends a `T`. Typed as a plain string and normalized in the mapper rather than parsed here, on
- * the same rule the rest of this file follows: a schema describes what arrives, and deciding what a value *means* is
- * the mappers' job.
+ * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/reports`. `updateDate` uses a space instead of `T`;
+ * the mapper normalizes it.
  */
 export const congressApiCommitteeReportSchema = z.looseObject({
   citation: optionalString,

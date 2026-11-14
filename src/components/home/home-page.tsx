@@ -23,15 +23,11 @@ import { billHref } from "@/lib/routes";
 /**
  * Home route content.
  *
- * The Congress named in the hero comes from {@link getCurrentCongress} rather than from the snapshot's bills: the bill
- * list endpoint can surface a record from an older Congress whose data happened to update recently, and reading the
- * headline number off whatever arrived would make the page occasionally, confidently wrong about what year it is.
+ * The Congress named in the hero comes from {@link getCurrentCongress} rather than from the snapshot's bills, since the
+ * bill list can include older Congresses' recently updated records.
  *
- * The featured card and the activity grid draw from one list ordered by legislative activity, and the grid starts where
- * the featured card left off rather than at the top of it. They previously both started at the top, so the most active
- * bill was drawn twice above the fold — once as the hero's journey and again as the first of three cards — which spent
- * a third of the section restating what the reader had just scrolled past. Three cards below a hero should be three
- * further bills.
+ * The featured card and the activity grid draw from one list ordered by legislative activity, and the grid starts after
+ * the featured bill so it isn't shown twice above the fold.
  *
  * @param composition - Both chambers' membership, for the seating chart.
  * @param snapshot - The current Congress's bills. Ordered here by latest action rather than taken as it arrives — @see

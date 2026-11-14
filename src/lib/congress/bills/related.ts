@@ -8,35 +8,13 @@ import {
 import { mapRelatedBill } from "@/lib/congress/upstream/mappers";
 
 /**
- * The other measures a bill is recorded as related to.
+ * The other measures a bill is recorded as related to — e.g., its Senate companion.
  *
- * This is the read that keeps a bill page from being an island. The single most common question a reader arrives with
- * after finding a House bill — "is there a Senate version of this?" — has an answer on the record, and this is what
- * turns that answer into a link rather than a number to guess at.
+ * Every relationship is attributed (`identifiedBy`: CRS, the House, or the Senate), since relatedness is an editorial
+ * judgment. The publisher's order is kept and not claimed to mean anything: it's undocumented and `sort` is ignored.
  *
- * **Every relationship here is attributed, and that is the point rather than a nicety.** Two bills being "related" is
- * an editorial judgment, not a legislative act: the Congressional Research Service identifies its own, and so do the
- * House and the Senate, and they do not always agree. The endpoint names who made each call in `identifiedBy`, so the
- * page prints the attribution beside the relationship instead of presenting relatedness as a property the measures
- * simply have. That is the same standard this app applies to its own stage cue, turned on a claim it received rather
- * than one it made. @see RelatedBillRelationship
- *
- * **The publisher's order is kept, and is not claimed to mean anything.** Congress.gov documents no ordering for this
- * collection and ignores its own `sort` parameter here, exactly as on the committee-records endpoints — so `dateKey` is
- * omitted and the page's copy says the list is in Congress.gov's own order rather than implying either end is the most
- * significant or the most recent.
- *
- * Holds the adapter's two standing invariants: it never throws, and an unanswered request is reported as one rather
- * than as an empty collection. "Congress.gov records no measure as related to this one" is the ordinary state of most
- * bills and it is also, worded that way, a claim — so a request that failed does not get to make it. @see
- * BillSubResource.
- *
- * That is the primary guard rather than the only one: where the detail endpoint published a count, the section states
- * both figures, so a page showing nothing beside a published thirty-eight names the gap on its own.
- * @see BillCollectionCounts — which is absent whenever the bill itself resolved from the list endpoint, and so cannot
- * be the only thing standing between a failed fetch and a false sentence.
- *
- * @see sub-resource.ts for the transport, guard, and caching policy this shares with `/summaries` and `/text`.
+ * Never throws, and a failed request is reported as unanswered rather than as "nothing related". @see BillSubResource,
+ * BillCollectionCounts, and sub-resource.ts for the shared transport and caching.
  */
 
 /**

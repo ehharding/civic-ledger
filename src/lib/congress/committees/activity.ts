@@ -201,26 +201,12 @@ async function fetchRecords(
 }
 
 /**
- * Fills in the titles the committee-bills endpoint doesn't send.
+ * Fills in the titles the committee-bills endpoint doesn't send — without them a referral list says nothing about what
+ * the bills were. The one deliberate fan-out in the adapter, bounded:
  *
- * **This is the one place in the adapter where rendering a page costs more than a bounded handful of upstream
- * requests, and it is a deliberate trade rather than an oversight.** The committee-bills endpoint publishes a congress,
- * a type, a number, a relationship, and a date — and no title. A list reading "H.R. 10000 · Referred To · July 30,
- * 2026" tells a reader which measures a committee handled and nothing whatsoever about what they were, which for a
- * product whose stated purpose is making the legislative process legible is close to no feature at all. The titles are
- * the feature.
- *
- * What keeps the cost bounded and honest:
- *
- * - **One request per row on screen, never per record in the collection.** The cap is
- *   {@link COMMITTEE_RECORDS_PAGE_SIZE}, so a committee with ten thousand referrals costs exactly what one with twelve
- *   does.
- * - **They go out together**, so the page waits on the slowest single lookup rather than the sum of twelve.
- * - **Every one of them is cached on the bill's own tags** for the app's standard five minutes, and shares those tags
- *   with the bill's own page — so a reader who follows one of these rows pays nothing to open it.
- * - **A failed lookup costs the title and nothing else.** The row still names the measure, still says what the
- *   committee did with it, and still links to the bill's page. Dropping the row instead would quietly shorten a list
- *   whose length is printed directly above it.
+ * - one request per row on screen (at most {@link COMMITTEE_RECORDS_PAGE_SIZE}), sent in parallel;
+ * - cached on the bill's own tags, shared with the bill page;
+ * - a failed lookup costs only the title — the row still names and links the measure.
  *
  * @param referrals - The mapped referrals for one page.
  * @param apiKey - The server-only Congress.gov key.

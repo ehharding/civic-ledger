@@ -69,17 +69,18 @@ Two kinds of code are worth testing directly even when a component test already 
   reached by rendering a route.
 
 **An unexpected `console.error` or `console.warn` fails the test that provoked it.** The guard is in `vitest.setup.ts`.
-It exists because a React duplicate-key warning once passed a fully green `pnpm check` and reached `main`: a warning is
-not an exception, so nothing failed, and Vitest only prints a _passing_ test's console output to a TTY — so the line
-appeared in an editor's run panel and in no pipeline anywhere. A key collision is not cosmetic (React may drop or
-duplicate the colliding children), so the fix was to make it fail rather than to print it louder.
+Warnings such as a React duplicate-key collision don't throw, and Vitest only prints a passing test's output to a TTY,
+so without the guard they'd pass silently in CI. The app's own `[civic-ledger] …` lines pass through, since the
+"degrades rather than crashes" suites write them on purpose. A test that _means_ to provoke a log line spies on the
+method — `vi.spyOn(console, "warn").mockImplementation(() => {})` — which replaces the guard for that test. If a test
+trips the guard, ask whether the warning is real, not how to silence it.
 
-Two things pass through it. This app's own `[civic-ledger] …` lines are ignored, because the "degrades rather than
-crashes" suites write about fifty of them on purpose and each already has an assertion beside it. And a test that
-_means_ to provoke a log line spies on the method — `vi.spyOn(console, "warn").mockImplementation(() => {})` — which
-replaces the guard for that test; that is what `log.test.ts`, `http.test.ts`, and the `unavailable` tests already did
-before the guard existed. If a test trips the guard, the question to ask is whether the warning is real, not how to
-silence it.
+**Every test runs at the same instant.** `vitest.setup.ts` freezes `Date` at a moment inside the 119th Congress — the
+one the preview fixtures model — so `getCurrentCongress()` and every default derived from it give the same answer on any
+day the suite runs, including after a new Congress convenes. Timers stay real. A test that needs a different "now" calls
+`vi.setSystemTime` itself; one that needs a specific Congress passes it explicitly rather than doing arithmetic on the
+clock. E2E specs run against the dev server's real clock, so they reach fixture bills through `FIXTURE_CONGRESS_BILLS`
+in `tests/e2e/routes.ts` rather than through `/bills`.
 
 **Every test starts with no Congress.gov key and cleans up after itself.** `vitest.setup.ts` unsets `CONGRESS_API_KEY`
 before each test, whatever your shell exports, and undoes every `vi.stubEnv`, `vi.stubGlobal`, and `vi.spyOn` after it.
@@ -98,10 +99,9 @@ the product, or has to be found by someone who is not already reading the releva
 one component, or one CSS rule belongs beside it — read at the moment it is needed, and going stale visibly rather than
 quietly.
 
-Two rules follow, and both are about what a comment is _for_. A comment states why the code is the way it is, not what
-it used to be: this project keeps no running decision log, and a note recording a previous shape is a note the next
-reader has to check against the code before trusting it. If a decision is worth recording and fits none of the rows in
-that table, that is a strong signal it is a code comment.
+A comment states why the code is the way it is now, not how it got there — Git holds the history, and a note about a
+previous shape has to be checked against the code before it can be trusted. Keep comments as short as the reason allows.
+If a decision is worth recording and fits none of the rows in that table, it is probably a code comment.
 
 ## Tooling Stays Small
 

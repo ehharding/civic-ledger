@@ -67,10 +67,9 @@ export function requestBillDetail(
 /**
  * One sub-resource collection, and whether the app actually got an answer about it.
  *
- * The two are carried together on one object for the adapter's second standing invariant — provenance travels with the
- * data — because the alternative is what this helper used to do: return a bare array and let six sections render an
- * empty one as a fact about Congress. An empty list is a claim ("no member has cosponsored this bill"); an unanswered
- * request is not, and a page that cannot tell them apart states the first whenever the second happens.
+ * Carried together because provenance travels with the data: an empty list is a claim ("no member has cosponsored this
+ * bill"); an unanswered request is not, and a page that can't tell them apart states the first whenever the second
+ * happens.
  *
  * This is the same distinction `committees/activity.ts` keeps for a committee's record collections, spelled the same
  * way — @see FetchedRecords — and for the same reason its `emptyCopy` gives failure its own sentence.

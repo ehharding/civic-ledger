@@ -8,29 +8,13 @@ import {
 import { mapBillAmendment } from "@/lib/congress/upstream/mappers";
 
 /**
- * The amendments offered to a bill.
+ * The amendments offered to a bill, as openable records. Mostly citations: roughly one in fifteen carries a purpose
+ * (@see congressApiBillAmendmentSchema, mapBillAmendment), and the section says so.
  *
- * This is the read that closes the gap the lifecycle lesson names in its own limits list: the two chambers rarely pass
- * identical text on the first try, and everything they traded to get there happens inside the single step labeled
- * "Passed a Chamber". The action history already shows the *votes* on those amendments in Congress's own prose. What it
- * cannot do is name the amendments themselves as records a reader can open, which is what this collection is for.
+ * The publisher's order is kept — the only date is `updateDate`, a maintenance timestamp, so `dateKey` is omitted.
  *
- * **The list is mostly citations, and the section built on it says so.** Roughly one entry in fifteen carries a purpose
- * or a latest action; the rest carry identity and nothing else. @see congressApiBillAmendmentSchema for the measurement
- * and {@link mapBillAmendment} for why an identity-only entry is kept rather than dropped. The honest framing is that
- * this names every amendment offered and links each one, not that it describes them — a section written the other way
- * around would read as broken on precisely the bills it matters most on.
- *
- * **The publisher's order is kept, and is not claimed to mean anything.** `dateKey` is omitted for the same reason
- * `related.ts` omits it: the only date on an entry is `updateDate`, which records when Congress.gov last touched the
- * row rather than when anything happened to the amendment, and sorting by it would present a maintenance timestamp as
- * chronology. The section's copy says the order is Congress.gov's own.
- *
- * Holds the adapter's two standing invariants: it never throws, and an unanswered request is reported as one rather
- * than as an empty collection. "No amendment was offered to this bill" is the ordinary state of most bills and it is
- * also, worded that way, a claim — so a request that failed does not get to make it. @see BillSubResource.
- *
- * @see sub-resource.ts for the transport, guard, and caching policy this shares with the other six collections.
+ * Never throws, and a failed request is reported as unanswered rather than as "no amendments". @see BillSubResource and
+ * sub-resource.ts for the shared transport and caching.
  */
 
 /**

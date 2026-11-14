@@ -147,8 +147,7 @@ describe("lessonHref", (): void => {
   });
 
   it("takes only a slug the registry declares, so an inline one is checked rather than trusted", (): void => {
-    // The guarantee is the parameter's type, which is why this reads as a plain equality rather than a normalization
-    // case: `lessonHref` no longer accepts a string to normalize. @see LessonSlug.
+    // The guarantee is the parameter's type (@see LessonSlug); this only pins the output.
     expect(lessonHref("what-committees-do")).toBe("/learn/what-committees-do");
   });
 

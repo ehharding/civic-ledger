@@ -2,19 +2,13 @@
 const FIRST_CONGRESS_YEAR: number = 1789;
 
 /**
- * The Congress currently in session, computed from today's date rather than inferred from whichever bills happen to
- * come back on a given fetch.
+ * The Congress currently in session, computed from the date.
  *
- * That data-derived approach (taking the highest `congress` value across a page of bills) was tried first, but
- * Congress.gov's bill list endpoint isn't sorted by congress number or introduction date — it can just as easily
- * surface a bill from decades ago whose record happened to be touched recently, and which specific bills land on a
- * given page shifts with the page size. That made the result inconsistent (e.g., reporting the 110th Congress)
- * depending on how many bills happened to be fetched. There's also no dedicated "current Congress" endpoint to call
- * instead: `/v3/congress` returns the full historical list, unfiltered and unflagged.
+ * Congress.gov has no "current Congress" endpoint (`/v3/congress` lists every one, unflagged), and the bill list isn't
+ * sorted by Congress, so the number can't be read reliably off fetched data. The calendar is reliable: since the 20th
+ * Amendment, each Congress begins January 3 of an odd-numbered year and runs two years.
  *
- * What *is* reliable is the numbering scheme itself. Since the 20th Amendment (1933), each Congress begins at noon on
- * January 3 of an odd-numbered year and runs for exactly two years. That's a fixed constitutional cadence — not a
- * specific Congress number that will need updating — so computing from it stays correct indefinitely.
+ * Takes the whole day of January 3 as the new Congress, though it convenes at noon.
  *
  * @param referenceDate - The date to compute from. Defaults to now; tests and any future "as of" view pass their own.
  * @returns The Congress number seated on that date, e.g., `119` for any date in 2025 or 2026.
@@ -33,8 +27,6 @@ export function getCurrentCongress(referenceDate: Date = new Date()): number {
  * The two-year term a Congress covers, derived from the same fixed constitutional cadence {@link getCurrentCongress}
  * uses: each Congress begins January 3rd of an odd-numbered year, two years after the previous one, counting back to
  * the 1st Congress in 1789.
- *
- * Lives here, beside the anchor year it depends on, so the two can never disagree about where the sequence starts.
  *
  * @param congress - The Congress number (e.g., `119`).
  * @returns Its calendar span — `{ startYear: 2025, endYear: 2027 }` for the 119th.

@@ -1,19 +1,12 @@
-import type {
-  APIResponse,
-  Locator,
-  PlaywrightTestArgs,
-  PlaywrightTestOptions,
-  PlaywrightWorkerArgs,
-  PlaywrightWorkerOptions,
-} from "@playwright/test";
+import type { APIResponse, Locator } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+
+import { FIXTURE_CONGRESS_BILLS, type TestFixtures } from "./routes";
 
 // Smoke coverage for the primary navigation shell. `playwright.config.ts` points `testDir` at this directory — keep at
 // least one spec here so the CI "browser" job has something to run.
 
-test("home page renders the hero and primary nav", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("home page renders the hero and primary nav", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { level: 1, name: "See Congress in Context." })).toBeVisible();
@@ -27,9 +20,7 @@ test("home page renders the hero and primary nav", async ({
   await expect(primaryNav.getByRole("link", { name: "Methodology" })).toBeVisible();
 });
 
-test("primary nav links land on the right page", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("primary nav links land on the right page", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/");
   const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
 
@@ -70,7 +61,7 @@ test("primary nav links land on the right page", async ({
  */
 test("the primary nav marks the section being read, and keeps marking it across navigations", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/");
   const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
 
@@ -114,9 +105,7 @@ test.describe("the mobile navigation drawer", (): void => {
    * the accessibility tree, so a panel hidden with a transform alone — still focusable, still announced — would pass
    * every other assertion in this file and fail this one.
    */
-  test("offers nothing until it is opened", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("offers nothing until it is opened", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
 
     const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
@@ -132,9 +121,7 @@ test.describe("the mobile navigation drawer", (): void => {
     await expect(primaryNav.getByRole("link")).toHaveCount(5);
   });
 
-  test("leads to a section and closes behind you", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("leads to a section and closes behind you", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
     await page.getByRole("button", { name: "Menu" }).click();
 
@@ -152,9 +139,7 @@ test.describe("the mobile navigation drawer", (): void => {
     await expect(primaryNav.getByRole("link", { name: "Committees" })).toHaveAttribute("aria-current", "page");
   });
 
-  test("closes when the page behind it is tapped", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("closes when the page behind it is tapped", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
     await page.getByRole("button", { name: "Menu" }).click();
     await expect(page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link")).toHaveCount(5);
@@ -172,9 +157,7 @@ test.describe("the mobile navigation drawer", (): void => {
    * a panel that is about to become `visibility: hidden` would drop focus to <body>, and the reader's next Tab would
    * start the page over from the skip link.
    */
-  test("closes on Escape and hands focus back to the toggle", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("closes on Escape and hands focus back to the toggle", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
     const toggle: Locator = page.getByRole("button", { name: "Menu" });
     await toggle.click();
@@ -195,9 +178,7 @@ test.describe("the mobile navigation drawer", (): void => {
    * The Tab loop. Without it, tabbing past the last destination walks into page content the scrim has covered — focus
    * on something the reader cannot see, in a page they cannot scroll.
    */
-  test("keeps Tab inside the drawer while it is open", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("keeps Tab inside the drawer while it is open", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
     const toggle: Locator = page.getByRole("button", { name: "Menu" });
     await toggle.click();
@@ -234,7 +215,7 @@ test.describe("the mobile navigation drawer", (): void => {
 
     test("keeps every destination reachable, and offers no control that could not work", async ({
       page,
-    }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+    }: TestFixtures): Promise<void> => {
       await page.goto("/");
 
       const primaryNav: Locator = page.getByRole("navigation", { name: "Primary navigation" });
@@ -246,9 +227,7 @@ test.describe("the mobile navigation drawer", (): void => {
   });
 
   /* The page behind the scrim holds still, so a flick meant for the menu does not scroll the document under it. */
-  test("holds the page still while it is open", async ({
-    page,
-  }: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+  test("holds the page still while it is open", async ({ page }: TestFixtures): Promise<void> => {
     await page.goto("/");
     await page.getByRole("button", { name: "Menu" }).click();
 
@@ -263,9 +242,7 @@ test.describe("the mobile navigation drawer", (): void => {
   });
 });
 
-test("header search submits the query to the bills directory", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("header search submits the query to the bills directory", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/");
 
   await page.getByRole("searchbox", { name: "Search bills" }).fill("infrastructure");
@@ -276,8 +253,8 @@ test("header search submits the query to the bills directory", async ({
 
 test("opening a bill card leads to a detail page with the official-record link", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
-  await page.goto("/bills");
+}: TestFixtures): Promise<void> => {
+  await page.goto(FIXTURE_CONGRESS_BILLS);
 
   const firstCardLink: Locator = page.locator(".bill-card h3 a").first();
   const billTitle: string | null = await firstCardLink.textContent();
@@ -308,7 +285,7 @@ test("opening a bill card leads to a detail page with the official-record link",
  */
 test("the load-more route answers in the shape the directory reads", async ({
   request,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   const response: APIResponse = await request.get("/api/bills?offset=12");
 
   // Never an error status, even with no key and no upstream: an empty page means both "there are no more" and "we could
@@ -320,9 +297,7 @@ test("the load-more route answers in the shape the directory reads", async ({
   expect(Array.isArray(body["bills"])).toBe(true);
 });
 
-test("the search route answers in the shape the search box reads", async ({
-  request,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("the search route answers in the shape the search box reads", async ({ request }: TestFixtures): Promise<void> => {
   const response: APIResponse = await request.get("/api/bills/search?q=broadband");
 
   expect(response.status()).toBe(200);
@@ -335,9 +310,7 @@ test("the search route answers in the shape the search box reads", async ({
 });
 
 /* And the same contract from the other end: the route's fields reaching a browser and coming back out as a sentence. */
-test("searching the directory reports the scope it actually swept", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("searching the directory reports the scope it actually swept", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/bills");
 
   await page.getByRole("searchbox", { name: /Search bill records/ }).fill("broadband");
@@ -359,7 +332,7 @@ test("searching the directory reports the scope it actually swept", async ({
 
 test("the bill-lifecycle lesson is reachable from /learn and links onward to /bills", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/learn");
 
   await page.getByRole("link", { name: "Start the lesson: How a Bill Becomes a Law" }).click();
@@ -379,7 +352,7 @@ test("the bill-lifecycle lesson is reachable from /learn and links onward to /bi
 
 test("every lesson cites primary sources and states what it leaves out", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   // The rule `docs/roadmap.md` gated the second and third modules on, checked through the rendered page rather than
   // only in the registry: a citation list that stopped rendering would leave the prose making uncheckable claims.
   for (const slug of ["how-a-bill-becomes-law", "what-committees-do", "how-congress-votes"]) {
@@ -394,9 +367,7 @@ test("every lesson cites primary sources and states what it leaves out", async (
   }
 });
 
-test("the committee lesson leads to the committee directory", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("the committee lesson leads to the committee directory", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/learn");
 
   await page.getByRole("link", { name: "Start the lesson: What a Committee Actually Does" }).click();
@@ -409,17 +380,13 @@ test("the committee lesson leads to the committee directory", async ({
   await expect(page).toHaveURL(/\/committees$/);
 });
 
-test("an unknown lesson slug is a 404, not an empty lesson", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("an unknown lesson slug is a 404, not an empty lesson", async ({ page }: TestFixtures): Promise<void> => {
   const response = await page.goto("/learn/how-a-bill-becomes-a-sandwich");
   expect(response?.status()).toBe(404);
 });
 
-test("a bill's sponsor leads to their member page", async ({
-  page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
-  await page.goto("/bills");
+test("a bill's sponsor leads to their member page", async ({ page }: TestFixtures): Promise<void> => {
+  await page.goto(FIXTURE_CONGRESS_BILLS);
   await page.locator(".bill-card h3 a").first().click();
   await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
 
@@ -441,7 +408,7 @@ test("a bill's sponsor leads to their member page", async ({
 
 test("the member directory filters in place and opens a member's page", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/members");
 
   const firstCardLink: Locator = page.locator(".member-card h3 a").first();
@@ -466,7 +433,7 @@ test("the member directory filters in place and opens a member's page", async ({
 
 test("the skip link is the first tab stop and moves focus to the main landmark", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/");
 
   await page.keyboard.press("Tab");
@@ -481,7 +448,7 @@ test("the skip link is the first tab stop and moves focus to the main landmark",
 
 test("a committee page explains what its kind of committee is and lists its subcommittees", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/committees");
 
   // The subcommittee count on a card is the promise that the parent's page has something one level down; this is the
@@ -507,7 +474,7 @@ test("a committee page explains what its kind of committee is and lists its subc
 
 test("a committee's record collections are real links that survive a reload", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   // The whole point of making these links rather than local state: the view has an address. Everything below would pass
   // just as well against a click handler *except* the reload, which is the assertion that matters.
   await page.goto("/committees");
@@ -527,7 +494,7 @@ test("a committee's record collections are real links that survive a reload", as
 
 test("a defined term in a lesson explains itself and leads to its glossary entry", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   // The three things a browser can check that jsdom cannot: the bubble is actually painted rather than merely marked
   // open, it lands inside the viewport, and the word underneath it is a working link when nothing is hovering it.
   await page.goto("/learn/what-committees-do");
@@ -559,11 +526,8 @@ test("a defined term in a lesson explains itself and leads to its glossary entry
   await expect(page).toHaveURL(/\/learn#glossary-markup$/);
   await expect(page.locator("#glossary-markup")).toBeInViewport();
 
-  // …and in the part of the viewport nothing is painted over. `toBeInViewport` intersects rectangles and knows nothing
-  // about occlusion, so it holds just as well for an entry sitting *underneath* the sticky header — which is what this
-  // link used to do, landing the targeted entry ~49px behind it on a wide screen. The offset that prevents that is
-  // `scroll-padding-top` on `html` (base.css), one rule covering every fragment target in the app, so checking it once
-  // here is checking it for all of them.
+  // …and below the sticky header. `toBeInViewport` ignores occlusion, so it would also pass for an entry hidden under
+  // the header. `scroll-padding-top` on `html` (base.css) covers every fragment target, so checking one checks all.
   const headerBox = await page.locator(".site-header").boundingBox();
   const entryBox = await page.locator("#glossary-markup").boundingBox();
   expect(headerBox).not.toBeNull();
@@ -579,9 +543,7 @@ test("a defined term in a lesson explains itself and leads to its glossary entry
 // The first is asserted on the raw HTML response rather than on a rendered page, because that is the only place it can
 // be told apart from the browser narrowing after hydration — which `useDirectoryUrlSync` would do for a static page
 // too, after a visible flash of the full list.
-test("a shared narrowed link's HTML arrives already narrowed", async ({
-  request,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+test("a shared narrowed link's HTML arrives already narrowed", async ({ request }: TestFixtures): Promise<void> => {
   expect(await (await request.get("/bills?stage=law")).text()).toMatch(/aria-pressed="true"[^>]*>Became Law/);
   expect(await (await request.get("/bills")).text()).toMatch(/aria-pressed="true"[^>]*>All Stages/);
   expect(await (await request.get("/members?q=preview")).text()).toContain('value="preview"');
@@ -590,7 +552,7 @@ test("a shared narrowed link's HTML arrives already narrowed", async ({
 
 test("the header's Bills link leaves a narrowed view for the unfiltered directory", async ({
   page,
-}: PlaywrightTestArgs & PlaywrightTestOptions & PlaywrightWorkerArgs & PlaywrightWorkerOptions): Promise<void> => {
+}: TestFixtures): Promise<void> => {
   await page.goto("/bills?stage=law");
   await expect(page.getByRole("button", { name: /Became Law/i })).toHaveAttribute("aria-pressed", "true");
 

@@ -1,16 +1,11 @@
 import type { PageHeaderCopy } from "@/components/layout/page-header";
 
 /**
- * The header copy the `/bills` route and its loading skeleton both render.
+ * The header copy the `/bills` route and its loading skeleton both render, shared so the skeleton resolves into the
+ * page without layout shift.
  *
- * The skeleton mirrors the real page's header exactly so that one resolves into the other without anything on screen
- * shifting. That was previously written down twice, with a comment in `loading.tsx` calling the duplication deliberate
- * because "matching it exactly is what makes the skeleton resolve into the real page without anything shifting" — which
- * is the argument for sharing it rather than against. Two copies can only *happen* to match; one copy cannot fail to.
- *
- * Only this route needs it. `/bills/[congress]` deliberately does *not* share its header with its own skeleton: Next
- * hands a route's loading UI no params, so that skeleton cannot know which Congress it is standing in for and says so
- * generically instead of guessing a number it would then have to flicker away from.
+ * `/bills/[congress]` can't do the same: Next gives loading UI no params, so its skeleton can't know which Congress it
+ * stands in for and uses generic copy instead.
  */
 export const CURRENT_CONGRESS_BILLS_HEADER: PageHeaderCopy = {
   eyebrow: "Legislation",

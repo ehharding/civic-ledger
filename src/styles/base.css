@@ -15,9 +15,8 @@ html {
      the first line of the term itself — arrives underneath the header. The skip link has the same problem one layer up.
 
      `scroll-padding` on the scroll container rather than `scroll-margin` on each target, because the offset is a fact
-     about the header, not about any element that happens to be linked to. Stated per-element it has to be repeated
-     onto every future target and re-tuned in all of them whenever the header's height changes — which is exactly how
-     the 24px that used to sit on `.glossary-entry` came to be a third of what it needed to be.
+     about the header, not about any element that happens to be linked to — one value to re-tune when the header
+     changes.
 
      One value for all three header layouts rather than a breakpoint pair. The header is 73px wide-screen (--space-18
      plus its 1px border), 65px below 640px where the nav becomes a drawer and the row is wordmark-plus-toggle, and
