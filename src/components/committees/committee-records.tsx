@@ -1,9 +1,9 @@
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
+import { RecordLink } from "@/components/ui/record-link";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import {
   COMMITTEE_RECORDS_PARAMS,
@@ -114,12 +114,12 @@ function RecordsTab({
 
   return (
     <li>
-      <Link aria-current={isCurrent ? "page" : undefined} className="committee-records__tab" href={href}>
+      <RecordLink aria-current={isCurrent ? "page" : undefined} className="committee-records__tab" href={href}>
         <span className="committee-records__tab-label">{committeeRecordKindLabels[kind]}</span>
         <span className="committee-records__tab-count">
           {count === undefined ? "Not reported" : formatCount(count)}
         </span>
-      </Link>
+      </RecordLink>
     </li>
   );
 }
@@ -146,7 +146,7 @@ function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Ele
         {referral.relationship ? <span className="committee-record__tag">{referral.relationship}</span> : null}
       </div>
       <h3 className="committee-record__title">
-        <Link href={href}>{referral.bill?.title ?? identifier}</Link>
+        <RecordLink href={href}>{referral.bill?.title ?? identifier}</RecordLink>
       </h3>
       <p className="committee-record__meta">
         {referral.actionDate ? formatDate(referral.actionDate) : "Date not recorded"}
@@ -314,9 +314,9 @@ function PagerStep({
   }
 
   return (
-    <Link className="committee-records__pager-step" href={href} rel={rel}>
+    <RecordLink className="committee-records__pager-step" href={href} rel={rel}>
       {content}
-    </Link>
+    </RecordLink>
   );
 }
 

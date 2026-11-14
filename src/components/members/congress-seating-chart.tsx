@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
 import {
   type FocusEvent,
   type JSX,
@@ -15,6 +14,7 @@ import {
 } from "react";
 
 import { OutboundLink } from "@/components/ui/outbound-link";
+import { RecordLink } from "@/components/ui/record-link";
 import {
   bioguideUrl,
   type ChamberComposition,
@@ -203,9 +203,9 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
         </p>
       ) : null}
       {member.bioguideId ? (
-        <Link className="text-link seating-detail__link" href={memberHref(member.bioguideId)}>
+        <RecordLink className="text-link seating-detail__link" href={memberHref(member.bioguideId)}>
           View Full Profile <ArrowUpRight aria-hidden="true" size={14} />
-        </Link>
+        </RecordLink>
       ) : null}
       {biographyUrl ? (
         <OutboundLink className="text-link seating-detail__link" href={biographyUrl} iconSize={14}>

@@ -1,9 +1,9 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
 import type { BillSectionProps } from "@/components/bills/detail/section";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
+import { RecordLink } from "@/components/ui/record-link";
 import { describeBillCollection } from "@/lib/congress/bills/model";
 import type { BillCommittee, BillCommitteeActivity, BillSubcommittee } from "@/lib/congress/committees/model";
 import { committeeHref } from "@/lib/routes";
@@ -50,18 +50,21 @@ function CommitteeReferrals({ committees }: { committees: BillCommittee[] }): JS
 
         return (
           <li key={`${committee.chamber}-${committee.systemCode}`}>
-            <Link className="text-link" href={committeeHref(committee.chamber, committee.systemCode)}>
+            <RecordLink className="text-link" href={committeeHref(committee.chamber, committee.systemCode)}>
               {committee.name}
-            </Link>
+            </RecordLink>
             {activity.length > 0 ? <p className="date-label">{activity}</p> : null}
             {committee.subcommittees.length > 0 ? (
               <ul className="bill-committee-list__subcommittees">
                 {committee.subcommittees.map(
                   (subcommittee: BillSubcommittee): JSX.Element => (
                     <li key={subcommittee.systemCode}>
-                      <Link className="text-link" href={committeeHref(committee.chamber, subcommittee.systemCode)}>
+                      <RecordLink
+                        className="text-link"
+                        href={committeeHref(committee.chamber, subcommittee.systemCode)}
+                      >
                         {subcommittee.name}
-                      </Link>
+                      </RecordLink>
                     </li>
                   ),
                 )}

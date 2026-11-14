@@ -1,9 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
 import type { Route } from "next";
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bills/bill-journey";
+import { RecordLink } from "@/components/ui/record-link";
 import { billStageLabels, type LegislativeBill } from "@/lib/congress/bills/model";
 import { formatDate } from "@/lib/format";
 import { billHref } from "@/lib/routes";
@@ -38,7 +38,7 @@ export function BillCard({ bill }: { bill: LegislativeBill }): JSX.Element {
         <span className="stage-label">{billStageLabels[bill.stage]}</span>
       </div>
       <h3>
-        <Link href={href}>{bill.title}</Link>
+        <RecordLink href={href}>{bill.title}</RecordLink>
       </h3>
       <p className="bill-card__action">{bill.latestAction.text}</p>
       {bill.latestAction.date ? (
@@ -56,9 +56,9 @@ export function BillCard({ bill }: { bill: LegislativeBill }): JSX.Element {
          * is why this is a conditional rather than a deletion.
          */}
         {bill.policyArea ? <span>{bill.policyArea}</span> : null}
-        <Link href={href} aria-label={`Open ${bill.type} ${bill.number}`}>
+        <RecordLink href={href} aria-label={`Open ${bill.type} ${bill.number}`}>
           <ArrowUpRight aria-hidden="true" size={17} />
-        </Link>
+        </RecordLink>
       </div>
     </article>
   );

@@ -22,6 +22,7 @@ import {
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { ChamberComposition, CongressComposition, CongressMember } from "@/lib/congress/members/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
+import { CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS } from "@/lib/congress/upstream/http";
 
 const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
 
@@ -30,6 +31,16 @@ function jsonResponse(body: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+/**
+ * The `next.revalidate` window each Congress.gov request a mocked `fetch` received asked to be cached for, in order.
+ */
+function requestedCacheWindows(fetchMock: ReturnType<typeof vi.fn>): (number | undefined)[] {
+  return fetchMock.mock.calls.map(
+    (call: unknown[]): number | undefined =>
+      (call[1] as { next?: { revalidate?: number } } | undefined)?.next?.revalidate,
+  );
 }
 
 beforeEach((): void => {
@@ -145,6 +156,27 @@ describe("getCongressSnapshotForCongress", (): void => {
 
     const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(requestedUrl.pathname).toBe("/v3/bill/110");
+  });
+
+  it("caches a concluded Congress's list for a day and the current one's for five minutes", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCongressSnapshotForCongress(getCurrentCongress() - 1);
+    await getCongressSnapshotForCongress(getCurrentCongress());
+
+    expect(requestedCacheWindows(fetchMock)).toEqual([CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS]);
+  });
+
+  it("caches a concluded bill's own records for a day too", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ summaries: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getBillSummaries({ congress: String(getCurrentCongress() - 1), type: "hr", number: "1" });
+
+    expect(requestedCacheWindows(fetchMock)).toEqual([CONCLUDED_CONGRESS_REVALIDATE_SECONDS]);
   });
 });
 
@@ -277,6 +309,17 @@ describe("getMoreBills", (): void => {
 
     const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(requestedUrl.pathname).toBe("/v3/bill/110");
+  });
+
+  it("caches a concluded Congress's later pages for a day and the current one's for five minutes", async (): Promise<void> => {
+    process.env.CONGRESS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getMoreBills(24, getCurrentCongress() - 1);
+    await getMoreBills(24);
+
+    expect(requestedCacheWindows(fetchMock)).toEqual([CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS]);
   });
 });
 
@@ -452,6 +495,8 @@ describe("getBillTextVersions", (): void => {
 
 describe("getSearchResults", (): void => {
   it("filters the preview fixtures when no API key is configured", async (): Promise<void> => {
+    delete process.env.CONGRESS_API_KEY;
+
     const result: BillSearchResponse = await getSearchResults(firstPreviewBill.title);
 
     expect(result.source).toBe("preview");

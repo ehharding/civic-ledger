@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
+import { RecordLink } from "@/components/ui/record-link";
 import {
   type CommitteeSummary,
   committeeChamberShortLabels,
@@ -33,7 +33,7 @@ export function CommitteeCard({ committee }: { committee: CommitteeSummary }): J
       <h3 className="committee-card__name">
         {/* Displayed exactly as Congress.gov publishes it. @see committeeSearchTerms for why the leading form a
             referral line uses is matched by the search box but never substituted here. */}
-        <Link href={committeeHref(committee.chamber, committee.systemCode)}>{committee.name}</Link>
+        <RecordLink href={committeeHref(committee.chamber, committee.systemCode)}>{committee.name}</RecordLink>
       </h3>
       <p className="committee-card__meta">
         {committeeChamberShortLabels[committee.chamber]}

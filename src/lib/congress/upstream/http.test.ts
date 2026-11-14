@@ -21,6 +21,7 @@ import {
   billCacheTags,
   buildCongressUrl,
   COMMITTEE_LIST_CACHE_TAG,
+  CONCLUDED_CONGRESS_REVALIDATE_SECONDS,
   CONGRESS_API_BASE,
   type CongressRequestResult,
   committeeCacheTags,
@@ -33,7 +34,9 @@ import {
   normalizeCommitteeChamberSegment,
   normalizeSystemCode,
   REQUEST_TIMEOUT_MS,
+  REVALIDATE_SECONDS,
   requestCongressJson,
+  revalidateSecondsForCongress,
 } from "@/lib/congress/upstream/http";
 
 /**
@@ -272,10 +275,25 @@ describe("request timeout", (): void => {
 
     void fetchCongressGov(buildCongressUrl("/bill/119", "test-key"), [BILL_LIST_CACHE_TAG]);
 
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit & { next?: { tags?: string[] } };
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit & { next?: { tags?: string[]; revalidate?: number } };
 
     expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(init.next?.tags).toEqual([BILL_LIST_CACHE_TAG]);
+    expect(init.next?.revalidate).toBe(REVALIDATE_SECONDS);
+  });
+
+  it("caches for the window a Congress-scoped caller asks for", (): void => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    void fetchCongressGov(
+      buildCongressUrl("/bill/118", "test-key"),
+      [BILL_LIST_CACHE_TAG],
+      CONCLUDED_CONGRESS_REVALIDATE_SECONDS,
+    );
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit & { next?: { revalidate?: number } };
+    expect(init.next?.revalidate).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
   });
 
   it("allows a request long enough to be a real answer rather than a slow one", (): void => {
@@ -422,5 +440,34 @@ describe("cache tags", (): void => {
 
     expect(tags).toContain(MEMBER_LIST_CACHE_TAG);
     expect(tags).toContain("member-L000174");
+  });
+});
+
+describe("revalidateSecondsForCongress", (): void => {
+  it("keeps the Congress now sitting on the shared five-minute window", (): void => {
+    expect(revalidateSecondsForCongress(119, 119)).toBe(REVALIDATE_SECONDS);
+  });
+
+  it("caches a Congress that has ended for a day, since its record is closed", (): void => {
+    expect(revalidateSecondsForCongress(118, 119)).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
+    expect(revalidateSecondsForCongress(93, 119)).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
+  });
+
+  it("never gives a Congress that has not ended yet the long window", (): void => {
+    // A later number is not a real request today, but if one ever arrives it must not be cached as though closed.
+    expect(revalidateSecondsForCongress(120, 119)).toBe(REVALIDATE_SECONDS);
+  });
+
+  it("accepts the Congress as a validated path segment, the form bill routes carry it in", (): void => {
+    expect(revalidateSecondsForCongress("118", 119)).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
+    expect(revalidateSecondsForCongress("119", 119)).toBe(REVALIDATE_SECONDS);
+  });
+
+  it("measures against today's Congress by default", (): void => {
+    expect(revalidateSecondsForCongress(1)).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
+  });
+
+  it("is a day: long enough to stop re-reading a closed record, short enough to pick up late corrections", (): void => {
+    expect(CONCLUDED_CONGRESS_REVALIDATE_SECONDS).toBe(86_400);
   });
 });

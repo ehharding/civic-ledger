@@ -2,6 +2,7 @@ import type { ZodType } from "zod";
 
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/bills/model";
 import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees/model";
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { isBioguideId } from "@/lib/congress/members/model";
 import { logError, logWarning } from "@/lib/observability/log";
 
@@ -23,6 +24,44 @@ export const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
  * of a separately-edited literal per endpoint.
  */
 export const REVALIDATE_SECONDS: number = 300;
+
+/**
+ * How long Next caches a response scoped to a Congress that has already ended, in seconds: one day.
+ *
+ * A concluded Congress's record is closed. Its bills will never gain another action, cosponsor, or text version, so
+ * re-reading them every five minutes buys nothing and costs a lot: each `/bills/[congress]` directory for a past
+ * Congress, every bill page under it, and every Congress the search sweep reads would otherwise be regenerated on the
+ * same five-minute clock as the current one, by crawlers as much as by readers.
+ *
+ * A day rather than forever, because "closed" is not quite "frozen": the Library of Congress still corrects records and
+ * attaches public-law numbers for some weeks after a Congress adjourns. A day keeps those corrections arriving without
+ * anyone having to remember to purge a cache.
+ *
+ * Two routes also export this as their segment `revalidate` (it has to be restated there as a literal, as
+ * `src/app/revalidate.test.ts` explains), so that a page whose fetches never ran — rendered during an outage, or from
+ * preview data — is still regenerated within a day rather than cached indefinitely.
+ * @see revalidateSecondsForCongress
+ */
+export const CONCLUDED_CONGRESS_REVALIDATE_SECONDS: number = 86_400;
+
+/**
+ * The cache window for a request scoped to one Congress.
+ *
+ * The current Congress (and, defensively, any later number) keeps the shared five-minute window; an earlier one gets
+ * the concluded window. A route's own window is the shortest of its segment `revalidate` and every fetch it makes, so
+ * this is all it takes for `/bills/118` to be regenerated daily while `/bills/119` stays on five minutes.
+ *
+ * @param congress - The Congress the request is scoped to, as a number or an already-validated path segment.
+ * @param currentCongress - The Congress now sitting. Defaults to today's; a parameter so tests can pin the boundary.
+ * @returns {@link CONCLUDED_CONGRESS_REVALIDATE_SECONDS} for a Congress that has ended, else
+ *   {@link REVALIDATE_SECONDS}.
+ */
+export function revalidateSecondsForCongress(
+  congress: number | string,
+  currentCongress: number = getCurrentCongress(),
+): number {
+  return Number(congress) < currentCongress ? CONCLUDED_CONGRESS_REVALIDATE_SECONDS : REVALIDATE_SECONDS;
+}
 
 /**
  * The most records Congress.gov will return from a single request, on any endpoint that paginates. Requested explicitly
@@ -92,14 +131,16 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
  *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags, so a future revalidation hook can invalidate a whole family of requests at once.
+ * @param revalidate - The cache window in seconds. Defaults to the shared five minutes; a request scoped to one
+ *   Congress passes {@link revalidateSecondsForCongress} instead.
  * @returns The raw response. Rejects with a `TimeoutError` if the request outlasts {@link REQUEST_TIMEOUT_MS}, which
  *   {@link requestCongressJson} turns into an ordinary `{ outcome: "failed" }` like any other transport failure. Prefer
  *   that function, which also handles status codes and parsing; this is exported mainly for the rare caller that needs
  *   the response itself.
  */
-export function fetchCongressGov(url: URL, tags: string[]): Promise<Response> {
+export function fetchCongressGov(url: URL, tags: string[], revalidate: number = REVALIDATE_SECONDS): Promise<Response> {
   return fetch(url, {
-    next: { revalidate: REVALIDATE_SECONDS, tags },
+    next: { revalidate, tags },
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -132,6 +173,7 @@ export type CongressRequestResult<Payload> =
  * @param schema - The Zod schema for this endpoint (see `api-schema.ts`).
  * @param context - Short label identifying the caller in a log line (e.g., `"bill summaries"`), recorded as a
  *   structured attribute rather than interpolated into the message, so an incident can be filtered to one endpoint.
+ * @param revalidate - The cache window in seconds. @see fetchCongressGov
  * @returns `{ outcome: "ok", data }` with the validated payload, `{ outcome: "not-found" }` for a 404, or
  *   `{ outcome: "failed" }` for anything else.
  *
@@ -145,13 +187,14 @@ export async function requestCongressJson<Payload>(
   tags: string[],
   schema: ZodType<Payload>,
   context: string,
+  revalidate: number = REVALIDATE_SECONDS,
 ): Promise<CongressRequestResult<Payload>> {
   // The one place in this app that holds the key *and* reports a failure, so the one place that has to declare it. The
   // same arrangement `sentry.server.config.ts` makes with `sentryInitOptions`. @see LogDetails.secrets.
   const secrets: readonly string[] = [getCongressApiKey() ?? ""];
 
   try {
-    const response: Response = await fetchCongressGov(url, tags);
+    const response: Response = await fetchCongressGov(url, tags, revalidate);
 
     if (response.status === 404) return { outcome: "not-found" };
 

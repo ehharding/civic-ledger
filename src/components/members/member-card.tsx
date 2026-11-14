@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
+import { RecordLink } from "@/components/ui/record-link";
 import {
   chamberLabels,
   chamberShortLabels,
@@ -77,7 +77,7 @@ export function MemberCard({ entry }: { entry: MemberDirectoryEntry }): JSX.Elem
       <MemberCardPortrait entry={entry} />
       <p className={`member-card__party ${partyTintClass(entry.party)}`}>{formatMemberParty(entry)}</p>
       <h3 className="member-card__name">
-        <Link href={memberHref(entry.bioguideId)}>{entry.name}</Link>
+        <RecordLink href={memberHref(entry.bioguideId)}>{entry.name}</RecordLink>
       </h3>
       <p className="member-card__seat">
         {seat.length > 0 ? `${chamberShortLabels[entry.chamber]} · ${seat}` : chamberLabels[entry.chamber]}

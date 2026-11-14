@@ -1,10 +1,10 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { type BillSectionProps, DisclosedList } from "@/components/bills/detail/section";
 import { GlossaryProse } from "@/components/learn/glossary-prose";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
+import { RecordLink } from "@/components/ui/record-link";
 import {
   billIdentityKey,
   describeBillCollection,
@@ -65,9 +65,9 @@ function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
   return (
     <li>
       <p className="related-bill-list__identity">
-        <Link className="text-link" href={billHref(measure)}>
+        <RecordLink className="text-link" href={billHref(measure)}>
           {measure.type} {measure.number}
-        </Link>
+        </RecordLink>
         {/* Always printed rather than guarded: `congress` is required on the model, and a related measure can sit in a
             different Congress from the bill pointing at it, so the number is doing real work here. */}
         <span className="date-label"> · {formatOrdinal(measure.congress)} Congress</span>

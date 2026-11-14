@@ -141,9 +141,11 @@ page. Only a payload that isn't an object at all is rejected outright.
    one fallback policy. The home route additionally calls `getCongressComposition` for the chamber diagram, concurrently
    rather than in sequence; the two datasets carry independent provenance and fall back independently.
 2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill/{congress}?format=json` and lets
-   Next cache the result for five minutes. Every request is bounded by `REQUEST_TIMEOUT_MS`, so a stalled connection
-   becomes an ordinary `failed` outcome — and therefore a labeled fallback — instead of a page that never finishes
-   rendering. That bound matters most in the search sweep, which awaits one request per supported Congress at once.
+   Next cache the result for five minutes, or for a day when the Congress has already ended (its record is closed, so
+   re-reading it every five minutes buys nothing; @see `revalidateSecondsForCongress`). Every request is bounded by
+   `REQUEST_TIMEOUT_MS`, so a stalled connection becomes an ordinary `failed` outcome — and therefore a labeled
+   fallback — instead of a page that never finishes rendering. That bound matters most in the search sweep, which awaits
+   one request per supported Congress at once.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
 4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
@@ -403,10 +405,13 @@ from one table, `src/lib/query-routes.ts`, whose keys a test holds to each parse
 to a parser and forgotten there would otherwise quietly serve its links the unfiltered static page. @see
 docs/deployment.md, "Keeping Server Work Bounded".
 
-**One window, five literals, one test.** That window is `REVALIDATE_SECONDS` in `congress/upstream/http.ts`, and the
-five routes that also declare a segment-level `revalidate` each restate it as a bare `300` rather than importing it.
-That is not a lapse: Next reads the segment export statically, so a variable — or even `60 * 10` — is ignored rather
-than honored. The duplication is therefore the framework's, and what this project owns is its ability to drift.
+**Two windows, six literals, one test.** The windows are `REVALIDATE_SECONDS` (five minutes) and
+`CONCLUDED_CONGRESS_REVALIDATE_SECONDS` (one day, for a Congress that has ended) in `congress/upstream/http.ts`. The
+four directory and home routes declare the first as a bare `300`. `/bills/[congress]` and the bill page declare the
+second as a bare `86_400`, as a ceiling: a route regenerates on the shortest window of its segment and its fetches, and
+their fetches carry five minutes whenever the Congress is the current one. None of them imports its constant. That is
+not a lapse: Next reads the segment export statically, so a variable — or even `60 * 10` — is ignored rather than
+honored. The duplication is therefore the framework's, and what this project owns is its ability to drift.
 `src/app/revalidate.test.ts` is the enforcement point; it reads every route's own export, asserts each against the
 constant, and separately walks `src/app` so a _new_ route declaring its own window fails the suite until it is either
 brought in line or listed as a deliberate exception.

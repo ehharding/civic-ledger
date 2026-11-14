@@ -1,9 +1,9 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { type BillSectionProps, DisclosedList } from "@/components/bills/detail/section";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
+import { RecordLink } from "@/components/ui/record-link";
 import {
   type BillCosponsor,
   type BillCosponsorTally,
@@ -55,9 +55,9 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
     <li className={`cosponsor-list__item ${partyTintClass(party)}`}>
       <span className="cosponsor-list__name">
         {cosponsor.bioguideId ? (
-          <Link className="text-link" href={memberHref(cosponsor.bioguideId)}>
+          <RecordLink className="text-link" href={memberHref(cosponsor.bioguideId)}>
             {cosponsor.fullName}
-          </Link>
+          </RecordLink>
         ) : (
           cosponsor.fullName
         )}

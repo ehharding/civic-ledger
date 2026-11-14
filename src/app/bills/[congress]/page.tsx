@@ -11,11 +11,20 @@ import { previewBills } from "@/lib/congress/upstream/fixtures";
 import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
- * The route segment's data-cache window, matching `/bills` and the two other directories. This route never reads its
- * query, so each Congress's directory is rendered once per window rather than once per visit; a URL carrying `?q=` or
- * `?stage=` is rewritten to `/query/bills/[congress]` instead. @see src/lib/query-routes.ts.
+ * The *longest* this route segment is cached: one day, the concluded-Congress window.
+ *
+ * A ceiling rather than the window itself. A route is regenerated on the shortest of its segment `revalidate` and every
+ * fetch it makes, and the bill-list request for the Congress now sitting carries the shared five-minute window — so
+ * `/bills/119` is still refreshed every five minutes, while `/bills/118`, whose record is closed, is refreshed daily.
+ * The ceiling is what bounds a page whose fetch never ran (preview data, or an outage) to a day instead of forever.
+ * @see revalidateSecondsForCongress, and CONCLUDED_CONGRESS_REVALIDATE_SECONDS, which `revalidate.test.ts` holds this
+ * literal to.
+ *
+ * This route never reads its query, so each Congress's directory is rendered once per window rather than once per
+ * visit; a URL carrying `?q=` or `?stage=` is rewritten to `/query/bills/[congress]` instead.
+ * @see src/lib/query-routes.ts.
  */
-export const revalidate: number = 300;
+export const revalidate: number = 86_400;
 
 /** Params for the per-Congress bill directory route (`/bills/[congress]`). */
 type CongressBillsPageProps = {

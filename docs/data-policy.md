@@ -15,7 +15,8 @@ computed rather than received says so.**
 - API calls stay on the server. `CONGRESS_API_KEY` must never carry a `NEXT_PUBLIC_` prefix — a Congress.gov key travels
   in the request URL, so a request issued from the browser is a published key.
 - The adapter explicitly requests `format=json`, validates the shape it depends on at runtime, maps only known fields
-  into a stable internal model, and caches the upstream request for five minutes.
+  into a stable internal model, and caches the upstream request for five minutes — or a day, for a request scoped to a
+  Congress that has already ended, whose record is closed.
 - Source freshness is visible rather than merely computed: every snapshot carries a `retrievedAt` timestamp, and
   `DataSourceNotice` renders it ("Updated 5 minutes ago") on the pages built from it.
 
@@ -554,8 +555,8 @@ The Congress.gov API uses v3, pagination, and an hourly request quota (5,000/hou
 [changelog](https://github.com/LibraryOfCongress/api.congress.gov/blob/main/ChangeLog.md) also explicitly recommends
 setting the response format rather than relying on the default.
 
-Two request patterns in this app cost more than an ordinary page load, and both are deliberately kept on the shared
-five-minute cache rather than given a policy of their own:
+Two request patterns in this app cost more than an ordinary page load, and both are deliberately kept on the app's
+ordinary cache windows (five minutes, or a day for a concluded Congress) rather than given a policy of their own:
 
 - **The search sweep** issues one request per supported Congress (~27 today). Concurrent and repeated searches inside
   the cache window are served from cache, which is what keeps sweeping every Congress well inside the quota rather than

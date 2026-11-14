@@ -1,5 +1,4 @@
 import { ArrowUpRight, Landmark } from "lucide-react";
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { CommitteeRecordsSection } from "@/components/committees/committee-records";
@@ -9,6 +8,7 @@ import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
+import { RecordLink } from "@/components/ui/record-link";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import {
   CONGRESS_GOV_COMMITTEES,
@@ -105,9 +105,9 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
           {profile.parent ? (
             <span>
               Subcommittee of{" "}
-              <Link className="text-link" href={committeeHref(profile.chamber, profile.parent.systemCode)}>
+              <RecordLink className="text-link" href={committeeHref(profile.chamber, profile.parent.systemCode)}>
                 {profile.parent.name}
-              </Link>
+              </RecordLink>
             </span>
           ) : null}
           {!profile.isCurrent ? <span className="member-former">No longer active</span> : null}
@@ -190,7 +190,9 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
             {profile.subcommittees.map(
               (subcommittee: Subcommittee): JSX.Element => (
                 <li key={subcommittee.systemCode}>
-                  <Link href={committeeHref(profile.chamber, subcommittee.systemCode)}>{subcommittee.name}</Link>
+                  <RecordLink href={committeeHref(profile.chamber, subcommittee.systemCode)}>
+                    {subcommittee.name}
+                  </RecordLink>
                 </li>
               ),
             )}

@@ -74,6 +74,10 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
 
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    # The Vercel CLI step needs both IDs to find the project, so they are stated once for the job rather than per step.
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     # The workflow-level `contents: read` above sets every other scope to none, which the final step needs one exception
     # to: posting the preview URL back to the pull request is a write, and without this it fails with a 403 *after* a
     # successful deploy — the most confusing place for a permissions error to surface. Granted per job rather than
@@ -87,9 +91,6 @@ jobs:
 
       - name: Pull Vercel Environment
         run: pnpm dlx --allow-build=esbuild "$VERCEL_CLI" pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       # All three Sentry values are *build-time* ones, unlike CONGRESS_API_KEY and the DSN: `next.config.ts` reads them
       # while `withSentryConfig` uploads source maps during this step, and nothing reads them at runtime. That is why
@@ -104,8 +105,6 @@ jobs:
       - name: Build via Vercel
         run: pnpm dlx --allow-build=esbuild "$VERCEL_CLI" build ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -115,9 +114,6 @@ jobs:
         run: |
           url=$(pnpm dlx --allow-build=esbuild "$VERCEL_CLI" deploy --prebuilt ${{ github.event_name != 'pull_request' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       # One comment per pull request, rewritten in place on each push rather than appended to.
       #

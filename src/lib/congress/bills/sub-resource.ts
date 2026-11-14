@@ -11,6 +11,7 @@ import {
   type NormalizedBillRoute,
   normalizeBillRouteParams,
   requestCongressJson,
+  revalidateSecondsForCongress,
 } from "@/lib/congress/upstream/http";
 import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
 
@@ -53,6 +54,7 @@ export function requestBillDetail(
     billCacheTags(route),
     congressApiDetailResponseSchema,
     context,
+    revalidateSecondsForCongress(route.congress),
   );
 }
 
@@ -132,6 +134,7 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
     billCacheTags(route),
     config.schema,
     `bill ${config.path} for ${route.type.toUpperCase()} ${route.number}`,
+    revalidateSecondsForCongress(route.congress),
   );
 
   if (result.outcome !== "ok") return { entries: [], unavailable: result.outcome === "failed" };

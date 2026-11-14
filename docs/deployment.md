@@ -81,6 +81,20 @@ What keeps that bounded now:
 - **Crawlers are kept off the query variants.** `robots.txt` disallows `/query/` and each route's `?` form. Those pages
   already canonicalize to the plain route, so they were never going to be indexed — they were only ever going to be
   rendered.
+- **Record links do not prefetch on sight.** `next/link` prefetches every link that scrolls into view, and for a bill,
+  member, or committee page that is not cached yet that prefetch is a server render. A reader scrolling `/members` used
+  to render every member page they passed. Links to individual records, and to a committee's query-carrying tabs and
+  pager, go through `RecordLink` (`src/components/ui/record-link.tsx`), which prefetches only once a pointer or finger
+  reaches the link. (Plain `prefetch={false}` would also turn off hover prefetching in the App Router.) Use it for any
+  new link to a record; plain `next/link` stays right for links to the static top-level routes.
+- **A concluded Congress is cached for a day.** Its record is closed, so `/bills/118`, every bill page under it, and
+  that Congress's slice of the search sweep are regenerated daily rather than every five minutes. Only the Congress now
+  sitting stays on the five-minute window. `revalidateSecondsForCongress` in `congress/upstream/http.ts` decides which;
+  most of what crawlers walk is concluded Congresses, so this is where most of the remaining ISR work went.
+- **The API routes are cached at the CDN.** `/api/bills` and `/api/bills/search` read their query, so Next leaves them
+  uncached. They now send `s-maxage` for the shared five-minute window (`src/lib/edge-cache.ts`), so a repeated "Load
+  More" page or search query is answered by the CDN rather than by a function. Search matters most: each call reads and
+  validates up to 250 bills from every supported Congress before filtering.
 - **One deployment per push, and none for a docs-only one.** See step 6 above: two pipelines building every commit
   doubled build usage for nothing. `deploy-vercel.yml` also skips a push or pull request that touches only `docs/` or
   Markdown, since it would ship an identical bundle to a fresh deployment whose on-demand pages all start uncached.

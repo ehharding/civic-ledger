@@ -4,6 +4,7 @@ import { BILL_API_PARAMS, type BillPageResponse } from "@/lib/api-contract";
 import { parseCongressQueryParam, parseOffsetParam } from "@/lib/api-query";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMoreBills } from "@/lib/congress/client";
+import { EDGE_CACHE_CONTROL, NO_STORE_CACHE_CONTROL } from "@/lib/edge-cache";
 
 // NOTE: this route reads the request URL (the `offset` and `congress` query params), which a static export can't do —
 // there's no server left at request time. The GitHub Pages static-demo workflow deletes this route before building
@@ -25,6 +26,11 @@ import { getMoreBills } from "@/lib/congress/client";
  * @returns A {@link BillPageResponse} — the next page, or an empty array when no API key is configured or the upstream
  *   fetch fails. Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same
  *   empty page, which is exactly how the button behaves in both cases.
+ *
+ * A page with bills in it is shared through the CDN for the app's cache window (@see EDGE_CACHE_CONTROL), so a second
+ * reader pressing "Load More" at the same offset costs no function invocation. An empty page is not, because it cannot
+ * say which of those two things it means — and caching a failure would leave the button dead for every reader for the
+ * whole window rather than for the one request that failed.
  */
 export async function GET(request: Request): Promise<NextResponse<BillPageResponse>> {
   const { searchParams } = new URL(request.url);
@@ -34,5 +40,8 @@ export async function GET(request: Request): Promise<NextResponse<BillPageRespon
 
   const bills: LegislativeBill[] = await getMoreBills(offset, congress);
 
-  return NextResponse.json({ bills });
+  return NextResponse.json(
+    { bills },
+    { headers: { "Cache-Control": bills.length > 0 ? EDGE_CACHE_CONTROL : NO_STORE_CACHE_CONTROL } },
+  );
 }

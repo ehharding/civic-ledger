@@ -18,6 +18,7 @@ import { MAX_BILL_OFFSET } from "@/lib/api-query";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
+import { EDGE_CACHE_CONTROL, NO_STORE_CACHE_CONTROL } from "@/lib/edge-cache";
 
 const { getMoreBills } = vi.hoisted(() => ({ getMoreBills: vi.fn() }));
 
@@ -81,5 +82,19 @@ describe("GET /api/bills", (): void => {
 
     expect(status).toBe(200);
     expect(body).toEqual({ bills: [] });
+  });
+
+  it("lets the CDN share a page of bills between readers", async (): Promise<void> => {
+    getMoreBills.mockResolvedValue([firstPreviewBill]);
+
+    const response = await GET(new Request("https://civic-ledger.test/api/bills?offset=12"));
+
+    expect(response.headers.get("Cache-Control")).toBe(EDGE_CACHE_CONTROL);
+  });
+
+  it("keeps an empty page out of the CDN, since it may be a failure rather than the end of the list", async (): Promise<void> => {
+    const response = await GET(new Request("https://civic-ledger.test/api/bills?offset=9000"));
+
+    expect(response.headers.get("Cache-Control")).toBe(NO_STORE_CACHE_CONTROL);
   });
 });

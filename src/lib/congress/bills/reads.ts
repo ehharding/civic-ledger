@@ -38,6 +38,7 @@ import {
   type NormalizedBillRoute,
   normalizeBillRouteParams,
   requestCongressJson,
+  revalidateSecondsForCongress,
 } from "@/lib/congress/upstream/http";
 import {
   mapCongressAction,
@@ -148,6 +149,7 @@ async function fetchBillsPage(input: {
     [BILL_LIST_CACHE_TAG],
     congressApiListResponseSchema,
     `bill list for the ${formatOrdinal(input.congress)} Congress`,
+    revalidateSecondsForCongress(input.congress),
   );
 
   if (result.outcome !== "ok") return null;

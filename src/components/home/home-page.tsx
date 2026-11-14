@@ -8,6 +8,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { CongressSeatingChart } from "@/components/members/congress-seating-chart";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
+import { RecordLink } from "@/components/ui/record-link";
 import {
   billIdentityKey,
   type CongressSnapshot,
@@ -85,15 +86,15 @@ export function HomePage({
               <Scale aria-hidden="true" size={21} />
             </div>
             <p className="journey-card__title">
-              <Link href={billHref(featuredBill)}>{featuredBill.title}</Link>
+              <RecordLink href={billHref(featuredBill)}>{featuredBill.title}</RecordLink>
             </p>
             <BillJourney stage={featuredBill.stage} compact={false} />
             <p className="journey-card__caption">
               The latest action is interpreted as an educational progress cue, with the official record one click away.
             </p>
-            <Link className="text-link journey-card__link" href={billHref(featuredBill)}>
+            <RecordLink className="text-link journey-card__link" href={billHref(featuredBill)}>
               View This Bill <ArrowRight aria-hidden="true" size={15} />
-            </Link>
+            </RecordLink>
           </aside>
         ) : null}
       </section>

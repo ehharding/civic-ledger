@@ -1,10 +1,10 @@
-import Link from "next/link";
 import type { JSX } from "react";
 
 import { BillJourney } from "@/components/bills/bill-journey";
 import { GlossaryProse } from "@/components/learn/glossary-prose";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
+import { RecordLink } from "@/components/ui/record-link";
 import { type BillStage, billStageLabels, formatEnactedLaw, type LegislativeBill } from "@/lib/congress/bills/model";
 import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
 import { memberHref } from "@/lib/routes";
@@ -52,9 +52,9 @@ export function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillSt
               // Links inward rather than straight out to the Biographical Directory: the sponsor's own page collects
               // their seat, service record, and the rest of what they've introduced — and carries the official
               // biography link onward, so nothing is lost by making this the first stop instead of the last.
-              <Link className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
+              <RecordLink className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
                 {bill.sponsor.fullName}
-              </Link>
+              </RecordLink>
             ) : (
               bill.sponsor.fullName
             )}

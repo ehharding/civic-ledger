@@ -12,6 +12,7 @@ import { GET } from "@/app/api/bills/search/route";
 import type { BillSearchResponse } from "@/lib/api-contract";
 import { MAX_QUERY_LENGTH } from "@/lib/api-query";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
+import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
 
 const { getSearchResults } = vi.hoisted(() => ({ getSearchResults: vi.fn() }));
 
@@ -94,5 +95,11 @@ describe("GET /api/bills/search", (): void => {
     const { body } = await get("?q=broadband");
 
     expect(body.source).toBe("preview");
+  });
+
+  it("lets the CDN share every answer, empty ones included, keyed by the query", async (): Promise<void> => {
+    const response = await GET(new Request("https://civic-ledger.test/api/bills/search?q=nothing-matches-this"));
+
+    expect(response.headers.get("Cache-Control")).toBe(EDGE_CACHE_CONTROL);
   });
 });

@@ -32,6 +32,15 @@ import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { billHref } from "@/lib/routes";
 
+/**
+ * The *longest* a bill page is cached: one day, the concluded-Congress window. A ceiling, on the same rule as
+ * `/bills/[congress]`: every request this page makes is scoped to the bill's own Congress, so a bill in the current
+ * Congress is still refreshed every five minutes and one from a concluded Congress daily. Without a segment value the
+ * window would come from the fetches alone, and a page rendered while every one of them failed would carry none.
+ * @see revalidateSecondsForCongress
+ */
+export const revalidate: number = 86_400;
+
 /** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {
   params: Promise<BillRouteParams>;
