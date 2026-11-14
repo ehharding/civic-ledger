@@ -12,10 +12,21 @@ name: Deploy (Vercel)
 #   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the Vercel
 #      project settings — not as GitHub secrets — so the key never appears in Action logs.
 
+# Documentation-only changes skip this workflow, as they already skip the GitHub Pages one. Nothing under `docs/` or in
+# a Markdown file reaches the build, so deploying one would ship the same bundle under a new deployment — and a new
+# deployment is not free on a metered plan: every member, committee, and bill page that was not prerendered at build
+# time starts uncached and renders again on its next visit. @see "Keeping Server Work Bounded" in docs/deployment.md. A
+# change that mixes docs with code still deploys, since a path filter only skips when *every* changed file matches.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
 
 permissions:
   contents: read
@@ -49,7 +60,7 @@ concurrency:
 # The pin also caps the Node.js major `engines` may name: `vercel build` checks it against the CLI's own table. Raising
 # `engines.node` means checking this first.
 env:
-  VERCEL_CLI: vercel@65.14.0
+  VERCEL_CLI: vercel@65.15.0
 
 jobs:
   deploy:

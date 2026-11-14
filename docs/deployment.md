@@ -70,9 +70,10 @@ walking the sitemap, or every facet combination, paid a full render per URL.
 What keeps that bounded now:
 
 - **Plain routes are static.** None of those routes reads its query any more, so each is prerendered and regenerated at
-  most once per five-minute window. In `pnpm build`'s route table, the only `ƒ (Dynamic)` entries should be the
-  `/api/*` route handlers and the `/query/*` twins. A new `ƒ` anywhere else is a per-visit render, and worth a second
-  look before it ships.
+  most once per five-minute window. In `pnpm build`'s route table, the only `ƒ (Dynamic)` entries should be the `/api/*`
+  route handlers and the `/query/*` twins. CI holds that: `pnpm check:routes` runs after the build in the `quality` job
+  and fails on a per-visit route anywhere else (`scripts/check-route-rendering.mts`). Run it locally after `pnpm build`
+  when a change touches a route, a layout, or anything they fetch through.
 - **Only a URL carrying a view renders on demand.** `next.config.ts` rewrites a URL holding one of a route's own params
   to its twin under `src/app/query/`, which renders the narrowed view server-side as the route used to. The rewrite is a
   routing rule rather than a Proxy, so the static half costs no function invocation at all. A query the route ignores
@@ -80,7 +81,9 @@ What keeps that bounded now:
 - **Crawlers are kept off the query variants.** `robots.txt` disallows `/query/` and each route's `?` form. Those pages
   already canonicalize to the plain route, so they were never going to be indexed — they were only ever going to be
   rendered.
-- **One deployment per push.** See step 6 above: two pipelines building every commit doubled build usage for nothing.
+- **One deployment per push, and none for a docs-only one.** See step 6 above: two pipelines building every commit
+  doubled build usage for nothing. `deploy-vercel.yml` also skips a push or pull request that touches only `docs/` or
+  Markdown, since it would ship an identical bundle to a fresh deployment whose on-demand pages all start uncached.
 
 If the team is paused again, the dashboard's **Usage** tab names the metric that tripped it. Upgrading to Pro lifts a
 pause; so, sometimes, does asking Vercel support to reset it once the cause is fixed.

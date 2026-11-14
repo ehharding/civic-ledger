@@ -24,6 +24,13 @@ jobs:
       - run: pnpm check
       - run: pnpm build
 
+      # A route that stops being static still builds clean — it just renders on every visit, which is metered server
+      # work on Vercel and what got this project's team paused once already. This reads the build's own manifests and
+      # fails on any per-request route outside `/api/*` and the `/query/*` twins.
+      # @see scripts/check-route-rendering.mts.
+      - name: Check Route Rendering
+        run: pnpm check:routes
+
       # Dependabot opens a pull request per outdated package; it does not answer "is anything installed right now
       # known-vulnerable". Those are different questions, and only the second one has an answer that can regress
       # between dependency bumps — a transitive package can have an advisory published against a version this lockfile
