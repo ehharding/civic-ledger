@@ -6,7 +6,7 @@
  * erode: folding a Congress.gov ping in here would look like a more honest health check while actually making this
  * app's liveness depend on a third party's, and turning every probe into traffic against the API's rate limit.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/health/route";
 
@@ -43,21 +43,14 @@ describe("GET /api/health", (): void => {
    * state with no signal attached to it — no error, no non-200, no exception, and a green uptime check.
    */
   describe("the record set in use", (): void => {
-    const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-    afterEach((): void => {
-      if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-      else process.env.CONGRESS_API_KEY = originalApiKey;
-    });
-
     it("reads live when a key is configured", async (): Promise<void> => {
-      process.env.CONGRESS_API_KEY = "test-key";
+      vi.stubEnv("CONGRESS_API_KEY", "test-key");
 
       expect((await get()).body.records).toBe("live");
     });
 
     it("reads preview when no key is configured", async (): Promise<void> => {
-      delete process.env.CONGRESS_API_KEY;
+      vi.stubEnv("CONGRESS_API_KEY", undefined);
 
       expect((await get()).body.records).toBe("preview");
     });
@@ -66,7 +59,7 @@ describe("GET /api/health", (): void => {
       // A key set to whitespace is the easy outcome of copying `.env.example`, and `getCongressApiKey` already treats
       // it as absent. A health check that called it `live` would report the app as healthy in precisely the
       // misconfiguration this field exists to catch.
-      process.env.CONGRESS_API_KEY = "   ";
+      vi.stubEnv("CONGRESS_API_KEY", "   ");
 
       expect((await get()).body.records).toBe("preview");
     });
@@ -76,11 +69,8 @@ describe("GET /api/health", (): void => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    try {
-      await get();
-      expect(fetchMock).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    await get();
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

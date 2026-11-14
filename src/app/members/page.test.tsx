@@ -7,7 +7,7 @@
  * currently represents opens the full directory rather than an empty grid claiming to be filtered.
  */
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import MembersPage, { metadata } from "@/app/members/page";
 import { renderMembersRoute } from "@/app/members/render";
@@ -15,16 +15,8 @@ import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
 import { previewMemberDirectory } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
 beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
   window.history.replaceState(null, "", "/members");
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
 /** Renders the route in its default view — the static half, which never reads a query. */

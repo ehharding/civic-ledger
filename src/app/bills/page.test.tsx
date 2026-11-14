@@ -7,7 +7,7 @@
  * adapter's failure mode, which no key-less run can produce on its own.
  */
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // The Congress switcher this route renders is a client component that navigates on change, so it needs a router. Only
 // `useRouter` is replaced; `notFound` and everything else stay real, since other route tests depend on them behaving.
@@ -36,18 +36,6 @@ import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-  vi.restoreAllMocks();
-});
 
 /** Renders the route in its default view — the static half, which never reads a query. */
 async function renderPage(): Promise<void> {

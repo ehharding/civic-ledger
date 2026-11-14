@@ -12,7 +12,7 @@
  * The rest covers what "configured" means for the key, since an empty-string key and an absent one have to behave
  * identically for the preview path to work.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import {
@@ -38,6 +38,7 @@ import {
   requestCongressJson,
   revalidateSecondsForCongress,
 } from "@/lib/congress/upstream/http";
+import { FAKE_API_KEY } from "@/test/leaky-error";
 
 /**
  * Segments that must never survive a guard, each standing for a different way a URL can be subverted: climbing out of
@@ -60,13 +61,6 @@ const HOSTILE_SEGMENTS: readonly string[] = [
   "",
   "   ",
 ];
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-});
 
 describe("normalizeBillRouteParams", (): void => {
   it("accepts a well-formed route and lower-cases the type segment", (): void => {
@@ -238,21 +232,21 @@ describe("buildCongressUrl", (): void => {
 
 describe("getCongressApiKey", (): void => {
   it("reports no key when the variable is unset", (): void => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     expect(getCongressApiKey()).toBeUndefined();
   });
 
   it("treats an empty or whitespace-only key as absent, so a half-copied .env takes the preview path", (): void => {
-    process.env.CONGRESS_API_KEY = "";
+    vi.stubEnv("CONGRESS_API_KEY", "");
     expect(getCongressApiKey()).toBeUndefined();
 
-    process.env.CONGRESS_API_KEY = "   ";
+    vi.stubEnv("CONGRESS_API_KEY", "   ");
     expect(getCongressApiKey()).toBeUndefined();
   });
 
   it("trims a configured key, so a stray newline from a copy-paste doesn't reach the query string", (): void => {
-    process.env.CONGRESS_API_KEY = "  test-key\n";
+    vi.stubEnv("CONGRESS_API_KEY", "  test-key\n");
 
     expect(getCongressApiKey()).toBe("test-key");
   });
@@ -265,9 +259,6 @@ describe("request timeout", (): void => {
    * the catch that would have produced the fallback, which is the one upstream failure mode the rest of this module's
    * "nothing throws" design does not cover on its own.
    */
-  afterEach((): void => {
-    vi.unstubAllGlobals();
-  });
 
   it("bounds every request with an abort signal, alongside the shared cache window", (): void => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
@@ -326,7 +317,6 @@ describe("request timeout", (): void => {
       // third party to get it.
       expect.objectContaining({ reason: "schema-mismatch", context: "bill list", paths: "bills" }),
     );
-    consoleError.mockRestore();
   });
 
   it("names the root when the whole payload is the wrong shape, rather than logging an empty path", async (): Promise<void> => {
@@ -347,7 +337,6 @@ describe("request timeout", (): void => {
       "[civic-ledger] Congress.gov returned an unrecognized payload shape",
       expect.objectContaining({ paths: "(root)" }),
     );
-    consoleError.mockRestore();
   });
 
   it("logs a non-404 status as weather, with the code, rather than as a defect", async (): Promise<void> => {
@@ -368,17 +357,16 @@ describe("request timeout", (): void => {
       "[civic-ledger] Congress.gov request failed",
       expect.objectContaining({ reason: "http-status", status: 503, context: "bill list" }),
     );
-    consoleWarn.mockRestore();
   });
 
   it("never lets the API key reach the log line, on the one path that carries a URL holding it", async (): Promise<void> => {
     // The reason `requestCongressJson` passes `secrets` at all. Before `log.ts` this line was a bare `console.error`
     // with the caught error interpolated into it, and a function log on a managed host is a third-party sink like any
     // other — so `docs/data-policy.md`'s rule applied to it and nothing enforced it.
-    vi.stubEnv("CONGRESS_API_KEY", "SUPER-SECRET-KEY");
+    vi.stubEnv("CONGRESS_API_KEY", FAKE_API_KEY);
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED https://api.congress.gov/v3?api_key=SUPER-SECRET-KEY")),
+      vi.fn().mockRejectedValue(new Error(`connect ECONNREFUSED https://api.congress.gov/v3?api_key=${FAKE_API_KEY}`)),
     );
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
 
@@ -392,10 +380,7 @@ describe("request timeout", (): void => {
     const [, attributes] = consoleWarn.mock.calls[0] as [string, { cause?: string }];
 
     expect(attributes.cause).toContain("api_key=[redacted]");
-    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
-
-    consoleWarn.mockRestore();
-    vi.unstubAllEnvs();
+    expect(attributes.cause).not.toContain(FAKE_API_KEY);
   });
 
   it("reports a timed-out request as failed, not as not-found, so the caller falls back rather than 404s", async (): Promise<void> => {
@@ -404,7 +389,7 @@ describe("request timeout", (): void => {
       vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError")),
     );
     // `warn`, like every other transport failure: a stalled socket is weather. @see src/lib/observability/log.ts.
-    const consoleWarn = vi.spyOn(console, "warn").mockImplementation((): void => undefined);
+    vi.spyOn(console, "warn").mockImplementation((): void => undefined);
 
     const result: CongressRequestResult<unknown> = await requestCongressJson(
       buildCongressUrl("/bill/119", "test-key"),
@@ -414,7 +399,6 @@ describe("request timeout", (): void => {
     );
 
     expect(result).toEqual({ outcome: "failed" });
-    consoleWarn.mockRestore();
   });
 });
 

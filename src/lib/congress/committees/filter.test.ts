@@ -25,18 +25,7 @@ import {
 } from "@/lib/congress/committees/filter";
 import type { CommitteeSummary, CommitteeType } from "@/lib/congress/committees/model";
 import { ANY_FACET, MAX_DIRECTORY_QUERY_LENGTH } from "@/lib/congress/directory-filter";
-
-function committee(overrides: Partial<CommitteeSummary> = {}): CommitteeSummary {
-  return {
-    systemCode: "hsag00",
-    name: "Agriculture Committee",
-    chamber: "house",
-    type: "standing",
-    typeName: "Standing",
-    subcommitteeCount: 0,
-    ...overrides,
-  };
-}
+import { committee } from "@/test/directory-entries";
 
 const list: CommitteeSummary[] = [
   committee(),

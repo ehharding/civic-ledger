@@ -1,6 +1,8 @@
 import type { Locator, Page, PlaywrightTestArgs, PlaywrightTestOptions } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
+import { PAGE_ROUTES } from "./routes";
+
 /**
  * The enforcement point for the half of the accessibility baseline that `accessibility.spec.ts` cannot see.
  *
@@ -13,18 +15,6 @@ import { expect, test } from "@playwright/test";
  * So this file asserts against geometry rather than against semantics, which makes it the counterpart to that one
  * rather than a duplicate of it. Everything below reads a rectangle off the rendered page.
  */
-
-/** Every route with a layout of its own, at the shapes a reader actually meets. */
-const ROUTES: readonly { path: string; name: string }[] = [
-  { path: "/", name: "home" },
-  { path: "/bills", name: "bill directory" },
-  { path: "/members", name: "member directory" },
-  { path: "/committees", name: "committee directory" },
-  { path: "/learn", name: "learn hub" },
-  { path: "/learn/how-a-bill-becomes-law", name: "lesson" },
-  { path: "/about", name: "methodology" },
-  { path: "/members?q=zzznomatch", name: "member directory, empty" },
-];
 
 /**
  * The narrowest viewport the app promises to work at.
@@ -73,7 +63,7 @@ test.describe("reflow", (): void => {
    * The message names the offending elements rather than only the width, because "330 > 320" on its own sends the next
    * reader binary-searching the stylesheet for it.
    */
-  for (const route of ROUTES) {
+  for (const route of PAGE_ROUTES) {
     test(`${route.name} does not scroll sideways at ${REFLOW_WIDTH}px`, async ({
       page,
     }: PlaywrightTestArgs & PlaywrightTestOptions): Promise<void> => {

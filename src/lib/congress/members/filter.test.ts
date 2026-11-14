@@ -26,31 +26,25 @@ import {
   sortMembers,
 } from "@/lib/congress/members/filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
-
-function entry(overrides: Partial<MemberDirectoryEntry> = {}): MemberDirectoryEntry {
-  return {
-    bioguideId: "B000001",
-    name: "Bennett, Marcus T.",
-    party: "democratic",
-    partyName: "Democratic",
-    state: "Ohio",
-    district: 9,
-    chamber: "house",
-    ...overrides,
-  };
-}
+import { memberEntry } from "@/test/directory-entries";
 
 const roster: MemberDirectoryEntry[] = [
-  entry(),
-  entry({ bioguideId: "A000002", name: "Alvarez, Priya R.", party: "republican", state: "Arizona", chamber: "senate" }),
-  entry({
+  memberEntry(),
+  memberEntry({
+    bioguideId: "A000002",
+    name: "Alvarez, Priya R.",
+    party: "republican",
+    state: "Arizona",
+    chamber: "senate",
+  }),
+  memberEntry({
     bioguideId: "S000003",
     name: "Sablan, Gregorio",
     party: "independent",
     state: "Northern Mariana Islands",
     district: 0,
   }),
-  entry({ bioguideId: "M000004", name: "Muñoz, Elena", party: "democratic", state: "Alaska", district: 0 }),
+  memberEntry({ bioguideId: "M000004", name: "Muñoz, Elena", party: "democratic", state: "Alaska", district: 0 }),
 ];
 
 function filters(overrides: Partial<MemberFilters> = {}): MemberFilters {
@@ -59,32 +53,32 @@ function filters(overrides: Partial<MemberFilters> = {}): MemberFilters {
 
 describe("matchesMemberQuery", (): void => {
   it("matches everything on an empty or whitespace query, so clearing the box restores the roster", (): void => {
-    expect(matchesMemberQuery(entry(), "")).toBe(true);
-    expect(matchesMemberQuery(entry(), "   ")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "   ")).toBe(true);
   });
 
   it("matches on a surname, case-insensitively", (): void => {
-    expect(matchesMemberQuery(entry(), "bennett")).toBe(true);
-    expect(matchesMemberQuery(entry(), "BENNETT")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "bennett")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "BENNETT")).toBe(true);
   });
 
   it("matches on the jurisdiction a member represents", (): void => {
-    expect(matchesMemberQuery(entry(), "ohio")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "ohio")).toBe(true);
   });
 
   it("matches the seat as it reads on screen, not just the bare state", (): void => {
-    expect(matchesMemberQuery(entry(), "9th district")).toBe(true);
-    expect(matchesMemberQuery(entry({ district: 0, state: "Alaska" }), "at-large")).toBe(true);
-    expect(matchesMemberQuery(entry({ state: "Guam", district: 0 }), "non-voting")).toBe(true);
+    expect(matchesMemberQuery(memberEntry(), "9th district")).toBe(true);
+    expect(matchesMemberQuery(memberEntry({ district: 0, state: "Alaska" }), "at-large")).toBe(true);
+    expect(matchesMemberQuery(memberEntry({ state: "Guam", district: 0 }), "non-voting")).toBe(true);
   });
 
   it("does not search party, which has its own filter beside the box", (): void => {
     // Otherwise typing "d" would return every Democrat alongside everyone whose name contains the letter.
-    expect(matchesMemberQuery(entry({ partyName: "Democratic" }), "democratic")).toBe(false);
+    expect(matchesMemberQuery(memberEntry({ partyName: "Democratic" }), "democratic")).toBe(false);
   });
 
   it("rejects a member who matches nothing", (): void => {
-    expect(matchesMemberQuery(entry(), "wyoming")).toBe(false);
+    expect(matchesMemberQuery(memberEntry(), "wyoming")).toBe(false);
   });
 });
 
@@ -164,9 +158,9 @@ describe("listMemberJurisdictions", (): void => {
 
   it("counts how many members each jurisdiction has, so a choice is predictable before it is made", (): void => {
     const ohio: JurisdictionOption | undefined = listMemberJurisdictions([
-      entry(),
-      entry({ bioguideId: "C000005", name: "Chen, Wei" }),
-      entry({ bioguideId: "A000002", state: "Arizona" }),
+      memberEntry(),
+      memberEntry({ bioguideId: "C000005", name: "Chen, Wei" }),
+      memberEntry({ bioguideId: "A000002", state: "Arizona" }),
     ]).find((option: JurisdictionOption): boolean => option.value === "Ohio");
 
     expect(ohio?.count).toBe(2);
@@ -185,7 +179,7 @@ describe("listMemberJurisdictions", (): void => {
   });
 
   it("skips a record with no jurisdiction on file rather than offering a blank option", (): void => {
-    expect(listMemberJurisdictions([entry({ state: undefined }), entry({ state: "  " })])).toEqual([]);
+    expect(listMemberJurisdictions([memberEntry({ state: undefined }), memberEntry({ state: "  " })])).toEqual([]);
   });
 });
 
@@ -228,9 +222,9 @@ describe("sortMembers", (): void => {
 
   it("groups by jurisdiction, then by seat within it", (): void => {
     const delegation: MemberDirectoryEntry[] = [
-      entry({ bioguideId: "A000010", name: "Adams, Nia", state: "Ohio", district: 9 }),
-      entry({ bioguideId: "B000011", name: "Boyle, Sean", state: "Ohio", district: 2 }),
-      entry({ bioguideId: "C000012", name: "Cruz, Maria", state: "Alaska", district: 0 }),
+      memberEntry({ bioguideId: "A000010", name: "Adams, Nia", state: "Ohio", district: 9 }),
+      memberEntry({ bioguideId: "B000011", name: "Boyle, Sean", state: "Ohio", district: 2 }),
+      memberEntry({ bioguideId: "C000012", name: "Cruz, Maria", state: "Alaska", district: 0 }),
     ];
 
     expect(names(sortMembers(delegation, "state"))).toEqual(["Cruz, Maria", "Boyle, Sean", "Adams, Nia"]);
@@ -238,8 +232,8 @@ describe("sortMembers", (): void => {
 
   it("sorts a member with no jurisdiction last rather than first", (): void => {
     const mixed: MemberDirectoryEntry[] = [
-      entry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
-      entry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
+      memberEntry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
+      memberEntry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
     ];
 
     expect(names(sortMembers(mixed, "state"))).toEqual(["Adams, Nia", "Nobody, A."]);
@@ -250,9 +244,9 @@ describe("sortMembers", (): void => {
     // exercises the other half of the same rule — a comparator that returned the wrong sign on one side only would
     // produce an order that depends on the roster's arrival order, which is exactly the bug worth catching.
     const mixed: MemberDirectoryEntry[] = [
-      entry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
-      entry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
-      entry({ bioguideId: "Z000015", name: "Zender, Kai", state: undefined }),
+      memberEntry({ bioguideId: "A000014", name: "Adams, Nia", state: "Ohio" }),
+      memberEntry({ bioguideId: "N000013", name: "Nobody, A.", state: undefined }),
+      memberEntry({ bioguideId: "Z000015", name: "Zender, Kai", state: undefined }),
     ];
 
     expect(names(sortMembers(mixed, "state"))).toEqual(["Adams, Nia", "Nobody, A.", "Zender, Kai"]);
@@ -262,8 +256,8 @@ describe("sortMembers", (): void => {
     // Senators carry no district. Falling back to 0 puts them where an at-large representative would go, which is the
     // seat they actually hold: the whole state.
     const senators: MemberDirectoryEntry[] = [
-      entry({ bioguideId: "W000016", name: "Whitmore, Louise B.", state: "Maine", district: undefined }),
-      entry({ bioguideId: "K000017", name: "King, Dana", state: "Maine", district: undefined }),
+      memberEntry({ bioguideId: "W000016", name: "Whitmore, Louise B.", state: "Maine", district: undefined }),
+      memberEntry({ bioguideId: "K000017", name: "King, Dana", state: "Maine", district: undefined }),
     ];
 
     expect(names(sortMembers(senators, "state"))).toEqual(["King, Dana", "Whitmore, Louise B."]);

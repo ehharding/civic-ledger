@@ -14,23 +14,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MemberDirectory } from "@/components/members/member-directory";
 import { DEFAULT_MEMBER_DIRECTORY_QUERY, type MemberDirectoryQuery } from "@/lib/congress/members/filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
-
-function entry(overrides: Partial<MemberDirectoryEntry> = {}): MemberDirectoryEntry {
-  return {
-    bioguideId: "B000001",
-    name: "Bennett, Marcus T.",
-    party: "democratic",
-    partyName: "Democratic",
-    state: "Ohio",
-    district: 9,
-    chamber: "house",
-    ...overrides,
-  };
-}
+import { memberEntry } from "@/test/directory-entries";
 
 const roster: MemberDirectoryEntry[] = [
-  entry(),
-  entry({
+  memberEntry(),
+  memberEntry({
     bioguideId: "A000002",
     name: "Alvarez, Priya R.",
     party: "republican",
@@ -39,7 +27,7 @@ const roster: MemberDirectoryEntry[] = [
     district: undefined,
     chamber: "senate",
   }),
-  entry({
+  memberEntry({
     bioguideId: "O000003",
     name: "Okafor, Daniel K.",
     party: "democratic",
@@ -171,7 +159,10 @@ describe("MemberDirectory", (): void => {
     render(
       <MemberDirectory
         congress={119}
-        members={[...roster, entry({ bioguideId: "S000004", name: "Sablan, Gregorio", state: "Guam", district: 0 })]}
+        members={[
+          ...roster,
+          memberEntry({ bioguideId: "S000004", name: "Sablan, Gregorio", state: "Guam", district: 0 }),
+        ]}
         source="live"
       />,
     );

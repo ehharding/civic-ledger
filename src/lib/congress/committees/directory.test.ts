@@ -2,19 +2,14 @@
  * Covers the committee adapter end to end: the mappers that turn upstream records into the app's model, the
  * subcommittee-folding rule the directory is built on, and both fetchers' preview fallbacks.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildCommitteeDirectory, type CommitteeDirectoryResult, getCommitteeDirectory } from "@/lib/congress/client";
 import type { CommitteeProfile, CommitteeSummary } from "@/lib/congress/committees/model";
 import { type CommitteeProfileResult, getCommitteeProfile } from "@/lib/congress/committees/profile";
 import { findPreviewCommitteeProfile, previewCommitteeDirectory } from "@/lib/congress/upstream/fixtures";
 import { mapCommitteeProfile, mapCommitteeRef, mapCongressCommittee } from "@/lib/congress/upstream/mappers";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { jsonResponse } from "@/test/congress-api";
 
 /** A raw committee record, in the shape the list endpoint actually returns. */
 function liveCommittee(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -28,13 +23,7 @@ function liveCommittee(overrides: Record<string, unknown> = {}): Record<string, 
 }
 
 beforeEach((): void => {
-  vi.restoreAllMocks();
-  process.env.CONGRESS_API_KEY = "test-key";
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
 });
 
 describe("mapCommitteeRef", (): void => {
@@ -272,7 +261,7 @@ describe("buildCommitteeDirectory", (): void => {
 
 describe("getCommitteeDirectory", (): void => {
   it("returns the labeled preview list when no key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: CommitteeDirectoryResult = await getCommitteeDirectory(119);
 
@@ -367,7 +356,7 @@ describe("getCommitteeProfile", (): void => {
   });
 
   it("resolves a preview committee when no key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "preview-01");
 
@@ -452,10 +441,6 @@ describe("getCommitteeDirectory pagination", (): void => {
     );
   }
 
-  afterEach((): void => {
-    vi.unstubAllGlobals();
-  });
-
   it("fetches the remaining pages when the first one says there are more", async (): Promise<void> => {
     stubPagedList(
       { committees: [liveCommittee()], pagination: { count: 300 } },
@@ -520,10 +505,6 @@ describe("getCommitteeDirectory pagination", (): void => {
 });
 
 describe("getCommitteeProfile with an unusable live payload", (): void => {
-  afterEach((): void => {
-    vi.unstubAllGlobals();
-  });
-
   it("treats a 200 carrying no committee as no such record", async (): Promise<void> => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({})));
 

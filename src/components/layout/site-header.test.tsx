@@ -46,7 +46,6 @@ describe("SiteHeader", (): void => {
 
   describe("under a basePath", (): void => {
     afterEach((): void => {
-      vi.unstubAllEnvs();
       vi.resetModules();
     });
 

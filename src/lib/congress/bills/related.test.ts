@@ -6,19 +6,14 @@
  * judgment some body made rather than something either bill records, so a relationship that arrived without its
  * `identifiedBy` and one that arrived with it are different claims — and the page prints the difference.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getRelatedBills } from "@/lib/congress/client";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
+import { jsonResponse, requestedUrl } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "119", type: "hr", number: "1" };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
 
 /** Three measures in the publisher's order, the last of them in the other chamber. */
 const PAYLOAD = {
@@ -50,14 +45,7 @@ const PAYLOAD = {
 };
 
 beforeEach((): void => {
-  vi.restoreAllMocks();
-  process.env.CONGRESS_API_KEY = "test-key";
-});
-
-afterEach((): void => {
-  vi.unstubAllGlobals();
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
 });
 
 describe("getRelatedBills", (): void => {
@@ -67,7 +55,7 @@ describe("getRelatedBills", (): void => {
 
     await getRelatedBills(ROUTE);
 
-    const url: URL = fetchMock.mock.calls[0]?.[0] as URL;
+    const url: URL = requestedUrl(fetchMock);
 
     // One word, no hyphen — the endpoint is `/relatedbills`, unlike every other multi-word path in this API.
     expect(url.pathname).toBe("/v3/bill/119/hr/1/relatedbills");
@@ -184,7 +172,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("returns nothing without ever requesting when no key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 

@@ -17,7 +17,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // The bill directories render the Congress switcher, a client component that navigates and so needs a router. Only
 // `useRouter` is replaced, exactly as in the bill routes' own tests.
@@ -69,17 +69,6 @@ const firstCommittee: CommitteeProfile = previewCommitteeProfiles[0] as Committe
 const committeeParams: Promise<{ chamber: string; systemCode: string }> = Promise.resolve({
   chamber: firstCommittee.chamber,
   systemCode: firstCommittee.systemCode,
-});
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
 describe("each /query twin passes its query through", (): void => {

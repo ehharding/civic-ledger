@@ -1,10 +1,39 @@
 import { cleanup } from "@testing-library/react";
-import { afterEach, beforeEach, expect } from "vitest";
+import { afterEach, beforeEach, expect, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 // @testing-library/react's auto-cleanup only self-registers for Jest; Vitest needs this explicitly.
 afterEach((): void => {
   cleanup();
+});
+
+/**
+ * Starts every test with no Congress.gov key, whatever the shell running the suite exports.
+ *
+ * A developer with a real key in their environment would otherwise run a different suite from CI's: every test that
+ * didn't set the key itself would take the live path instead of the preview one, and a test that forgot to stub `fetch`
+ * would spend that key against the real API. A suite that wants a key stubs one — `vi.stubEnv` — and gets it back out
+ * of the environment after the test, below.
+ */
+beforeEach((): void => {
+  vi.stubEnv("CONGRESS_API_KEY", undefined);
+});
+
+/**
+ * Undoes every `vi.stubEnv` and `vi.stubGlobal` once each test finishes, so no suite has to. Spies are restored too, in
+ * the console guard's teardown below, which has to control the order that happens in.
+ *
+ * Most suites set `CONGRESS_API_KEY` or replace `fetch`, and each used to save the original and restore it by hand in
+ * its own `afterEach` — twenty near-identical copies, any one of which could forget a branch and leak a key, or a
+ * missing one, into whatever test ran next in the same worker. Setting both through Vitest's stubs and restoring them
+ * here makes that leak impossible rather than merely unlikely. A test stubs and moves on.
+ *
+ * Here rather than as `unstubEnvs`/`unstubGlobals` in `vitest.config.mts`: those options restore *before* each test,
+ * which leaves the last test of a file's stubs in place for the next file that shares the worker.
+ */
+afterEach((): void => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 /**
@@ -69,11 +98,15 @@ beforeEach((): void => {
 });
 
 afterEach((): void => {
+  // Every `vi.spyOn` a test made, undone here so no suite has to — and undone *first*. A spy on `console.warn` was
+  // installed over this guard's wrapper, so restoring it puts the wrapper back; doing that after the loop below would
+  // leave a stale wrapper in place for the next test to wrap again.
+  vi.restoreAllMocks();
+
   for (const level of GUARDED_LEVELS) {
     const original: typeof console.error | undefined = originals.get(level);
     // Restored by assignment rather than by `vi.restoreAllMocks`, since the wrapper above is a plain assignment and not
-    // a spy — several suites call `restoreAllMocks` in their own hooks, and this must survive that rather than depend
-    // on it.
+    // a spy.
     if (original) console[level] = original;
   }
 

@@ -6,7 +6,7 @@
  * key — so "`urlQueryParams` is `false`" is a security and privacy property, not a preference, and it is pinned as one.
  * @see redact.test.ts for the backstop that still holds if a future SDK version adds a field this block does not name.
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { REDACTED } from "@/lib/observability/redact";
 import {
@@ -15,16 +15,10 @@ import {
   getTracesSampleRate,
   sentryInitOptions,
 } from "@/lib/observability/sentry-options";
-
-/** Stands in for a real Congress.gov key, in the same spelling `error.test.tsx` and `redact.test.ts` use. */
-const KEY: string = "SUPER-SECRET-KEY";
+import { FAKE_API_KEY } from "@/test/leaky-error";
 
 /** A plausible DSN. Never a real one — a DSN is a write credential for a Sentry project. */
 const DSN: string = "https://examplePublicKey@o0.ingest.sentry.io/0";
-
-afterEach((): void => {
-  vi.unstubAllEnvs();
-});
 
 describe("getSentryDsn", (): void => {
   it("reads the configured DSN", (): void => {
@@ -170,13 +164,13 @@ describe("sentryInitOptions", (): void => {
   it("redacts an error event before it is sent", (): void => {
     const event = {
       request: { url: "https://civic-ledger.example/members?party=republican&state=Ohio" },
-      exception: { values: [{ value: `Request failed: https://api.congress.gov/v3/bill?api_key=${KEY}` }] },
+      exception: { values: [{ value: `Request failed: https://api.congress.gov/v3/bill?api_key=${FAKE_API_KEY}` }] },
     };
 
     // biome-ignore lint/suspicious/noExplicitAny: the SDK's event types are far wider than this fixture needs to be.
-    const sent = sentryInitOptions([KEY]).beforeSend?.(event as any, {} as any);
+    const sent = sentryInitOptions([FAKE_API_KEY]).beforeSend?.(event as any, {} as any);
 
-    expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).not.toContain(FAKE_API_KEY);
     expect(JSON.stringify(sent)).toContain(REDACTED);
     expect(JSON.stringify(sent)).not.toContain("party=republican");
   });
@@ -187,19 +181,19 @@ describe("sentryInitOptions", (): void => {
     // `attributes` where v10's transaction had `description` and `data` — including the `url.query` attribute v11
     // splits a query string into.
     const span = {
-      name: `GET https://api.congress.gov/v3/bill?api_key=${KEY}`,
+      name: `GET https://api.congress.gov/v3/bill?api_key=${FAKE_API_KEY}`,
       is_segment: false,
       attributes: {
         "sentry.op": "http.client",
-        "url.full": `https://api.congress.gov/v3/bill?api_key=${KEY}`,
-        "url.query": `format=json&api_key=${KEY}`,
+        "url.full": `https://api.congress.gov/v3/bill?api_key=${FAKE_API_KEY}`,
+        "url.query": `format=json&api_key=${FAKE_API_KEY}`,
       },
     };
 
     // biome-ignore lint/suspicious/noExplicitAny: as above.
-    const sent = sentryInitOptions([KEY]).beforeSendSpan?.(span as any);
+    const sent = sentryInitOptions([FAKE_API_KEY]).beforeSendSpan?.(span as any);
 
-    expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).not.toContain(FAKE_API_KEY);
     expect(JSON.stringify(sent)).not.toContain("url.query");
   });
 
@@ -209,12 +203,15 @@ describe("sentryInitOptions", (): void => {
   });
 
   it("redacts a breadcrumb before it is recorded", (): void => {
-    const breadcrumb = { category: "fetch", data: { url: `https://api.congress.gov/v3/bill/119?api_key=${KEY}` } };
+    const breadcrumb = {
+      category: "fetch",
+      data: { url: `https://api.congress.gov/v3/bill/119?api_key=${FAKE_API_KEY}` },
+    };
 
     // biome-ignore lint/suspicious/noExplicitAny: as above.
-    const sent = sentryInitOptions([KEY]).beforeBreadcrumb?.(breadcrumb as any, {} as any);
+    const sent = sentryInitOptions([FAKE_API_KEY]).beforeBreadcrumb?.(breadcrumb as any, {} as any);
 
-    expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).not.toContain(FAKE_API_KEY);
   });
 
   it("redacts a log before it is sent, which is a fourth pipeline and a fourth hook", (): void => {
@@ -223,14 +220,14 @@ describe("sentryInitOptions", (): void => {
     // redaction those lines get from the SDK.
     const log = {
       level: "error",
-      message: `Failed while calling https://api.congress.gov/v3?api_key=${KEY}`,
-      attributes: { detail: `key was ${KEY}`, url: "/members?party=republican&state=Ohio" },
+      message: `Failed while calling https://api.congress.gov/v3?api_key=${FAKE_API_KEY}`,
+      attributes: { detail: `key was ${FAKE_API_KEY}`, url: "/members?party=republican&state=Ohio" },
     };
 
     // biome-ignore lint/suspicious/noExplicitAny: as above.
-    const sent = sentryInitOptions([KEY]).beforeSendLog?.(log as any);
+    const sent = sentryInitOptions([FAKE_API_KEY]).beforeSendLog?.(log as any);
 
-    expect(JSON.stringify(sent)).not.toContain(KEY);
+    expect(JSON.stringify(sent)).not.toContain(FAKE_API_KEY);
     expect(JSON.stringify(sent)).toContain(REDACTED);
 
     // The same cut every other layer makes: a report names a page, never a query.

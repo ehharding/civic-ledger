@@ -10,9 +10,7 @@
 import { describe, expect, it } from "vitest";
 
 import { REDACTED, redactEvent, redactSecrets, redactUrl } from "@/lib/observability/redact";
-
-/** Stands in for a real Congress.gov key, in the same spelling `error.test.tsx` uses. */
-const KEY: string = "SUPER-SECRET-KEY";
+import { FAKE_API_KEY } from "@/test/leaky-error";
 
 describe("redactUrl", (): void => {
   it("leaves a plain page URL alone", (): void => {
@@ -43,7 +41,7 @@ describe("redactUrl", (): void => {
   });
 
   it("takes the API key off an outbound Congress.gov URL, since the key lives past the `?`", (): void => {
-    expect(redactUrl(`https://api.congress.gov/v3/bill/119/hr/284?format=json&api_key=${KEY}`)).toBe(
+    expect(redactUrl(`https://api.congress.gov/v3/bill/119/hr/284?format=json&api_key=${FAKE_API_KEY}`)).toBe(
       "https://api.congress.gov/v3/bill/119/hr/284",
     );
   });
@@ -57,9 +55,9 @@ describe("redactUrl", (): void => {
 describe("redactSecrets", (): void => {
   it("replaces the key but keeps the sentence around it readable", (): void => {
     // The shape a `fetch` rejection actually takes. Cutting at the first `?` would save the key and lose the message.
-    expect(redactSecrets(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${KEY}`, [KEY])).toBe(
-      `Request failed: https://api.congress.gov/v3/bill/119?api_key=${REDACTED}`,
-    );
+    expect(
+      redactSecrets(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${FAKE_API_KEY}`, [FAKE_API_KEY]),
+    ).toBe(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${REDACTED}`);
   });
 
   it("catches the key by pattern even when the literal value was never configured here", (): void => {
@@ -71,11 +69,13 @@ describe("redactSecrets", (): void => {
 
   it("catches the bare value with no parameter name in front of it", (): void => {
     // This is the case a pattern cannot reach: a captured local, or a key interpolated into a hand-written message.
-    expect(redactSecrets(`Using key ${KEY} for this request`, [KEY])).toBe(`Using key ${REDACTED} for this request`);
+    expect(redactSecrets(`Using key ${FAKE_API_KEY} for this request`, [FAKE_API_KEY])).toBe(
+      `Using key ${REDACTED} for this request`,
+    );
   });
 
   it("catches every occurrence, not only the first", (): void => {
-    expect(redactSecrets(`api_key=${KEY} then again api_key=${KEY}`, [KEY])).toBe(
+    expect(redactSecrets(`api_key=${FAKE_API_KEY} then again api_key=${FAKE_API_KEY}`, [FAKE_API_KEY])).toBe(
       `api_key=${REDACTED} then again api_key=${REDACTED}`,
     );
   });
@@ -93,7 +93,7 @@ describe("redactSecrets", (): void => {
   });
 
   it("leaves a string with nothing sensitive in it exactly as it was", (): void => {
-    expect(redactSecrets("Congress.gov returned an unrecognized payload shape", [KEY])).toBe(
+    expect(redactSecrets("Congress.gov returned an unrecognized payload shape", [FAKE_API_KEY])).toBe(
       "Congress.gov returned an unrecognized payload shape",
     );
   });
@@ -128,10 +128,14 @@ describe("redactEvent", (): void => {
     // The single most likely way the key would have reached Sentry: every upstream read makes one of these.
     const breadcrumb = {
       category: "fetch",
-      data: { method: "GET", url: `https://api.congress.gov/v3/bill/119?format=json&api_key=${KEY}`, status_code: 500 },
+      data: {
+        method: "GET",
+        url: `https://api.congress.gov/v3/bill/119?format=json&api_key=${FAKE_API_KEY}`,
+        status_code: 500,
+      },
     };
 
-    expect(redactEvent(breadcrumb, [KEY])).toEqual({
+    expect(redactEvent(breadcrumb, [FAKE_API_KEY])).toEqual({
       category: "fetch",
       data: { method: "GET", url: "https://api.congress.gov/v3/bill/119", status_code: 500 },
     });
@@ -140,11 +144,11 @@ describe("redactEvent", (): void => {
   it("scrubs the key out of an exception message, where cutting at the `?` would destroy the message", (): void => {
     const event = {
       exception: {
-        values: [{ type: "Error", value: `Request failed: https://api.congress.gov/v3/bill?api_key=${KEY}` }],
+        values: [{ type: "Error", value: `Request failed: https://api.congress.gov/v3/bill?api_key=${FAKE_API_KEY}` }],
       },
     };
 
-    expect(redactEvent(event, [KEY])).toEqual({
+    expect(redactEvent(event, [FAKE_API_KEY])).toEqual({
       exception: {
         values: [{ type: "Error", value: `Request failed: https://api.congress.gov/v3/bill?api_key=${REDACTED}` }],
       },
@@ -155,18 +159,20 @@ describe("redactEvent", (): void => {
     // Named differently from the fields above, contributed by a different layer, and just as capable of carrying a key.
     const event = {
       contexts: {
-        trace: { data: { "http.url": `https://api.congress.gov/v3/member?api_key=${KEY}`, "http.method": "GET" } },
+        trace: {
+          data: { "http.url": `https://api.congress.gov/v3/member?api_key=${FAKE_API_KEY}`, "http.method": "GET" },
+        },
       },
     };
 
-    expect(redactEvent(event, [KEY])).toEqual({
+    expect(redactEvent(event, [FAKE_API_KEY])).toEqual({
       contexts: { trace: { data: { "http.url": "https://api.congress.gov/v3/member", "http.method": "GET" } } },
     });
   });
 
   it("catches a bare key sitting anywhere in the payload, under any field name", (): void => {
     // The whole reason the walk is a walk: nobody has to have predicted this field for it to be covered.
-    expect(redactEvent({ extra: { somethingNobodyPlannedFor: `token ${KEY}` } }, [KEY])).toEqual({
+    expect(redactEvent({ extra: { somethingNobodyPlannedFor: `token ${FAKE_API_KEY}` } }, [FAKE_API_KEY])).toEqual({
       extra: { somethingNobodyPlannedFor: `token ${REDACTED}` },
     });
   });
@@ -216,11 +222,11 @@ describe("redactEvent", (): void => {
 
   it("stops descending past the depth cap rather than walking an arbitrarily deep payload", (): void => {
     // 14 levels, past the cap of 12. Built rather than written out so the shape stays legible.
-    let deep: Record<string, unknown> = { url: `https://api.congress.gov/v3?api_key=${KEY}` };
+    let deep: Record<string, unknown> = { url: `https://api.congress.gov/v3?api_key=${FAKE_API_KEY}` };
     for (let i = 0; i < 14; i += 1) deep = { nested: deep };
 
-    const redacted = JSON.stringify(redactEvent(deep, [KEY]));
+    const redacted = JSON.stringify(redactEvent(deep, [FAKE_API_KEY]));
 
-    expect(redacted).not.toContain(KEY);
+    expect(redacted).not.toContain(FAKE_API_KEY);
   });
 });

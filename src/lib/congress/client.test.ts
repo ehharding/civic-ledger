@@ -3,7 +3,7 @@
  * detail-endpoint field-name variants both need coverage — see mapCongressBill), and the distinction between "not
  * found" (404) and "temporarily unavailable" (any other failure).
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillSearchResponse } from "@/lib/api-contract";
 import type { BillSummary, BillTextVersion, CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
@@ -23,15 +23,7 @@ import { getCurrentCongress } from "@/lib/congress/current-congress";
 import type { ChamberComposition, CongressComposition, CongressMember } from "@/lib/congress/members/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 import { CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS } from "@/lib/congress/upstream/http";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
+import { jsonResponse, requestedUrl } from "@/test/congress-api";
 
 /**
  * The `next.revalidate` window each Congress.gov request a mocked `fetch` received asked to be cached for, in order.
@@ -43,21 +35,9 @@ function requestedCacheWindows(fetchMock: ReturnType<typeof vi.fn>): (number | u
   );
 }
 
-beforeEach((): void => {
-  vi.restoreAllMocks();
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) {
-    delete process.env.CONGRESS_API_KEY;
-  } else {
-    process.env.CONGRESS_API_KEY = originalApiKey;
-  }
-});
-
 describe("getCongressSnapshot", (): void => {
   it("returns labeled preview data scoped to the current Congress when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const snapshot: CongressSnapshot = await getCongressSnapshot();
     const currentCongressPreviewBills: LegislativeBill[] = previewBills.filter(
@@ -70,7 +50,7 @@ describe("getCongressSnapshot", (): void => {
   });
 
   it("maps live list-endpoint bills using type/number field names", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -105,18 +85,18 @@ describe("getCongressSnapshot", (): void => {
   });
 
   it("requests the bill list scoped to the current Congress, not the unfiltered list", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     await getCongressSnapshot();
 
-    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
   });
 
   it("falls back to preview data when the upstream request fails", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
 
     const snapshot: CongressSnapshot = await getCongressSnapshot();
@@ -128,7 +108,7 @@ describe("getCongressSnapshot", (): void => {
 
 describe("getCongressSnapshotForCongress", (): void => {
   it("filters preview bills to just the requested Congress, not every fixture", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(118);
 
@@ -138,7 +118,7 @@ describe("getCongressSnapshotForCongress", (): void => {
   });
 
   it("reports an honest empty result for a Congress with no preview fixtures, instead of borrowing another Congress's bills", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(100);
 
@@ -148,18 +128,18 @@ describe("getCongressSnapshotForCongress", (): void => {
   });
 
   it("requests the bill list scoped to the given Congress", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     await getCongressSnapshotForCongress(110);
 
-    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.pathname).toBe("/v3/bill/110");
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.pathname).toBe("/v3/bill/110");
   });
 
   it("caches a concluded Congress's list for a day and the current one's for five minutes", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -170,7 +150,7 @@ describe("getCongressSnapshotForCongress", (): void => {
   });
 
   it("caches a concluded bill's own records for a day too", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ summaries: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -182,7 +162,7 @@ describe("getCongressSnapshotForCongress", (): void => {
 
 describe("getBillById", (): void => {
   it("finds a matching preview bill when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const target: LegislativeBill = firstPreviewBill;
     const result: BillLookupResult = await getBillById({
@@ -196,7 +176,7 @@ describe("getBillById", (): void => {
   });
 
   it("includes a parsable retrievedAt timestamp alongside the result", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const target: LegislativeBill = firstPreviewBill;
     const result: BillLookupResult = await getBillById({
@@ -209,7 +189,7 @@ describe("getBillById", (): void => {
   });
 
   it("maps a live detail-endpoint bill using billType/billNumber field names", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -239,7 +219,7 @@ describe("getBillById", (): void => {
   });
 
   it("returns undefined for a real 404 instead of silently falling back", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "999999" });
@@ -249,7 +229,7 @@ describe("getBillById", (): void => {
   });
 
   it("falls back to a snapshot search and reports that source when the direct lookup throws", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     const target: LegislativeBill = firstPreviewBill;
@@ -268,7 +248,7 @@ describe("getBillById", (): void => {
 
 describe("getMoreBills", (): void => {
   it("returns an empty page when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const bills: LegislativeBill[] = await getMoreBills(12);
 
@@ -276,7 +256,7 @@ describe("getMoreBills", (): void => {
   });
 
   it("requests the given offset and maps the returned page", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
         bills: [
@@ -295,24 +275,24 @@ describe("getMoreBills", (): void => {
     const bills: LegislativeBill[] = await getMoreBills(24);
 
     expect(bills).toHaveLength(1);
-    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
-    expect(requestedUrl.searchParams.get("offset")).toBe("24");
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.pathname).toBe(`/v3/bill/${getCurrentCongress()}`);
+    expect(url.searchParams.get("offset")).toBe("24");
   });
 
   it("requests the given Congress when provided, instead of defaulting to the current one", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     await getMoreBills(0, 110);
 
-    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.pathname).toBe("/v3/bill/110");
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.pathname).toBe("/v3/bill/110");
   });
 
   it("caches a concluded Congress's later pages for a day and the current one's for five minutes", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ bills: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -325,7 +305,7 @@ describe("getMoreBills", (): void => {
 
 describe("getBillSummaries", (): void => {
   it("returns a single labeled preview summary when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const target: LegislativeBill = firstPreviewBill;
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
@@ -340,7 +320,7 @@ describe("getBillSummaries", (): void => {
   });
 
   it("returns an empty list in preview mode for a bill with no fixture summary", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
       congress: "50",
@@ -352,7 +332,7 @@ describe("getBillSummaries", (): void => {
   });
 
   it("maps and sanitizes live summaries, most recent first", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -388,7 +368,7 @@ describe("getBillSummaries", (): void => {
   });
 
   it("returns an empty list on a 404", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
@@ -401,7 +381,7 @@ describe("getBillSummaries", (): void => {
   });
 
   it("returns an empty list when the upstream request fails", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
@@ -416,7 +396,7 @@ describe("getBillSummaries", (): void => {
 
 describe("getBillTextVersions", (): void => {
   it("returns an empty list when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const target: LegislativeBill = firstPreviewBill;
     const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
@@ -430,7 +410,7 @@ describe("getBillTextVersions", (): void => {
   });
 
   it("maps live text versions most recent first and drops formats missing a url", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -467,7 +447,7 @@ describe("getBillTextVersions", (): void => {
   });
 
   it("returns an empty list on a 404", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
@@ -480,7 +460,7 @@ describe("getBillTextVersions", (): void => {
   });
 
   it("returns an empty list when the upstream request fails", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
@@ -495,7 +475,7 @@ describe("getBillTextVersions", (): void => {
 
 describe("getSearchResults", (): void => {
   it("filters the preview fixtures when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: BillSearchResponse = await getSearchResults(firstPreviewBill.title);
 
@@ -505,7 +485,7 @@ describe("getSearchResults", (): void => {
   });
 
   it("sweeps every supported Congress and returns matches sorted by most recent action", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const currentCongress: number = getCurrentCongress();
 
     const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
@@ -549,15 +529,15 @@ describe("getSearchResults", (): void => {
   });
 
   it("requests each Congress's page sorted by most recently updated, at the max page size", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })));
     vi.stubGlobal("fetch", fetchMock);
 
     await getSearchResults("anything");
 
-    const requestedUrl: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.searchParams.get("sort")).toBe("updateDate desc");
-    expect(requestedUrl.searchParams.get("limit")).toBe("250");
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.searchParams.get("sort")).toBe("updateDate desc");
+    expect(url.searchParams.get("limit")).toBe("250");
   });
 
   /**
@@ -575,19 +555,19 @@ describe("getSearchResults", (): void => {
    * transport does with it, which is the half that was wrong.
    */
   it("sends the sort separator as an encoded space, which is the spelling the API actually honors", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })));
     vi.stubGlobal("fetch", fetchMock);
 
     await getSearchResults("anything");
 
-    const requestedUrl: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
-    expect(requestedUrl.search).toContain("sort=updateDate+desc");
-    expect(requestedUrl.search).not.toContain("%2B");
+    const url: URL = requestedUrl(fetchMock);
+    expect(url.search).toContain("sort=updateDate+desc");
+    expect(url.search).not.toContain("%2B");
   });
 
   it("pins a direct citation match first, even when its own text wouldn't match the query", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const currentCongress: number = getCurrentCongress();
 
     const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
@@ -617,7 +597,7 @@ describe("getSearchResults", (): void => {
   });
 
   it("caps results and reports truncation once more than the max match", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const currentCongress: number = getCurrentCongress();
     const manyBills = Array.from({ length: 80 }, (_: unknown, index: number) => ({
       congress: currentCongress,
@@ -673,7 +653,7 @@ function chamberOf(composition: CongressComposition, chamber: "house" | "senate"
 
 describe("getCongressComposition", (): void => {
   it("returns labeled placeholder seats when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const composition: CongressComposition = await getCongressComposition();
 
@@ -687,7 +667,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("maps live members into their chambers", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -725,7 +705,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("asks only for the members currently seated, so a replaced member isn't counted twice", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
         members: [apiMember({}), apiMember({ chamber: "Senate" })],
@@ -737,7 +717,7 @@ describe("getCongressComposition", (): void => {
     const current: number = getCurrentCongress();
     await getCongressComposition(current);
 
-    const requested: URL = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    const requested: URL = requestedUrl(fetchMock);
     expect(requested.pathname).toBe(`/v3/member/congress/${current}`);
     expect(requested.searchParams.get("currentMember")).toBe("true");
     expect(requested.searchParams.get("limit")).toBe("250");
@@ -747,7 +727,7 @@ describe("getCongressComposition", (): void => {
     // The mirror image of the rule above, and Congress.gov's own recommendation. `currentMember=true` answers the 117th
     // Congress with the 377 of its members still serving today, against 557 who actually served in it — a chamber
     // diagram drawn from the first would be missing a third of its seats while presenting itself as the whole body.
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
         members: [apiMember({}), apiMember({ chamber: "Senate" })],
@@ -758,11 +738,11 @@ describe("getCongressComposition", (): void => {
 
     await getCongressComposition(getCurrentCongress() - 1);
 
-    expect(new URL(String(fetchMock.mock.calls[0]?.[0])).searchParams.get("currentMember")).toBe("false");
+    expect(requestedUrl(fetchMock).searchParams.get("currentMember")).toBe("false");
   });
 
   it("pages through a full Congress rather than stopping at the API's 250-record ceiling", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi.fn().mockImplementation((input: unknown): Promise<Response> => {
       const offset: string = new URL(String(input)).searchParams.get("offset") ?? "0";
       const chamber: string = offset === "0" ? "House of Representatives" : "Senate";
@@ -787,7 +767,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("drops records with no recognizable chamber instead of misfiling them", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -810,7 +790,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("counts the House's non-voting seats separately from its voting ones", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -832,7 +812,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("falls back to placeholder seats when the upstream request fails", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
 
     const composition: CongressComposition = await getCongressComposition(119);
@@ -842,7 +822,7 @@ describe("getCongressComposition", (): void => {
   });
 
   it("falls back rather than rendering a Congress with one empty chamber", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(jsonResponse({ members: [apiMember({})], pagination: { count: 1 } })),
@@ -857,7 +837,7 @@ describe("getCongressComposition", (): void => {
 
 describe("getCongressComposition pagination edges", (): void => {
   it("treats a first page carrying no members as nothing to draw", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     // A 200 with no `members` key: the request succeeded, so this is not an outage — there is simply nobody in it, and
     // an empty chart falls back to the labeled placeholders rather than claiming the chamber is unstaffed.
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ pagination: { count: 0 } })));
@@ -868,7 +848,7 @@ describe("getCongressComposition pagination edges", (): void => {
   });
 
   it("stops after one page when the payload carries no pagination count to page through", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     const fetchMock = vi
       .fn()
       .mockResolvedValue(
@@ -885,7 +865,7 @@ describe("getCongressComposition pagination edges", (): void => {
   });
 
   it("draws the seats that did arrive when a later page brings back nothing", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {

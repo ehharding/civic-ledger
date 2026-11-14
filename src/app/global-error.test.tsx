@@ -7,7 +7,7 @@
  * error whose message *looks* like the thing that must not leak, and checks the output for it.
  */
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** @see error.test.tsx, which mocks the SDK for the same reason: the subject is the handoff, not what Sentry does. */
 const captureException = vi.fn();
@@ -17,23 +17,11 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 import GlobalError from "@/app/global-error";
-
-/** An error carrying exactly the kind of detail that must never be rendered. */
-function leakyError(): Error & { digest?: string } {
-  const error: Error & { digest?: string } = new Error(
-    "Request failed: https://api.congress.gov/v3/bill/119?api_key=SUPER-SECRET-KEY",
-  );
-  error.digest = "1234567890";
-  return error;
-}
+import { expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
 
 beforeEach((): void => {
   captureException.mockClear();
   vi.spyOn(console, "error").mockImplementation((): void => {});
-});
-
-afterEach((): void => {
-  vi.restoreAllMocks();
 });
 
 describe("GlobalError", (): void => {
@@ -47,9 +35,7 @@ describe("GlobalError", (): void => {
   it("never puts the error, its digest, or an API key into the DOM", (): void => {
     const { container } = render(<GlobalError error={leakyError()} />);
 
-    expect(container.textContent).not.toContain("SUPER-SECRET-KEY");
-    expect(container.textContent).not.toContain("api.congress.gov");
-    expect(container.textContent).not.toContain("1234567890");
+    expectNothingLeaked(container);
   });
 
   it("reports the error, which is the only signal this failure has", (): void => {
@@ -62,7 +48,7 @@ describe("GlobalError", (): void => {
       "[civic-ledger] Global error boundary caught a root-layout failure",
       // `boundary` is what separates this from the segment boundary in a log query. Both write the same `event`, and
       // "the root layout failed" is a categorically worse fact than "a segment did" — so it has to be filterable.
-      expect.objectContaining({ event: "error-boundary.caught", boundary: "global", digest: "1234567890" }),
+      expect.objectContaining({ event: "error-boundary.caught", boundary: "global", digest: LEAKY_DIGEST }),
     );
   });
 
@@ -74,7 +60,7 @@ describe("GlobalError", (): void => {
     const [, attributes] = vi.mocked(console.error).mock.calls[0] as [string, { cause?: string }];
 
     expect(attributes.cause).toContain("api_key=[redacted]");
-    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
+    expect(attributes.cause).not.toContain(FAKE_API_KEY);
   });
 
   it("offers a way out that does not depend on whatever just broke", (): void => {

@@ -8,7 +8,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import MemberPage, { generateMetadata, generateStaticParams } from "@/app/members/[bioguideId]/page";
 import { chamberLabels, formatMemberName, formatMemberTitle, type MemberProfile } from "@/lib/congress/members/model";
@@ -16,20 +16,8 @@ import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
 import { memberHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
 /** The first preview profile, non-null-asserted once here under `noUncheckedIndexedAccess`. */
 const firstProfile: MemberProfile = previewMemberProfiles[0] as MemberProfile;
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  vi.unstubAllGlobals();
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-});
 
 describe("generateStaticParams", (): void => {
   it("emits one entry per preview member, so every fixture sponsor links somewhere real", (): void => {
@@ -63,7 +51,7 @@ describe("generateMetadata", (): void => {
     // "…representing ." with nothing after it is worse than the plainer sentence, so a member whose jurisdiction is not
     // on file is described by the body they sit in. No fixture is seatless, so this one goes through the live path with
     // a record that carries no state.
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(

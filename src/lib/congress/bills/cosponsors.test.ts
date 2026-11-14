@@ -7,20 +7,15 @@
  * that sequence is the bill gathering support over time. Any sort applied here would destroy it silently, and destroy
  * it in a way that still looks like a working feature.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BillCosponsor, BillRouteParams } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCosponsors } from "@/lib/congress/client";
 import { previewCosponsors } from "@/lib/congress/upstream/fixtures";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
+import { jsonResponse, requestedUrl } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "118", type: "hr", number: "815" };
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
 
 /** Four cosponsors in the order Congress.gov returns them: two original signers, then two who joined later. */
 const PAYLOAD = {
@@ -64,14 +59,7 @@ const PAYLOAD = {
 };
 
 beforeEach((): void => {
-  vi.restoreAllMocks();
-  process.env.CONGRESS_API_KEY = "test-key";
-});
-
-afterEach((): void => {
-  vi.unstubAllGlobals();
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
 });
 
 describe("getBillCosponsors", (): void => {
@@ -81,7 +69,7 @@ describe("getBillCosponsors", (): void => {
 
     await getBillCosponsors(ROUTE);
 
-    const url: URL = fetchMock.mock.calls[0]?.[0] as URL;
+    const url: URL = requestedUrl(fetchMock);
 
     expect(url.pathname).toBe("/v3/bill/118/hr/815/cosponsors");
     expect(url.searchParams.get("format")).toBe("json");
@@ -152,7 +140,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("serves the labeled fixture without requesting when no key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -166,7 +154,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("returns nothing for a fixture that has no preview cosponsors, without requesting", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 

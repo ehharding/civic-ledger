@@ -12,16 +12,11 @@
  * including segments Congress.gov itself supplied. The referred-bill lookups take their identifiers straight from an
  * upstream payload, and the case below feeds a malformed one back to confirm it is dropped rather than interpolated.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getCommitteeRecords } from "@/lib/congress/committees/activity";
 import type { CommitteeBillReferral, CommitteeRecordsResult } from "@/lib/congress/committees/records";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { jsonResponse } from "@/test/congress-api";
 
 /** The committee-bills payload for `count` referrals, numbered so each maps to a distinct bill. */
 function billsPayload(count: number, total: number = count): unknown {
@@ -73,21 +68,12 @@ function stubFetch(payload: unknown, options: { billTitle?: string | null } = {}
 }
 
 beforeEach((): void => {
-  vi.restoreAllMocks();
-  process.env.CONGRESS_API_KEY = "test-key";
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) {
-    delete process.env.CONGRESS_API_KEY;
-  } else {
-    process.env.CONGRESS_API_KEY = originalApiKey;
-  }
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
 });
 
 describe("getCommitteeRecords without a usable key or identifier", (): void => {
   it("resolves against the preview fixtures when no API key is configured", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
@@ -120,7 +106,7 @@ describe("getCommitteeRecords without a usable key or identifier", (): void => {
   });
 
   it("returns an empty page for a preview code naming no placeholder committee", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",

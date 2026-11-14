@@ -53,7 +53,6 @@ beforeEach((): void => {
 
 afterEach((): void => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 describe("useBillSearch", (): void => {

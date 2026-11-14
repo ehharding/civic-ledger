@@ -11,18 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { CommitteeDirectory } from "@/components/committees/committee-directory";
 import type { CommitteeDirectoryQuery } from "@/lib/congress/committees/filter";
 import type { CommitteeSummary } from "@/lib/congress/committees/model";
-
-function committee(overrides: Partial<CommitteeSummary> = {}): CommitteeSummary {
-  return {
-    systemCode: "hsag00",
-    name: "Agriculture Committee",
-    chamber: "house",
-    type: "standing",
-    typeName: "Standing",
-    subcommitteeCount: 0,
-    ...overrides,
-  };
-}
+import { committee } from "@/test/directory-entries";
 
 const list: CommitteeSummary[] = [
   committee(),

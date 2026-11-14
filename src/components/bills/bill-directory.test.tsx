@@ -10,7 +10,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BillDirectory } from "@/components/bills/bill-directory";
 import { billSearchRequestUrl } from "@/lib/api-contract";
@@ -44,10 +44,6 @@ describe("BillDirectory", (): void => {
 
   beforeEach((): void => {
     user = userEvent.setup();
-  });
-
-  afterEach((): void => {
-    vi.unstubAllGlobals();
   });
 
   it("shows every bill and the plural record count by default", (): void => {
@@ -326,10 +322,6 @@ describe("BillDirectory", (): void => {
 });
 
 describe("BillDirectory deep links", (): void => {
-  afterEach((): void => {
-    vi.unstubAllGlobals();
-  });
-
   it("starts on the stage the URL asked for", (): void => {
     render(<BillDirectory bills={previewBills} initialQuery="" initialStage="law" canLoadMore={false} />);
 
@@ -432,10 +424,6 @@ describe("BillDirectory following a URL it did not write", (): void => {
 });
 
 describe("BillDirectory when the search was capped", (): void => {
-  afterEach((): void => {
-    vi.unstubAllGlobals();
-  });
-
   it("says the results were capped, rather than implying they are all of them", async (): Promise<void> => {
     const user: UserEvent = userEvent.setup();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(previewBills, true)));

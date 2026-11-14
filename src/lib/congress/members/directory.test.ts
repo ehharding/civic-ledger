@@ -3,7 +3,7 @@
  * flattening of two chambers into one alphabetical roster, and the boundary that drops a member who couldn't be linked
  * to.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildMemberDirectory, getMemberDirectory, type MemberDirectoryResult } from "@/lib/congress/client";
 import {
@@ -13,12 +13,7 @@ import {
   type MemberDirectoryEntry,
 } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { jsonResponse } from "@/test/congress-api";
 
 /** A live member-list payload, in the shape the list endpoint actually returns. */
 function liveMemberListPayload(members: Record<string, unknown>[]): Record<string, unknown> {
@@ -51,18 +46,6 @@ function composition(members: CongressMember[], chamber: "house" | "senate" = "h
     retrievedAt: "2026-07-28T00:00:00.000Z",
   };
 }
-
-beforeEach((): void => {
-  vi.restoreAllMocks();
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) {
-    delete process.env.CONGRESS_API_KEY;
-  } else {
-    process.env.CONGRESS_API_KEY = originalApiKey;
-  }
-});
 
 describe("buildMemberDirectory", (): void => {
   it("flattens both chambers into one alphabetical roster", (): void => {
@@ -151,7 +134,7 @@ describe("buildMemberDirectory", (): void => {
 
 describe("getMemberDirectory without an API key", (): void => {
   it("falls back to the placeholder people and labels them as such", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: MemberDirectoryResult = await getMemberDirectory();
 
@@ -161,7 +144,7 @@ describe("getMemberDirectory without an API key", (): void => {
   });
 
   it("offers placeholder rows that resolve to real member pages, not dead links", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: MemberDirectoryResult = await getMemberDirectory();
     const known: Set<string> = new Set(previewMemberProfiles.map((profile): string => profile.bioguideId));
@@ -174,7 +157,7 @@ describe("getMemberDirectory without an API key", (): void => {
     // this app's fiction could be taken for the record, far more so than a plausible name or a fabricated deep link.
     // Held here rather than only in the fixtures, so adding a portrait to one would fail a test that says why.
     // @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const result: MemberDirectoryResult = await getMemberDirectory();
 
@@ -182,7 +165,7 @@ describe("getMemberDirectory without an API key", (): void => {
   });
 
   it("orders the placeholder roster alphabetically, like the live one", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
 
     const names: string[] = (await getMemberDirectory()).members.map(
       (entry: MemberDirectoryEntry): string => entry.name,
@@ -194,7 +177,7 @@ describe("getMemberDirectory without an API key", (): void => {
 
 describe("getMemberDirectory with an API key", (): void => {
   it("maps a live roster and reports it as live", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse(
         liveMemberListPayload([
@@ -222,7 +205,7 @@ describe("getMemberDirectory with an API key", (): void => {
   });
 
   it("falls back to placeholders when the roster can't be read, rather than showing an empty directory", async (): Promise<void> => {
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     // The adapter logs this failure by design, and it is deliberate here, so it should not read as a real fault in the
     // run's output. Kept out of it by `onConsoleLog` in vitest.config.mts rather than by a spy in every such test.
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "boom" }, 500));

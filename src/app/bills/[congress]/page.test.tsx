@@ -8,7 +8,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // The switcher this route renders navigates on change, so it needs a router; `notFound` must stay real, since the
 // out-of-range cases below depend on it throwing exactly what Next throws.
@@ -39,17 +39,6 @@ import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 import { expectNotFound } from "@/test/next-not-found";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-});
 
 /** Renders the route for one Congress in its default view — the static half, which never reads a query. */
 async function renderPage(congress: string): Promise<void> {

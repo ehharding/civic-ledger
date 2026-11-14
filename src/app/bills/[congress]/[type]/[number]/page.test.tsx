@@ -10,7 +10,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import BillPage, { generateMetadata, generateStaticParams } from "@/app/bills/[congress]/[type]/[number]/page";
 import { type BillRouteParams, type LegislativeBill, NO_LATEST_ACTION_TEXT } from "@/lib/congress/bills/model";
@@ -19,22 +19,10 @@ import { billHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 import { readerText } from "@/test/reader-text";
 
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
 /** The route params naming the first preview bill. */
 function routeFor(bill: LegislativeBill): BillRouteParams {
   return { congress: String(bill.congress), type: bill.type.toLowerCase(), number: bill.number };
 }
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  vi.unstubAllGlobals();
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-});
 
 describe("generateStaticParams", (): void => {
   it("emits one entry per preview bill, with the type lower-cased as the path carries it", (): void => {
@@ -65,7 +53,7 @@ describe("generateMetadata", (): void => {
     // line, and the wrong thing in a link preview, where it is the entire summary someone sees before deciding whether
     // to open the page. This is the one caller that has to tell "no action text" apart from an action, which is why
     // `NO_LATEST_ACTION_TEXT` is exported rather than inlined at the mapper. @see generateMetadata.
-    process.env.CONGRESS_API_KEY = "test-key";
+    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(

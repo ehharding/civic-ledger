@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page, PlaywrightTestArgs, PlaywrightTestOptions, TestInfo } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
+import { PAGE_ROUTES } from "./routes";
+
 /**
  * The enforcement point for the accessibility baseline in `docs/architecture.md`.
  *
@@ -44,20 +46,6 @@ const WCAG_TAGS: readonly string[] = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"
 type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 type AxeViolation = AxeResults["violations"][number];
 
-/** Every route with a shape of its own. The three record pages are reached by their id below, since they have none. */
-const STATIC_ROUTES: readonly { path: string; name: string }[] = [
-  { path: "/", name: "home" },
-  { path: "/bills", name: "bill directory" },
-  { path: "/members", name: "member directory" },
-  { path: "/committees", name: "committee directory" },
-  { path: "/learn", name: "learn hub" },
-  { path: "/learn/how-a-bill-becomes-law", name: "lesson" },
-  { path: "/about", name: "methodology" },
-  // A narrowed directory that matched nothing: a different render of the same route, and the one carrying the empty
-  // state's own clear action. @see DirectoryEmptyState.
-  { path: "/members?q=zzznomatch", name: "member directory, empty" },
-];
-
 /**
  * Runs the sweep and reports every violation as one readable failure.
  *
@@ -97,7 +85,7 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`accessibility (${scheme})`, (): void => {
     test.use({ colorScheme: scheme });
 
-    for (const route of STATIC_ROUTES) {
+    for (const route of PAGE_ROUTES) {
       test(`${route.name} has no WCAG 2.1 AA violations`, async ({
         page,
       }: PlaywrightTestArgs & PlaywrightTestOptions, testInfo: TestInfo): Promise<void> => {

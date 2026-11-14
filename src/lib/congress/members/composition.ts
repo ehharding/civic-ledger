@@ -16,6 +16,7 @@ import { buildPreviewComposition } from "@/lib/congress/upstream/fixtures";
 import {
   buildCongressUrl,
   type CongressRequestResult,
+  fetchAllPages,
   getCongressApiKey,
   MAX_API_PAGE_SIZE,
   MEMBER_LIST_CACHE_TAG,
@@ -86,47 +87,20 @@ async function fetchMemberPage(input: {
 /**
  * Fetches every currently-seated member of a Congress, across as many pages as it takes.
  *
- * The first page is fetched on its own to read `pagination.count`, and the remaining pages then go out together rather
- * than one after another — two round trips instead of three sequential ones.
- *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
  * @param currentOnly - Whether to ask only for sitting members. @see fetchMemberPage for why this varies by Congress.
  * @returns Every member found, or `null` only when the *first* page fails. A later page failing yields the members that
  *   did arrive, since a chart of most of the chamber still beats no chart at all — the missing seats simply aren't
- *   drawn.
+ *   drawn. @see fetchAllPages
  */
-async function fetchAllMembers(
-  apiKey: string,
-  congress: number,
-  currentOnly: boolean,
-): Promise<CongressApiMember[] | null> {
-  const firstPage: CongressApiMemberListResponse | null = await fetchMemberPage({
-    apiKey,
-    congress,
-    offset: 0,
-    currentOnly,
-  });
-  if (!firstPage) return null;
-
-  const firstMembers: CongressApiMember[] = firstPage.members ?? [];
-  const total: number = firstPage.pagination?.count ?? firstMembers.length;
-  const pageCount: number = Math.min(MAX_MEMBER_PAGES, Math.ceil(total / MAX_API_PAGE_SIZE));
-
-  if (pageCount <= 1) return firstMembers;
-
-  const laterPages: (CongressApiMemberListResponse | null)[] = await Promise.all(
-    Array.from(
-      { length: pageCount - 1 },
-      (_unused: unknown, index: number): Promise<CongressApiMemberListResponse | null> =>
-        fetchMemberPage({ apiKey, congress, offset: (index + 1) * MAX_API_PAGE_SIZE, currentOnly }),
-    ),
+function fetchAllMembers(apiKey: string, congress: number, currentOnly: boolean): Promise<CongressApiMember[] | null> {
+  return fetchAllPages(
+    (offset: number): Promise<CongressApiMemberListResponse | null> =>
+      fetchMemberPage({ apiKey, congress, offset, currentOnly }),
+    (page: CongressApiMemberListResponse): CongressApiMember[] | undefined => page.members,
+    MAX_MEMBER_PAGES,
   );
-
-  return [
-    ...firstMembers,
-    ...laterPages.flatMap((page: CongressApiMemberListResponse | null): CongressApiMember[] => page?.members ?? []),
-  ];
 }
 
 /**

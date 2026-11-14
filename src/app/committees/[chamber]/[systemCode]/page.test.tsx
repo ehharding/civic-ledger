@@ -8,7 +8,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import CommitteePage, { generateMetadata, generateStaticParams } from "@/app/committees/[chamber]/[systemCode]/page";
 import { renderCommitteeRoute } from "@/app/committees/[chamber]/[systemCode]/render";
@@ -17,19 +17,8 @@ import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { committeeHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
 
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
 /** The first preview committee — a House standing committee with two subcommittees. */
 const firstCommittee: CommitteeProfile = previewCommitteeProfiles[0] as CommitteeProfile;
-
-beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
-});
 
 describe("generateStaticParams", (): void => {
   it("emits an entry for every preview committee", (): void => {

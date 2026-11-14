@@ -7,7 +7,7 @@
  * unknown-facet case still has to land on the unfiltered view rather than an empty grid.
  */
 import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import CommitteesPage, { metadata } from "@/app/committees/page";
 import { renderCommitteesRoute } from "@/app/committees/render";
@@ -15,16 +15,8 @@ import type { CommitteeSummary } from "@/lib/congress/committees/model";
 import { previewCommitteeDirectory } from "@/lib/congress/upstream/fixtures";
 import type { RouteSearchParams } from "@/lib/search-params";
 
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
 beforeEach((): void => {
-  delete process.env.CONGRESS_API_KEY;
   window.history.replaceState(null, "", "/committees");
-});
-
-afterEach((): void => {
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
 });
 
 /** Renders the route in its default view — the static half, which never reads a query. */

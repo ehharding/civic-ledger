@@ -11,6 +11,7 @@ import {
   buildCongressUrl,
   COMMITTEE_LIST_CACHE_TAG,
   type CongressRequestResult,
+  fetchAllPages,
   getCongressApiKey,
   MAX_API_PAGE_SIZE,
   requestCongressJson,
@@ -101,40 +102,20 @@ async function fetchCommitteePage(input: {
 }
 
 /**
- * Fetches every committee of a Congress, across as many pages as it takes.
- *
- * Paginated exactly as the member roster is: the first page goes out alone to read `pagination.count`, then the rest go
- * out together rather than one after another.
+ * Fetches every committee of a Congress, across as many pages as it takes — paginated exactly as the member roster is.
  *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose committees to read.
- * @returns Every committee record found, or `null` only when the *first* page fails. A later page failing yields what
- *   did arrive — a directory missing its tail is still a usable directory, and it is labeled live either way.
+ * @returns Every committee record found, or `null` only when the *first* page fails. A directory missing its tail is
+ *   still a usable directory, and it is labeled live either way. @see fetchAllPages
  */
-async function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressApiCommittee[] | null> {
-  const firstPage: CongressApiCommitteeListResponse | null = await fetchCommitteePage({ apiKey, congress, offset: 0 });
-  if (!firstPage) return null;
-
-  const firstCommittees: CongressApiCommittee[] = firstPage.committees ?? [];
-  const total: number = firstPage.pagination?.count ?? firstCommittees.length;
-  const pageCount: number = Math.min(MAX_COMMITTEE_PAGES, Math.ceil(total / MAX_API_PAGE_SIZE));
-
-  if (pageCount <= 1) return firstCommittees;
-
-  const laterPages: (CongressApiCommitteeListResponse | null)[] = await Promise.all(
-    Array.from(
-      { length: pageCount - 1 },
-      (_unused: unknown, index: number): Promise<CongressApiCommitteeListResponse | null> =>
-        fetchCommitteePage({ apiKey, congress, offset: (index + 1) * MAX_API_PAGE_SIZE }),
-    ),
+function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressApiCommittee[] | null> {
+  return fetchAllPages(
+    (offset: number): Promise<CongressApiCommitteeListResponse | null> =>
+      fetchCommitteePage({ apiKey, congress, offset }),
+    (page: CongressApiCommitteeListResponse): CongressApiCommittee[] | undefined => page.committees,
+    MAX_COMMITTEE_PAGES,
   );
-
-  return [
-    ...firstCommittees,
-    ...laterPages.flatMap((page: CongressApiCommitteeListResponse | null): CongressApiCommittee[] =>
-      page ? (page.committees ?? []) : [],
-    ),
-  ];
 }
 
 /**

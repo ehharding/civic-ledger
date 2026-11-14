@@ -10,7 +10,7 @@
  * and provenance travels with the data — are easiest to break without any test noticing. A page that renders a bill
  * while labeling it `live` after the live lookup failed is a worse bug than a page that fails to render at all.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BillSearchResponse } from "@/lib/api-contract";
 import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
@@ -25,12 +25,7 @@ import {
   getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-
-const originalApiKey: string | undefined = process.env.CONGRESS_API_KEY;
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { jsonResponse } from "@/test/congress-api";
 
 /**
  * Route params that pass this app's own shape guard nowhere: an unknown type code, a non-numeric congress, and a bill
@@ -43,14 +38,7 @@ const MALFORMED_ROUTES: readonly BillRouteParams[] = [
 ];
 
 beforeEach((): void => {
-  vi.restoreAllMocks();
-  process.env.CONGRESS_API_KEY = "test-key";
-});
-
-afterEach((): void => {
-  vi.unstubAllGlobals();
-  if (originalApiKey === undefined) delete process.env.CONGRESS_API_KEY;
-  else process.env.CONGRESS_API_KEY = originalApiKey;
+  vi.stubEnv("CONGRESS_API_KEY", "test-key");
 });
 
 describe("getBillById", (): void => {
@@ -293,7 +281,7 @@ describe("getBillActions", (): void => {
   });
 
   it("returns nothing in preview mode, since fixtures fabricate no action record", async (): Promise<void> => {
-    delete process.env.CONGRESS_API_KEY;
+    vi.stubEnv("CONGRESS_API_KEY", undefined);
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 

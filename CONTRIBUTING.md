@@ -81,6 +81,12 @@ replaces the guard for that test; that is what `log.test.ts`, `http.test.ts`, an
 before the guard existed. If a test trips the guard, the question to ask is whether the warning is real, not how to
 silence it.
 
+**Every test starts with no Congress.gov key and cleans up after itself.** `vitest.setup.ts` unsets `CONGRESS_API_KEY`
+before each test, whatever your shell exports, and undoes every `vi.stubEnv`, `vi.stubGlobal`, and `vi.spyOn` after it.
+So a suite that wants the live path stubs a key with `vi.stubEnv` and moves on. It doesn't assign to `process.env`, save
+an original, or restore anything by hand. A suite that drives the adapter through a fake `fetch` takes `jsonResponse`
+and `requestedUrl` from `src/test/congress-api.ts` instead of declaring its own.
+
 ## Where Documentation Goes
 
 Documentation scales here by having **one home per fact**, chosen by audience rather than topic. The routing table and

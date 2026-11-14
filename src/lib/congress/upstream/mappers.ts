@@ -580,11 +580,14 @@ export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadership
  * Maps a reference to a committee named from inside another committee's record — a `parent`, or an entry in a
  * `subcommittees` array.
  *
+ * Also the identity rule every other committee mapper starts from, so one committee's code is normalized one way
+ * whichever endpoint it arrived through.
+ *
  * @param ref - A validated committee reference.
  * @returns The mapped reference, or `null` when it carries no code or no name. A subcommittee with no code cannot be
  *   opened and one with no name cannot be labeled, and either way there is nothing to put in a list.
  */
-export function mapCommitteeRef(ref: CongressApiCommitteeRef): CommitteeRef | null {
+export function mapCommitteeRef(ref: Pick<CongressApiCommitteeRef, "systemCode" | "name">): CommitteeRef | null {
   const systemCode: string = (ref.systemCode ?? "").trim().toLowerCase();
   const name: string = (ref.name ?? "").trim();
 
@@ -601,11 +604,12 @@ export function mapCommitteeRef(ref: CongressApiCommitteeRef): CommitteeRef | nu
  *   chamber check is what drops the API's `"NoChamber"` records, which are not committees of either body.
  */
 export function mapCongressCommittee(committee: CongressApiCommittee): CommitteeSummary | null {
-  const systemCode: string = (committee.systemCode ?? "").trim().toLowerCase();
-  const name: string = (committee.name ?? "").trim();
+  const ref: CommitteeRef | null = mapCommitteeRef(committee);
   const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
 
-  if (systemCode.length === 0 || name.length === 0 || !chamber) return null;
+  if (!ref || !chamber) return null;
+
+  const { systemCode, name } = ref;
 
   const typeName: string | undefined = committee.committeeTypeCode ?? committee.type;
   const parent: CommitteeRef | null = committee.parent ? mapCommitteeRef(committee.parent) : null;
@@ -734,12 +738,10 @@ export function mapBillCommitteeActivity(activity: CongressApiBillCommitteeActiv
  *   and for the same reason: one that cannot be opened or labeled is not a row.
  */
 export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): BillSubcommittee | null {
-  const systemCode: string = (subcommittee.systemCode ?? "").trim().toLowerCase();
-  const name: string = (subcommittee.name ?? "").trim();
+  const ref: CommitteeRef | null = mapCommitteeRef(subcommittee);
+  if (!ref) return null;
 
-  if (systemCode.length === 0 || name.length === 0) return null;
-
-  return { systemCode, name, activities: mapUsable(subcommittee.activities, mapBillCommitteeActivity) };
+  return { ...ref, activities: mapUsable(subcommittee.activities, mapBillCommitteeActivity) };
 }
 
 /**
@@ -751,11 +753,12 @@ export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): 
  *   reason for showing a referral is that a reader can follow it.
  */
 export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommittee | null {
-  const systemCode: string = (committee.systemCode ?? "").trim().toLowerCase();
-  const name: string = (committee.name ?? "").trim();
+  const ref: CommitteeRef | null = mapCommitteeRef(committee);
   const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
 
-  if (systemCode.length === 0 || name.length === 0 || !chamber) return null;
+  if (!ref || !chamber) return null;
+
+  const { systemCode, name } = ref;
 
   return {
     systemCode,

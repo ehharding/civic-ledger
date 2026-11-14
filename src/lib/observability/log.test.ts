@@ -9,7 +9,7 @@
  *
  * @see redact.test.ts for the scrubbing itself, and sentry-options.test.ts for the `beforeSendLog` backstop.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * The SDK is replaced rather than initialized, for the same reason the error-boundary suites replace it: the subject is
@@ -26,19 +26,13 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 import { describeCause, logError, logWarning } from "@/lib/observability/log";
-
-/** Stands in for a real Congress.gov key, in the same spelling `redact.test.ts` and `error.test.tsx` use. */
-const KEY: string = "SUPER-SECRET-KEY";
+import { FAKE_API_KEY } from "@/test/leaky-error";
 
 beforeEach((): void => {
   sentryWarn.mockClear();
   sentryError.mockClear();
   vi.spyOn(console, "warn").mockImplementation((): void => {});
   vi.spyOn(console, "error").mockImplementation((): void => {});
-});
-
-afterEach((): void => {
-  vi.restoreAllMocks();
 });
 
 describe("describeCause", (): void => {
@@ -100,10 +94,12 @@ describe("describeCause", (): void => {
     // The pattern pass covers the key still attached to its parameter name, which is how it reaches an exception
     // message. The literal pass covers the bare value, which is how it reaches a captured local. @see redactSecrets.
     const described: string =
-      describeCause(new Error(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${KEY}`), [KEY]) ?? "";
+      describeCause(new Error(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${FAKE_API_KEY}`), [
+        FAKE_API_KEY,
+      ]) ?? "";
 
     expect(described).toContain("api_key=[redacted]");
-    expect(described).not.toContain(KEY);
+    expect(described).not.toContain(FAKE_API_KEY);
   });
 
   it("truncates a description long enough to bury the line it is on", (): void => {
@@ -172,10 +168,10 @@ describe("redaction across a whole line", (): void => {
   it("scrubs the message, the cause, and every string attribute, and leaves other scalars alone", (): void => {
     // The point of doing this here rather than relying on `beforeSendLog`: that hook only covers the copy bound for
     // Sentry. This pass is the one that covers the console copy, which no SDK callback can reach.
-    logError(`Failed while calling https://api.congress.gov/v3?api_key=${KEY}`, {
-      attributes: { detail: `key was ${KEY}`, status: 500, retried: false },
-      cause: new Error(`upstream said api_key=${KEY} is invalid`),
-      secrets: [KEY],
+    logError(`Failed while calling https://api.congress.gov/v3?api_key=${FAKE_API_KEY}`, {
+      attributes: { detail: `key was ${FAKE_API_KEY}`, status: 500, retried: false },
+      cause: new Error(`upstream said api_key=${FAKE_API_KEY} is invalid`),
+      secrets: [FAKE_API_KEY],
     });
 
     const [message, attributes] = vi.mocked(console.error).mock.calls[0] as [
@@ -183,9 +179,9 @@ describe("redaction across a whole line", (): void => {
       { detail: string; cause: string; status: number; retried: boolean },
     ];
 
-    expect(message).not.toContain(KEY);
+    expect(message).not.toContain(FAKE_API_KEY);
     expect(attributes.detail).toBe("key was [redacted]");
-    expect(attributes.cause).not.toContain(KEY);
+    expect(attributes.cause).not.toContain(FAKE_API_KEY);
 
     // Non-strings pass through untouched — an attribute is a thing to filter on, and a redactor that stringified a
     // status code would break every query written against it.

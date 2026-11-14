@@ -93,7 +93,7 @@ committees, `committees/model.ts` is what a committee _is_, and neither name has
 | Module                      | Responsibility                                                                |
 | --------------------------- | ----------------------------------------------------------------------------- |
 | `upstream/api-schema.ts`    | Zod shapes for Congress.gov v3 payloads — the untrusted-input boundary.       |
-| `upstream/http.ts`          | Key access, URL building, caching policy, one request helper, route guards.   |
+| `upstream/http.ts`          | Key access, URL building, caching, the request and paging helpers, guards.    |
 | `upstream/mappers.ts`       | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
 | `upstream/fixtures.ts`      | The labeled preview records every read falls back to. Fiction, marked as it.  |
 | `bills/model.ts`            | The bill model: identity, stages, official URLs, display helpers. Pure.       |

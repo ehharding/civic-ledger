@@ -3,6 +3,7 @@ import type { JSX } from "react";
 
 import { BillCard } from "@/components/bills/bill-card";
 import { SiteShell } from "@/components/layout/site-shell";
+import { MemberPortrait } from "@/components/members/member-portrait";
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { DetailBackLink } from "@/components/ui/detail-back-link";
@@ -42,44 +43,6 @@ type MemberDetailProps = {
   /** How many bills each list was capped at, so the page can say what it's showing a slice *of*. */
   legislationLimit: number;
 };
-
-/**
- * The member's official portrait and its credit line.
- *
- * A plain `<img>` rather than `next/image`, deliberately: this is one small portrait per page, served from
- * congress.gov, and it has to render identically in the static export — which turns off image optimization anyway.
- * Routing it through the optimizer would buy nothing and would add a remote-host allow-list to `next.config.ts` that
- * every future deploy target would have to keep correct.
- *
- * @param profile - The member whose portrait to render.
- * @returns The portrait and its attribution, or `null` when Congress.gov publishes no image for this member — which is
- *   common for members who left before the photo collection was digitized.
- */
-function MemberPortrait({ profile }: { profile: MemberProfile }): JSX.Element | null {
-  if (!profile.depiction) return null;
-
-  return (
-    <figure className="member-portrait">
-      {/* biome-ignore lint/performance/noImgElement: next/image would need every congress.gov portrait host
-          allow-listed in next.config.ts, and an un-listed host is a hard runtime error rather than a missing picture —
-          the opposite of how the rest of this app degrades. The static export disables optimization anyway. */}
-      <img
-        alt={`Official portrait of ${formatMemberName(profile)}`}
-        className="member-portrait__image"
-        height={275}
-        loading="lazy"
-        src={profile.depiction.imageUrl}
-        width={220}
-      />
-      {profile.depiction.attribution ? (
-        <figcaption className="member-portrait__credit">
-          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by sanitizeSummaryHtml in the adapter. */}
-          <span dangerouslySetInnerHTML={{ __html: profile.depiction.attribution }} />
-        </figcaption>
-      ) : null}
-    </figure>
-  );
-}
 
 /**
  * One row of the service history.
@@ -206,7 +169,11 @@ export function MemberDetail({
       <DetailBackLink href="/members" label="All Members" />
 
       <section className="member-hero" aria-labelledby="member-name">
-        <MemberPortrait profile={profile} />
+        <MemberPortrait
+          alt={`Official portrait of ${formatMemberName(profile)}`}
+          depiction={profile.depiction}
+          variant="profile"
+        />
 
         <div className="member-hero__copy">
           <p className="eyebrow">

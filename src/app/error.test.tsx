@@ -8,7 +8,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * The SDK is replaced rather than initialized. Importing the real one here would start a client whose only job is to
@@ -25,15 +25,7 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 import AppError from "@/app/error";
-
-/** An error carrying exactly the kind of detail that must never be rendered. */
-function leakyError(): Error & { digest?: string } {
-  const error: Error & { digest?: string } = new Error(
-    "Request failed: https://api.congress.gov/v3/bill/119?api_key=SUPER-SECRET-KEY",
-  );
-  error.digest = "1234567890";
-  return error;
-}
+import { expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
 
 let user: UserEvent;
 
@@ -41,10 +33,6 @@ beforeEach((): void => {
   user = userEvent.setup();
   captureException.mockClear();
   vi.spyOn(console, "error").mockImplementation((): void => {});
-});
-
-afterEach((): void => {
-  vi.restoreAllMocks();
 });
 
 describe("AppError", (): void => {
@@ -58,9 +46,7 @@ describe("AppError", (): void => {
   it("never puts the error, its digest, or an API key into the DOM", (): void => {
     const { container } = render(<AppError error={leakyError()} reset={(): void => {}} />);
 
-    expect(container.textContent).not.toContain("SUPER-SECRET-KEY");
-    expect(container.textContent).not.toContain("api.congress.gov");
-    expect(container.textContent).not.toContain("1234567890");
+    expectNothingLeaked(container);
   });
 
   it("logs the error instead, so it stays available where only operators can read it", (): void => {
@@ -69,7 +55,7 @@ describe("AppError", (): void => {
 
     expect(console.error).toHaveBeenCalledWith(
       "[civic-ledger] Error boundary caught a render failure",
-      expect.objectContaining({ event: "error-boundary.caught", digest: "1234567890" }),
+      expect.objectContaining({ event: "error-boundary.caught", digest: LEAKY_DIGEST }),
     );
   });
 
@@ -83,7 +69,7 @@ describe("AppError", (): void => {
     const [, attributes] = vi.mocked(console.error).mock.calls[0] as [string, { cause?: string }];
 
     expect(attributes.cause).toContain("api_key=[redacted]");
-    expect(attributes.cause).not.toContain("SUPER-SECRET-KEY");
+    expect(attributes.cause).not.toContain(FAKE_API_KEY);
   });
 
   it("reports the error to Sentry, so a failure nobody saw is still a failure someone hears about", (): void => {

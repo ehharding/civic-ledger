@@ -6,19 +6,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { CommitteeCard } from "@/components/committees/committee-card";
-import type { CommitteeSummary } from "@/lib/congress/committees/model";
-
-function committee(overrides: Partial<CommitteeSummary> = {}): CommitteeSummary {
-  return {
-    systemCode: "hsag00",
-    name: "Agriculture Committee",
-    chamber: "house",
-    type: "standing",
-    typeName: "Standing",
-    subcommitteeCount: 0,
-    ...overrides,
-  };
-}
+import { committee } from "@/test/directory-entries";
 
 describe("CommitteeCard", (): void => {
   /* Displayed verbatim: rewriting the word order is confined to search. @see committeeSearchTerms. */

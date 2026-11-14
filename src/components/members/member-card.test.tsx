@@ -10,72 +10,59 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { MemberCard } from "@/components/members/member-card";
-import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
-
-function entry(overrides: Partial<MemberDirectoryEntry> = {}): MemberDirectoryEntry {
-  return {
-    bioguideId: "B000001",
-    name: "Bennett, Marcus T.",
-    party: "democratic",
-    partyName: "Democratic",
-    state: "Ohio",
-    district: 9,
-    chamber: "house",
-    ...overrides,
-  };
-}
+import { memberEntry } from "@/test/directory-entries";
 
 describe("MemberCard", (): void => {
   it("links the member's name to their page", (): void => {
-    render(<MemberCard entry={entry()} />);
+    render(<MemberCard entry={memberEntry()} />);
 
     expect(screen.getByRole("link", { name: "Bennett, Marcus T." })).toHaveAttribute("href", "/members/B000001");
   });
 
   it("carries exactly one link, so assistive technology hears no duplicate", (): void => {
-    render(<MemberCard entry={entry()} />);
+    render(<MemberCard entry={memberEntry()} />);
 
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   it("shows the upstream party label verbatim, so a nuance isn't flattened", (): void => {
-    render(<MemberCard entry={entry({ party: "independent", partyName: "Independent Democrat" })} />);
+    render(<MemberCard entry={memberEntry({ party: "independent", partyName: "Independent Democrat" })} />);
 
     expect(screen.getByText("Independent Democrat")).toBeInTheDocument();
   });
 
   it("falls back to the party group's label when the record carries none", (): void => {
-    render(<MemberCard entry={entry({ partyName: undefined })} />);
+    render(<MemberCard entry={memberEntry({ partyName: undefined })} />);
 
     expect(screen.getByText("Democratic")).toBeInTheDocument();
   });
 
   it("describes a representative's district", (): void => {
-    render(<MemberCard entry={entry()} />);
+    render(<MemberCard entry={memberEntry()} />);
 
     expect(screen.getByText("House · Ohio's 9th district")).toBeInTheDocument();
   });
 
   it("describes a senator by state alone", (): void => {
-    render(<MemberCard entry={entry({ chamber: "senate", state: "Arizona", district: undefined })} />);
+    render(<MemberCard entry={memberEntry({ chamber: "senate", state: "Arizona", district: undefined })} />);
 
     expect(screen.getByText("Senate · Arizona")).toBeInTheDocument();
   });
 
   it("describes a single-seat state as at-large", (): void => {
-    render(<MemberCard entry={entry({ state: "Alaska", district: 0 })} />);
+    render(<MemberCard entry={memberEntry({ state: "Alaska", district: 0 })} />);
 
     expect(screen.getByText("House · Alaska at-large")).toBeInTheDocument();
   });
 
   it("marks a non-voting seat rather than drawing it as an ordinary one", (): void => {
-    render(<MemberCard entry={entry({ state: "Guam", district: 0 })} />);
+    render(<MemberCard entry={memberEntry({ state: "Guam", district: 0 })} />);
 
     expect(screen.getByText("House · Guam (non-voting seat)")).toBeInTheDocument();
   });
 
   it("falls back to the chamber's full name when no jurisdiction is on file", (): void => {
-    render(<MemberCard entry={entry({ state: undefined, district: undefined })} />);
+    render(<MemberCard entry={memberEntry({ state: undefined, district: undefined })} />);
 
     expect(screen.getByText("House of Representatives")).toBeInTheDocument();
   });
@@ -83,7 +70,7 @@ describe("MemberCard", (): void => {
   it("renders the portrait with its credit line, since showing one is conditional on the other", (): void => {
     const { container } = render(
       <MemberCard
-        entry={entry({
+        entry={memberEntry({
           depiction: {
             imageUrl: "https://www.congress.gov/img/member/b000001_200.jpg",
             attribution: "Image courtesy of the Member",
@@ -107,7 +94,9 @@ describe("MemberCard", (): void => {
     // A handful of live records genuinely carry one and not the other. Discarding a real portrait over a field the
     // publisher left empty would lose a record the API did supply.
     const { container } = render(
-      <MemberCard entry={entry({ depiction: { imageUrl: "https://www.congress.gov/img/member/b000001_200.jpg" } })} />,
+      <MemberCard
+        entry={memberEntry({ depiction: { imageUrl: "https://www.congress.gov/img/member/b000001_200.jpg" } })}
+      />,
     );
 
     expect(container.querySelector(".member-card__portrait-image")).toBeInTheDocument();
@@ -115,7 +104,7 @@ describe("MemberCard", (): void => {
   });
 
   it("renders no portrait at all for a record carrying none, which is every preview placeholder", (): void => {
-    const { container } = render(<MemberCard entry={entry()} />);
+    const { container } = render(<MemberCard entry={memberEntry()} />);
 
     expect(container.querySelector(".member-card__portrait")).not.toBeInTheDocument();
     expect(container.querySelector("img")).not.toBeInTheDocument();

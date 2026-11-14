@@ -241,6 +241,45 @@ export async function requestCongressJson<Payload>(
   }
 }
 
+/**
+ * Fetches every page of a paginated list, across as many requests as it takes.
+ *
+ * The first page goes out alone, to read `pagination.count`; the remaining pages then go out together rather than one
+ * after another — two round trips however long the list, instead of one per page.
+ *
+ * @typeParam Page - One validated page of the list.
+ * @typeParam Item - One unmapped record on a page.
+ * @param fetchPage - Requests the page starting at `offset`, resolving `null` on any failure.
+ * @param itemsOf - Reads the records off a page.
+ * @param maxPages - Hard ceiling on pages requested, so a malformed `pagination.count` cannot turn one page render into
+ *   an unbounded fetch loop.
+ * @returns Every record found, or `null` only when the *first* page fails. A later page failing yields what did arrive:
+ *   a list missing its tail is still worth rendering, and the callers would rather show most of a roster than none.
+ */
+export async function fetchAllPages<Page extends { pagination?: { count?: number | undefined } | undefined }, Item>(
+  fetchPage: (offset: number) => Promise<Page | null>,
+  itemsOf: (page: Page) => Item[] | undefined,
+  maxPages: number,
+): Promise<Item[] | null> {
+  const firstPage: Page | null = await fetchPage(0);
+  if (!firstPage) return null;
+
+  const firstItems: Item[] = itemsOf(firstPage) ?? [];
+  const total: number = firstPage.pagination?.count ?? firstItems.length;
+  const pageCount: number = Math.min(maxPages, Math.ceil(total / MAX_API_PAGE_SIZE));
+
+  if (pageCount <= 1) return firstItems;
+
+  const laterPages: (Page | null)[] = await Promise.all(
+    Array.from(
+      { length: pageCount - 1 },
+      (_unused: unknown, index: number): Promise<Page | null> => fetchPage((index + 1) * MAX_API_PAGE_SIZE),
+    ),
+  );
+
+  return [...firstItems, ...laterPages.flatMap((page: Page | null): Item[] => (page ? (itemsOf(page) ?? []) : []))];
+}
+
 /** How many schema issue paths a single log line carries. A drifted payload fails the same way in every record. */
 const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
 
