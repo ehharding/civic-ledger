@@ -4,8 +4,14 @@ import type { Route } from "next";
 import Link from "next/link";
 import { type ComponentProps, type JSX, useState } from "react";
 
-/** Props for {@link RecordLink}: everything `next/link` takes, except the prefetch policy this component owns. */
-export type RecordLinkProps = Omit<ComponentProps<typeof Link<Route>>, "prefetch">;
+/**
+ * Props for {@link RecordLink}: everything `next/link` takes, except the prefetch policy this component owns.
+ *
+ * `href` is restated as a `Route` rather than read off `Link` with `typeof Link<Route>`: `Link` is only generic once
+ * `next dev` or `next build` has written the typed-route declarations into `.next/types`, and CI typechecks before
+ * either has run, so that spelling compiled locally and failed there.
+ */
+export type RecordLinkProps = Omit<ComponentProps<typeof Link>, "prefetch" | "href"> & { href: Route };
 
 /**
  * An in-app link to one individual record — a bill, a member, a committee — or to a query-carrying view of one, which
