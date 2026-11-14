@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import type { BillSearchResponse } from "@/lib/api-contract";
 import {
   type BillAction,
@@ -31,6 +33,7 @@ import {
 import { previewBills, previewSummaries } from "@/lib/congress/upstream/fixtures";
 import {
   BILL_LIST_CACHE_TAG,
+  billPageCacheWindow,
   buildCongressUrl,
   type CongressRequestResult,
   getCongressApiKey,
@@ -266,7 +269,26 @@ export type BillLookupResult = {
  *   "something went wrong", because a transient failure falls back to a snapshot search and then to preview data before
  *   giving up.
  */
-export async function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
+export function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
+  return lookUpBillOnce(input.congress, input.type, input.number);
+}
+
+/**
+ * {@link getBillById}, memoized for one server render.
+ *
+ * The bill page reads the bill twice, once in `generateMetadata` and once in the page itself. Next's own `fetch`
+ * memoization would normally make that one request, but it steps aside for any `fetch` carrying an `AbortSignal`
+ * (`dedupe-fetch.js`), and every request here carries the timeout's. With the Data Cache answering the second read that
+ * cost only a cache read; for a bill page it no longer does (@see billPageCacheWindow), so this is what keeps it at one
+ * upstream call. Keyed on the three strings rather than the params object, since React's `cache` compares arguments by
+ * identity and the two callers each hold their own.
+ */
+const lookUpBillOnce = cache(
+  (congress: string, type: string, number: string): Promise<BillLookupResult> => lookUpBill({ congress, type, number }),
+);
+
+/** The uncached body of {@link getBillById}. */
+async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
   const apiKey: string | undefined = getCongressApiKey();
   const retrievedAt: string = new Date().toISOString();
 
@@ -283,6 +305,7 @@ export async function getBillById(input: BillRouteParams): Promise<BillLookupRes
     route,
     apiKey,
     `bill lookup for ${route.type.toUpperCase()} ${route.number}`,
+    billPageCacheWindow(route.congress),
   );
 
   if (result.outcome === "not-found") return { bill: undefined, source: "live", retrievedAt };

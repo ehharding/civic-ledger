@@ -68,8 +68,9 @@ export function generateStaticParams(): BillRouteParams[] {
  * Builds the per-bill title and description, so a bill page reads as itself in a browser tab, a share card, or a search
  * result rather than falling back to the site-wide default.
  *
- * Calls `getBillById` a second time without a second upstream request: Next memoizes `fetch` per request, so this and
- * the page component below share one response for the same route.
+ * Calls `getBillById` a second time without a second upstream request: `getBillById` is memoized per render, so this
+ * and the page component below share one response for the same route. (Next's own `fetch` memoization does not cover
+ * it — it skips any request carrying an abort signal, and every Congress.gov request carries its timeout's.)
  *
  * @param params - The bill's route params.
  * @returns The bill's metadata, or a "Bill Not Found" title when it doesn't resolve.

@@ -149,14 +149,24 @@ describe("getCongressSnapshotForCongress", (): void => {
     expect(requestedCacheWindows(fetchMock)).toEqual([CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS]);
   });
 
-  it("caches a concluded bill's own records for a day too", async (): Promise<void> => {
+  it("leaves a concluded bill's own records out of the Data Cache, and caches a sitting Congress's for five minutes", async (): Promise<void> => {
+    // A bill page's ISR entry is already the cache for what it read; a concluded bill page is held for a day by its
+    // segment `revalidate`. Storing each of its eight requests a second time was metered cost and nothing else — and a
+    // sitting Congress's bill still needs its five-minute fetch window, because that is what shortens its page's own.
     vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ summaries: [] }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ summaries: [] }))
+      // A 404 is a true answer, so the lookup ends there rather than falling back to the (cached) list snapshot.
+      .mockResolvedValueOnce(new Response("", { status: 404 }))
+      .mockResolvedValueOnce(jsonResponse({ summaries: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
     await getBillSummaries({ congress: String(getCurrentCongress() - 1), type: "hr", number: "1" });
+    await getBillById({ congress: String(getCurrentCongress() - 1), type: "hr", number: "2" });
+    await getBillSummaries({ congress: String(getCurrentCongress()), type: "hr", number: "1" });
 
-    expect(requestedCacheWindows(fetchMock)).toEqual([CONCLUDED_CONGRESS_REVALIDATE_SECONDS]);
+    expect(requestedCacheWindows(fetchMock)).toEqual([undefined, undefined, REVALIDATE_SECONDS]);
   });
 });
 

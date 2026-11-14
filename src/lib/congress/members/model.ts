@@ -319,6 +319,28 @@ export type CongressComposition = {
 };
 
 /**
+ * The same composition with each member's portrait left off — the shape the seating chart is handed.
+ *
+ * The chart is a client component, so everything passed to it is serialized into the page's RSC payload, and it draws
+ * seats, not faces. Every member's `depiction` (an image URL and an attribution line, ~540 times) was dead weight in
+ * the homepage's payload: about a seventh of the page's compressed size, on the page served most often.
+ *
+ * @param composition - The full composition, as resolved server-side.
+ * @returns A copy without `depiction` on any member. Everything else is untouched.
+ */
+export function compositionForSeating(composition: CongressComposition): CongressComposition {
+  return {
+    ...composition,
+    chambers: composition.chambers.map(
+      (chamber: ChamberComposition): ChamberComposition => ({
+        ...chamber,
+        members: chamber.members.map(({ depiction: _depiction, ...member }: CongressMember): CongressMember => member),
+      }),
+    ),
+  };
+}
+
+/**
  * Tallies members by party.
  *
  * @param members - The chamber's members.

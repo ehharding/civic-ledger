@@ -16,7 +16,7 @@ import {
   type LegislativeBill,
 } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import type { CongressComposition } from "@/lib/congress/members/model";
+import { type CongressComposition, compositionForSeating } from "@/lib/congress/members/model";
 import { formatOrdinal } from "@/lib/format";
 import { billHref } from "@/lib/routes";
 
@@ -101,7 +101,7 @@ export function HomePage({
 
       <DataSourceNotice source={snapshot.source} notice={snapshot.notice} retrievedAt={snapshot.retrievedAt} />
 
-      <CongressSeatingChart composition={composition} />
+      <CongressSeatingChart composition={compositionForSeating(composition)} />
 
       <section className="section-heading" aria-labelledby="activity-heading">
         <div>

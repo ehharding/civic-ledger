@@ -78,6 +78,14 @@ What keeps that bounded now:
   to its twin under `src/app/query/`, which renders the narrowed view server-side as the route used to. The rewrite is a
   routing rule rather than a Proxy, so the static half costs no function invocation at all. A query the route ignores
   (`?utm_source=`) is served the static page. @see `src/lib/query-routes.ts`.
+- **AI training crawlers are refused the whole site.** The Bot Name breakdown on the dashboard's CDN Requests page
+  showed GPTBot at 43K of 44K requests in six hours: one training crawler, on course to cross the Hobby limits by
+  itself. `robots.txt` now disallows `/` for GPTBot and the other documented training-only crawlers
+  (`AI_TRAINING_CRAWLERS` in `src/app/robots.ts`). Search and user-fetch agents (`OAI-SearchBot`, `ChatGPT-User`,
+  `PerplexityBot`, `Googlebot`) are untouched, since they are how readers find the site. The list is short on purpose:
+  `robots.txt` only binds crawlers polite enough to read it. Enforcement is the Vercel Firewall's **AI Bots** managed
+  ruleset, set to **AI Crawlers → Deny** and **AI Assistants → Log**, whose bot list Vercel maintains and which stops a
+  crawler before any function runs, whether or not it honors this file.
 - **Crawlers are kept off the query variants.** `robots.txt` disallows `/query/` and each route's `?` form. Those pages
   already canonicalize to the plain route, so they were never going to be indexed — they were only ever going to be
   rendered.
@@ -91,6 +99,18 @@ What keeps that bounded now:
   that Congress's slice of the search sweep are regenerated daily rather than every five minutes. Only the Congress now
   sitting stays on the five-minute window. `revalidateSecondsForCongress` in `congress/upstream/http.ts` decides which;
   most of what crawlers walk is concluded Congresses, so this is where most of the remaining ISR work went.
+- **A bill page's requests are not cached twice.** In November 2026 the dashboard showed a crawler walking individual
+  bill pages across every Congress since the 93rd, about 9,400 in six hours, almost none of them repeats. Every one is a
+  cold ISR render, and each one also wrote its eight Congress.gov responses into the Data Cache, which Vercel meters per
+  read and write, for entries nothing would read again before they expired. A concluded Congress's bill page now makes
+  those requests uncached (`billPageCacheWindow` in `congress/upstream/http.ts`); the page's own segment `revalidate`
+  still holds it for a day, so readers see no difference. The sitting Congress keeps its five-minute fetch window, since
+  that is what keeps its pages fresh. `getBillById` is memoized per render with React's `cache`, because Next's own
+  fetch memoization skips any request carrying an abort signal and every request here carries one.
+- **The homepage ships only what the seating chart draws.** The chart is a client component, so its props travel in the
+  page's RSC payload. It never showed portraits, yet every member's image URL and attribution rode along on the site's
+  most-served page. `compositionForSeating` strips them: about a seventh of the page's compressed size, and the homepage
+  is most of the project's Fast Data Transfer.
 - **The API routes are cached at the CDN.** `/api/bills` and `/api/bills/search` read their query, so Next leaves them
   uncached. They now send `s-maxage` for the shared five-minute window (`src/lib/edge-cache.ts`), so a repeated "Load
   More" page or search query is answered by the CDN rather than by a function. Search matters most: each call reads and

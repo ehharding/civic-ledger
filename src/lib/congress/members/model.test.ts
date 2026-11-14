@@ -11,7 +11,9 @@ import {
   bioguideUrl,
   buildChamberComposition,
   type ChamberComposition,
+  type CongressComposition,
   type CongressMember,
+  compositionForSeating,
   describeChamberSeats,
   formatMemberParty,
   formatMemberSeat,
@@ -177,6 +179,31 @@ describe("buildChamberComposition", (): void => {
 
     expect(composition.votingSeats).toBe(2);
     expect(composition.nonVotingSeats).toBe(0);
+  });
+});
+
+describe("compositionForSeating", (): void => {
+  it("drops every portrait and keeps everything the chart reads", (): void => {
+    const withPortrait: CongressMember = member({
+      bioguideId: "F000481",
+      partyName: "Independent Democrat",
+      state: "Alabama",
+      district: 2,
+      depiction: { imageUrl: "https://www.congress.gov/img/member/x_200.jpg", attribution: "Courtesy" },
+    });
+    const composition: CongressComposition = {
+      congress: 119,
+      chambers: [buildChamberComposition("house", [withPortrait])],
+      source: "live",
+      retrievedAt: "2026-11-14T00:00:00.000Z",
+    };
+
+    const trimmed: CongressComposition = compositionForSeating(composition);
+    const { depiction: _depiction, ...rest }: CongressMember = withPortrait;
+
+    expect(trimmed.chambers[0]?.members).toEqual([rest]);
+    expect(trimmed.chambers[0]?.partyCounts).toEqual(composition.chambers[0]?.partyCounts);
+    expect(composition.chambers[0]?.members[0]?.depiction).toBeDefined();
   });
 });
 

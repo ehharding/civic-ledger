@@ -64,6 +64,42 @@ export function revalidateSecondsForCongress(
 }
 
 /**
+ * A cache window of "none": the response is not stored in Next's Data Cache at all.
+ *
+ * Only for a request whose result is already held by the ISR page that renders it. Storing it a second time is pure
+ * cost on Vercel, where every Data Cache read and write is metered, and it is cost multiplied by the long tail: a bill
+ * page makes eight requests, so a crawler walking past-Congress bills one page at a time bought eight cache writes per
+ * page for entries nobody would ever read back before they expired.
+ *
+ * A `fetch` with no `cache` or `revalidate` option does not make an ISR route dynamic — Next treats it as "auto no
+ * cache" and leaves the segment's own `revalidate` in charge (`patch-fetch.js`: "we don't consider autoNoCache to
+ * switch to dynamic for ISR"). So the page is still cached for exactly as long as before; only the duplicate goes.
+ */
+export const UNCACHED: null = null;
+
+/** A cache window in seconds, or {@link UNCACHED}. */
+export type CacheWindow = number | typeof UNCACHED;
+
+/**
+ * The cache window for a request made while rendering a single bill's own page.
+ *
+ * A concluded Congress's bill page is cached by its segment `revalidate` for a day, the same window its requests would
+ * have been cached for, so those requests are {@link UNCACHED}. The current Congress keeps its five-minute fetch
+ * window, because that window is what shortens the page's own: without it a sitting Congress's bill would sit a day
+ * stale.
+ *
+ * @param congress - The bill's Congress.
+ * @param currentCongress - The Congress now sitting. Defaults to today's; a parameter so tests can pin the boundary.
+ * @returns {@link UNCACHED} for a Congress that has ended, else {@link REVALIDATE_SECONDS}.
+ */
+export function billPageCacheWindow(
+  congress: number | string,
+  currentCongress: number = getCurrentCongress(),
+): CacheWindow {
+  return Number(congress) < currentCongress ? UNCACHED : REVALIDATE_SECONDS;
+}
+
+/**
  * The most records Congress.gov will return from a single request, on any endpoint that paginates. Requested explicitly
  * wherever one round trip should cover as much as possible (summaries, text versions, member pages, the search sweep).
  */
@@ -138,9 +174,15 @@ export function buildCongressUrl(path: string, apiKey: string, params: Record<st
  *   that function, which also handles status codes and parsing; this is exported mainly for the rare caller that needs
  *   the response itself.
  */
-export function fetchCongressGov(url: URL, tags: string[], revalidate: number = REVALIDATE_SECONDS): Promise<Response> {
+export function fetchCongressGov(
+  url: URL,
+  tags: string[],
+  revalidate: CacheWindow = REVALIDATE_SECONDS,
+): Promise<Response> {
   return fetch(url, {
-    next: { revalidate, tags },
+    // Omitted entirely rather than spelled `cache: "no-store"`: an explicit no-store would make the rendering route
+    // dynamic, which is the opposite of the point. @see UNCACHED.
+    ...(revalidate === UNCACHED ? {} : { next: { revalidate, tags } }),
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -187,7 +229,7 @@ export async function requestCongressJson<Payload>(
   tags: string[],
   schema: ZodType<Payload>,
   context: string,
-  revalidate: number = REVALIDATE_SECONDS,
+  revalidate: CacheWindow = REVALIDATE_SECONDS,
 ): Promise<CongressRequestResult<Payload>> {
   // The one place in this app that holds the key *and* reports a failure, so the one place that has to declare it. The
   // same arrangement `sentry.server.config.ts` makes with `sentryInitOptions`. @see LogDetails.secrets.

@@ -4,7 +4,9 @@ import type { BillRouteParams } from "@/lib/congress/bills/model";
 import { type CongressApiDetailResponse, congressApiDetailResponseSchema } from "@/lib/congress/upstream/api-schema";
 import {
   billCacheTags,
+  billPageCacheWindow,
   buildCongressUrl,
+  type CacheWindow,
   type CongressRequestResult,
   getCongressApiKey,
   MAX_API_PAGE_SIZE,
@@ -42,19 +44,23 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
  * @param route - The bill's identifier, already proven safe to interpolate. @see normalizeBillRouteParams
  * @param apiKey - The server-only Congress.gov key.
  * @param context - Short label for the server-side log line, naming which of the two reads this was.
+ * @param revalidate - The cache window. Defaults to the Congress-scoped one, which the committee page's title lookup
+ *   wants: it reads many bills it never renders a page for. The bill page passes {@link billPageCacheWindow}, since its
+ *   own ISR entry already holds the response.
  * @returns The request's outcome, unmapped. Never throws.
  */
 export function requestBillDetail(
   route: NormalizedBillRoute,
   apiKey: string,
   context: string,
+  revalidate: CacheWindow = revalidateSecondsForCongress(route.congress),
 ): Promise<CongressRequestResult<CongressApiDetailResponse>> {
   return requestCongressJson(
     buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}`, apiKey),
     billCacheTags(route),
     congressApiDetailResponseSchema,
     context,
-    revalidateSecondsForCongress(route.congress),
+    revalidate,
   );
 }
 
@@ -134,7 +140,8 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
     billCacheTags(route),
     config.schema,
     `bill ${config.path} for ${route.type.toUpperCase()} ${route.number}`,
-    revalidateSecondsForCongress(route.congress),
+    // Every collection here is read only by the bill's own page, whose ISR entry is the cache. @see billPageCacheWindow
+    billPageCacheWindow(route.congress),
   );
 
   if (result.outcome !== "ok") return { entries: [], unavailable: result.outcome === "failed" };

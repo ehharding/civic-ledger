@@ -19,6 +19,7 @@ import {
   BILL_LIST_CACHE_TAG,
   BILL_PATH_TYPES,
   billCacheTags,
+  billPageCacheWindow,
   buildCongressUrl,
   COMMITTEE_LIST_CACHE_TAG,
   CONCLUDED_CONGRESS_REVALIDATE_SECONDS,
@@ -37,6 +38,7 @@ import {
   REVALIDATE_SECONDS,
   requestCongressJson,
   revalidateSecondsForCongress,
+  UNCACHED,
 } from "@/lib/congress/upstream/http";
 import { FAKE_API_KEY } from "@/test/leaky-error";
 
@@ -287,6 +289,20 @@ describe("request timeout", (): void => {
     expect(init.next?.revalidate).toBe(CONCLUDED_CONGRESS_REVALIDATE_SECONDS);
   });
 
+  it("sends no cache options at all for an uncached request, so the rendering route stays static", (): void => {
+    // An explicit `cache: "no-store"` would make an ISR page dynamic. Leaving the options off is what keeps the page
+    // cached while keeping the response out of the Data Cache. @see UNCACHED.
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    void fetchCongressGov(buildCongressUrl("/bill/118/hr/1", "test-key"), [BILL_LIST_CACHE_TAG], UNCACHED);
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit & { next?: unknown };
+    expect(init.next).toBeUndefined();
+    expect(init.cache).toBeUndefined();
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it("allows a request long enough to be a real answer rather than a slow one", (): void => {
     expect(REQUEST_TIMEOUT_MS).toBeGreaterThanOrEqual(5_000);
     expect(REQUEST_TIMEOUT_MS).toBeLessThanOrEqual(30_000);
@@ -453,5 +469,14 @@ describe("revalidateSecondsForCongress", (): void => {
 
   it("is a day: long enough to stop re-reading a closed record, short enough to pick up late corrections", (): void => {
     expect(CONCLUDED_CONGRESS_REVALIDATE_SECONDS).toBe(86_400);
+  });
+});
+
+describe("billPageCacheWindow", (): void => {
+  it("leaves a concluded Congress's bill reads uncached and keeps the sitting Congress on five minutes", (): void => {
+    expect(billPageCacheWindow(118, 119)).toBe(UNCACHED);
+    expect(billPageCacheWindow("93", 119)).toBe(UNCACHED);
+    expect(billPageCacheWindow(119, 119)).toBe(REVALIDATE_SECONDS);
+    expect(billPageCacheWindow(120, 119)).toBe(REVALIDATE_SECONDS);
   });
 });
