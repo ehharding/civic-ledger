@@ -1,19 +1,12 @@
 /**
- * Covers the five `/query` twins together.
+ * Covers the five `/query` twins against their shared contract:
  *
- * Each twin is a few lines that hand the request's query to the renderer its static route shares, and every narrowed
- * behavior those renderers have is already tested beside the route that owns it. What is left to pin is the twin's own
- * contract, which is the same for all five and so reads best as one rule checked across the set:
+ * 1. **It passes the query through** — otherwise every shared link renders unfiltered.
+ * 2. **It carries the same metadata as its route,** canonical path included, since it's a view of that page.
+ * 3. **It streams the same loading skeleton.**
  *
- * 1. **It passes the query through.** A twin that rendered the default view would look fine in every route test and
- *    serve every shared link unfiltered in production — the exact failure the twins exist to prevent.
- * 2. **It carries the same metadata as its route,** canonical path included. A narrowed link is a view of the plain
- *    route, not a second page, and its tags must say so rather than presenting `/query/...` to a crawler or a share
- *    card.
- * 3. **It streams the same loading skeleton,** so a narrowed link arrives looking like the page it resolves into.
- *
- * Lives inside `src/app/query` so the static demo build, which deletes that directory, takes these tests with it.
- * @see src/lib/query-routes.ts.
+ * Lives inside `src/app/query` so the static demo build, which deletes that directory, drops these tests too.
+ * @see src/lib/query-routes.ts
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";

@@ -70,16 +70,8 @@ describe("formatDate", (): void => {
   });
 
   it("renders the same calendar date regardless of the runtime's local timezone", async (): Promise<void> => {
-    // Without pinning Intl.DateTimeFormat to UTC, this exact case renders one day off in either direction depending on
-    // where the code runs — see the comment on formatDate. Covers both extremes: a timezone west of UTC (which would
-    // roll a UTC-early-morning timestamp back a day) and one far enough east to roll a UTC-noon timestamp forward a
-    // day.
-    //
-    // The module is re-imported under each timezone rather than the exported function being called twice, and that is
-    // load-bearing now that the formatter is built once at module scope: `Intl.DateTimeFormat` resolves its timezone
-    // when it is *constructed*, so setting `TZ` afterwards would leave an unpinned formatter still holding the zone
-    // the test process started in — and this test would pass while the bug it exists to catch was present. Rebuilding
-    // the module is what puts the construction back inside the case under test.
+    // Without pinning the formatter to UTC, this renders a day off depending on the zone; both directions are checked.
+    // The module is re-imported per zone because `Intl.DateTimeFormat` resolves its zone at construction.
     for (const timeZone of ["America/Chicago", "Pacific/Kiritimati"]) {
       process.env.TZ = timeZone;
       vi.resetModules();

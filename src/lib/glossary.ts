@@ -1,29 +1,18 @@
 import type { Route } from "next";
 
-/**
- * A single civic-vocabulary entry rendered on the `/learn` page.
- *
- * The two-field split is the point of the whole glossary: `plainEnglish` is what the word means, `detail` is what
- * people usually get wrong about it. "Passed" has a one-line definition anyone would accept and a second line that
- * corrects the assumption most readers arrive with.
- */
+/** A single civic-vocabulary entry rendered on the `/learn` page. */
 export type GlossaryTerm = {
+  /** The word or phrase, in title case. */
   term: string;
+  /** What the term means, in one sentence. */
   plainEnglish: string;
+  /** What people commonly get wrong about it. */
   detail: string;
 };
 
 /**
- * Static glossary content for the `/learn` page.
- *
- * Hand-curated editorial content, not sourced from the Congress.gov API — which is why it lives in `src/lib` rather
- * than `src/lib/congress`. Ordered roughly by the sequence a bill moves through, so reading top to bottom traces the
- * legislative process rather than the alphabet.
- *
- * Deliberately uncited, unlike the lessons in {@link lessons}. The line between the two is length, not rigor: a
- * one-line definition of "cosponsor" is vocabulary anyone can confirm in a sentence, while a five-step account of how a
- * chamber records a vote is a claim, and claims get sources. What this file owes instead is *coverage*: every term a
- * lesson leans on has to be findable here.
+ * Hand-curated glossary for `/learn`, ordered roughly as a bill moves through Congress. Uncited, unlike the
+ * lessons — one-line vocabulary rather than claims — but every term a lesson leans on must appear here.
  */
 export const glossary: GlossaryTerm[] = [
   {
@@ -144,12 +133,8 @@ export const glossary: GlossaryTerm[] = [
 ];
 
 /**
- * The DOM id `/learn` gives one glossary entry, and the fragment every in-app reference to that term links to.
- *
- * A glossary the rest of the app can *point at* needs each entry to be a place, and a place needs an address. Derived
- * from the term rather than stored beside it on the same rule `lessonNumber` derives a lesson's position: a second
- * hand-maintained field is a field that can disagree with the one it was derived from, and here the disagreement would
- * be a link that scrolls nowhere.
+ * The DOM id `/learn` gives one glossary entry, and the fragment in-app references link to. Derived from the term so
+ * the two can't disagree.
  *
  * @param term - The entry's term, as {@link glossary} spells it.
  * @returns The id, e.g., `"glossary-roll-call-vote"`.
@@ -167,10 +152,6 @@ export function glossaryEntryId(term: string): string {
 /**
  * Builds the in-app link to one glossary entry, e.g., `/learn#glossary-cloture`.
  *
- * The fifth member of the `*-route.ts` family in spirit, and it lives here rather than in a file of its own because the
- * fragment half of it is {@link glossaryEntryId}, which the `/learn` page also renders — one function knowing both ends
- * of that pair is what keeps a link and its destination from being written down twice.
- *
  * @param term - The entry's term.
  * @returns The typed in-app route, ready to hand to `next/link`.
  */
@@ -178,50 +159,23 @@ export function glossaryHref(term: string): Route {
   return `/learn#${glossaryEntryId(term)}` as Route;
 }
 
-/**
- * One run of text produced by {@link annotateGlossaryTerms}: either ordinary prose, or the occurrence of a term the
- * glossary defines.
- *
- * `text` is the source text *exactly* as it appeared, never the entry's own spelling. A sentence that says "most bills
- * are referred to committees" keeps its lower case and its plural; only the definition attached to it comes from the
- * glossary.
- */
+/** One run of text produced by {@link annotateGlossaryTerms}: ordinary prose, or an occurrence of a glossary term. */
 export type GlossarySegment = {
-  /** The source text this run covers. */
+  /** The source text this run covers, exactly as written (case and plural kept). */
   text: string;
   /** The entry `text` names, or `undefined` for the prose between matches. */
   entry?: GlossaryTerm;
 };
 
-/**
- * The glossary's entries ordered longest term first.
- *
- * Alternation in a JavaScript regular expression is first-match-wins rather than longest-match-wins, so a shorter term
- * listed ahead of a longer one that starts with it would claim the shared prefix and leave the rest stranded. No pair
- * in the glossary collides today; ordering by length is what keeps that a property of the matcher rather than a
- * property of the current word list.
- */
+/** The entries, longest term first, since regex alternation is first-match-wins rather than longest-match-wins. */
 const termsByLength: readonly GlossaryTerm[] = glossary.toSorted(
   (a: GlossaryTerm, b: GlossaryTerm): number => b.term.length - a.term.length,
 );
 
 /**
- * The pattern that finds any glossary term in a run of prose, built once at module load rather than per call.
- *
- * Three things it has to tolerate, all of which come from matching editorial and congressional prose rather than a
- * controlled vocabulary:
- *
- * - **Case.** Terms are written in title case here and appear lower-cased mid-sentence, so the match is insensitive and
- *   the *source* casing is what gets rendered.
- * - **Inflection.** "Committee" has to find "committees" and "the committee's", or the annotation would skip precisely
- *   the sentences that talk about more than one. The suffix group is deliberately short — plural and possessive only —
- *   since a broader stemmer would start matching words that merely share a root ("cosponsorship", "vetoed") and attach
- *   a definition that does not describe them.
- * - **Spacing.** A multi-word term can be split across a line break in a source string, so the gaps are `\s+` rather
- *   than literal spaces.
- *
- * Each term gets its own capture group, which is how a match is resolved back to the entry that produced it without
- * re-deriving the term from the matched text — the one step that inflection would otherwise make ambiguous.
+ * Finds any glossary term in prose: case-insensitive, allowing plural and possessive suffixes only (a broader stemmer
+ * would match "vetoed" or "cosponsorship"), and `\s+` between words. Each term is its own capture group, so a match
+ * resolves straight back to its entry.
  */
 const TERM_PATTERN: RegExp = new RegExp(
   `\\b(?:${termsByLength
@@ -233,32 +187,19 @@ const TERM_PATTERN: RegExp = new RegExp(
 );
 
 /**
- * Splits a run of prose into plain text and the glossary terms it uses.
- *
- * This is the whole basis of the in-app glossary: rather than a reader having to *know* that "markup" is defined
- * somewhere and go looking, the word carries its own definition wherever it is used. Keeping the scan here — pure,
- * isomorphic, and free of React — is what makes "which words in this paragraph are defined" a unit-testable question
- * instead of something only observable by rendering a page.
- *
- * **Only the first occurrence of each term is annotated.** A lesson step that says "committee" six times would
- * otherwise become six dotted underlines in one paragraph, which reads as emphasis rather than as help and makes the
- * prose harder to get through than the jargon did. The first mention is where a reader who doesn't know the word
- * actually stops.
+ * Splits prose into plain text and the glossary terms it uses. Only the first occurrence of each term is annotated, so
+ * a repeated word doesn't become a paragraph of underlines.
  *
  * @param text - The prose to scan.
- * @returns The text in order, as alternating plain and annotated runs. Concatenating every segment's `text` reproduces
- *   the input exactly, so nothing can be silently dropped or reworded on the way through. Prose containing no glossary
- *   term comes back as a single unannotated segment, and empty input as no segments at all.
+ * @returns Alternating plain and annotated runs whose `text` concatenates back to the input exactly. Empty input yields
+ *   no segments.
  */
 export function annotateGlossaryTerms(text: string): GlossarySegment[] {
   const segments: GlossarySegment[] = [];
   const seen: Set<string> = new Set<string>();
   let cursor: number = 0;
 
-  // The shared pattern is safe to reuse specifically because this iterates with `matchAll`, which matches against an
-  // internal clone and leaves the original's `lastIndex` untouched. `exec` in a loop would not be: it advances
-  // `lastIndex` on the pattern itself, so the second paragraph handed to this function would resume wherever the first
-  // one stopped and silently skip its opening sentence. The test beside this pins the property, not the mechanism.
+  // `matchAll` iterates a clone, so the shared global pattern's `lastIndex` never leaks between calls (`exec` would).
   for (const match of text.matchAll(TERM_PATTERN)) {
     const groups: (string | undefined)[] = match.slice(1);
     const entry: GlossaryTerm | undefined = termsByLength[groups.findIndex(Boolean)];

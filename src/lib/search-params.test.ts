@@ -1,15 +1,6 @@
 /**
- * Covers search-params.ts, the point where a shared link becomes a starting view.
- *
- * Two things here are worth pinning rather than trusting. The first is the contract every parser beneath this module
- * already holds — that a malformed, stale, or hand-edited param resolves to a usable default rather than an error —
- * since a deep link is exactly the kind of URL that gets truncated by a chat client or opened a year later against a
- * roster that has since changed. The second is the static-export guard, which is invisible in normal development: it
- * only does anything in a build that has no server at request time, so nothing in local use or in the Playwright suite
- * would notice if it stopped working.
- *
- * The repeated-param case (`?state=Ohio&state=Iowa`) gets its own coverage because it is the one input shape a route's
- * `searchParams` can take that a `URLSearchParams` cannot, and so the one this module genuinely has to decide about.
+ * Covers search-params.ts, where a shared link becomes a starting view: malformed params resolve to defaults, the
+ * static-export guard (invisible outside that build) holds, and repeated params (`?state=Ohio&state=Iowa`) are decided.
  */
 import { afterEach, describe, expect, it } from "vitest";
 

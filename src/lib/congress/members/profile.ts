@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { ZodType } from "zod";
 
 import { type CongressSnapshot, compareBillsByRecency, type LegislativeBill } from "@/lib/congress/bills/model";
@@ -23,26 +24,12 @@ import {
 import { mapCongressBill, mapMemberProfile, mapUsable } from "@/lib/congress/upstream/mappers";
 
 /**
- * Everything the individual member page reads: one member's own record, plus the legislation they sponsored and
- * cosponsored.
- *
- * Follows the same two invariants as `bills/reads.ts` — nothing throws, and provenance travels with the data — for the
- * same reason: a member page should degrade to a clearly labeled preview, never to an error boundary.
- *
- * The member *list* endpoint the chamber chart uses is a deliberately different module (`composition.ts`). The two
- * answer different questions ("who holds every seat" versus "who is this person"), hit different endpoints, and return
- * different shapes; the only thing they share is the model in `model.ts`.
- *
- * @see upstream/http.ts for the transport and caching policy.
+ * Everything the member page reads: one member's record plus the legislation they sponsored and cosponsored. Nothing
+ * throws, and provenance travels with the data.
+ * @see composition.ts for the chamber-wide list.
  */
 
-/**
- * How many of a member's bills to show on their page, per list.
- *
- * A long-serving member can have thousands of each. This is a page about a person, not an exhaustive legislative
- * index — the full count is stated in text beside each list, and the official record is one link away, so the cap
- * shortens the page without hiding the scale of what it's showing a slice of.
- */
+/** How many of a member's bills to show per list. The page links to the full official record. */
 export const MEMBER_LEGISLATION_LIMIT: number = 12;
 
 /** What {@link getMemberProfile} resolved: the member (if any), their legislation, and where all of it came from. */
@@ -53,31 +40,23 @@ export type MemberProfileResult = {
   sponsored: LegislativeBill[];
   /** Bills this member cosponsored, same ordering and cap. */
   cosponsored: LegislativeBill[];
+  /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];
   /** User-facing explanation shown when `source` is "preview". */
   notice?: string;
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
 };
 
 /**
- * Fetches one of a member's legislation lists (`/sponsored-legislation`, `/cosponsored-legislation`).
- *
- * The two differ only in their path segment, their payload schema, and which key holds the collection, so — exactly as
- * with the bill sub-resources in `bills/reads.ts` — the request, the page-size ceiling, and the "an absent list is an
- * empty list, not an error" policy live here once.
+ * Fetches one of a member's legislation lists (`/sponsored-legislation` or `/cosponsored-legislation`).
  *
  * @typeParam Payload - The validated response shape for this list.
  * @param bioguideId - The member's validated Bioguide ID.
  * @param apiKey - The server-only Congress.gov key.
  * @param config - The list's path suffix, schema, and the collection to read off the payload.
- * @returns The mapped bills, newest first, capped at {@link MEMBER_LEGISLATION_LIMIT}. Always an empty array on a 404
- *   or a failure — a member with no sponsored bills is an ordinary state (every member has one on their first day).
- *
- *   The ordering is applied here rather than assumed. Congress.gov does return these lists newest first, so this
- *   normally changes nothing — but "newest first" is a promise this app's own type makes to the page that renders it,
- *   and a promise kept by an upstream convention is one that breaks silently the day the convention does. Note what
- *   this is *not*: the request is already capped at {@link MEMBER_LEGISLATION_LIMIT}, so this orders the page it was
- *   given and cannot re-rank a larger set it never asked for.
+ * @returns The mapped bills, capped at {@link MEMBER_LEGISLATION_LIMIT}, or `[]` on a 404 or failure. Sorted newest
+ *   first here rather than trusting upstream order (this only reorders the capped page, not the full set).
  */
 async function fetchMemberLegislation<Payload>(
   bioguideId: string,
@@ -107,18 +86,25 @@ async function fetchMemberLegislation<Payload>(
 }
 
 /**
- * Looks up one member of Congress by Bioguide ID, together with the legislation they sponsored and cosponsored.
- *
- * The three reads are independent, so they go out together rather than one after another. A member whose legislation
- * lists fail still gets a page — the profile is the substance of it, and an empty list section is honest about having
- * nothing to show.
+ * Looks up one member by Bioguide ID, with their sponsored and cosponsored legislation, in parallel. Failed legislation
+ * lists still leave a page.
  *
  * @param rawBioguideId - The `bioguideId` route param, straight from the URL and therefore untrusted.
- * @returns The result, always labeled live or preview. An ID that isn't a real Bioguide ID is resolved against the
- *   preview fixtures rather than sent upstream, so the preview member pages work without a key and a malformed ID can
- *   never reach Congress.gov. This never throws.
+ * @returns The result, labeled live or preview. A malformed ID is resolved against the preview fixtures and never sent
+ *   upstream. Never throws.
  */
-export async function getMemberProfile(rawBioguideId: string): Promise<MemberProfileResult> {
+export function getMemberProfile(rawBioguideId: string): Promise<MemberProfileResult> {
+  return lookUpMemberOnce(rawBioguideId);
+}
+
+/**
+ * {@link getMemberProfile}, memoized for one server render: the route reads it in both `generateMetadata` and the page,
+ * and Next's `fetch` dedupe skips requests carrying an `AbortSignal` (ours all do).
+ */
+const lookUpMemberOnce = cache(lookUpMemberProfile);
+
+/** The uncached body of {@link getMemberProfile}. */
+async function lookUpMemberProfile(rawBioguideId: string): Promise<MemberProfileResult> {
   const retrievedAt: string = new Date().toISOString();
   const apiKey: string | undefined = getCongressApiKey();
   const bioguideId: string | null = normalizeBioguideId(rawBioguideId);
@@ -131,10 +117,7 @@ export async function getMemberProfile(rawBioguideId: string): Promise<MemberPro
       ...previewMemberLegislation(profile?.bioguideId),
       source: "preview",
       retrievedAt,
-      // Three genuinely different situations land here, and only one of them is "no key". A malformed ID with a key
-      // configured is a bad URL, not a configuration problem, and shouldn't be reported as one — even though the route
-      // renders an unresolved profile as a 404 before this notice can be read, since that is exactly the kind of
-      // almost-unreachable wording that goes quietly wrong the first time it becomes reachable.
+      // A malformed ID with a key configured is a bad URL, not a configuration problem.
       notice: profile
         ? "This is an illustrative placeholder member, not a real member of Congress."
         : apiKey
@@ -178,8 +161,7 @@ export async function getMemberProfile(rawBioguideId: string): Promise<MemberPro
     return { profile: profile ?? undefined, sponsored, cosponsored, source: "live", retrievedAt };
   }
 
-  // A transient failure shouldn't be indistinguishable from "no such member" — fall back to the preview fixtures, the
-  // same last resort every other read in this adapter uses.
+  // A transient failure isn't "no such member": fall back to the preview fixtures.
   const fallback: MemberProfile | undefined = findPreviewMemberProfile(bioguideId);
 
   return {

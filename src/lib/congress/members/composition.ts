@@ -26,37 +26,22 @@ import { mapCongressMember, mapUsable, type SeatedMember } from "@/lib/congress/
 import { formatOrdinal } from "@/lib/format";
 
 /**
- * Who currently holds each seat in each chamber of a Congress — the data behind the home page's chamber diagram.
- *
- * Member reads follow the same rules as bill reads (never throw, always report provenance), with one wrinkle bills
- * don't have: the member list is genuinely large, so it paginates. That pagination, and the decision about what makes a
- * *partial* roster still worth rendering, is the substance of this module.
- *
- * @see seating.ts for the geometry that turns a composition into a picture — deliberately a separate, React-free,
- *   Congress.gov-free module.
+ * Who holds each seat in each chamber of a Congress — the data behind the home page's chamber diagram. Never throws and
+ * always reports provenance.
+ * @see seating.ts for the geometry.
  */
 
 /**
- * Hard ceiling on member pages fetched for one Congress.
- *
- * A seated Congress is a little over 540 members (535 voting seats plus the six non-voting House seats, minus any
- * vacancies), so three pages of {@link MAX_API_PAGE_SIZE} covers it with room to spare. The cap exists so a malformed
- * `pagination.count` can't turn one page render into an unbounded fetch loop.
+ * Hard ceiling on member pages fetched for one Congress (~541 members), so a malformed `pagination.count` can't cause
+ * an unbounded fetch loop.
  */
 const MAX_MEMBER_PAGES: number = 4;
 
 /**
  * Fetches one page of the member list for a Congress.
  *
- * `currentMember` is the parameter that decides *which question this is*, and the right answer depends on which
- * Congress is being read — which is why it is passed in rather than fixed here.
- *
- * For the Congress currently seated, `true` makes this "who holds a seat right now" rather than "everyone who served at
- * any point in it": without it, a member who resigned mid-term and the member who replaced them both come back, and the
- * chamber over-counts. For a *past* Congress the same value is straightforwardly wrong, and Congress.gov's own
- * documentation makes the mirror-image recommendation. The 117th Congress answers `currentMember=true` with 377
- * members — the subset of it still serving today — against 557 for the full historical roster. A chamber diagram drawn
- * from the first would be missing a third of its seats while presenting itself as the whole body.
+ * `currentOnly` must be `true` for the seated Congress (otherwise mid-term replacements double-count) and `false` for a
+ * past one (otherwise only members still serving today come back — 377 of the 117th's 557).
  *
  * @param input - The API key, the Congress to read, the page offset, and whether to ask only for sitting members.
  * @returns The validated page, or `null` on any failure — so the caller can decide whether a partial result is still
@@ -90,9 +75,8 @@ async function fetchMemberPage(input: {
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
  * @param currentOnly - Whether to ask only for sitting members. @see fetchMemberPage for why this varies by Congress.
- * @returns Every member found, or `null` only when the *first* page fails. A later page failing yields the members that
- *   did arrive, since a chart of most of the chamber still beats no chart at all — the missing seats simply aren't
- *   drawn. @see fetchAllPages
+ * @returns Every member found, or `null` only when the *first* page fails; a later failure yields what arrived.
+ *   @see fetchAllPages
  */
 function fetchAllMembers(apiKey: string, congress: number, currentOnly: boolean): Promise<CongressApiMember[] | null> {
   return fetchAllPages(
@@ -107,8 +91,7 @@ function fetchAllMembers(apiKey: string, congress: number, currentOnly: boolean)
  * Groups mapped members into one {@link ChamberComposition} per chamber.
  *
  * @param members - Members already paired with the chamber they sit in.
- * @returns One composition per chamber, in `congressChambers` order, so the UI's tab order is stable regardless of what
- *   order the upstream list happened to arrive in.
+ * @returns One composition per chamber, in `congressChambers` order.
  */
 function buildComposition(members: SeatedMember[]): ChamberComposition[] {
   return congressChambers.map(
@@ -123,23 +106,15 @@ function buildComposition(members: SeatedMember[]): ChamberComposition[] {
 }
 
 /**
- * Fetches the membership of both chambers of a Congress — who currently holds each seat — for the home page's chamber
- * diagram.
- *
- * A chamber that comes back empty is treated as a failure of the whole fetch rather than rendered as an empty half of
- * Congress: "the Senate has no members" is never a true statement about a seated Congress, and a diagram showing it
- * would read as one.
+ * Fetches who holds each seat in both chambers of a Congress. An empty chamber means the fetch failed.
  *
  * @param congress - The Congress whose membership to read. Defaults to the one currently seated, and reading any other
  *   one changes the question asked upstream — @see fetchMemberPage.
- * @returns The composition, always labeled live or preview. A missing key or a failed request yields clearly labeled
- *   placeholder seats rather than an empty or broken chart; this never throws.
+ * @returns The composition, labeled live or preview; a missing key or failed request yields placeholder seats.
  */
 export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
   const apiKey: string | undefined = getCongressApiKey();
   const retrievedAt: string = new Date().toISOString();
-  // "Who holds a seat" is only the right question about the Congress sitting now. For any earlier one the roster is
-  // closed, and the members who have since left it are part of it rather than absent from it.
   const currentOnly: boolean = congress >= getCurrentCongress();
 
   if (!apiKey) {

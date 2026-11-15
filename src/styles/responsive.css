@@ -323,50 +323,24 @@
 
 /* The mobile navigation drawer. @see PrimaryNav.
  *
- * **Why this block is conditioned on scripting as well as on width.** Everything in it describes a control that has to
- * be operated: five destinations parked off the right edge of the window, and a button that brings them back. With
- * scripting off the button cannot do that, so this block does not apply at all and the 640px block above stands as
- * written — the wrapped row, at the smaller type, exactly as this header behaved before the drawer existed. That is not
- * a courtesy. It is the same commitment the header's search form and the glossary bubble already make, and the one a
- * nav has the least excuse for breaking: a hamburger with no JavaScript behind it does not degrade to a smaller menu,
- * it degrades to no menu at all.
+ * **Gated on scripting as well as width.** Without JavaScript the toggle can't open anything, so this block doesn't
+ * apply and the 640px block above stands: a wrapped row of links rather than a menu button with nothing behind it.
+ * `(scripting: enabled)` is answered before first paint, with no class to set and no flash of the other layout.
  *
- * `(scripting: enabled)` rather than a class an inline script writes onto `<html>`, which is the older way to ask this
- * question. The media feature has been in every browser this app supports since 2023, it is answered before the first
- * paint rather than after a script runs, and it cannot get out of step with anything — there is no attribute to set, no
- * ordering to get right, and no flash of the other layout while a bundle loads.
+ * **The drawer is the same `<nav>`**, taken out of flow — one landmark and one list.
  *
- * **Why the drawer is the same `<nav>`.** Nothing below duplicates a destination. The panel is the header's own nav
- * element taken out of flow, which is what keeps one landmark in the document, one list to keep in step, and one
- * answer to "the primary navigation" for every test that asks. @see PrimaryNav for the rest of that argument.
+ * **Closed means `visibility: hidden`**, which removes the off-screen links from the tab order and accessibility tree.
+ * Scoped to this block, so nothing must undo it at the breakpoint; the transitions hold `visibility` until the slide
+ * finishes.
  *
- * **Why the closed state is `visibility`, not `display` or an attribute.** A drawer that is merely translated off the
- * edge is still focusable and still announced, so tabbing out of the header would walk a reader through five links they
- * cannot see. `visibility: hidden` takes it out of both the tab order and the accessibility tree, and — this is the
- * part that matters — it does so *here*, inside the conditions the drawer exists under. The same nav above 640px is
- * untouched by this rule, so nothing has to remember to undo it at the breakpoint, and there is no window during a
- * resize where React has hidden a row that CSS has just put back on screen. The transitions below hold `visibility`
- * until the slide has finished, so the panel does not vanish mid-animation on the way out.
- *
- * **What the header gets back.** The row this replaces cost about 24px of a sticky header on the smallest screens — a
- * full line of nav under the wordmark, at the bottom of the type scale, wrapping to two lines under ~340px. The header
- * here is one line again at --space-16, which is 65px including its border: shorter than the 66px the two-row
- * arrangement took, while giving each destination a 44px row in the panel instead of an 18px label in a wrapped row.
- * `scroll-padding-top` in base.css is stated against the tallest of the header's three heights and still clears this
- * one. */
+ * The header here is one 65px line (`--space-16` plus its border), with each destination a 44px row in the panel.
+ * `scroll-padding-top` in base.css clears the tallest of the header's heights. */
 @media (max-width: 640px) and (scripting: enabled) {
-  /* Back to one line: wordmark, then toggle. Every declaration here undoes one from the 640px block above, which is
-     describing the other layout — the two-row grid, its `start` alignment, and the padding that gave the nav row
-     somewhere to sit.
+  /* Back to one line: wordmark, then toggle — undoing the 640px block's two-row grid.
 
-     `--drawer-top` is the header's own height, named once so the panel and its scrim can start immediately below it
-     rather than each restating the arithmetic. The `+ 1px` is the header's bottom border, which is on `.site-header`
-     and therefore outside this `min-height`. Both users are `position: fixed`, so they resolve it against the
-     viewport — which is where the sticky header is, always, at `top: 0`.
-
-     That "against the viewport" is a fact this block depends on and does not own: it holds only because the header's
-     blur is drawn by a pseudo-element rather than by the header itself. @see the `.site-header::before` rule in
-     layout.css, which is where the reason lives. */
+     `--drawer-top` is the header's height plus its 1px bottom border, where the fixed panel and scrim start. Fixed
+     positioning resolves against the viewport only because the header's blur lives on a pseudo-element.
+     @see `.site-header::before` in layout.css */
   .site-header__inner {
     --drawer-top: calc(var(--space-16) + 1px);
 

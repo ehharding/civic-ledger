@@ -1,11 +1,5 @@
 /**
- * Covers the no-op SDK the static demo builds against.
- *
- * There is no behavior to test — that is the point of the file. What is worth pinning is its *shape*: the stub is
- * substituted for `@sentry/nextjs` by a Turbopack alias, so any SDK function this app calls and this file does not
- * export becomes a failure in the static-export build. Naming each one here, beside the file that imports it, means
- * removing an export deliberately involves editing a test that says why it existed rather than deleting a line nobody
- * recognized.
+ * Pins the no-op SDK's export shape: any SDK function the app calls that the stub lacks breaks the static-export build.
  */
 import { describe, expect, it } from "vitest";
 

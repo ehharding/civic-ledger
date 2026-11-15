@@ -13,36 +13,13 @@ import {
 } from "@/lib/congress/bills/model";
 import { formatDate } from "@/lib/format";
 
-/**
- * The amendments offered to a bill: the panel, the list, and one amendment's row.
- *
- * The only collection on this page that links *outward*. Cosponsors, committees, and related measures each have a page
- * here that collects more than a row does; an amendment does not, so the honest link is to Congress.gov's own record
- * rather than to a route this app would have to invent. @see AmendmentRow.
- */
-
-/**
- * How many amendments are shown before the rest move behind a disclosure.
- *
- * The highest of the three limits, because the rows are the shortest: most amendments carry no prose at all, so a row
- * is usually one line — a citation and its link. @see BillAmendment. Fifteen fills about the same vertical space as
- * nine related measures, and on a bill where the rows *do* carry purposes it is still short of the point where the
- * section would dominate the page.
- */
+/** How many amendments show before a disclosure. The highest limit, since most rows are a single line. */
 const AMENDMENT_PREVIEW_LIMIT: number = 15;
 
 /**
- * One amendment offered to the bill: its citation, what it says it does, and its own latest action.
- *
- * **The link goes outward, and this is the one collection on this page where that is the right direction.** Cosponsors,
- * committees, and related measures all link inward, because each has a page here that collects more than the row does.
- * An amendment has no page here — building one would mean a route, a detail read, and a second set of provenance
- * claims — so the honest link is the one to Congress.gov's own record, which is where a reader was going to end up
- * anyway. @see congressGovAmendmentUrl for how that URL is derived and why it is not guessed.
- *
- * **Most rows are a citation and nothing else, by design rather than by omission.** The endpoint sends a purpose for
- * roughly one entry in fifteen. A row that rendered an empty line where prose would go, or a placeholder standing in
- * for it, would present the record's ordinary shape as a defect in this page.
+ * One amendment offered to the bill: citation, purpose, and latest action. The only row on the page that links outward
+ * (to Congress.gov), since amendments have no page here. Most rows carry no purpose — the endpoint rarely sends
+ * one — so none is rendered rather than a placeholder.
  *
  * @param amendment - The amendment to render.
  * @returns The row.
@@ -71,10 +48,7 @@ function AmendmentRow({ amendment }: { amendment: BillAmendment }): JSX.Element 
 }
 
 /**
- * The amendments offered to a bill, each linking to its own record at Congress.gov.
- *
- * The publisher's own order is kept, since the only date on an entry is the row's last-touched timestamp rather than
- * anything that happened to the amendment. @see getBillAmendments.
+ * The amendments offered to a bill, in the publisher's order (entries carry no meaningful date to sort by).
  *
  * @param amendments - The amendments, in the publisher's order.
  * @returns The list, its tail behind a disclosure.

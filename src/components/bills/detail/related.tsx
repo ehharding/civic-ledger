@@ -14,32 +14,14 @@ import {
 import { formatOrdinal } from "@/lib/format";
 import { billHref } from "@/lib/routes";
 
-/**
- * The measures Congress.gov records as related to a bill: the panel, the list, and one measure's row.
- *
- * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — and it is
- * the only section that points off this bill entirely, which is why it reads last on the page.
- *
- * Every relationship prints the body that identified it. Relating two measures is an editorial judgment rather than a
- * legislative act, and the Congressional Research Service, the House, and the Senate each make their own; naming the
- * source is the same standard this app holds its own stage cue to.
- */
-
-/**
- * How many related measures are shown before the rest move behind a disclosure.
- *
- * Lower than the cosponsor limit because the rows are taller by a wide margin: a cosponsor is one name, and a related
- * measure carries a title plus its own latest action, which on an appropriations bill runs to five lines by itself.
- * Nine keeps this section roughly the height of the ones above it instead of several times their length.
- */
+/** How many related measures show before a disclosure. Lower than the cosponsor limit, since these rows are taller. */
 const RELATED_BILL_PREVIEW_LIMIT: number = 9;
 
 /**
  * How one related measure relates to this one, with the body that said so named.
  *
  * @param relationships - Every recorded statement about the pair.
- * @returns e.g., `"Identical bill (CRS)"`, joined by middots — or an empty string when the record named none, which the
- *   caller renders as no line rather than as an empty one.
+ * @returns e.g., `"Identical bill (CRS)"`, joined by middots, or `""` when the record named none.
  */
 function describeRelationships(relationships: RelatedBillRelationship[]): string {
   return relationships
@@ -50,11 +32,8 @@ function describeRelationships(relationships: RelatedBillRelationship[]): string
 }
 
 /**
- * One related measure: its identity, its title, how the two are related, and its own latest action.
- *
- * Every relationship prints who identified it. Relatedness is an editorial judgment rather than a legislative act, and
- * the Congressional Research Service, the House, and the Senate each make their own; naming the source is the same
- * standard this app holds its own stage cue to. @see describeRelationships.
+ * One related measure: identity, title, relationship, and latest action. Each relationship names who identified it
+ * (CRS, House, or Senate), since relatedness is an editorial judgment rather than a legislative act.
  *
  * @param measure - The related measure to render.
  * @returns The row.
@@ -85,10 +64,8 @@ function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
 }
 
 /**
- * The other measures Congress.gov records as related to this bill, each linking to its page here.
- *
- * This answers the question a reader most often arrives at a House bill with — "is there a Senate version?" — and the
- * publisher's own order is kept, since the API documents no meaning for it. @see getRelatedBills.
+ * The other measures Congress.gov records as related to this bill (e.g., "is there a Senate version?"), each linking to
+ * its page here, in the publisher's order.
  *
  * @param related - The related measures, in the publisher's order.
  * @returns The list, its tail behind a disclosure.

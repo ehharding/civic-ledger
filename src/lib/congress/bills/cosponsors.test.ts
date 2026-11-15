@@ -1,19 +1,14 @@
 /**
- * Covers the bill-to-cosponsor read: the request it issues, the shape it maps, and the two things it deliberately
- * declines to do — reorder the publisher's list, and drop a cosponsor merely for arriving without a Bioguide ID.
- *
- * The ordering assertion is the load-bearing one, for the same reason it is in `bill-committees.test.ts`. Congress.gov
- * returns cosponsors oldest first — the members who signed at introduction, then everyone who joined afterwards — and
- * that sequence is the bill gathering support over time. Any sort applied here would destroy it silently, and destroy
- * it in a way that still looks like a working feature.
+ * Covers the cosponsor read: request, mapping, and two things it declines to do — reorder the publisher's oldest-first
+ * list (the bill gathering support over time), or drop a cosponsor lacking a Bioguide ID.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillCosponsor, BillRouteParams } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCosponsors } from "@/lib/congress/client";
 import { previewCosponsors } from "@/lib/congress/upstream/fixtures";
-import { jsonResponse, requestedUrl } from "@/test/congress-api";
+import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "118", type: "hr", number: "815" };
 
@@ -58,14 +53,10 @@ const PAYLOAD = {
   ],
 };
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getBillCosponsors", (): void => {
   it("requests the bill's own cosponsors sub-resource", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PAYLOAD));
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     await getBillCosponsors(ROUTE);
 
@@ -76,7 +67,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("keeps Congress.gov's chronological order rather than sorting by date or name", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
@@ -91,7 +82,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("reads the original-cosponsor flag from the record rather than comparing dates", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
@@ -104,7 +95,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("carries the withdrawal date on the rare row that has one", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: cosponsors }: BillSubResource<BillCosponsor> = await getBillCosponsors(ROUTE);
 
@@ -113,8 +104,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("keeps a cosponsor with no Bioguide ID, since the name still says who signed on", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           cosponsors: [{ fullName: "Rep. Unlinkable, Sample [I-ZZ-1]", party: "I" }, { party: "D" }],
@@ -131,8 +121,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("defaults the original flag to false when the record omits it", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(jsonResponse({ cosponsors: [{ fullName: "Rep. Nobody, Sample [D-ZZ-1]" }] })),
     );
 
@@ -140,9 +129,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("serves the labeled fixture without requesting when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     // The static demo is the only build a UI reviewer can see, so the no-key path shows this section working rather
     // than showing its empty state. @see previewCosponsors.
@@ -154,9 +141,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("returns nothing for a fixture that has no preview cosponsors, without requesting", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -174,8 +159,7 @@ describe("getBillCosponsors", (): void => {
   });
 
   it("returns nothing without ever requesting for a malformed route", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     expect(await getBillCosponsors({ congress: "119", type: "notatype", number: "1" })).toEqual({
       entries: [],
@@ -193,11 +177,11 @@ describe("getBillCosponsors", (): void => {
     // code. @see src/lib/observability/log.ts.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
     expect(await getBillCosponsors(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });

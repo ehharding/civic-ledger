@@ -2,28 +2,9 @@ import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 /**
- * Compiles and primes every route the suite touches, once, before any spec runs.
- *
- * This exists because of the deliberate choice `playwright.config.ts` makes just below it: the suite runs against
- * `pnpm dev` rather than a production build, so Turbopack compiles each route the first time something asks for it.
- * That cost lands on whichever test happens to touch a route first, and with `fullyParallel` it lands on four of them
- * at once, each waiting on a different cold compile while contending for the same machine. The config's own comment
- * already names the failure that produces — "a cold compile that outran a navigation timeout" — and treats it as
- * something a CI retry disproves after the fact.
- *
- * Locally there are no retries, by an argument worth keeping: "a failure is a failure — retrying it just delays the
- * answer while someone watches." The problem is that a cold-start timeout is *not* a failure, so the first
- * `pnpm test:e2e` on a fresh checkout could report one anyway — a red result that means nothing, on a suite whose whole
- * value is that a red result means something. Warming beforehand fixes that at the cause rather than by widening a
- * timeout until the flake stops fitting inside it, or by turning on retries that would also hide real intermittency.
- *
- * It primes two things, not one. The compile is the obvious half; the other is this app's own five-minute upstream
- * cache (@see REVALIDATE_SECONDS). A contributor with a `CONGRESS_API_KEY` set has every directory doing real
- * Congress.gov round trips, and warming means the specs read a warm cache instead of racing the network. CI has no key
- * at all and renders fixtures, so there it is purely the compile — which is also why this flake was invisible in CI
- * and reproducible only on a developer's machine.
- *
- * Sequential on purpose. Compiling four heavy routes concurrently is the condition being avoided, not the fix.
+ * Compiles and primes every route the suite touches, once, before any spec runs. The suite runs against `pnpm dev`, so
+ * without this, parallel specs race cold Turbopack compiles into navigation timeouts. With a `CONGRESS_API_KEY` set it
+ * also warms the upstream cache. Sequential on purpose: concurrent compiles are what's being avoided.
  */
 
 /** Every route with a shape of its own, in the order a reader meets them. Kept to route *shapes*, not to URLs. */
@@ -40,12 +21,8 @@ const ROUTES: readonly string[] = [
 ];
 
 /**
- * The three record routes, which have no fixed URL: each is reached by following the first link off its directory.
- *
- * The pattern is the same one the specs click, expressed as the href it produces rather than as a CSS selector — this
- * reads the served HTML rather than a rendered DOM. A directory that yields no match is left unwarmed rather than
- * failed here: an empty grid is a finding the real specs exist to report, and reporting it twice, from a file whose job
- * is to warm things, would only make it harder to read.
+ * The three record routes, found by matching the first record href in each directory's served HTML. A directory with no
+ * match is left unwarmed; the real specs report an empty grid.
  */
 const RECORD_ROUTES: readonly { directory: string; href: RegExp }[] = [
   { directory: "/bills", href: /href="(\/bills\/\d+\/[a-z]+\/\d+)"/ },
@@ -54,11 +31,7 @@ const RECORD_ROUTES: readonly { directory: string; href: RegExp }[] = [
 ];
 
 /**
- * Fetches one path and drains its body.
- *
- * Draining is the load-bearing part. These routes stream — every one of them has a `loading.tsx` — so the response
- * headers arrive as soon as the shell does, long before the data the page is actually waiting on. Reading the body to
- * completion is what makes this a warm-up of the whole render rather than of its first few bytes.
+ * Fetches one path and drains its body — the routes stream, so the headers arrive long before the render finishes.
  *
  * @param request - Playwright's request context, already scoped to the dev server's `baseURL`.
  * @param path - The path to fetch.
@@ -75,8 +48,7 @@ async function warm(request: APIRequestContext, path: string): Promise<string> {
 }
 
 test("every route is compiled and its upstream reads are cached", async ({ request }): Promise<void> => {
-  // Generous, and only ever spent once: this is the compile the rest of the suite is no longer paying for, and on a
-  // cold checkout with a live API key it is genuinely slow. Every spec after it keeps the default timeout.
+  // Generous, and spent once: a cold checkout with a live API key compiles and fetches slowly here so specs don't.
   test.setTimeout(180_000);
 
   for (const path of ROUTES) await warm(request, path);

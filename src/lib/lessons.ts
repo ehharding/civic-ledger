@@ -42,17 +42,25 @@ export type LessonSource = {
 export type LessonStep = {
   /** Unique within its lesson. Becomes the heading's `id`, which the step's `<article>` is labeled by. */
   id: string;
+  /** The step's heading. */
   heading: string;
+  /** The step's prose, annotated with glossary terms when rendered. */
   copy: string;
+  /** The `BillJourney` stage this step pins, when it describes one. */
   stage?: BillStage;
 };
 
 /** The closing "read this next" panel, whose copy differs per lesson because what to do next does. */
 export type LessonNext = {
+  /** The small label above the heading. */
   kicker: string;
+  /** The panel's heading. */
   heading: string;
+  /** The panel's paragraph. */
   body: string;
+  /** Where the call to action leads. */
   href: Route;
+  /** The call to action's text. */
   linkLabel: string;
 };
 
@@ -65,6 +73,7 @@ export type LessonSlug =
 
 /** One learning module, in full. @see the module comment for the rules every one of these holds. */
 export type Lesson = {
+  /** The lesson's URL segment. */
   slug: LessonSlug;
   /** The short name: the browser tab, the search result, the hub card's link. */
   title: string;
@@ -79,12 +88,15 @@ export type Lesson = {
    * stages `BillJourney` draws, and "Step 3 of 5" in the two that describe a process without a stepper.
    */
   stepNoun: "Stage" | "Step";
+  /** The lesson's steps, in reading order. */
   steps: LessonStep[];
   /** The heading over {@link Lesson.limits}, named for what this particular lesson is simplifying. */
   limitsHeading: string;
   /** What the lesson, or the app, deliberately does not tell you. Never empty. */
   limits: string[];
+  /** The primary sources the lesson's claims rest on. */
   sources: LessonSource[];
+  /** The closing "read this next" panel. */
   next: LessonNext;
 };
 

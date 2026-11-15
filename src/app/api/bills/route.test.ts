@@ -1,15 +1,7 @@
 /**
- * Covers the `/api/bills` route handler.
- *
- * The handler itself is thin, and deliberately so — the parsing lives in `api-query.ts` and the fetching in the
- * adapter. What is worth pinning here is the seam between them, and the one promise this route makes that neither of
- * its collaborators can make alone: it never answers with an error status. "No more bills" and "couldn't load more"
- * arrive at the client as the same empty page, which is exactly how the "Load More" button behaves in both cases, and a
- * well-meaning change to return a 400 or a 502 would break that quietly — the button would simply stop working rather
- * than fail visibly.
- *
- * The adapter is mocked rather than exercised: it is server-only, reads `CONGRESS_API_KEY`, and already has its own
- * suite in `client.test.ts`. What this file asserts is that the route hands it the right arguments.
+ * Covers the `/api/bills` route handler: that it passes the right arguments to the (mocked) adapter, and that it never
+ * answers with an error status — "no more bills" and "couldn't load more" are both an empty page to the "Load More"
+ * button.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

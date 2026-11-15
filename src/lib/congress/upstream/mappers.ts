@@ -85,7 +85,9 @@ import { compareIsoDatesDesc } from "@/lib/format";
 
 /** A member paired with the chamber they sit in — the shape `mapCongressMember` returns before grouping. */
 export type SeatedMember = {
+  /** The chamber the member sits in. */
   chamber: CongressChamber;
+  /** The mapped member. */
   member: CongressMember;
 };
 

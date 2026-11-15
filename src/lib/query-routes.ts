@@ -39,8 +39,11 @@ export const QUERY_ROUTES: readonly QueryRoute[] = [
 
 /** The shape of one `next.config.ts` rewrite rule, as far as this module builds it. */
 export type QueryRewrite = {
+  /** The path pattern to match. */
   source: string;
+  /** Query params whose presence triggers the rewrite. */
   has: { type: "query"; key: string }[];
+  /** The `/query` twin to rewrite to. */
   destination: string;
 };
 

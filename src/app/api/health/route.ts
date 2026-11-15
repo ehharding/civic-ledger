@@ -12,10 +12,7 @@ type HealthResponse = {
   status: "ok";
   service: string;
   /**
-   * Which kind of record this deployment is currently able to serve.
-   *
-   * `"live"` when a Congress.gov key is configured, `"preview"` when one is not — in which case every page on the site
-   * is rendering clearly labeled fiction. @see getCongressApiKey, which owns what "configured" means.
+   * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise. @see getCongressApiKey
    */
   records: "live" | "preview";
   /** When this response was generated, so a cached or stale reply is recognizable as one. */
@@ -23,23 +20,11 @@ type HealthResponse = {
 };
 
 /**
- * Minimal liveness check.
+ * Minimal liveness check. Makes no upstream call, so the app's health doesn't depend on Congress.gov or spend its rate
+ * limit.
  *
- * Deliberately makes no upstream call: this answers "is the server up", not "is Congress.gov reachable". Folding the
- * latter in would make the app's own health depend on a third party's, and would turn every health probe into traffic
- * against the API's rate limit.
- *
- * **`records` is configuration state, not a reachability probe, and the distinction is what lets it live here.** This
- * app's defining behavior is that it degrades rather than fails: a missing key does not produce an error, a failed
- * request, or a non-200 anywhere — it produces a site that renders labeled preview fixtures and keeps serving them
- * indefinitely. That is correct for a reader and it means the single worst operational outcome this deployment has — a
- * key that was never set, expired, or got dropped from an environment during a migration — is invisible to every signal
- * an operator would normally watch. Uptime is green, error rate is zero, no exception is thrown, and the site is
- * publishing fiction. Reading a boolean off the environment costs nothing and no round trip, and turns that state into
- * something a probe can alert on.
- *
- * The value discloses nothing: the key itself is never read out, and a site in preview mode already says so in a banner
- * on every page it serves.
+ * `records` exposes configuration state because a missing key degrades silently — uptime green, no errors, the site
+ * serving placeholders — and this lets a probe alert on it. It discloses nothing the preview banner doesn't.
  *
  * @returns A fixed-shape JSON body with the current server time and which record set is in use.
  */

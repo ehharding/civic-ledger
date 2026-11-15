@@ -17,33 +17,13 @@ import { formatDate } from "@/lib/format";
 import { memberHref } from "@/lib/routes";
 
 /**
- * Everyone who signed on to a bill after its sponsor: the panel, the list and its counting sentences, and one member's
- * row.
- *
- * The section with the most ways to say something untrue about a record, which is why the three pieces are kept
- * together: an original cosponsor is a published boolean rather than a date comparison, a withdrawal is a fact the
- * tally carries and the list does not, and a preview bill has a real-looking tally over three invented names. Each of
- * those is a rule about what may be claimed, and each is enforced a few lines from the markup that would break it.
- */
-
-/**
- * How many cosponsors are shown before the rest move behind a disclosure.
- *
- * A bill can carry four hundred names, and a page that prints all of them puts every section below it — the summary,
- * the full text, the related measures — an unreasonable scroll away. Twelve is enough to see the shape of who signed
- * on, including whether the list crosses party lines, while keeping the rest of the page reachable. Nothing is
- * dropped: the remainder is one click away, in the same `<details>` idiom the action history and the earlier summaries
- * use.
+ * How many cosponsors show before the rest move behind a disclosure — enough to see who signed on without burying the
+ * sections below under hundreds of names.
  */
 const COSPONSOR_PREVIEW_LIMIT: number = 12;
 
 /**
- * One cosponsor: who they are, which party they sit with, and when they signed on.
- *
- * Links inward to the member's own page, on the same reasoning as the sponsor line in the hero — that page collects
- * their seat, service record, and everything else they have put their name to, and carries the official biography link
- * onward. A cosponsor arriving without a Bioguide ID renders as plain text rather than as a link to nothing, which is
- * also what every preview fixture does.
+ * One cosponsor: who, which party, and when they signed on. Links to the member's page when there's a Bioguide ID.
  *
  * @param cosponsor - The cosponsor to render.
  * @returns The row.
@@ -63,8 +43,7 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
         )}
       </span>
       <span className="cosponsor-list__meta">
-        {/* "Original" is the record's own distinction, not a date comparison this app made — @see BillCosponsor. It is
-            the one thing on the row that says something a count could not. */}
+        {/* "Original" is the record's own flag, not a date comparison. @see BillCosponsor */}
         {cosponsor.isOriginal ? <span className="cosponsor-list__original">Original</span> : null}
         {cosponsor.sponsorshipDate ? (
           <span className="date-label">
@@ -80,20 +59,11 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
 }
 
 /**
- * The members who put their name to a bill, listed rather than merely counted.
+ * The members who signed on to a bill, in Congress.gov's oldest-first order (the bill gathering support over time).
  *
- * Congress.gov returns these oldest first — everyone who signed at introduction, then everyone who joined afterwards,
- * in order — and that sequence is kept rather than re-sorted, since it is the bill gathering support over time.
- * @see getBillCosponsors.
- *
- * The one number this section computes rather than reads is how many were original cosponsors, and the sentence
- * attributes it accordingly: it is a tally of a published boolean, not a published figure.
- *
- * **The published figures are dropped entirely on a preview record**, which is the one thing this section must not get
- * wrong. Unlike every other collection on this page, a fixture bill *does* carry a cosponsor tally — the fixtures set
- * it so the hero's meta row has a count to show — so passing it straight through would print "Congress.gov records 12
- * cosponsors on this bill" over three fictional names. Preview copy never credits a real institution with invented
- * content; the same rule spells the summary caption. @see SummaryCaption, and docs/data-policy.md.
+ * The published tally is dropped on a preview record: fixture bills carry one for the hero, and printing "Congress.gov
+ * records 12 cosponsors" over invented names would credit a real institution with fiction.
+ * @see docs/data-policy.md
  *
  * @param cosponsors - Everyone currently signed on, in the publisher's order.
  * @param tally - Congress.gov's own figures, including anyone who later withdrew.

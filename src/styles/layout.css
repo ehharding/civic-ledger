@@ -172,8 +172,7 @@
  * on `(max-width: 640px) and (scripting: enabled)`. Stating the off state here rather than a `display: none` inside a
  * `min-width` query is what makes that gating total: there is no width, and no scripting setting, at which these appear
  * by default and have to be taken away again. Above the breakpoint the header is a row of links and these two elements
- * are not in the layout at all; with scripting off they are not in it either, and the row below 640px is the wrapped
- * one this header had before the drawer existed.
+ * are not in the layout at all; with scripting off they are not in it either, and the row below 640px wraps.
  *
  * Everything below the two `display` declarations is how the toggle is *drawn*, which does not depend on either
  * condition — a rule that only matters when the button is visible costs nothing while it isn't, and keeping it here

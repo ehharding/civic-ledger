@@ -1,11 +1,6 @@
 /**
- * Covers the two rules an error report has to keep: it never carries the Congress.gov key, and it names a page rather
- * than a query.
- *
- * The cases below are not hypothetical. Every URL here is one this app itself produces — `buildCongressUrl` really does
- * append `api_key=`, and every directory really does write its filters into the address bar — which is exactly why the
- * redaction matters. `error.test.tsx` already pins the DOM half of the same promise, with the same fake key; this file
- * pins the half that leaves the process.
+ * Covers the two rules an error report keeps: it never carries the Congress.gov key, and it names a page rather than a
+ * query. Every URL here is one the app actually produces. `error.test.tsx` pins the DOM half.
  */
 import { describe, expect, it } from "vitest";
 

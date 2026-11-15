@@ -6,13 +6,13 @@
  * primary jurisdiction first, which is a fact carried entirely by position; any sort applied here would destroy it
  * silently, and destroy it in a way that still looks like a working feature.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillRouteParams } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillCommittees } from "@/lib/congress/client";
 import type { BillCommittee } from "@/lib/congress/committees/model";
-import { jsonResponse, requestedUrl } from "@/test/congress-api";
+import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "118", type: "hr", number: "3746" };
 
@@ -40,14 +40,10 @@ const PAYLOAD = {
   ],
 };
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getBillCommittees", (): void => {
   it("requests the bill's own committees sub-resource", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PAYLOAD));
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     await getBillCommittees(ROUTE);
 
@@ -58,7 +54,7 @@ describe("getBillCommittees", (): void => {
   });
 
   it("keeps Congress.gov's order, which puts the committee of primary jurisdiction first", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: committees }: BillSubResource<BillCommittee> = await getBillCommittees(ROUTE);
 
@@ -68,7 +64,7 @@ describe("getBillCommittees", (): void => {
   });
 
   it("lower-cases the system code, so an inward link matches every other link to that committee", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const {
       entries: [first],
@@ -80,7 +76,7 @@ describe("getBillCommittees", (): void => {
   });
 
   it("drops the activity Congress.gov names 'Unknown' rather than printing a non-answer", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const {
       entries: [first],
@@ -90,7 +86,7 @@ describe("getBillCommittees", (): void => {
   });
 
   it("sorts subcommittees alphabetically, where the publisher's order carries nothing", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const {
       entries: [first],
@@ -103,8 +99,7 @@ describe("getBillCommittees", (): void => {
   });
 
   it("drops a committee with no recognizable chamber, since its link could not be built", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           committees: [
@@ -121,17 +116,14 @@ describe("getBillCommittees", (): void => {
   });
 
   it("returns nothing without ever requesting when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns nothing without ever requesting for a malformed route", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     expect(await getBillCommittees({ congress: "119", type: "notatype", number: "1" })).toEqual({
       entries: [],
@@ -149,11 +141,11 @@ describe("getBillCommittees", (): void => {
     // someone has to change code. @see src/lib/observability/log.ts.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
     expect(await getBillCommittees(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });

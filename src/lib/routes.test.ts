@@ -1,20 +1,6 @@
 /**
- * Covers every in-app route builder in `routes.ts`.
- *
- * They are three lines each, but `docs/architecture.md` gives them a rule — "One definition per route shape; never
- * build a route inline" — which means every link to a bill, a Congress's directory, a person, a committee, one view of
- * a committee's records, or a lesson in this app resolves through them. A drift here is not a broken helper, it is
- * every card, seat, sponsor line, tab, pager arrow, and referral link pointing somewhere that doesn't exist.
- *
- * What's pinned down is what each does to the identifier it is handed: the normalization that lets an
- * inconsistently-cased upstream record and a hand-typed URL land on the same page, and — for the ones that need no
- * normalization because their input is already a closed type — that the route they build resolves back to the record it
- * was built from.
- *
- * The suite covers the whole file rather than a chosen subset, which is a rule the file's own history argues for:
- * `committeeRecordsHref` spent its life covered only through the component that renders the tabs, so the one builder
- * that *composes* two independently-changeable pieces — a path builder and a query serializer — was the one nothing
- * here pinned directly.
+ * Covers every route builder in `routes.ts`, through which every in-app link resolves: the normalization that lets an
+ * upstream record and a hand-typed URL land on the same page, and that each route resolves back to its record.
  */
 import { describe, expect, it } from "vitest";
 

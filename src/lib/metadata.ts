@@ -1,18 +1,8 @@
 import type { Metadata } from "next";
 
 /**
- * How a page describes itself to everything outside the browser tab: search results, and the link previews that social
- * platforms, chat clients, and messaging apps build from Open Graph and Twitter card tags.
- *
- * This exists because Next does *not* derive those tags from `title` and `description` on its own. A page that sets
- * only those two gets a correct `<title>` and a correct `<meta name="description">`, and then a link preview carrying
- * the root layout's site-wide wording — so every bill, member, and committee in the app shared as the same generic
- * card, naming none of them. That matters more here than on most sites: this app's whole premise is that a
- * congressional record is a thing worth handing to someone else, and the moment of handing it over is exactly the
- * moment the page stopped describing itself.
- *
- * So the rule is one call per page, and the tags are composed rather than inherited.
- * @see pageMetadata
+ * How a page describes itself to search results and link previews. Next doesn't derive Open Graph or Twitter tags from
+ * `title` and `description`, so every page composes them with one {@link pageMetadata} call.
  */
 
 /** The site's name, as it appears in a title suffix and as the `og:site_name` of every page. */
@@ -22,9 +12,8 @@ export const SITE_NAME: string = "Civic Ledger";
 export const SITE_DEFAULT_TITLE: string = `${SITE_NAME} — Congress in Context`;
 
 /**
- * The suffix every other page's title carries, so a tab and a share card can't disagree about what site a page is on.
- * Declared as a template for `metadata.title` and applied by hand in {@link pageMetadata}, since Next applies a title
- * template to `title` but not to `openGraph.title`.
+ * The suffix every other page's title carries. Applied by hand in {@link pageMetadata} too, since Next's title template
+ * doesn't reach `openGraph.title`.
  */
 export const SITE_TITLE_TEMPLATE: string = `%s — ${SITE_NAME}`;
 
@@ -32,15 +21,9 @@ export const SITE_TITLE_TEMPLATE: string = `%s — ${SITE_NAME}`;
 export const SITE_DESCRIPTION: string = "A source-conscious guide to the work of the United States Congress.";
 
 /**
- * The shared link-preview card, declared here rather than left to Next's file convention to attach on its own.
- *
- * That convention does attach it — but only to a segment that hasn't declared an `openGraph` of its own. `openGraph` is
- * replaced wholesale by a child segment rather than merged field by field, so the moment a page names itself through
- * {@link pageMetadata} it also drops the image the root layout had picked up. Restating it here is what keeps every
- * page's card *and* its title correct, instead of forcing a choice between them.
- *
- * The dimensions are the ones every major platform crops toward; `src/app/opengraph-image.tsx` reads them from here so
- * the drawing and the tag describing it cannot disagree.
+ * The link-preview card's size, shared with `src/app/opengraph-image.tsx`. The image is restated in
+ * {@link pageMetadata} because a child's `openGraph` replaces the parent's wholesale, dropping the convention-attached
+ * image.
  */
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
@@ -54,28 +37,15 @@ const OG_IMAGE_PATH: string = "/opengraph-image";
 type PageMetadataInput = {
   /** The page's own title, *without* the site suffix — the same string you would put in `metadata.title`. */
   title: string;
-  /** One sentence describing this page specifically. Falls back to {@link SITE_DESCRIPTION} when a page has no more
-   * specific line than the site's own. */
+  /** One sentence describing this page. Defaults to {@link SITE_DESCRIPTION}. */
   description?: string;
-  /**
-   * The page's canonical path, root-relative and leading-slash-first (`"/bills"`, `"/members/L000174"`). Resolved
-   * against `metadataBase` in the root layout. Omit it only where a single canonical path genuinely doesn't exist.
-   */
+  /** The page's canonical root-relative path (`"/members/L000174"`), resolved against `metadataBase`. */
   path?: string;
 };
 
 /**
- * Builds one page's full metadata: the tab title, the search-result description, the canonical URL, and the Open Graph
- * and Twitter card tags that a shared link renders from.
- *
- * The Open Graph title is composed here with the site suffix rather than left to `metadata.title`'s template, because
- * that template applies to the `<title>` element alone — an `openGraph.title` set to a bare page title reaches a link
- * preview as a bare page title, with nothing saying which site it came from.
- *
- * `og:type` is `"website"` throughout, deliberately. `"article"` is the tempting choice for a bill or member page, but
- * it implies an authored piece with a byline and a publication date, and these pages are neither: they are views onto a
- * public record this app didn't write.
- * @see docs/data-policy.md, "The Source of Truth Stays Upstream".
+ * Builds one page's full metadata: title, description, canonical URL, and Open Graph and Twitter card tags. `og:type`
+ * is always `"website"`: these pages are views onto a public record, not authored articles.
  *
  * @param input - @see PageMetadataInput
  * @returns Metadata ready to return from a `generateMetadata` or assign to a page's `metadata` export.
@@ -107,10 +77,7 @@ export function pageMetadata({ title, description, path }: PageMetadataInput): M
 }
 
 /**
- * The metadata for a page whose record didn't resolve — a bill number that names nothing, a Bioguide ID nobody holds.
- *
- * Kept here beside {@link pageMetadata} so a 404's tags are as deliberate as any other page's, and so no route has to
- * remember on its own that a missing record still gets a description and still tells a crawler not to index it.
+ * The metadata for a page whose record didn't resolve, e.g., a Bioguide ID nobody holds.
  *
  * @param title - What wasn't found, e.g., `"Bill Not Found"`.
  * @returns Metadata naming the miss, marked `noindex` so a dead link never enters a search index.

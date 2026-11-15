@@ -171,6 +171,7 @@ export function normalizeJurisdiction(state?: string): string | undefined {
  * list- and item-level records. `attribution` is genuinely absent on a few records, so renderers must handle that.
  */
 export type MemberDepiction = {
+  /** The portrait's URL. */
   imageUrl: string;
   /**
    * Credit line for the portrait. A sanitized HTML fragment (see `sanitizeSummaryHtml`) — Congress.gov returns it as
@@ -185,13 +186,14 @@ export type MemberDepiction = {
  * Kept small because it's serialized once per seat: only what the chamber chart and member directory display. Most
  * fields are optional because the list endpoint omits them (and placeholders have no `bioguideId`). Chamber is implied
  * by the `ChamberComposition` the member sits in. The chart receives it without `depiction`
- * (@see compositionForSeating).
+ * @see compositionForSeating.
  */
 export type CongressMember = {
   /** Biographical Directory ID (e.g., "L000174") — the stable key for linking out to an official biography. */
   bioguideId?: string;
   /** The member's name in last-name-first order, exactly as Congress.gov publishes it. */
   name: string;
+  /** The member's party, grouped for display. */
   party: PartyGroup;
   /** The upstream party label, kept verbatim so a nuance like "Independent Democrat" isn't flattened away. */
   partyName?: string;
@@ -208,25 +210,33 @@ export type CongressMember = {
 
 /** The party fields the display helpers below read — structural, so they serve every member shape. */
 export type MemberPartyFields = {
+  /** The member's party, grouped for display. */
   party: PartyGroup;
+  /** The upstream party label, verbatim. */
   partyName?: string;
 };
 
 /** The jurisdiction fields the display helpers below read. @see MemberPartyFields for why this is structural. */
 export type MemberSeatFields = {
+  /** The represented state, territory, or district, by full name. */
   state?: string;
+  /** House only. `0` means a single at-large seat. */
   district?: number;
 };
 
 /** How many seats one party holds in a chamber. */
 export type PartyTally = {
+  /** The party. */
   party: PartyGroup;
+  /** How many seats it holds. */
   count: number;
 };
 
 /** One chamber's membership: the seated members themselves plus the tallies the legend and summary line need. */
 export type ChamberComposition = {
+  /** Which chamber this is. */
   chamber: CongressChamber;
+  /** Every seated member, in no particular order. */
   members: CongressMember[];
   /** Party tallies in `partySeatingOrder`, so the legend reads left-to-right in the same order the chart is drawn. */
   partyCounts: PartyTally[];
@@ -241,9 +251,13 @@ export type ChamberComposition = {
  * reports. Mirrors `CongressSnapshot`'s shape deliberately: provenance travels with the data, never separately.
  */
 export type CongressComposition = {
+  /** The Congress described. */
   congress: number;
+  /** One composition per chamber, in `congressChambers` order. */
   chambers: ChamberComposition[];
+  /** Whether these are live records or labeled placeholders. */
   source: "live" | "preview";
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview" (no API key, or a transient upstream failure). */
   notice?: string;
@@ -396,27 +410,37 @@ export type MemberLeadershipRole = {
 
 /** One term a member has served. Item-level endpoint only; list-level terms lack the Congress and `memberType`. */
 export type MemberTerm = {
+  /** The chamber served in. */
   chamber: CongressChamber;
+  /** The Congress the term belongs to. */
   congress?: number;
+  /** The calendar year the term began. */
   startYear?: number;
   /** Absent for a term still being served. */
   endYear?: number;
   /** e.g., `"Senator"`, `"Representative"`, `"Delegate"`, `"Resident Commissioner"`. */
   memberType?: string;
+  /** The represented state, territory, or district, by full name. */
   state?: string;
+  /** House only. `0` means a single at-large seat. */
   district?: number;
 };
 
 /** Everything the member page renders about one person — the full item-level record, fetched one at a time. */
 export type MemberProfile = {
+  /** Biographical Directory ID, e.g., `"L000174"`. */
   bioguideId: string;
   /** Last-name-first, as Congress.gov's `invertedOrderName` — the form that sorts and matches the chart's labels. */
   name: string;
   /** Reading order (`"Patrick J. Leahy"`), preferred wherever the name is displayed as prose rather than sorted. */
   directOrderName?: string;
+  /** The member's party, grouped for display. */
   party: PartyGroup;
+  /** The upstream party label, verbatim. */
   partyName?: string;
+  /** The represented state, territory, or district, by full name. */
   state?: string;
+  /** House only. `0` means a single at-large seat. */
   district?: number;
   /** The chamber of their most recent term. */
   chamber: CongressChamber;
@@ -441,13 +465,19 @@ export type MemberProfile = {
  * `bioguideId` is required because a row that can't be opened is dropped. @see buildMemberDirectory
  */
 export type MemberDirectoryEntry = {
+  /** Biographical Directory ID, e.g., `"L000174"`. */
   bioguideId: string;
   /** Last-name-first, as Congress.gov publishes it — the form that sorts correctly without re-parsing a name. */
   name: string;
+  /** The member's party, grouped for display. */
   party: PartyGroup;
+  /** The upstream party label, verbatim. */
   partyName?: string;
+  /** The represented state, territory, or district, by full name. */
   state?: string;
+  /** House only. `0` means a single at-large seat. */
   district?: number;
+  /** The chamber they sit in. */
   chamber: CongressChamber;
   /** Their official portrait, when published. @see MemberDepiction */
   depiction?: MemberDepiction;
@@ -455,7 +485,8 @@ export type MemberDirectoryEntry = {
 
 /**
  * Orders any member shape alphabetically by last-name-first name, through the app's collator so names like Núñez and
- * O'Halleran sort as a reader expects. @see compareText
+ * O'Halleran sort as a reader expects.
+ * @see compareText
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.

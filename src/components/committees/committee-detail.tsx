@@ -33,14 +33,7 @@ type CommitteeDetailProps = {
   notice?: string;
   /** When this committee's record was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
-  /**
-   * One page of one of the committee's record collections, already selected and fetched by the route.
-   *
-   * Resolved server-side rather than in the section that renders it, on the same rule every other detail component in
-   * this app follows: a component that fetches is a component that can't be rendered in a test, in a different context,
-   * or against a different source.
-   * @see CommitteeRecordsSection.
-   */
+  /** One page of one of the committee's record collections, fetched by the route. @see CommitteeRecordsSection */
   records: CommitteeRecordsResult;
 };
 
@@ -65,20 +58,11 @@ function HistoryRow({ entry }: { entry: CommitteeHistoryEntry }): JSX.Element {
 }
 
 /**
- * Individual committee page.
- *
- * Purely presentational, exactly as `MemberDetail` and `BillDetail` are: every value is resolved by the route and
- * passed in, so this component has no fetching, no environment access, and nothing that behaves differently between a
- * live and a placeholder render except the wording it chooses.
- *
- * The page reports only what Congress.gov publishes about a committee — what kind of body it is, what it has been
- * called, what sits under it, and how much has been referred to it. It carries **no membership roster**, because the
- * committee endpoints publish none; assembling one by inference would be the single most plausible-looking fabrication
- * this app could ship, since a list of names under a committee heading reads as a fact whatever caveat sits beside it.
+ * Individual committee page. Purely presentational: the route resolves every value. No membership roster — Congress.gov
+ * publishes none, and an inferred one would read as fact.
  *
  * @param props - @see CommitteeDetailProps
- * @returns The hero, the type explainer and history panels, the subcommittee list, the record counts, and the closing
- *   context card.
+ * @returns The committee page.
  */
 export function CommitteeDetail({ profile, source, notice, retrievedAt, records }: CommitteeDetailProps): JSX.Element {
   const chamberLabel: string = committeeChamberLabels[profile.chamber];

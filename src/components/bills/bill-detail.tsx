@@ -29,22 +29,9 @@ import { resolveBillStage } from "@/lib/congress/bills/stage";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import type { BillCommittee } from "@/lib/congress/committees/model";
 
-/**
- * The bill record page, as an outline of the sections it is made of.
- *
- * Each of those sections lives in `detail/` beside this file — one module per collection Congress.gov hangs off a
- * bill, each holding that collection's panel, its list, and the row inside it. The split is by *subject* rather than by
- * kind (all the rows in one file, all the panels in another) because a subject is what someone actually arrives here to
- * change: an edit to how a cosponsor reads touches the row, the list's counting sentence, and the panel's empty-state
- * copy, and those are one thought rather than three files' worth.
- *
- * What stays here is the part that is genuinely about the page rather than about any one section: which sections exist,
- * what order they read in, and which of them share a row. @see BillDetail, whose doc comment is where that order is
- * argued for.
- */
-
 /** Props for {@link BillDetail} — everything the bill detail route resolves server-side. */
 type BillDetailProps = {
+  /** The bill itself. */
   bill: LegislativeBill;
   /** Whether this record is live Congress.gov data or a labeled preview fixture. Changes wording throughout. */
   source: CongressSnapshot["source"];
@@ -52,16 +39,8 @@ type BillDetailProps = {
   notice?: string;
   /** When this bill's data was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
-  // The seven collections fetched alongside the bill, each carrying whether its own request was answered.
-  //
-  // They arrive as `BillSubResource`s rather than as bare arrays because every one of these sections prints a sentence
-  // when its list is empty, and six of those sentences are assertions about the congressional record — "no member has
-  // cosponsored this bill", "Congress.gov records no measure as related to this one". A list of length zero is not
-  // enough to license any of them, and it is all a bare array can say.
-  //
-  // A line comment rather than a doc comment on purpose: it describes the seven fields below as a group, and a
-  // `/** */` here would attach to `summaries` alone — where the field's own doc comment immediately replaces it, so the
-  // paragraph would reach no reader hovering any of the seven.
+  // The collections below are `BillSubResource`s, not bare arrays: an empty list only licenses "none on record" when
+  // its request was actually answered.
   /** Every CRS summary on file for this bill, most recent first. */
   summaries: BillSubResource<BillSummary>;
   /** Every official text version on file for this bill, most recent first. */
@@ -83,22 +62,14 @@ type BillDetailProps = {
 };
 
 /**
- * Full bill record page.
+ * Full bill record page, as an outline of the section panels in `detail/` (one module per collection). Purely
+ * presentational: the route resolves every value.
  *
- * Purely presentational: every value is resolved by the route (`page.tsx`) and passed in, so this component has no
- * fetching, no environment access, and nothing that behaves differently between a live and a preview render except the
- * wording it chooses.
- *
- * The body is deliberately an *outline* rather than the page's markup: each record section is one of the panel
- * components above, so what stays here is the order the sections read in and which of them share a row. That order is
- * the part worth being able to see at a glance — the cosponsors sit between the committees that held the bill and the
- * actions taken on it because they answer the question the hero's sponsor line opens and cannot close; the amendments
- * sit directly under the action history because that is where a reader first meets one, as a sentence naming a number;
- * and the related measures come last because they are the only section that points off this bill entirely.
+ * Order: cosponsors follow committees (answering the hero's sponsor line), amendments sit under the action history
+ * (where a reader first meets one), and related measures come last (the only section pointing off this bill).
  *
  * @param props - @see BillDetailProps
- * @returns The hero (identity, stage, sponsor and cosponsor meta), the `BillJourney` stepper, the latest action with a
- *   link to the official record, the CRS summaries, every official text version, and the closing context card.
+ * @returns The bill record page.
  */
 export function BillDetail({
   bill,
@@ -113,9 +84,7 @@ export function BillDetail({
   related,
   amendments,
 }: BillDetailProps): JSX.Element {
-  // The action history is the better authority on where a bill has got to: `bill.stage` was read off one line of prose,
-  // and the latest action of a bill that has passed one chamber usually describes a referral in the other.
-  // @see resolveBillStage.
+  // The action history is a better authority than `bill.stage`, read off one line of prose. @see resolveBillStage.
   const stage: BillStage = resolveBillStage(bill.stage, actions.entries);
   const counts: LegislativeBill["collectionCounts"] = bill.collectionCounts;
 

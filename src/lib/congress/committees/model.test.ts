@@ -1,14 +1,6 @@
 /**
- * Covers the committee model's display helpers.
- *
- * These live in the model rather than at their call sites precisely so they can be tested here instead of only through
- * a rendered page — `describeCommittee`'s own documentation says so, and names the route `generateMetadata` it was
- * lifted out of. This file is the other half of that argument: the wording a reader is shown is a fact about the
- * product, and it should fail a test when it changes, not a review.
- *
- * The history-year extraction gets the closest attention, because its correctness is invisible. It reads the year off
- * the ISO string rather than through a `Date` specifically so a January or December timestamp cannot shift a year
- * across a timezone — a bug that would never appear in a UTC test run and would misdate committees for half the world.
+ * Covers the committee model's display helpers. History years are read off the ISO string, not via `Date`, so a January
+ * or December timestamp can't shift across a timezone.
  */
 import { describe, expect, it } from "vitest";
 

@@ -5,29 +5,16 @@ import { ANY_FACET, type FacetOption } from "@/lib/congress/directory-filter";
 import { pluralize } from "@/lib/format";
 
 /**
- * Every control the three directories are assembled from: the search field and segmented filter they open with, the
- * facet dropdowns and sort control beneath those, the "Clear Filters" action, and the result count that describes what
- * survived.
- *
- * `BillDirectory`, `MemberDirectory`, and `CommitteeDirectory` narrow completely different things — bills by
- * legislative stage, members by chamber and party and state, committees by chamber and type — but they present those
- * choices identically, and a reader who has used one directory should not have to relearn the next. Keeping the
- * controls here is what makes that guarantee structural rather than a convention someone has to remember to follow. It
- * is the same argument `directory.css` already makes for these controls' *styling*, and the same one
- * `useDirectoryUrlSync` makes for their URL behavior, applied to the markup in between.
- *
- * Every control here is deliberately uncontrolled about its *meaning*: it renders whatever options and labels it is
- * handed and reports back what was picked. None of them knows what a stage, a chamber, or a committee type is.
+ * The controls the bill, member, and committee directories are built from — search, segmented filter, facets, sort,
+ * "Clear Filters", and the result count — shared so the three directories behave identically. None of them knows what a
+ * stage, chamber, or committee type is: each renders the options and labels it's handed and reports what was picked.
  */
 
 /** Props for {@link DirectorySearch}. */
 type DirectorySearchProps = {
   /** The input's `id`, which ties it to its label. Must be unique within the page. */
   id: string;
-  /**
-   * The visually hidden label. Spelled out more fully than the placeholder, since a placeholder disappears the moment
-   * someone starts typing and is not a substitute for a label.
-   */
+  /** The visually hidden label, fuller than the placeholder, which disappears once someone types. */
   label: string;
   /** The placeholder shown in the empty field. */
   placeholder: string;
@@ -38,10 +25,7 @@ type DirectorySearchProps = {
 };
 
 /**
- * A directory's search field.
- *
- * `type="search"` rather than `type="text"` so the browser offers its own clear button and, on touch keyboards, a
- * search key rather than a return key.
+ * A directory's search field. `type="search"` gets the browser's clear button and a search key on touch keyboards.
  *
  * @param props - @see DirectorySearchProps
  * @returns The labeled search field with its leading icon.
@@ -79,14 +63,8 @@ type SegmentedFilterProps<T extends string> = {
 };
 
 /**
- * A row of mutually exclusive filter buttons.
- *
- * A `<fieldset>` with a hidden `<legend>` rather than a bare `<div>`: the buttons are one choice made of several
- * controls, and without the grouping a screen reader announces each one with no indication of what it filters or that
- * the others exist.
- *
- * `aria-pressed` rather than `aria-selected` because these are toggle buttons, not tabs or listbox options — nothing
- * here reveals a panel, so the tab pattern's keyboard expectations would be promised and not delivered.
+ * A row of mutually exclusive filter buttons. A `<fieldset>` and hidden `<legend>` tell a screen reader what the group
+ * filters; `aria-pressed` (not tabs) because nothing here reveals a panel.
  *
  * @param props - @see SegmentedFilterProps
  * @returns The filter group.
@@ -121,18 +99,13 @@ export function SegmentedFilter<T extends string>({
 
 /** Props for {@link FacetOptions}. */
 type FacetOptionsProps<Value extends string> = {
-  /**
-   * The values to offer, already ordered and already counted.
-   * @see FacetOption
-   */
+  /** The values to offer, already ordered and counted. */
   options: readonly FacetOption<Value>[];
 };
 
 /**
- * A facet dropdown's `<option>` list, each entry carrying its count.
- *
- * The count in the label is not decoration — @see FacetOption for why every facet in this app names how many records
- * sit behind a choice before a reader makes it.
+ * A facet dropdown's `<option>` list, each labeled with its count.
+ * @see FacetOption
  *
  * @param props - @see FacetOptionsProps
  * @returns One `<option>` per value.
@@ -158,9 +131,8 @@ type DirectoryFacetProps<Value extends string> = {
   /** The visible label above the control, e.g., `"Party"`. */
   label: string;
   /**
-   * How the "don't narrow on this" option reads, e.g., `"All Parties (541)"`. Spelled by the caller rather than
-   * composed here, since only the caller knows whether a total is meaningful for its facet — it is for a party, and
-   * isn't for a jurisdiction list whose groups are counted separately.
+   * How the "don't narrow on this" option reads, e.g., `"All Parties (541)"`. Worded by the caller, which knows whether
+   * a total means anything for its facet.
    */
   anyLabel: string;
   /** The currently selected value. */
@@ -173,10 +145,6 @@ type DirectoryFacetProps<Value extends string> = {
 
 /**
  * One labeled facet dropdown, with {@link ANY_FACET} always offered first.
- *
- * The wildcard option is rendered here rather than left to each caller for the same reason the sentinel itself is
- * declared once: "this facet can always be switched off, and switching it off is always the first choice" is a rule,
- * and a rule stated in one place is one that cannot be forgotten in the fourth directory.
  *
  * @param props - @see DirectoryFacetProps
  * @returns The labeled dropdown.
@@ -219,12 +187,8 @@ type DirectorySortProps<Sort extends string> = {
 };
 
 /**
- * A directory's "Sort By" control.
- *
- * Reordering the grid in place is *not* the WCAG 3.2.2 (On Input) pattern the Congress picker has to advise about:
- * nothing navigates, and the reader stays exactly where they were. It does still need announcing, which is why every
- * caller names the chosen order in {@link DirectoryResultCount} — a live region — rather than leaving the change only
- * visible in the grid.
+ * A directory's "Sort By" control. Reordering in place isn't otherwise announced, so callers name the chosen order in
+ * {@link DirectoryResultCount}'s live region.
  *
  * @param props - @see DirectorySortProps
  * @returns The labeled sort dropdown.
@@ -259,10 +223,7 @@ export function DirectorySort<Sort extends string>({
 }
 
 /**
- * The action that returns a narrowed directory to showing everything.
- *
- * Rendered only when something is actually narrowed — every directory guards it with its own `hasActive…Filters` — so
- * the control is never offered with nothing to do.
+ * Returns a narrowed directory to showing everything. Callers render it only while a filter is active.
  *
  * @param onClear - Restores that directory's "no filters" state.
  * @returns The clear button.
@@ -276,15 +237,8 @@ export function ClearFiltersButton({ onClear }: { onClear: () => void }): JSX.El
 }
 
 /**
- * What the two faceted directories tell a reader whose filters matched nothing.
- *
- * One sentence, shared, because the two directories are the same page in two subjects and a reader who empties one of
- * them should be told the same thing either way. Written down once rather than typed into both, on the rule the rest of
- * this file holds: a sameness that is only a convention is a sameness that drifts, and copy drifts more quietly than
- * markup does.
- *
- * The bill directory deliberately words its own — it has a stage filter rather than a chamber one, and a second empty
- * state for a Congress that holds no records at all, which no filter caused and none can undo.
+ * What the member and committee directories say when filters match nothing. The bill directory words its own, since it
+ * filters by stage rather than chamber.
  */
 export const FACETED_DIRECTORY_EMPTY_ADVICE: string =
   "Try a shorter name, a different chamber, or clear the filters to start again.";
@@ -295,27 +249,13 @@ type DirectoryEmptyStateProps = {
   heading: string;
   /** What to try next. */
   body: string;
-  /**
-   * Undoes the narrowing, when narrowing is what emptied the list.
-   *
-   * Omitted when it isn't — the bill directory's "no records yet" state is a fact about the Congress being browsed
-   * rather than about the filters, and offering to clear filters there would be offering a control that changes
-   * nothing.
-   */
+  /** Undoes the narrowing. Omitted when filters didn't empty the list (e.g., a Congress with no records yet). */
   onClear?: () => void;
 };
 
 /**
- * What a directory shows in place of its grid when nothing survived.
- *
- * All three directories reach this state and all three word it the same way — a heading naming what happened and a line
- * suggesting what to try — so the markup lives beside the controls that produced the state rather than in each of them.
- *
- * **The advice is a control, not only a sentence.** These states tell the reader to clear the filters, and the only
- * other control that does it sits in the facet row, which an empty grid has usually scrolled out of view — so the
- * sentence would be asking for something the interface is standing right there able to do. It renders the same
- * {@link ClearFiltersButton} the facet row does, so clearing from here and clearing from there are visibly one action
- * rather than two that happen to agree.
+ * What a directory shows in place of its grid when nothing survived. Repeats {@link ClearFiltersButton}, since the
+ * facet row's copy has usually scrolled out of view by the time a reader sees an empty grid.
  *
  * @param props - @see DirectoryEmptyStateProps
  * @returns The empty state, with the clear action when there is something to clear.
@@ -334,21 +274,12 @@ export function DirectoryEmptyState({ heading, body, onClear }: DirectoryEmptySt
 type DirectoryResultCountProps = {
   /** How many records are showing, already worded by the caller (`"12 of 541 Members"`, `"3 Matches"`). */
   count: string;
-  /**
-   * The chosen order, named only when it isn't the directory's default — so the common case stays a plain count rather
-   * than restating "alphabetical" on every page load. Omitted entirely by the bill directory, which has no sort
-   * control.
-   */
+  /** The chosen order, named only when it isn't the directory's default. */
   order?: string;
 };
 
 /**
- * The line stating what is currently showing.
- *
- * A live region, which is what makes it do double duty: it reports the result of a narrowing to a reader who cannot see
- * the grid change, and it is where a reordering gets announced, since reordering in place changes nothing else a screen
- * reader would notice.
- * @see DirectorySort.
+ * The line stating what is currently showing. A live region, so narrowing and reordering are both announced.
  *
  * @param props - @see DirectoryResultCountProps
  * @returns The count line.
@@ -363,22 +294,14 @@ export function DirectoryResultCount({ count, order }: DirectoryResultCountProps
 }
 
 /**
- * Words what a faceted directory is currently showing, for {@link DirectoryResultCount}.
- *
- * The rule, rather than the sentence: a narrowed list says how much of the whole it is ("12 of 541 Members"), and an
- * unnarrowed one just says how much there is ("541 Members"). The denominator is what makes a narrowing legible — "12
- * Members" alone reads the same whether it filtered out five hundred people or five — and dropping it once the filters
- * are cleared is what keeps the ordinary case from reading as a fraction of itself.
- *
- * Both counts are pluralized against the *total* rather than against what survived, so a filter matching exactly one
- * record still reads "1 of 541 Members" rather than "1 of 541 Member".
+ * Words what a faceted directory is showing: "12 of 541 Members" when narrowed, "541 Members" otherwise. Pluralized
+ * against the total, so one match reads "1 of 541 Members".
  *
  * @param shown - How many records survived the filters.
  * @param total - How many there are in all.
  * @param noun - The singular noun for a record, cased as it should appear (`"Member"`, `"Committee"`).
- * @param isFiltered - Whether anything is actually narrowing the list. Passed in rather than inferred from
- *   `shown !== total`, since a filter that happens to match everything is still a filter, and a count that silently
- *   dropped its denominator would make clearing it look like it did nothing.
+ * @param isFiltered - Whether a filter is active. Not inferred from `shown !== total`, so a filter matching everything
+ *   still shows its denominator.
  * @returns The count line, e.g., `"12 of 541 Members"`.
  */
 export function directoryCountLabel(shown: number, total: number, noun: string, isFiltered: boolean): string {

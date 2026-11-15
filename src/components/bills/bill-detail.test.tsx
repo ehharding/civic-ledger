@@ -43,20 +43,11 @@ function unanswered<Entry>(): BillSubResource<Entry> {
 }
 
 /**
- * Renders the bill page with every prop defaulted, overriding only what a test is actually about.
+ * Renders the bill page with every prop defaulted to the *quiet* case — a live record with every collection answered
+ * and empty — so each call names only what its test is about, e.g., `renderBill({ amendments: sub([bare]) })`.
  *
- * `BillDetail` requires nine props — the bill, its source, and seven collections — and almost every test here varies
- * exactly one of them. Spelling out the other eight at each of seventy-nine call sites buried the one line that said
- * what the test was for, and made adding a collection a seventy-nine-site edit whose diff said nothing. Defaulting them
- * here means a call reads as its own assertion: `renderBill({ amendments: sub([bare]) })` is a test about amendments.
- *
- * The defaults are deliberately the *quiet* ones — a live record with every collection answered and empty — so that
- * anything a test does not name cannot be the thing under test. The cases that turn on the difference say so out loud:
- * `unanswered()` for a request that failed, `source="preview"` for fixture data. That is the same reason {@link sub}
- * exists rather than a bare array literal, applied one level up.
- *
- * @param overrides - The props this test is about. Anything omitted takes the quiet default above.
- * @returns Testing Library's render result, so the callers that read `container` still can.
+ * @param overrides - The props this test is about.
+ * @returns Testing Library's render result.
  */
 function renderBill(overrides: Partial<ComponentProps<typeof BillDetail>> = {}): RenderResult {
   return render(

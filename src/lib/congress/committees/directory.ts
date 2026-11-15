@@ -20,21 +20,14 @@ import { mapCongressCommittee, mapUsable } from "@/lib/congress/upstream/mappers
 import { formatOrdinal } from "@/lib/format";
 
 /**
- * The committees of one Congress, as the browsable directory at `/committees` reads them.
- *
- * Structurally the closest sibling to `members/composition.ts` — a paginated list endpoint, flattened into one
- * alphabetical roster — and it follows the adapter's two standing invariants for the same reasons: nothing throws, and
- * provenance travels with the data.
- *
- * @see profile.ts for the individual committee page's separate, item-level read.
+ * The committees of one Congress, as `/committees` reads them: a paginated list flattened into one alphabetical roster.
+ * Like every adapter read, nothing throws and provenance travels with the data.
+ * @see profile.ts for the item-level read.
  */
 
 /**
- * Hard ceiling on committee pages fetched for one Congress.
- *
- * A Congress has on the order of 250 committee records once subcommittees are counted, so two pages of {@link
- * MAX_API_PAGE_SIZE} covers it with room to spare. The cap exists for the same reason `MAX_MEMBER_PAGES` does: a
- * malformed `pagination.count` should not be able to turn one page render into an unbounded fetch loop.
+ * Hard ceiling on committee pages fetched for one Congress (~250 records with subcommittees), so a malformed
+ * `pagination.count` can't cause an unbounded fetch loop.
  */
 const MAX_COMMITTEE_PAGES: number = 3;
 
@@ -44,25 +37,19 @@ export type CommitteeDirectoryResult = {
   congress: number;
   /** Every listable parent committee, alphabetically. @see buildCommitteeDirectory for what "parent" excludes. */
   committees: CommitteeSummary[];
+  /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview". */
   notice?: string;
 };
 
 /**
- * Flattens a fetched committee list into directory rows.
+ * Flattens a fetched committee list into directory rows. Exported for its tests.
  *
- * Exported for its own tests: the subcommittee rule below is the substance of this module, and it is worth being able
- * to assert on directly rather than only through a stubbed fetch.
- *
- * Subcommittees are **dropped here, not hidden**. Congress.gov's list endpoint returns them as siblings of their
- * parents — the House Agriculture Committee and its six subcommittees arrive as seven peer records — and rendering that
- * flat would put "Livestock and Foreign Agriculture Subcommittee" in the same alphabetical run as the Judiciary
- * Committee, as though the two were comparable bodies. They are not: a subcommittee only means anything in relation to
- * its parent, which is exactly where this app shows it. Nothing becomes unreachable — every parent's page lists its
- * subcommittees, each linking to a page of its own — and each card carries the count, so the directory says how much is
- * one level down rather than silently flattening it away.
+ * Congress.gov lists subcommittees as peers of their parents; they're dropped here, since a subcommittee only means
+ * something relative to its parent. Each parent's page lists them, and each card carries their count.
  *
  * @param committees - Raw committee records from the list endpoint.
  * @returns One row per parent committee, alphabetically. A record that can't be mapped (no code, no name, no
@@ -119,12 +106,8 @@ function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressA
 }
 
 /**
- * Fetches every committee of a Congress, as a single alphabetical directory.
- *
- * The whole list is handed to the browser at once and every subsequent search or filter runs there instantly — the same
- * approach the member directory takes, and for the same reason: the list is bounded, it is already in memory once the
- * fetch resolves, and Congress.gov offers no committee-search parameter to defer to. @see members/directory.ts, which
- * explains why the bill directory can't work this way.
+ * Fetches every committee of a Congress as one alphabetical directory, filtered in the browser — the list is bounded
+ * and Congress.gov has no committee search.
  *
  * @param congress - The Congress whose committees to read. Defaults to the one currently seated.
  * @returns The directory, always labeled live or preview. A missing key or a failed request yields the labeled
@@ -151,8 +134,7 @@ export async function getCommitteeDirectory(
   const raw: CongressApiCommittee[] | null = await fetchAllCommittees(apiKey, congress);
   const committees: CommitteeSummary[] = buildCommitteeDirectory(raw ?? []);
 
-  // An empty result is treated as a failed fetch rather than rendered as an empty directory: "this Congress has no
-  // committees" is never a true statement about a Congress, and a page showing it would read as one.
+  // Empty means the fetch failed: no Congress has zero committees.
   if (committees.length === 0) {
     return {
       congress,

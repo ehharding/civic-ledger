@@ -16,8 +16,11 @@ export const DEFAULT_PAGE_SIZE = 12;
 
 /** A bill's natural identifier as route params (e.g., `/bills/119/hr/284`), shared by every per-bill lookup. */
 export type BillRouteParams = {
+  /** The Congress number, as it appears in the URL. */
   congress: string;
+  /** The bill type code, in any case (e.g., `"hr"`). */
   type: string;
+  /** The bill number. */
   number: string;
 };
 
@@ -115,9 +118,11 @@ export function congressGovAmendmentUrl(amendment: {
  * (@see congressApiBillAmendmentSchema), so an amendment row is usually just a citation and a link.
  */
 export type BillAmendment = {
+  /** The Congress the amendment was offered in. */
   congress: number;
   /** The upper-cased type code, `"HAMDT"` or `"SAMDT"`. @see CONGRESS_GOV_AMENDMENT_PATHS */
   type: string;
+  /** The amendment number. */
   number: string;
   /** What the amendment says it does. The record's `purpose`, falling back to its `description`. Usually absent. */
   purpose?: string;
@@ -151,12 +156,15 @@ export function formatAmendmentCitation(amendment: Pick<BillAmendment, "type" | 
  * counts or member positions. @see docs/data-policy.md.
  */
 export type RecordedVote = {
+  /** The chamber that took the vote. */
   chamber: "House" | "Senate";
   /** The chamber's sequential number for the vote within a session, e.g., `190`. */
   rollNumber: number;
+  /** The Congress the vote was taken in. */
   congress: number;
   /** 1 or 2 — which annual session the vote fell in. Absent on a few older records. */
   sessionNumber?: number;
+  /** When the vote was taken, as an ISO date. */
   date?: string;
   /** The chamber's official tally (clerk.house.gov or senate.gov), verbatim from Congress.gov. */
   url: string;
@@ -169,7 +177,9 @@ export type RecordedVote = {
  * rows have the `actionCode` {@link inferStageFromActions} reads.
  */
 export type BillAction = {
+  /** When the action happened, as an ISO date. */
   date?: string;
+  /** The action, verbatim from Congress.gov. */
   text: string;
   /** Congress.gov's classification — `"IntroReferral"`, `"Committee"`, `"Floor"`, `"BecameLaw"`, … */
   type?: string;
@@ -223,13 +233,19 @@ export function describeAmendmentDetail(described: number, total: number): strin
  * because only a published figure can back a sentence beginning "Congress.gov records…". The two can differ when the
  * mapper drops an unusable row or a collection exceeds the single 250-record page this app requests.
  *
- * Detail endpoint only. @see describeBillCollection.
+ * Detail endpoint only.
+ * @see describeBillCollection.
  */
 export type BillCollectionCounts = {
+  /** Entries in the action history. */
   actions?: number;
+  /** Committees the bill was referred to. */
   committees?: number;
+  /** CRS summaries. */
   summaries?: number;
+  /** Official text versions. */
   textVersions?: number;
+  /** Measures recorded as related. */
   relatedBills?: number;
   /** Often larger than the 250 this app fetches on heavily amended bills. */
   amendments?: number;
@@ -292,7 +308,9 @@ export type BillCosponsor = {
   fullName: string;
   /** Present on essentially every live record; without it the cosponsor can't be linked. */
   bioguideId?: string;
+  /** The member's party code, e.g., `"D"`. */
   party?: string;
+  /** The member's state code, e.g., `"CA"`. */
   state?: string;
   /** When they signed on. */
   sponsorshipDate?: string;
@@ -315,13 +333,19 @@ export type RelatedBillRelationship = {
 
 /**
  * Another measure this bill is recorded as related to — a reference carrying what a link and label need. Identity
- * fields are required because a related bill that can't be opened isn't listed. @see mapRelatedBill
+ * fields are required because a related bill that can't be opened isn't listed.
+ * @see mapRelatedBill
  */
 export type RelatedBill = {
+  /** The related measure's Congress. */
   congress: number;
+  /** Its upper-cased type code. */
   type: string;
+  /** Its number. */
   number: string;
+  /** Its title. */
   title: string;
+  /** Its own latest action, when the record carried one. */
   latestAction?: {
     date?: string;
     text: string;
@@ -359,9 +383,13 @@ export function describeBillCollection(options: {
 
 /** A bill's primary sponsor. Detail endpoint only. */
 export type BillSponsor = {
+  /** The name as Congress.gov spells it, e.g., `"Rep. Issa, Darrell [R-CA-48]"`. */
   fullName: string;
+  /** The member's party code. */
   party?: string;
+  /** The member's state code. */
   state?: string;
+  /** The member's Bioguide ID; without it the sponsor can't be linked. */
   bioguideId?: string;
 };
 
@@ -377,23 +405,33 @@ export const NO_LATEST_ACTION_TEXT: string = "No action text has been published 
  * `upstream/mappers.ts` before anything else touches it.
  */
 export type LegislativeBill = {
+  /** The Congress the bill was introduced in. */
   congress: number;
+  /** The upper-cased type code, e.g., `"HR"`. */
   type: string;
+  /** The bill number. */
   number: string;
+  /** The bill's title. */
   title: string;
+  /** The chamber the bill was introduced in. */
   originChamber: "House" | "Senate" | "Unknown";
+  /** When the bill was introduced, as an ISO date. Detail endpoint only. */
   introducedDate?: string;
+  /** The most recent action; `text` is {@link NO_LATEST_ACTION_TEXT} when none was published. */
   latestAction: {
     date?: string;
     text: string;
   };
+  /** The CRS policy area. Detail endpoint only. */
   policyArea?: string;
   /**
    * Where the bill has got to: from {@link enactedLaw} when published, otherwise inferred from the latest action.
    * @see inferBillStage, and `resolveBillStage` for the bill page's reading from the full action history.
    */
   stage: BillStage;
+  /** The bill's public Congress.gov page. */
   officialUrl: string;
+  /** The primary sponsor. Detail endpoint only. */
   sponsor?: BillSponsor;
   /** Detail endpoint only. @see BillCosponsorTally */
   cosponsorTally?: BillCosponsorTally;
@@ -444,8 +482,11 @@ export function compareBillsByActivity(a: LegislativeBill, b: LegislativeBill): 
  * have several; earlier ones describe earlier versions of the text.
  */
 export type BillSummary = {
+  /** Congress.gov's code for the text version summarized. */
   versionCode: string;
+  /** The stage the summary describes, e.g., `"Introduced in House"`. */
   actionDesc: string;
+  /** When that stage was reached, as an ISO date. */
   actionDate?: string;
   /** A sanitized HTML fragment (see sanitizeSummaryHtml) — safe to render directly. */
   html: string;
@@ -453,21 +494,29 @@ export type BillSummary = {
 
 /** One downloadable rendering (e.g., "Formatted Text", "PDF") of a bill text version, hosted on Congress.gov. */
 export type BillTextFormat = {
+  /** The format's name, e.g., `"PDF"`. */
   type: string;
+  /** Where the file is hosted on Congress.gov. */
   url: string;
 };
 
 /** One stage-specific version of a bill's text (e.g., "Introduced in House", "Engrossed in House"). */
 export type BillTextVersion = {
+  /** The version's name, e.g., `"Engrossed in House"`. */
   type: string;
+  /** When the version was issued, as an ISO date. */
   date?: string;
+  /** Every downloadable rendering of this version. */
   formats: BillTextFormat[];
 };
 
 /** Result of a bill-list fetch: the bills, whether they're live or preview, and when they were retrieved. */
 export type CongressSnapshot = {
+  /** The bills fetched. */
   bills: LegislativeBill[];
+  /** Whether these are live records or labeled placeholders. */
   source: "live" | "preview";
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview" (no API key, or an upstream failure). */
   notice?: string;

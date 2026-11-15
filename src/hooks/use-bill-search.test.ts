@@ -1,14 +1,6 @@
 /**
- * Covers useBillSearch's asynchronous behavior directly, rather than only through the directory that renders it.
- *
- * The hook's own documentation names three failure modes it exists to prevent — wasted requests while typing, a stale
- * response overwriting a fresher one, and search going dead where the route isn't reachable — and each of those is a
- * race, which is exactly the kind of thing that keeps working by accident until it doesn't. So each one gets a test
- * that fails if the guard is removed: the debounce is observed by advancing a clock, the supersede case resolves an
- * aborted request *after* its replacement has already answered, and the fallback path asserts both the narrowed results
- * and the `degraded` flag that makes the UI admit it.
- *
- * Fake timers throughout, since the alternative is a suite that waits a real third of a second per search.
+ * Covers useBillSearch's three race guards — debouncing, superseding a stale response, and the local fallback with its
+ * `degraded` flag — each with a test that fails if the guard is removed. Fake timers throughout.
  */
 // biome-ignore-all lint/nursery/useAwaitThenable: false positive since Biome 2.5.15, which resolves `act(async …)` to
 // React's `void` overload. TypeScript resolves it to the `Promise<T>` one, so the `await` is required. Remove once

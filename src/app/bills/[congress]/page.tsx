@@ -11,18 +11,12 @@ import { previewBills } from "@/lib/congress/upstream/fixtures";
 import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /**
- * The *longest* this route segment is cached: one day, the concluded-Congress window.
+ * The *longest* this route is cached: one day. The current Congress's list fetch shortens that to five minutes; the
+ * ceiling bounds a page whose fetch never ran. `revalidate.test.ts` holds this literal to
+ * `CONCLUDED_CONGRESS_REVALIDATE_SECONDS`.
  *
- * A ceiling rather than the window itself. A route is regenerated on the shortest of its segment `revalidate` and every
- * fetch it makes, and the bill-list request for the Congress now sitting carries the shared five-minute window — so
- * `/bills/119` is still refreshed every five minutes, while `/bills/118`, whose record is closed, is refreshed daily.
- * The ceiling is what bounds a page whose fetch never ran (preview data, or an outage) to a day instead of forever.
- * @see revalidateSecondsForCongress, and CONCLUDED_CONGRESS_REVALIDATE_SECONDS, which `revalidate.test.ts` holds this
- * literal to.
- *
- * This route never reads its query, so each Congress's directory is rendered once per window rather than once per
- * visit; a URL carrying `?q=` or `?stage=` is rewritten to `/query/bills/[congress]` instead.
- * @see src/lib/query-routes.ts.
+ * This route never reads its query; `?q=` or `?stage=` URLs are rewritten to `/query/bills/[congress]`.
+ * @see src/lib/query-routes.ts
  */
 export const revalidate: number = 86_400;
 
@@ -32,12 +26,8 @@ type CongressBillsPageProps = {
 };
 
 /**
- * Pre-renders one bill-directory page per Congress the preview fixtures actually cover.
- *
- * In the default server build this is only a performance win — any other supported Congress is rendered on its first
- * visit and then cached like these. In a static export (`STATIC_EXPORT=true`, no API key) these are the *only*
- * Congress-scoped directory pages that can exist, since there's no server left to look anything else up at request
- * time.
+ * Pre-renders one directory page per Congress the preview fixtures cover — a performance win on a server build, and the
+ * only Congress-scoped directories a static export has.
  *
  * @returns One params object per Congress covered by the fixtures, de-duplicated.
  */

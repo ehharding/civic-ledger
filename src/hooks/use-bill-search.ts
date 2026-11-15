@@ -17,7 +17,9 @@ export const SEARCH_DEBOUNCE_MS: number = 300;
 
 /** What a search actually covered, for the scope note shown beneath the results. */
 export type BillSearchMeta = {
+  /** How many Congresses the sweep covered. */
   congressesSearched: number;
+  /** Whether more matches existed than were returned. */
   truncated: boolean;
 };
 

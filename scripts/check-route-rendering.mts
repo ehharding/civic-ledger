@@ -1,22 +1,11 @@
 /**
- * Fails when a route outside the allowed set renders on every request.
+ * Fails when a route outside `/api/*` and `/query/*` renders on every request — enforcing "Keeping Server Work Bounded"
+ * (docs/deployment.md), since one stray `searchParams` read or uncached `fetch` silently makes a static route
+ * per-visit.
  *
- * Run after `next build`, against the manifests it leaves in `.next/`. This is the enforcement point for the first rule
- * in "Keeping Server Work Bounded" (docs/deployment.md): every page is prerendered or regenerated on a window, and the
- * only routes allowed to render per visit are the `/api/*` handlers and the `/query/*` twins. That rule was a line in a
- * document asking a reviewer to read `pnpm build`'s route table for a stray `ƒ` — and the stray `ƒ` it guards against
- * is exactly what got this project's Vercel team paused. One `searchParams` read, one `cookies()` call, one uncached
- * `fetch` in a shared layout, and a static route quietly becomes a per-visit render that compiles, tests, and builds
- * clean. This turns that into a red CI check.
- *
- * The manifests are the build's own answer rather than a parse of its printed table: `app-path-routes-manifest.json`
- * lists every route, and `prerender-manifest.json` lists every one Next will serve from cache — `routes` for paths it
- * prerendered, `dynamicRoutes` for patterns it renders once per param and then caches. Anything in the first and in
- * neither of the others is rendered on demand.
- *
- * The prefixes are written out rather than imported from `src/lib/query-routes.ts`, because this runs under bare Node,
- * which has no `@/` alias to resolve the app's modules with — the same constraint that file's header describes for
- * `next.config.ts`. `/query` is `QUERY_ROUTE_PREFIX` there.
+ * Run after `next build`. A route in `app-path-routes-manifest.json` but in neither `routes` nor `dynamicRoutes` of
+ * `prerender-manifest.json` renders on demand. The prefixes are literal because bare Node can't resolve `@/` imports;
+ * `/query` mirrors `QUERY_ROUTE_PREFIX` in `src/lib/query-routes.ts`.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";

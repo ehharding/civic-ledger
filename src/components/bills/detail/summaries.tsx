@@ -7,20 +7,9 @@ import { type BillSummary, type CongressSnapshot, describeBillCollection } from 
 import { formatDate, pluralize } from "@/lib/format";
 
 /**
- * The Congressional Research Service summaries of a bill: the panel, each summary's caption, and its sanitized body.
- *
- * Earlier summaries are kept rather than dropped — one is not stale, it is an accurate description of a real earlier
- * version of the bill, and comparing the two is among the clearest ways to see what a chamber actually changed. The
- * caption is what keeps that honest, and on a preview record it is what keeps invented prose from being credited to a
- * real institution. @see SummaryCaption, and docs/data-policy.md.
- */
-
-/**
- * The caption above a summary, stating who wrote it and which version of the bill it describes.
- *
- * Preview summaries are captioned as illustrative rather than credited to the Congressional Research
- * Service — attributing invented text to a real institution is exactly the kind of accidental misinformation the
- * preview-data policy exists to prevent.
+ * The caption above a summary: who wrote it and which bill version it describes. Preview summaries are captioned as
+ * illustrative, never credited to CRS.
+ * @see docs/data-policy.md
  *
  * @param summary - The summary being captioned.
  * @param source - Whether this record is live or preview data.
@@ -46,9 +35,7 @@ function SummaryCaption({
 /**
  * Renders one summary's sanitized HTML.
  *
- * @param summary - The summary to render. Its `html` was already run through `sanitizeSummaryHtml` in the adapter
- *   (allow-listed tags, validated hrefs only) before it reached the app's model, so no unsanitized markup can arrive
- *   here.
+ * @param summary - The summary to render. Its `html` was sanitized by `sanitizeSummaryHtml` in the adapter.
  * @returns The summary body.
  */
 function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
@@ -59,10 +46,8 @@ function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
 }
 
 /**
- * The CRS summaries: the most recent one in full, with the earlier ones behind a disclosure.
- *
- * Earlier summaries are kept rather than dropped: one isn't stale, it's an accurate description of a real earlier
- * version of the bill, and comparing the two is one of the clearest ways to see what a chamber actually changed.
+ * The CRS summaries: the most recent in full, earlier ones (accurate descriptions of earlier versions, useful for
+ * seeing what changed) behind a disclosure.
  *
  * @param props - @see BillSectionProps
  * @returns The summary panel.

@@ -4,18 +4,11 @@ import Link from "next/link";
 import type { JSX, ReactNode } from "react";
 
 /**
- * How much room the callout leaves above itself.
+ * How much room the callout leaves above itself — chosen at the call site, since the preceding sections supply no
+ * bottom margin.
  *
- * The gap belongs to the callout rather than to the page because what sits above it differs by route, and every one of
- * those sections ends with no bottom margin of its own. Naming the two cases here keeps that decision at the call site,
- * where the surrounding content is visible, rather than buried in a stylesheet.
- *
- * Two cases, and there is deliberately no third that zeroes the gap: no section this panel follows supplies one. A
- * grid's `gap` in particular sits *between* its rows and adds nothing below the last, so the glossary grid ends flush
- * with its final card.
- *
- * - `default` — follows content that supplies no gap (a detail grid, the glossary grid, the lesson steps).
- * - `spacious` — follows the home page's activity grid, whose rhythm is more generous than the rest of the app's.
+ * - `default` — after a detail grid, the glossary grid, or the lesson steps.
+ * - `spacious` — after the home page's more generously spaced activity grid.
  */
 export type CalloutSpacing = "default" | "spacious";
 
@@ -50,16 +43,8 @@ type CalloutCardProps = {
 };
 
 /**
- * The warm "read this next" panel that closes a page.
- *
- * Six routes end with one of these — all three detail pages, both learn pages, and the home page — differing only in
- * their copy and their two icons. Spelled out per route, that would be six places to keep a decorative icon
- * `aria-hidden`, six to get the `aria-labelledby` wiring right, and six to update when the shape changes, which is
- * exactly the arrangement in which one page's icon quietly ends up a pixel larger than the rest.
- *
- * The panel is deliberately *not* a link itself. Each one wraps a heading and a paragraph around a single call to
- * action, and a link containing a heading gives assistive technology a long, unwieldy accessible name for what is
- * really one short destination.
+ * The "read this next" panel that closes six pages. Not a link itself: a link wrapping a heading gets an unwieldy
+ * accessible name, so the call to action is its own link.
  *
  * @param props - @see CalloutCardProps
  * @returns The callout section: badge icon, kicker, heading, body, and the call to action.

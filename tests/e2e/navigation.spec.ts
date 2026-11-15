@@ -3,8 +3,10 @@ import { expect, test } from "@playwright/test";
 
 import { FIXTURE_CONGRESS_BILLS, type TestFixtures } from "./routes";
 
-// Smoke coverage for the primary navigation shell. `playwright.config.ts` points `testDir` at this directory — keep at
-// least one spec here so the CI "browser" job has something to run.
+/**
+ * Smoke coverage for the primary navigation shell. `playwright.config.ts` points `testDir` at this directory — keep at
+ * least one spec here so the CI "browser" job has something to run.
+ */
 
 test("home page renders the hero and primary nav", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto("/");
@@ -49,15 +51,9 @@ test("primary nav links land on the right page", async ({ page }: TestFixtures):
 });
 
 /*
- * The nav marks which section you are in, and this is the only place that claim is tested against a real router. The
- * unit tests feed `navCurrent` a path directly and mock `usePathname` outright, so neither can catch the failure that
- * actually matters here: `usePathname` is a client hook reading a context that only exists in a real app, and a nav
- * that marks correctly on a fresh load can still go stale across a soft navigation, which is how nearly every visit
- * moves between these five pages.
- *
- * Both values are asserted because they mean different things to a screen reader — "page" only on the section's own
- * front page, "true" from a record inside it, where the current page is the record rather than the directory.
- * @see navCurrent.
+ * `aria-current` against a real router, which the unit tests (with `usePathname` mocked) can't check across a soft
+ * navigation. "page" on a section's front page, "true" on a record inside it.
+ * @see navCurrent
  */
 test("the primary nav marks the section being read, and keeps marking it across navigations", async ({
   page,
@@ -86,16 +82,10 @@ test("the primary nav marks the section being read, and keeps marking it across 
 });
 
 /**
- * The mobile navigation drawer: the same five destinations, as a panel rather than a row. @see PrimaryNav.
- *
- * This is the one arrangement no unit test can see. jsdom applies none of the app's stylesheets, so the panel is never
- * off-screen there and its links are never out of the tab order — which means every claim the drawer's design rests on
- * (that a closed drawer offers nothing, that an open one holds the page still, that Tab stays inside it) is only ever
- * true in a browser. The component's own contract — what it marks open, what it closes on, where it puts focus — is
- * covered in `src/components/layout/primary-nav.test.tsx` and deliberately not repeated here.
- *
- * 390 × 844 is a current mid-size phone. The narrowest supported width, where the panel is at its tightest, is measured
- * in `layout.spec.ts` instead, alongside the rest of this app's geometry.
+ * The mobile navigation drawer, in a browser — jsdom applies no stylesheets, so only here is a closed drawer actually
+ * out of the tab order. The component's own contract is covered in `primary-nav.test.tsx`; the narrowest width is in
+ * `layout.spec.ts`. 390 × 844 is a mid-size phone.
+ * @see PrimaryNav
  */
 test.describe("the mobile navigation drawer", (): void => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -198,17 +188,8 @@ test.describe("the mobile navigation drawer", (): void => {
   });
 
   /**
-   * The drawer's own precondition, checked from the other side.
-   *
-   * Everything above describes a control that has to be operated, and the stylesheet is explicit that none of it
-   * applies without scripting — the whole drawer block is gated on `@media (scripting: enabled)`. This is the test of
-   * the half that gate protects: with scripting off, the five destinations are on the page, laid out as the wrapped
-   * row this header had before the drawer existed, and the button that could not have opened them is not offered.
-   *
-   * Worth having as a browser test rather than as a comment, because nothing else in this project can see it. A media
-   * feature is answered by the engine; jsdom has none, and a reviewer reading the stylesheet cannot tell whether
-   * Chromium agrees that scripting is off. The failure it guards against is also the worst one a nav has available: a
-   * hamburger with nothing behind it does not degrade to a smaller menu, it degrades to no menu at all.
+   * With scripting off, the drawer's `@media (scripting: enabled)` gate leaves the five destinations as a wrapped row
+   * and offers no toggle — a menu button with nothing behind it would leave no menu at all.
    */
   test.describe("with scripting off", (): void => {
     test.use({ javaScriptEnabled: false });

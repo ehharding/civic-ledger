@@ -12,17 +12,12 @@ type NavLink = {
 };
 
 /**
- * Primary navigation, in the order the site is meant to be understood: the records first, then the people behind them,
- * then the rooms those records pass through, then how to read all three, then how they were gathered.
+ * Primary navigation, in reading order: the records, the people behind them, the committees they pass through (legible
+ * once a reader knows who sits on one), how to read them, and how they were gathered.
  *
- * "Committees" sits after "Members" rather than beside "Bills" because it is only legible once a reader knows who is in
- * one — the page itself is about bodies of people, and its whole purpose is to give the referral line on a bill page
- * somewhere to lead.
- *
- * Five is what fits beside the wordmark on a laptop, and the list is no longer bounded by what fits on a phone: below
- * 640px these become a drawer, which is a column and takes a sixth or a tenth destination without rearranging anything.
- * What *is* still bounded is the row above that breakpoint — a sixth label there would start crowding the search box at
- * the widths where both are still shown. @see the derivation above the 860px breakpoint in src/styles/responsive.css.
+ * Below 640px this is a drawer, which takes any number of destinations; above it, a sixth label would crowd the search
+ * box.
+ * @see the derivation above the 860px breakpoint in src/styles/responsive.css.
  */
 const NAV_LINKS: readonly NavLink[] = [
   { label: "Bills", href: "/bills" },

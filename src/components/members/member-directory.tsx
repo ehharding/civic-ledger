@@ -73,15 +73,12 @@ type MemberDirectoryProps = {
 };
 
 /**
- * Renders the jurisdiction control's options, grouped into states and territories.
+ * Renders the jurisdiction control's options in state and territory `<optgroup>`s, delegating each option to
+ * {@link FacetOptions}.
  *
- * The grouping is the only thing this adds over the plain {@link FacetOptions} the app's other two facets use, and it
- * delegates the options themselves back to it — so a jurisdiction option is worded and counted identically to a party
- * or a committee type rather than by a second copy of the same three lines.
- *
- * @param options - Every jurisdiction in the roster, already ordered. @see listMemberJurisdictions
- * @returns One `<optgroup>` per group that has any members in it — an empty group is omitted rather than rendered as a
- *   heading with nothing under it, which is the ordinary case for a Senate-only filtered roster.
+ * @param options - Every jurisdiction in the roster, already ordered.
+ *   @see listMemberJurisdictions
+ * @returns One `<optgroup>` per non-empty group.
  */
 function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JSX.Element {
   return (
@@ -103,18 +100,9 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
 }
 
 /**
- * Browsable directory of everyone serving in a Congress.
- *
- * Every narrowing here happens in the browser against the roster the server already sent — no request per keystroke, no
- * debounce, no loading state, and nothing to go wrong offline or in the static export. That is possible because a
- * Congress is a bounded list of a few hundred people; the bill directory cannot work this way, and its very different
- * shape (debounced fetches to a server-side sweep) is a consequence of that, not a difference in taste.
- * @see filterMembers for the rules themselves, and sortMembers for the orders they can be read in.
- *
- * The view itself — the filter and sort state, the address-bar mirroring, and the three ways the controls change
- * it — is held by {@link useFacetedDirectory}, shared with the committee directory because everything about it is the
- * same in both and none of it is about members. What is left here is what this directory is: its three facets, its
- * scope note, and its grid.
+ * Browsable directory of everyone serving in a Congress. A Congress is a bounded roster, so every narrowing happens in
+ * the browser — unlike the bill directory's server-side search. View state lives in {@link useFacetedDirectory}.
+ * @see filterMembers and sortMembers.
  *
  * @param props - @see MemberDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
@@ -143,9 +131,7 @@ export function MemberDirectory({
   );
 
   /**
-   * Reads a view out of a URL, through the same parser the route uses, so the browser and the server cannot disagree
-   * about what a link means. Closes over the roster's jurisdictions, so `?state=` can only ever resolve to one the
-   * control will actually offer.
+   * Reads a view out of a URL with the route's own parser, limiting `?state=` to jurisdictions the control offers.
    * @see parseMemberDirectoryQuery
    */
   const parseUrl = useCallback(

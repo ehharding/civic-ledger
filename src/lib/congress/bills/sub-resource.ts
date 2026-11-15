@@ -77,6 +77,7 @@ export function requestBillDetail(
  * @typeParam Entry - The app's mapped entry type for this collection.
  */
 export type BillSubResource<Entry> = {
+  /** The mapped entries, in the publisher's order. */
   entries: Entry[];
   /**
    * Congress.gov did not answer, so `entries` being empty says nothing about the record.

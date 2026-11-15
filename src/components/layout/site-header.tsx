@@ -7,33 +7,16 @@ import { BILL_DIRECTORY_PARAMS } from "@/lib/congress/bills/search";
 import { SITE_NAME } from "@/lib/metadata";
 
 /**
- * Where the header's search form submits.
- *
- * `basePath` is applied by `next/link` and the router, but not to a raw `action` attribute — and this control is a
- * plain form on purpose, so it is outside that rewriting and has to carry the prefix itself. Without this the GitHub
- * Pages demo's search box posts to `/bills` at the domain root and 404s. `NEXT_PUBLIC_BASE_PATH` is inlined at build
- * time from the same value `basePath` gets. @see next.config.ts
+ * Where the header's search form submits. A raw `action` doesn't get `basePath`, so it's prefixed by hand for the
+ * GitHub Pages demo.
+ * @see next.config.ts
  */
 const SEARCH_ACTION: string = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/bills`;
 
 /**
- * Global site header: wordmark, primary navigation, and search.
- *
- * A server component, and the two halves either side of {@link PrimaryNav} are why it stays one: the wordmark is a
- * static link and the search is a plain `<form>`, so neither has any reason to be shipped to the browser. Only the nav
- * needs the open path, and only the nav crosses the boundary.
- *
- * The search control is a real `<form>` rather than a JavaScript handler, so it works on a plain page load, from any
- * route, and in the static export — it simply navigates to `/bills?q=…`, which the directory reads as its initial
- * query. It carries `role="search"` so it is a landmark in its own right.
- * @see resolveBillDirectoryQuery
- * @see SEARCH_ACTION for why the target is built rather than written literally.
- *
- * The field's `name` comes from {@link BILL_DIRECTORY_PARAMS} rather than being spelled `"q"` here, which is the third
- * crossing of the boundary that constant exists for: the directory writes the param, the route parses it, and this form
- * submits it. It is also the crossing with no type between its two ends — a plain `<form>` GET — so a rename that
- * updated the other two would leave this one quietly submitting to a param nothing reads, and the only symptom would be
- * a search box that navigates to an unfiltered `/bills`.
+ * Global site header: wordmark, primary navigation, and search. A server component; only {@link PrimaryNav} is a client
+ * component. The search is a plain `<form role="search">` GET to `/bills?q=…`, so it works without JavaScript and in
+ * the static export; its field name comes from {@link BILL_DIRECTORY_PARAMS}, the same constant the directory reads.
  *
  * @returns The site header.
  */

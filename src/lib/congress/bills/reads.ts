@@ -222,9 +222,13 @@ export async function getMoreBills(
 
 /** What {@link getBillById} resolved: the bill (if any), whether that came from live or preview data, and when. */
 export type BillLookupResult = {
+  /** The bill, or `undefined` for "no such record" (a 404). */
   bill: LegislativeBill | undefined;
+  /** Whether this is a live record or a labeled placeholder. */
   source: CongressSnapshot["source"];
+  /** User-facing explanation shown when `source` is "preview". */
   notice?: string;
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
 };
 

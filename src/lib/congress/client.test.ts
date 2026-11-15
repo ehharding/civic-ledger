@@ -37,8 +37,6 @@ function requestedCacheWindows(fetchMock: ReturnType<typeof vi.fn>): (number | u
 
 describe("getCongressSnapshot", (): void => {
   it("returns labeled preview data scoped to the current Congress when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const snapshot: CongressSnapshot = await getCongressSnapshot();
     const currentCongressPreviewBills: LegislativeBill[] = previewBills.filter(
       (bill: LegislativeBill): boolean => bill.congress === getCurrentCongress(),
@@ -104,8 +102,6 @@ describe("getCongressSnapshot", (): void => {
 
 describe("getCongressSnapshotForCongress", (): void => {
   it("filters preview bills to just the requested Congress, not every fixture", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(118);
 
     expect(snapshot.source).toBe("preview");
@@ -114,8 +110,6 @@ describe("getCongressSnapshotForCongress", (): void => {
   });
 
   it("reports an honest empty result for a Congress with no preview fixtures, instead of borrowing another Congress's bills", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(100);
 
     expect(snapshot.source).toBe("preview");
@@ -165,8 +159,6 @@ describe("getCongressSnapshotForCongress", (): void => {
 
 describe("getBillById", (): void => {
   it("finds a matching preview bill when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const target: LegislativeBill = firstPreviewBill;
     const result: BillLookupResult = await getBillById({
       congress: String(target.congress),
@@ -179,8 +171,6 @@ describe("getBillById", (): void => {
   });
 
   it("includes a parsable retrievedAt timestamp alongside the result", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const target: LegislativeBill = firstPreviewBill;
     const result: BillLookupResult = await getBillById({
       congress: String(target.congress),
@@ -247,8 +237,6 @@ describe("getBillById", (): void => {
 
 describe("getMoreBills", (): void => {
   it("returns an empty page when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const bills: LegislativeBill[] = await getMoreBills(12);
 
     expect(bills).toEqual([]);
@@ -301,8 +289,6 @@ describe("getMoreBills", (): void => {
 
 describe("getBillSummaries", (): void => {
   it("returns a single labeled preview summary when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const target: LegislativeBill = firstPreviewBill;
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
       congress: String(target.congress),
@@ -316,8 +302,6 @@ describe("getBillSummaries", (): void => {
   });
 
   it("returns an empty list in preview mode for a bill with no fixture summary", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const { entries: summaries }: BillSubResource<BillSummary> = await getBillSummaries({
       congress: "50",
       type: "hr",
@@ -388,8 +372,6 @@ describe("getBillSummaries", (): void => {
 
 describe("getBillTextVersions", (): void => {
   it("returns an empty list when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const target: LegislativeBill = firstPreviewBill;
     const { entries: versions }: BillSubResource<BillTextVersion> = await getBillTextVersions({
       congress: String(target.congress),
@@ -463,8 +445,6 @@ describe("getBillTextVersions", (): void => {
 
 describe("getSearchResults", (): void => {
   it("filters the preview fixtures when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: BillSearchResponse = await getSearchResults(firstPreviewBill.title);
 
     expect(result.source).toBe("preview");
@@ -527,18 +507,8 @@ describe("getSearchResults", (): void => {
   });
 
   /**
-   * Asserted on the raw query string rather than through `searchParams.get`, which is the only way this can be
-   * asserted at all.
-   *
-   * Congress.gov honors exactly one sort value on this endpoint and silently ignores anything else — an unrecognized
-   * value yields an arbitrary order rather than an error, so a wrong one is invisible from the response. The value has
-   * to reach the wire as `updateDate+desc`, where the plus is an encoded space. `searchParams.get` decodes on the way
-   * out, so it reports `"updateDate desc"` whether the wire carried the working `+` or the broken `%2B`, and reports
-   * `"updateDate+desc"` only in the broken case. A reader can be forgiven for reading that assertion as the documented
-   * spelling and concluding it passes; it did, for a value the API was throwing away.
-   *
-   * The test above is kept anyway — it states the intent in the spelling the code uses. This one states what the
-   * transport does with it, which is the half that was wrong.
+   * Asserted on the raw query string: Congress.gov silently ignores a wrong sort value, and `searchParams.get` decodes
+   * both the working `+` and the broken `%2B` alike, so only the wire form tells them apart.
    */
   it("sends the sort separator as an encoded space, which is the spelling the API actually honors", async (): Promise<void> => {
     const fetchMock = vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({ bills: [] })));
@@ -636,8 +606,6 @@ function chamberOf(composition: CongressComposition, chamber: "house" | "senate"
 
 describe("getCongressComposition", (): void => {
   it("returns labeled placeholder seats when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const composition: CongressComposition = await getCongressComposition();
 
     expect(composition.source).toBe("preview");

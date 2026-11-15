@@ -3,68 +3,41 @@ import { type RefObject, useEffect, useRef } from "react";
 /** Options for {@link useDirectoryUrlSync}. */
 type DirectoryUrlSyncOptions = {
   /**
-   * The query string describing what the directory is currently showing, leading `?` included, or an empty string for
-   * an unnarrowed view. Every directory has its own serializer for this — `memberDirectoryQueryString` and friends —
-   * because the spelling of a view is that directory's own business; only the reconciling is shared.
+   * The query string for what the directory is showing, leading `?` included, or `""` for an unnarrowed view — from the
+   * directory's own serializer (`memberDirectoryQueryString` and friends).
    */
   queryString: string;
-  /**
-   * The query string for the view the *server* resolved, in the same spelling. Empty means the route resolved nothing,
-   * which is how a static export is recognized. @see the mount case in the hook's first effect.
-   */
+  /** The query string for the view the *server* resolved. Empty means a static export, which resolves nothing. */
   requestedQueryString: string;
   /**
-   * Takes the view a URL names as the current one, by parsing it and pushing it into the component's state.
-   *
-   * Must be referentially stable — wrap it in `useCallback` — since the `popstate` listener is registered against it.
-   * Each directory passes its own parser here, which is what keeps the browser and the server from ever disagreeing
-   * about what a given link means.
+   * Parses a URL's query string into the component's state, with the same parser the server uses. Must be stable
+   * (`useCallback`), since the `popstate` listener is registered against it.
    */
   adopt: (search: string) => void;
 };
 
 /**
- * Keeps a directory's address bar and its visible view agreeing, in whichever direction is out of date.
+ * Keeps a directory's address bar and its visible view agreeing, in whichever direction is out of date, so any view can
+ * be shared as a link.
  *
- * All three directories in this app — bills, members, committees — are places you can link to: a search, a set of
- * facets, a chosen order. Each one filters in the browser and mirrors what it is showing back into the URL, so any
- * state of the page can be copied out of the address bar and handed to someone else.
- *
- * That mirroring is the same problem three times over, and it is a genuinely fiddly one, so it lives here once rather
- * than being re-derived per directory. A directory carrying only the *write* half has a specific and quiet bug:
- * following the header's own "Bills" link from an already-narrowed directory appears to do nothing, because the
- * component writes its stale query string straight back over the URL the router had just set.
- *
- * The subtlety is that "the reader narrowed something" and "the URL changed underneath us" are indistinguishable from
- * inside a render and need opposite responses — one should rewrite the URL, the other should rewrite the state. What
- * separates them is remembering what this hook last wrote. @see the effect below for the three cases that fall out of
- * that.
+ * "The reader narrowed something" and "the URL changed underneath us" (e.g., the header's "Bills" link from a narrowed
+ * directory) look the same inside a render but need opposite responses. Remembering what this hook last wrote tells
+ * them apart.
  *
  * @param options - @see DirectoryUrlSyncOptions
  */
 export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }: DirectoryUrlSyncOptions): void {
   /**
-   * The query string this hook last wrote, or `undefined` before it has written one.
-   *
-   * This is the whole basis for telling the two cases apart. If the URL still reads exactly as this hook left it, then
-   * nothing else has touched it and any disagreement must be the view moving on; if it reads as something else,
-   * something outside this component moved it and the view is what needs to catch up.
+   * The query string this hook last wrote, or `undefined` before it has written one. If the URL still matches it, the
+   * view moved on; otherwise something outside moved the URL and the view must catch up.
    */
   const lastWritten: RefObject<string | undefined> = useRef<string | undefined>(undefined);
 
-  /**
-   * Deliberately run on every render rather than keyed to `queryString`: a soft navigation to a different view of the
-   * same route changes the URL without changing any of the component's state, so an effect that only fired when the
-   * state moved would never see it. The body is two string comparisons and returns immediately in the settled case,
-   * which is almost every render.
-   *
-   * Writes use `history.replaceState` rather than a router navigation, and this is load-bearing rather than
-   * incidental — a router navigation re-runs the route on the server, and doing that per keystroke would undo the
-   * entire point of a directory that filters in the browser. `replace` rather than `push` likewise: typing seven
-   * letters should not leave seven entries for the Back button to walk out of.
-   *
-   * Path and hash are read from `window.location` rather than rebuilt from a route constant, which keeps both the
-   * static demo's `basePath` and the skip link's fragment intact without either being special-cased.
+  /*
+   * Runs every render (a soft navigation changes the URL without changing state); the settled case is two string
+   * comparisons. Writes with `history.replaceState`: a router navigation would re-run the route on the server per
+   * keystroke, and `push` would fill the Back stack. Path and hash come from `window.location`, preserving the static
+   * demo's `basePath` and the skip link's fragment.
    */
   useEffect((): void => {
     const current: string = window.location.search;
@@ -78,10 +51,8 @@ export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }
     if (lastWritten.current === undefined) {
       lastWritten.current = current;
 
-      // First reconciliation after mount. The route normally resolved this URL already, so props win. The exception is
-      // a static export, which has no server at request time and so hands over the default view while the URL still
-      // names a narrowed one — the one case where the URL is the better source, and the reason a shared link opens
-      // narrowed on the GitHub Pages demo rather than quietly widening and erasing its own params.
+      // First reconciliation after mount: props win, since the route resolved this URL — except in a static export,
+      // which resolves nothing, so the URL is adopted instead.
       if (requestedQueryString.length === 0) adopt(current);
       return;
     }
@@ -98,12 +69,7 @@ export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }
     adopt(current);
   });
 
-  /**
-   * Follows Back and Forward.
-   *
-   * A `popstate` restores a URL without re-rendering anything, so the reconciliation above would not otherwise run
-   * until something else happened to re-render the component.
-   */
+  // Follows Back and Forward, which restore a URL without re-rendering.
   useEffect((): (() => void) => {
     function onPopState(): void {
       lastWritten.current = window.location.search;

@@ -1,15 +1,6 @@
 /**
- * Covers CommitteeDetail's rendering contract, bringing it to the same footing as `BillDetail` and `MemberDetail`.
- *
- * Two of the assertions here are about what the page *refuses* to say, and those are the load-bearing ones.
- * Congress.gov publishes no committee membership, so this page carries no roster — the component's own documentation
- * calls a fabricated one "the single most plausible-looking fabrication this app could ship", since a list of names
- * under a committee heading reads as a fact whatever caveat sits beside it. And a placeholder committee must never be
- * handed an outbound link that implies an official record exists for it. Neither rule is enforced by a type, so each
- * gets a test.
- *
- * The rest is the ordinary contract: the heading, the type explainer, the name history, the counts that are omitted
- * rather than zeroed when absent, and the subcommittee list's two different empty states.
+ * Covers CommitteeDetail's rendering contract. The load-bearing cases are refusals no type enforces: no membership
+ * roster (Congress.gov publishes none), and no outbound official-record link for a placeholder committee.
  */
 import { type RenderResult, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

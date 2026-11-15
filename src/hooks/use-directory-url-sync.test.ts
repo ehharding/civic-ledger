@@ -1,16 +1,6 @@
 /**
- * Covers useDirectoryUrlSync's reconciliation directly, rather than only incidentally through the three directories
- * that use it.
- *
- * This hook exists because "the reader narrowed something" and "the URL changed underneath us" are indistinguishable
- * from inside a render and need opposite responses — one rewrites the URL, the other rewrites the state. Getting that
- * backwards is not a hypothetical: the hook's own documentation records the bug it was written to fix, where following
- * the header's "Bills" link from an already-narrowed directory appeared to do nothing because the component wrote its
- * stale query string back over the URL the router had just set.
- *
- * So the cases below are organized around which way the reconciliation should fall, and each asserts *both* halves —
- * that the right thing happened and that the wrong one didn't. A test that only checked `adopt` was called would still
- * pass if the hook also clobbered the URL on its way there.
+ * Covers useDirectoryUrlSync's reconciliation, organized by which way it should fall (URL → state or state → URL). Each
+ * case asserts both that the right thing happened and that the wrong one didn't.
  */
 import { act, type RenderHookResult, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, type Mock, type MockInstance, vi } from "vitest";

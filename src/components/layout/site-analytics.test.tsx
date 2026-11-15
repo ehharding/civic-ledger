@@ -1,14 +1,6 @@
 /**
- * Covers the one rule the analytics layer has to keep: a recorded URL names a page and nothing else.
- *
- * The cases below are not hypothetical URLs — each one is a view this app itself produces and writes into the address
- * bar, which is precisely why the stripping matters. `docs/data-policy.md` says this product carries no
- * political-affiliation targeting; an analytics feed carrying `?party=republican&state=Ohio` would be the raw material
- * for exactly that, arrived at by accident rather than by anyone's decision.
- *
- * The cut itself is `redactUrl`, shared with the error tracker and exercised directly in
- * `src/lib/observability/redact.test.ts`. What is left here is this component's own job: that each collector is
- * actually handed the callback. A cut nothing calls is not a cut.
+ * Covers that each analytics collector is handed `redactUrl`, so a recorded URL names a page and never a query like
+ * `?party=republican`. The redaction itself is tested in `src/lib/observability/redact.test.ts`.
  */
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";

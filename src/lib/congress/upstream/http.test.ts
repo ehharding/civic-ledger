@@ -1,16 +1,10 @@
 /**
- * Covers http.ts's boundary rules — the ones the module's own documentation makes security claims about.
+ * Covers http.ts's boundary rules:
  *
- * Two of those claims are load-bearing, and neither is observable from any other test in the suite:
+ * 1. A route-derived value never reaches Congress.gov malformed — shapes are validated, not escaped.
+ * 2. The server-only key is always last in an outbound URL; a caller's `api_key` can't displace it.
  *
- * 1. A route-derived value can never reach Congress.gov malformed. `normalizeBillRouteParams` and `normalizeBioguideId`
- *    validate *shape* rather than escaping, so a bad segment is rejected outright instead of being sanitized and sent
- *    anyway. The traversal and smuggling cases below are the specific failures that rule exists to prevent.
- * 2. The server-only key is always the last word in an outbound URL — a caller cannot displace it by passing its own
- *    `api_key` param, however that param got into their hands.
- *
- * The rest covers what "configured" means for the key, since an empty-string key and an absent one have to behave
- * identically for the preview path to work.
+ * Plus what "configured" means for the key: empty and absent behave identically.
  */
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";

@@ -81,9 +81,11 @@ export function committeeReportedCount(profile: CommitteeProfile, kind: Committe
  * the measure if that lookup fails. @see withBillTitles
  */
 export type CommitteeBillReferral = {
+  /** The measure's Congress. */
   congress: number;
   /** Upper-cased, as `LegislativeBill.type` is — e.g., `"HR"`. */
   type: string;
+  /** The measure's number. */
   number: string;
   /** e.g., `"Referred To"`, `"Reported By"`. Verbatim from Congress.gov; this app defines no vocabulary of its own. */
   relationship?: string;
@@ -100,9 +102,11 @@ export type CommitteeBillReferral = {
 export type CommitteeReport = {
   /** e.g., `"H. Rept. 109-710"` — how Congress.gov names this report. Never empty. */
   citation: string;
+  /** The Congress the report was issued in. */
   congress?: number;
   /** e.g., `"HRPT"`. The report-series code, not a bill type. */
   type?: string;
+  /** The report number within its series. */
   number?: number;
   /** Reports issued in parts carry one; most don't. */
   part?: number;
@@ -119,11 +123,13 @@ export type CommitteeReport = {
 export type CommitteeNomination = {
   /** e.g., `"PN1201-7"` — the printed nomination number. Never empty. */
   citation: string;
+  /** The Congress the nomination was received in. */
   congress?: number;
   /** e.g., "Jane Doe, of Ohio, to be United States Marshal for…". Verbatim. */
   description?: string;
   /** ISO 8601 date the Senate received the nomination. */
   receivedDate?: string;
+  /** The nomination's most recent action, verbatim. */
   latestAction?: {
     date?: string;
     text?: string;
@@ -250,6 +256,7 @@ export const COMMITTEE_RECORDS_PARAMS = {
 
 /** Everything a committee page's URL can express beyond which committee it is: what to show, and how far in. */
 export type CommitteeRecordsQuery = {
+  /** Which record collection to show. */
   kind: CommitteeRecordKind;
   /** 1-based. Not yet clamped to the collection — @see clampCommitteeRecordsPage. */
   page: number;

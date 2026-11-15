@@ -27,15 +27,10 @@ rather than a new page. The standing condition on any module is that it cites it
 See [Editorial Content Cites Its Sources](data-policy.md#editorial-content-cites-its-sources) for the rule and its
 enforcement point.
 
-The fourth was the amendment module, added alongside the bill page's amendments section, and the two were written
-together on purpose: the module explains a process, the section shows that process's records, and each states the same
-limit about the other — that a bill's amendment collection names what was offered without saying what became of it.
-
 **What a further module may need, and none of the four do: a retrieval date.** Every citation today is a stable
-explanatory page on house.gov, senate.gov, clerk.house.gov, or the National Archives — documents whose content is not
-versioned by when you read them. The amendment module was checked against this before it was written, which is why it
-cites `senate.gov/about/powers-procedures/rules.htm` rather than a specific Congress's standing rules. A module citing a
-CRS report, a specific Congress's rules, or anything else that is revised in place needs the date it was read printed
+explanatory page on house.gov, senate.gov, clerk.house.gov, or the National Archives — not versioned by when you read it
+(hence `senate.gov/about/powers-procedures/rules.htm` rather than a specific Congress's standing rules). A module citing
+a CRS report, a specific Congress's rules, or anything else that is revised in place needs the date it was read printed
 beside the link, and `LessonSource` carries no such field. Add it with the first citation that requires it, not before.
 
 **One thing to know before adding a citation: senate.gov soft-404s.** A retired senate.gov path returns `200` with a
@@ -45,7 +40,7 @@ senate.gov citation by its page title. congress.gov, separately, refuses automat
 
 The glossary stays uncited by design. The line is length, not rigor: a one-line definition is vocabulary anyone can
 confirm in a sentence, and a five-step explanation is a claim. What it owes instead is coverage of the terms the lessons
-lean on — which is why the amendment module arrived with "Amendment" and "Germane" added to it.
+lean on.
 
 ## 4. Committee Membership — Blocked
 
@@ -53,9 +48,8 @@ The committee directory and committee pages exist, but Congress.gov publishes no
 one. **This unblocks only when a citable source exists** — not when a plausible inference becomes available. See
 [The Committee Page Has No Roster](data-policy.md#the-committee-page-has-no-roster-and-no-deep-link) for why.
 
-Rechecked against the API's current committee endpoints in August 2026: still no membership resource. The _deep link_
-half of that section is a separate problem and is unblocked — the item endpoint publishes `committeeWebsiteUrl`, and the
-committee page links it. The roster remains this one.
+Last checked against the API's committee endpoints in August 2026: no membership resource. (The committee page does link
+the committee's own site, via the published `committeeWebsiteUrl`.)
 
 ## 4a. Senate Roll-Call Votes — Partly Blocked
 
@@ -92,5 +86,5 @@ present to check it, which raises the bar on everything above it rather than add
   of what dropping static rendering costs these routes, and an inventory of the inline styles and scripts Next, Sentry,
   and the Vercel collectors actually emit — the second is what decides whether the policy can be strict enough to be
   worth the first.
-- **A seventh header destination** — five fit on one row, six would fit the current layout, a seventh wants a different
-  pattern. The comment on `NAV_LINKS` is the marker for whoever gets there.
+- **A sixth header destination** — the drawer below 640px takes any number, but a sixth label in the wide row would
+  crowd the search box. The comment on `NAV_LINKS` is the marker for whoever gets there.

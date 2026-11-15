@@ -7,22 +7,10 @@ import {
   toQueryString,
 } from "@/lib/congress/directory-filter";
 
-/**
- * The stage control's selection: one of the five legislative stages, or no narrowing at all.
- *
- * Spelled through the shared {@link FacetFilter} rather than as a bare `| "all"`, so this directory's "don't narrow"
- * value is the same declared sentinel the member and committee directories use rather than a string literal that
- * happens to match. @see ANY_FACET, and `directory-filter.ts` for the rest of the vocabulary all three share.
- */
+/** The stage control's selection: one of the five legislative stages, or {@link ANY_FACET}. */
 export type BillStageFilter = FacetFilter<BillStage>;
 
-/**
- * The query-param names the bill directory reads and writes.
- *
- * The counterpart to `MEMBER_DIRECTORY_PARAMS` in `members/filter.ts`, and here for the same reason: these names cross
- * a boundary — the server route parses them out of the request, the client component writes them back — and a typo on
- * either side produces a link that looks right and restores nothing.
- */
+/** The query-param names the bill directory reads (on the server) and writes (in the browser). */
 export const BILL_DIRECTORY_PARAMS = {
   query: "q",
   stage: "stage",
@@ -30,7 +18,9 @@ export const BILL_DIRECTORY_PARAMS = {
 
 /** Everything the `/bills` URL can express: what to search for, and which stage to narrow to. */
 export type BillDirectoryQuery = {
+  /** The free-text search, or `""`. */
   query: string;
+  /** The stage to narrow to. */
   stage: BillStageFilter;
 };
 
@@ -49,15 +39,8 @@ export function parseBillStageFilter(raw: string | null | undefined): BillStageF
 }
 
 /**
- * Reads a whole directory view out of a URL's query string.
- *
- * The exact counterpart to {@link billDirectoryQueryString}, and the peer of `parseMemberDirectoryQuery` and
- * `parseCommitteeDirectoryQuery`. Both sides of the boundary go through it — the route resolves the incoming request
- * with it, and the browser re-reads the address bar with it whenever the URL changes underneath the directory — so the
- * two readings cannot drift into disagreeing about what a link means.
- *
- * Total, like the parsers it delegates to: an absent or malformed param resolves to a usable default rather than to an
- * error, so a hand-edited or truncated link opens the unsearched page at worst.
+ * Reads a directory view out of a URL's query string — the inverse of {@link billDirectoryQueryString}, used by both
+ * the route and the browser so they agree on what a link means. Total: a malformed param resolves to its default.
  *
  * @param params - The query string to read, already parsed.
  * @returns The view the URL asks for.
@@ -70,10 +53,7 @@ export function parseBillDirectoryQuery(params: URLSearchParams): BillDirectoryQ
 }
 
 /**
- * Serializes the bill directory's current view back into a query string.
- *
- * Only non-default values are written, so an untouched directory keeps a clean `/bills` URL instead of one carrying
- * params that say "no search, all stages".
+ * Serializes the bill directory's current view into a query string, writing only non-default values.
  *
  * @param query - The current search text. Trimmed; a blank search contributes nothing.
  * @param stage - The current stage filter.
@@ -90,18 +70,13 @@ export function billDirectoryQueryString(query: string, stage: BillStageFilter):
 }
 
 /**
- * Whether `bill` matches free-text `query`.
- *
- * This is the closest approximation of "search" this app can offer: Congress.gov's API has no full-text search endpoint
- * (see `docs/data-policy.md`), so this filters bill metadata already fetched for other purposes rather than querying
- * upstream by keyword. Shared by the server-side sweep (`getSearchResults`) and `BillDirectory`'s client-side fallback
- * for when that route isn't reachable, so both agree on what counts as a match rather than quietly disagreeing.
+ * Whether `bill` matches free-text `query`. Congress.gov has no full-text search, so this filters fetched metadata;
+ * shared by the server sweep (`getSearchResults`) and `BillDirectory`'s client-side fallback so both agree.
  *
  * @param bill - The bill to test.
- * @param query - The raw search text. Matched case-insensitively against title, type, number, policy area, and
- *   latest-action text — the same fields the UI already shows, so a match is always visibly explicable.
- * @returns `true` when the bill matches. An empty or all-whitespace query matches everything, which is what makes
- *   "clear the search box" mean "show me everything again".
+ * @param query - The raw search text, matched case-insensitively against title, type, number, policy area, and
+ *   latest-action text — fields the UI shows, so a match is always visible.
+ * @returns `true` when the bill matches. A blank query matches everything.
  */
 export function matchesQuery(bill: LegislativeBill, query: string): boolean {
   const normalizedQuery: string = query.trim().toLowerCase();
@@ -116,18 +91,18 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
 export type ParsedBillCitation = {
   /** The Congress the citation specified, if any (e.g., the "119" in "119 HR 284"). Absent for a bare "HR 284". */
   congress?: number;
+  /** The upper-case bill type code, e.g., `"HR"` or `"HJRES"`. */
   type: string;
+  /** The bill number, as typed. */
   number: string;
 };
 
 /**
- * Recognizes a query that names one specific bill by citation, so search can attempt a fast, exact lookup instead of
- * relying on the broad keyword sweep happening to contain a literal match.
+ * Recognizes a query that names one bill by citation, so search can try an exact lookup before the keyword sweep.
  *
  * @param query - The raw search text. "HR 284", "H.R. 284", "hr284", and "119 hjres 66" all parse, since people write
  *   citations every one of those ways.
- * @returns The parsed citation, or `null` for anything that doesn't cleanly resolve to one of the eight bill/resolution
- *   types followed by a number — including ordinary keyword searches, which is the common case.
+ * @returns The parsed citation, or `null` for anything else, including ordinary keyword searches.
  */
 export function parseBillCitation(query: string): ParsedBillCitation | null {
   const trimmed: string = query.trim();
@@ -138,8 +113,7 @@ export function parseBillCitation(query: string): ParsedBillCitation | null {
   const congress: number | undefined = congressMatch?.[1] ? Number(congressMatch[1]) : undefined;
   const rest: string = congressMatch?.[2] ?? trimmed;
 
-  // Strips the punctuation and spacing people commonly type around a citation ("H.R. 284", "H. J. Res. 66") down to a
-  // bare TYPE+NUMBER token, so every common way of writing one normalizes to the same shape.
+  // Normalizes "H.R. 284", "H. J. Res. 66", etc. to a bare TYPE+NUMBER token.
   const normalized: string = rest.replace(/[.\s-]/g, "").toUpperCase();
   const citationMatch: RegExpExecArray | null = /^([A-Z]+)(\d{1,6})$/.exec(normalized);
   if (!citationMatch) return null;

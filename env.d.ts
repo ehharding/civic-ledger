@@ -1,30 +1,13 @@
 /**
- * Every environment variable this project reads, declared once.
+ * Every environment variable this project reads. With `noPropertyAccessFromIndexSignature` on, an undeclared name can't
+ * be read with a dot, so a misspelling like `process.env.CONGRES_API_KEY` is a compile error rather than a silent
+ * `undefined` that leaves the app on preview data.
  *
- * `.env.example` documents the ones a contributor fills in, and it is prose: nothing checks it, and nothing checks the
- * reads against it. Without this file `process.env` is an index signature, so `process.env.CONGRES_API_KEY` is a
- * perfectly well-typed expression that evaluates to `undefined` — and `undefined` is a value every read here already
- * has a graceful answer for. That is the specific failure this project keeps calling out elsewhere and had one more
- * of: the code compiles, `pnpm check` is green, and the app quietly serves preview data forever because a name was
- * misspelled once. @see the `@types/node` note in .github/dependabot.yml, which is the same argument about the same
- * class of silence.
- *
- * Declaring them turns that into a compile error, and `noPropertyAccessFromIndexSignature` in tsconfig.json is what
- * makes it one: with the rule on, an undeclared name cannot be reached with a dot at all, so a new variable has to be
- * added here — beside its documentation and its siblings — before it can be read anywhere. The rule is the enforcement
- * point; this file is the list it enforces against.
- *
- * Every entry is optional and every value is a string, which is what `process.env` actually offers. A variable that is
- * *required* is required at runtime rather than at the type level, and each read says so in its own way: `getSiteUrl`
- * falls back through Vercel's hostnames to a visibly fake placeholder, `getCongressApiKey` treats blank as unset, and
- * the Sentry options default to a switched-off SDK. None of them can be expressed as a non-optional string here without
- * lying about a local checkout, where nearly all of these are empty.
+ * Every entry is optional: each read handles absence at runtime, and a local checkout leaves most of these empty.
  */
 
 declare namespace NodeJS {
-  // `interface` rather than the `type` the house style calls for, because merging into Node's own `ProcessEnv` is the
-  // entire mechanism here and `type` cannot merge. @see the `**/*.d.ts` override in biome.jsonc, which is where that
-  // exception is stated and bounded.
+  // `interface`, not the house-style `type`, because only an interface can merge into Node's `ProcessEnv`.
   interface ProcessEnv {
     /**
      * The Congress.gov API key. **Server-only** — never `NEXT_PUBLIC_`, since the key travels in the request URL and a
@@ -55,12 +38,11 @@ declare namespace NodeJS {
     /** Trace sample rate, parsed from a string. Falls back to a fixed rate when unset or unparseable. */
     NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE?: string;
 
-    /**
-     * Build-time only, and read solely to upload source maps from the GitHub Actions runner. A local `pnpm build` skips
-     * the upload without the token rather than failing.
-     */
+    /** The Sentry organization slug, for the CI-only source-map upload. */
     SENTRY_ORG?: string;
+    /** The Sentry project slug, for the CI-only source-map upload. */
     SENTRY_PROJECT?: string;
+    /** The source-map upload token. Build-time only; a local build without it skips the upload. */
     SENTRY_AUTH_TOKEN?: string;
 
     /** Set by `.github/actions/build-static-demo` to select the `output: "export"` build. The string `"true"`. */
@@ -70,9 +52,7 @@ declare namespace NodeJS {
 
     /** Injected by Vercel. The deployment's stable production hostname, without a scheme. @see getSiteUrl. */
     VERCEL_PROJECT_PRODUCTION_URL?: string;
-    /**
-     * Injected by Vercel. This specific deployment's hostname, without a scheme. The last hostname `getSiteUrl` tries.
-     */
+    /** Injected by Vercel. This deployment's hostname, without a scheme. The last hostname `getSiteUrl` tries. */
     VERCEL_URL?: string;
     /** Injected by Vercel: `production`, `preview`, or `development`. The Sentry environment's fallback. */
     NEXT_PUBLIC_VERCEL_ENV?: string;

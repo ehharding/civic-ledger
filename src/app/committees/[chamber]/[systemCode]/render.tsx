@@ -18,11 +18,7 @@ import { type RouteSearchParams, resolveCommitteeRecordsQuery } from "@/lib/sear
 export type CommitteeParams = Promise<{ chamber: string; systemCode: string }>;
 
 /**
- * Builds the per-committee title and description, so a committee page reads as itself in a browser tab, a share card,
- * or a search result rather than falling back to the site-wide default.
- *
- * Calls `getCommitteeProfile` a second time without a second upstream request: Next memoizes `fetch` per request, so
- * this and the page renderer below share one response for the same route.
+ * Builds the per-committee title and description. Shares the page's read: `getCommitteeProfile` is memoized per render.
  *
  * @param params - The committee's route params.
  * @returns The committee's metadata, or a "Committee Not Found" title when the identifiers don't resolve.

@@ -1,11 +1,6 @@
 /**
- * Covers the lesson route: its build-time slug list, its per-lesson metadata, and the 404 it renders for a slug naming
- * nothing.
- *
- * The route exists because the lessons are already a list, so the assertion that matters most is that all three of its
- * exports read *that* list rather than restating it — a lesson added to the registry should become a page, a metadata
- * card, and a prerendered route with no further edits, and a slug outside the registry should be a 404 rather than an
- * empty lesson.
+ * Covers the lesson route: its build-time slugs, per-lesson metadata, and 404 — all read from the lesson registry, so a
+ * registered lesson needs no other edits.
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";

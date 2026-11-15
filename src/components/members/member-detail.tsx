@@ -48,8 +48,7 @@ type MemberDetailProps = {
  * One row of the service history.
  *
  * @param term - The term to describe.
- * @param chamberLabel - The chamber's full name, resolved by the caller so the label table is consulted once per list
- *   rather than once per row.
+ * @param chamberLabel - The chamber's full name.
  * @returns The term's chamber, congress, and calendar span.
  */
 function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: string }): JSX.Element {
@@ -73,9 +72,7 @@ function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: s
  * @param headingId - The id this section's `aria-labelledby` points at, so each list is its own labeled region.
  * @param kicker - The small label above the heading.
  * @param heading - The section heading.
- * @param emptyNote - What to say when the list is empty, which for a newly seated member is an ordinary state. Passed
- *   as an element rather than a string because the wording branches on live-versus-preview data, and that branch is
- *   stated once for the whole app. @see EmptySectionNote.
+ * @param emptyNote - What to say when the list is empty (ordinary for a newly seated member). @see EmptySectionNote
  * @param total - The member's complete count for this list, when Congress.gov reports one.
  * @param limit - The cap the list was sliced to, so the copy can distinguish "all of them" from "the most recent few".
  * @returns The labeled section.
@@ -131,20 +128,11 @@ function LegislationSection({
 }
 
 /**
- * Individual member page.
- *
- * Purely presentational, exactly as `BillDetail` is: every value is resolved by the route and passed in, so this
- * component has no fetching, no environment access, and nothing that behaves differently between a live and a
- * placeholder render except the wording it chooses.
- *
- * The page deliberately reports only what Congress.gov publishes — service record, party, jurisdiction, and the
- * legislation they put their name to. It carries no voting scores, ratings, or ideological placement: those are
- * editorial judgments, and this project's stated stance is that clarity and provenance, not persuasion, are the
- * product.
+ * Individual member page. Purely presentational: the route resolves every value. Reports only what Congress.gov
+ * publishes — no voting scores, ratings, or ideological placement, which are editorial judgments.
  *
  * @param props - @see MemberDetailProps
- * @returns The hero (portrait, name, title, seat, service span), the service record and official-source panels, the
- *   sponsored and cosponsored legislation grids, and the closing context card.
+ * @returns The member page.
  */
 export function MemberDetail({
   profile,

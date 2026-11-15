@@ -16,6 +16,7 @@ import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/mod
  * find out", which is precisely how the button behaves in either case. @see the route handler for why.
  */
 export type BillPageResponse = {
+  /** The next page; empty when there are no more or the read failed. */
   bills: LegislativeBill[];
 };
 
@@ -24,7 +25,9 @@ export type BillPageResponse = {
  * fields let the UI state the search's scope. @see BillDirectory
  */
 export type BillSearchResponse = {
+  /** The matching bills, most recent first. */
   bills: LegislativeBill[];
+  /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];
   /** How many Congresses this search actually swept. */
   congressesSearched: number;

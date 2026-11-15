@@ -197,7 +197,7 @@ describe("sentryInitOptions", (): void => {
     expect(JSON.stringify(sent)).not.toContain("url.query");
   });
 
-  it("no longer sets beforeSendTransaction, which SDK v11 never calls", (): void => {
+  it("doesn't set beforeSendTransaction, which SDK v11 never calls", (): void => {
     // A hook that type-checks and never runs is worse than none: it reads, in review, as redaction that is in force.
     expect(sentryInitOptions().beforeSendTransaction).toBeUndefined();
   });

@@ -1,12 +1,6 @@
 /**
- * Covers the individual bill record route.
- *
- * Eight reads go out here — the bill, its CRS summaries, its official text versions, its action history, its committee
- * referrals, its cosponsors, its related measures, and the amendments offered to it — and the route's comment says they
- * go together because none depends on the others. That, plus the 404 for a bill that resolves to nothing and the
- * metadata's choice to describe a bill by its *latest action*, is what the tests pin. The latest-action description is
- * more load-bearing than it looks: it is the sentence someone following a shared link sees before they click, and it
- * has to survive a freshly-introduced record that carries no action text at all.
+ * Covers the bill record route: its eight parallel reads, the 404 for a bill that resolves to nothing, and metadata
+ * that describes a bill by its latest action — including a fresh record with no action text.
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";

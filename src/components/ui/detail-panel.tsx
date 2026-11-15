@@ -1,27 +1,13 @@
 import type { JSX, ReactNode } from "react";
 
 /**
- * The panel every record page's sections are built from: a small kicker, the heading under it, and whatever that
- * section holds.
- *
- * The bill, member, and committee pages and the lesson body are the same document in four subjects — a stack of labeled
- * panels, two to a row — and this is where they say so. The argument is the one `directory-controls.tsx` already makes
- * for the three directories' controls: a sameness held structurally is a sameness that cannot drift.
- *
- * **The `aria-labelledby` pairing is worth more than the six lines of markup.** A panel names itself to assistive
- * technology by pointing an attribute at an id, and spelled out by hand those are two independent strings a line apart:
- * rename the heading's id and the labeled region points at nothing, while the page still looks exactly right and every
- * visual check still passes. Here `headingId` is written once and used at both ends, so they cannot disagree.
- * `tests/e2e/accessibility.spec.ts` is what catches it if some other panel ever spells the pair out again.
+ * The panel every record and lesson page's sections are built from: a kicker, a heading, and the section's content.
+ * `headingId` feeds both the heading's `id` and the panel's `aria-labelledby`, so the pair can't drift apart.
  */
 
 /**
- * Which element a panel renders as.
- *
- * All three are `.detail-panel` and look identical; the choice is about what the panel *is*. `"section"` is the default
- * and the common case. `"aside"` is the secondary panel of a two-panel row — the latest action beside the journey, the
- * primary-source links beside the record — content that supports the row's main panel rather than continuing it.
- * `"article"` is a lesson step, which is self-contained enough to stand on its own.
+ * Which element a panel renders as; all look identical. `"section"` is the default, `"aside"` a supporting panel beside
+ * a row's main one, and `"article"` a self-contained lesson step.
  */
 type DetailPanelElement = "section" | "aside" | "article";
 

@@ -1,22 +1,13 @@
 /**
- * Covers the committee record fetcher: the three endpoints' three different response shapes, the paging that is applied
- * before an offset goes upstream, the title lookups that fill in what the bills endpoint doesn't send, and the
- * distinction between an empty collection and one that could not be fetched.
- *
- * That last distinction is the load-bearing one and it is why `unavailable` exists at all. A committee that has
- * published no reports and a committee whose reports request failed both produce zero rows, and rendering the first
- * message over the second state tells a reader something false about the congressional record. No type enforces that,
- * so it gets its own cases here and in the component's tests.
- *
- * The other one worth stating: this module must never send Congress.gov a path segment it hasn't proven the shape of,
- * including segments Congress.gov itself supplied. The referred-bill lookups take their identifiers straight from an
- * upstream payload, and the case below feeds a malformed one back to confirm it is dropped rather than interpolated.
+ * Covers the committee record fetcher: the three endpoints' response shapes, paging, title lookups, and `unavailable`
+ * (a failed request must never read as an empty collection). Also checks a malformed identifier from an upstream
+ * payload is dropped rather than interpolated into a path.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { getCommitteeRecords } from "@/lib/congress/committees/activity";
 import type { CommitteeBillReferral, CommitteeRecordsResult } from "@/lib/congress/committees/records";
-import { jsonResponse } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 
 /** The committee-bills payload for `count` referrals, numbered so each maps to a distinct bill. */
 function billsPayload(count: number, total: number = count): unknown {
@@ -62,19 +53,13 @@ function stubFetch(payload: unknown, options: { billTitle?: string | null } = {}
     );
   });
 
-  vi.stubGlobal("fetch", fetchMock);
+  stubLiveApi(fetchMock);
 
   return fetchMock;
 }
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getCommitteeRecords without a usable key or identifier", (): void => {
   it("resolves against the preview fixtures when no API key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
       "preview-01",
@@ -106,8 +91,6 @@ describe("getCommitteeRecords without a usable key or identifier", (): void => {
   });
 
   it("returns an empty page for a preview code naming no placeholder committee", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
       "preview-nope",
@@ -192,7 +175,7 @@ describe("getCommitteeRecords for referred bills", (): void => {
 
       return Promise.resolve(jsonResponse({}));
     });
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords("house", "hsag00", { kind: "bills", page: 1 }, 1);
 
@@ -208,7 +191,7 @@ describe("getCommitteeRecords for referred bills", (): void => {
       // A bill with no title doesn't survive `mapCongressBill`, which is the same outcome as no bill at all.
       return Promise.resolve(jsonResponse({ bill: { congress: 119, billType: "HR", billNumber: "1000" } }));
     });
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     const result: CommitteeRecordsResult = await getCommitteeRecords("house", "hsag00", { kind: "bills", page: 1 }, 1);
 
@@ -406,7 +389,7 @@ describe("getCommitteeRecords paging", (): void => {
 
 describe("getCommitteeRecords when the request doesn't succeed", (): void => {
   it("distinguishes an unavailable collection from an empty one", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
@@ -421,7 +404,7 @@ describe("getCommitteeRecords when the request doesn't succeed", (): void => {
 
   it("treats a 404 as an empty collection, not a failure", async (): Promise<void> => {
     // A House committee has no nominations resource, and that is a true answer rather than an unreported one.
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",
@@ -435,7 +418,7 @@ describe("getCommitteeRecords when the request doesn't succeed", (): void => {
   });
 
   it("falls back to the profile's count when the request could not report one", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 500)));
 
     const result: CommitteeRecordsResult = await getCommitteeRecords(
       "house",

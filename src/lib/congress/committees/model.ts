@@ -126,10 +126,13 @@ export function isCommitteeSystemCode(value: string | undefined): boolean {
 
 /**
  * A committee named from inside another committee's record — a subcommittee's `parent`, or an entry in a parent's
- * `subcommittees`. Just enough to name and link it; one shape for both directions. @see mapCommitteeRef
+ * `subcommittees`. Just enough to name and link it; one shape for both directions.
+ * @see mapCommitteeRef
  */
 export type CommitteeRef = {
+  /** Congress.gov's identifier, lower-cased. */
   systemCode: string;
+  /** The committee's name. */
   name: string;
 };
 
@@ -150,7 +153,9 @@ export type CommitteeSummary = {
   systemCode: string;
   /** The committee's name as Congress.gov publishes it in the list, e.g., `"Agriculture Committee"`. */
   name: string;
+  /** The chamber the committee belongs to. */
   chamber: CommitteeChamber;
+  /** The committee's type, grouped five ways. */
   type: CommitteeType;
   /** The verbatim upstream type label, kept so a nuance the five-way grouping flattens isn't lost. */
   typeName?: string;
@@ -208,6 +213,7 @@ export type CommitteeProfile = CommitteeSummary & {
  * printed verbatim rather than paraphrased.
  */
 export type BillCommitteeActivity = {
+  /** The activity, verbatim (e.g., `"Referred To"`). */
   name: string;
   /** ISO 8601 timestamp, as the API publishes it. */
   date?: string;
@@ -215,8 +221,11 @@ export type BillCommitteeActivity = {
 
 /** A subcommittee a bill reached, as its parent committee's entry on that bill lists it. */
 export type BillSubcommittee = {
+  /** Congress.gov's identifier, lower-cased. */
   systemCode: string;
+  /** The subcommittee's name. */
   name: string;
+  /** What the subcommittee did with the bill. */
   activities: BillCommitteeActivity[];
 };
 
@@ -225,10 +234,13 @@ export type BillSubcommittee = {
  * chamber and system code, so the bill page can link inward without another request.
  */
 export type BillCommittee = {
+  /** Congress.gov's identifier, lower-cased. */
   systemCode: string;
   /** As this endpoint publishes it — usually the `"Committee on Agriculture"` word order rather than the list's. */
   name: string;
+  /** The chamber the committee belongs to. */
   chamber: CommitteeChamber;
+  /** The committee's type, grouped five ways. */
   type: CommitteeType;
   /** The verbatim upstream type label, kept for the same reason {@link CommitteeSummary} keeps one. */
   typeName?: string;

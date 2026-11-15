@@ -2,20 +2,15 @@ import { type CongressMember, compareMembersByName, partySeatingRank } from "@/l
 import { compareText } from "@/lib/format";
 
 /**
- * Pure geometry for the chamber seating chart: given a seat count, lay out that many seats in concentric arcs across a
- * half-disc, then pair them with members in party order.
- *
- * Everything here is deliberately free of React and of any Congress.gov concern so the arithmetic — which is the part
- * that's easy to get subtly wrong — can be unit-tested directly, and so both chambers share one implementation rather
- * than two hand-tuned ones.
+ * Pure geometry for the chamber seating chart: lay out seats in concentric arcs across a half-disc, then pair them with
+ * members in party order. Free of React so the arithmetic can be unit-tested and shared by both chambers.
  */
 
 /** Radius of the outermost arc, in user units. Every other dimension is derived from this. */
 const OUTER_RADIUS: number = 470;
 
 /**
- * Innermost arc radius, as a fraction of `OUTER_RADIUS`. Leaves an empty well at the center of the half-disc — the
- * shape a chamber diagram is expected to have, and room for the rostrum the arcs face.
+ * Innermost arc radius, as a fraction of `OUTER_RADIUS`, leaving the empty well a chamber diagram is expected to have.
  */
 const INNER_RADIUS_RATIO: number = 0.42;
 
@@ -40,18 +35,27 @@ export type SeatPosition = {
   row: number;
   /** Radians, measured from the positive x-axis: `Math.PI` is the viewer's left, `0` the viewer's right. */
   angle: number;
+  /** The arc's radius, in user units. */
   radius: number;
+  /** The seat center's x coordinate within the viewBox. */
   x: number;
+  /** The seat center's y coordinate within the viewBox. */
   y: number;
 };
 
 /** A complete laid-out half-disc of seats, plus the viewBox dimensions needed to render it. */
 export type SeatingGeometry = {
+  /** The viewBox width. */
   width: number;
+  /** The viewBox height. */
   height: number;
+  /** The x coordinate every arc is centered on. */
   centerX: number;
+  /** The y coordinate every arc is centered on — the half-disc's flat edge. */
   centerY: number;
+  /** The radius every seat is drawn at. */
   seatRadius: number;
+  /** How many arcs the seats are spread across. */
   rows: number;
   /** Every seat position, ordered left to right across the half-disc. */
   positions: SeatPosition[];
@@ -75,13 +79,9 @@ export function defaultRowCount(seatCount: number): number {
 }
 
 /**
- * Splits seats across arcs in proportion to each arc's radius, so seat density is even across the half-disc instead of
- * crowding the short inner arcs.
- *
- * Uses the largest-remainder method: floor every proportional share, then hand the leftover seats to the arcs with the
- * largest fractional parts. That guarantees the counts sum to *exactly* `seatCount` — a plain round-and-hope would
- * drift by a seat or two, which for a chamber diagram means either an unseated member or an empty chair, both of which
- * are visible and wrong.
+ * Splits seats across arcs in proportion to each arc's radius, so density is even across the half-disc. Uses the
+ * largest-remainder method so the counts sum to *exactly* `seatCount` — rounding would leave an empty chair or an
+ * unseated member.
  *
  * @param seatCount - Total seats to distribute.
  * @param radii - Each arc's radius, innermost first.
@@ -108,13 +108,9 @@ export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): n
     .map((entry: { index: number; remainder: number }): number => entry.index);
 
   // Flooring each share loses less than one seat per arc, so there are always fewer leftovers than arcs to hand them
-  // to; the modulo is belt-and-braces against a caller passing pathological radii.
-  /*
-   * Every `?? 0` from here down indexes `counts` or `byLargestRemainder` at an index a loop bound or a modulo has
-   * already proven valid, so none of the fallbacks can fire — they are here only because `noUncheckedIndexedAccess`
-   * types an indexed read as possibly-`undefined` regardless. Each is hoisted onto its own `v8 ignore`d line so the
-   * real control flow beside it stays measured rather than being ignored along with the guard.
-   */
+  // to; the modulo is belt-and-braces against a caller passing pathological radii. Every `?? 0` below indexes at a
+  // position already proven valid; they exist only for `noUncheckedIndexedAccess`, and sit on their own `v8 ignore`d
+  // lines so the real control flow stays measured.
   const leftover: number = seatCount - assigned;
   for (let seat: number = 0; seat < leftover; seat++) {
     /* v8 ignore start */
@@ -150,12 +146,8 @@ export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): n
 }
 
 /**
- * Lays out seats across a half-disc.
- *
- * Seats sit at the midpoint of an equal angular slice of their arc rather than at slice boundaries, which keeps a
- * consistent margin at both ends of every arc and handles a single-seat arc without dividing by zero. The final sort is
- * by angle descending — left to right from the viewer's perspective — so that assigning members in party order produces
- * contiguous party blocks across the *whole chart*, not per-arc ones.
+ * Lays out seats across a half-disc. Each seat sits mid-slice on its arc (even end margins, no divide-by-zero for one
+ * seat), and the result is sorted left to right so party-ordered members form blocks across the whole chart.
  *
  * @param seatCount - How many seats to place.
  * @param rowOverride - Force a specific arc count instead of {@link defaultRowCount}'s. Mainly for tests and for
@@ -238,28 +230,27 @@ export function computeSeatingGeometry(seatCount: number, rowOverride?: number):
 
 /** One drawn seat: the member who holds it, where it sits, and a stable key for React. */
 export type ChamberSeat = {
+  /** A React key, unique within the chamber. */
   key: string;
+  /** The seat's place in left-to-right order. */
   index: number;
+  /** Who holds the seat. */
   member: CongressMember;
+  /** Where the seat is drawn. */
   position: SeatPosition;
 };
 
+/** A chamber's complete seating chart. */
 export type ChamberSeating = {
+  /** The laid-out half-disc. */
   geometry: SeatingGeometry;
+  /** One seat per member, left to right. */
   seats: ChamberSeat[];
 };
 
 /**
- * Orders members for seating: by party (see `partySeatingOrder`), then by represented jurisdiction, then by name.
- *
- * Sorting within a party by state keeps a delegation adjacent on the chart and — more importantly — makes the order
- * fully deterministic, so the same membership always produces the same picture rather than one that reshuffles whenever
- * the upstream list comes back in a different order.
- *
- * Both text comparisons go through the app's shared, locale-pinned collation rather than a bare `localeCompare`. That
- * matters more here than anywhere else in the app: this chart is laid out on the server and then laid out again in the
- * browser, so two runtimes disagreeing about where a name falls would move ~540 seats between the server's HTML and the
- * client's. @see compareText in format.ts.
+ * Orders members for seating: by party, then state (keeping delegations adjacent), then name — fully deterministic.
+ * Uses the locale-pinned `compareText`, since the chart is laid out on both server and client and must match.
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.
@@ -276,16 +267,10 @@ export function compareMembersForSeating(a: CongressMember, b: CongressMember): 
 }
 
 /**
- * Builds a chamber's complete seating chart: one seat per member, laid out left to right with each party in a
- * contiguous block.
+ * Builds a chamber's seating chart: one seat per member, left to right, each party in a contiguous block. A schematic,
+ * not a floor plan — Congress.gov publishes no desk assignments, and the chart's caption says so.
  *
- * **This is a schematic, not a floor plan.** Congress.gov publishes no desk assignments, and neither chamber seats its
- * members in a tidy party-ordered arc in reality. The arrangement here is the conventional way chamber composition is
- * *diagrammed* — it communicates how many seats each party holds and lets a person reach any individual member, and the
- * chart says as much in its own caption rather than leaving a reader to assume otherwise.
- *
- * @param members - The chamber's members, in any order. Left untouched — `toSorted` copies before ordering, so a caller
- *   can hand over the roster it is still rendering from.
+ * @param members - The chamber's members, in any order. Not mutated.
  * @param rowOverride - Force a specific arc count. @see computeSeatingGeometry
  * @returns The geometry plus one seat per member. A member with no position available (only possible if a caller forces
  *   an arc count too small to hold everyone) is omitted rather than drawn on top of someone else.

@@ -4,16 +4,8 @@ import { expect, test } from "@playwright/test";
 import { PAGE_ROUTES, type TestFixtures } from "./routes";
 
 /**
- * The enforcement point for the half of the accessibility baseline that `accessibility.spec.ts` cannot see.
- *
- * That file is explicit about its own limit: automated rules catch "roughly the machine-checkable half of WCAG" — a
- * missing accessible name, a broken `aria-labelledby`, a contrast failure, a skipped heading level. What axe does not
- * do is *measure the page*. It reads the accessibility tree, so a layout that pushes the document sideways, a footer
- * left floating in the middle of the window, or a link whose hit area is smaller than a fingertip all pass a clean
- * sweep.
- *
- * So this file asserts against geometry rather than against semantics, which makes it the counterpart to that one
- * rather than a duplicate of it. Everything below reads a rectangle off the rendered page.
+ * Geometry checks axe can't make: horizontal overflow, the footer's position, and target sizes, each read off a
+ * rendered rectangle.
  */
 
 /**
@@ -31,12 +23,8 @@ const MIN_TARGET: number = 24;
 /**
  * How far the bottom of the footer sits from the bottom of the window.
  *
- * Zero on a page whose content does not fill the viewport, which is the entire point of the assertion; a couple of
- * pixels of slack is left for subpixel rounding on a fractional device pixel ratio rather than demanding an exact 0.
- *
  * @param page - The page to measure, already navigated.
- * @returns The gap in CSS pixels. Negative when the footer is below the fold, which is the ordinary case for a page
- *   with enough content to scroll and is why the caller picks a short route.
+ * @returns The gap in CSS pixels; negative when the footer is below the fold.
  */
 async function footerGap(page: Page): Promise<number> {
   return page.evaluate((): number => {
@@ -51,17 +39,8 @@ test.describe("reflow", (): void => {
   test.use({ viewport: { width: REFLOW_WIDTH, height: 900 } });
 
   /**
-   * No route may scroll sideways at 320px.
-   *
-   * The failure this catches is not cosmetic. A page wider than its window makes every line of prose on it a
-   * two-directional read, and it is the characteristic symptom of a grid track that quietly refuses to shrink — a `1fr`
-   * column takes its automatic minimum from its widest un-breakable child, so one long word or one rigid row inside it
-   * silently sets a floor for the whole page. The two places this app is most exposed to it are the home page's hero,
-   * whose featured bill carries a five-step journey stepper with a floor of its own, and the lesson pages, where a
-   * glossary bubble sits on a term that can fall anywhere in a line.
-   *
-   * The message names the offending elements rather than only the width, because "330 > 320" on its own sends the next
-   * reader binary-searching the stylesheet for it.
+   * No route may scroll sideways at 320px — the symptom of a grid track whose widest child sets a floor. The message
+   * names the offending elements, not just the width.
    */
   for (const route of PAGE_ROUTES) {
     test(`${route.name} does not scroll sideways at ${REFLOW_WIDTH}px`, async ({
@@ -119,13 +98,8 @@ test("the footer sits at the bottom of the window on a page too short to fill it
 });
 
 /**
- * The primary navigation's five destinations are the most-used controls on the site, and on a wide screen their line
- * boxes are the smallest on it — 21px, lifted over the floor by block padding rather than by anything visible, which is
- * exactly the kind of rule a later change to the type scale or the header would undo silently.
- *
- * Below 640px the same five are rows in the drawer instead, sized generously because a column has the height to spend.
- * Both arrangements are checked, at the narrowest viewport each one is reached at, because they are laid out by
- * different rules and only one of them can be wrong at a time.
+ * The primary nav's destinations clear the target-size floor in both arrangements: the wide-screen row (21px line
+ * boxes, lifted by padding) and the drawer below 640px.
  */
 test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`, async ({
   page,
@@ -167,13 +141,9 @@ test(`the drawer's toggle and destinations meet the ${MIN_TARGET}px target-size 
 });
 
 /**
- * Measures every destination the primary nav is currently offering.
+ * Measures every destination the primary nav currently offers, via `getByRole` — so a closed drawer fails on the count.
  *
- * Written against `getByRole`, which sees only what is actually reachable — so this doubles as the assertion that the
- * five are on screen at all. A closed drawer offers none of them, and this fails on the count rather than on a null
- * box, which is the more useful failure.
- *
- * @param page - The page to measure, already navigated and with the nav in whichever state is under test.
+ * @param page - The page to measure, with the nav in the state under test.
  * @returns Nothing; asserts.
  */
 async function expectDestinationsClearTheFloor(page: Page): Promise<void> {

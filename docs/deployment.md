@@ -99,28 +99,24 @@ What keeps that bounded now:
   that Congress's slice of the search sweep are regenerated daily rather than every five minutes. Only the Congress now
   sitting stays on the five-minute window. `revalidateSecondsForCongress` in `congress/upstream/http.ts` decides which;
   most of what crawlers walk is concluded Congresses, so this is where most of the remaining ISR work went.
-- **A bill page's requests are not cached twice.** In November 2026 the dashboard showed a crawler walking individual
-  bill pages across every Congress since the 93rd, about 9,400 in six hours, almost none of them repeats. Every one is a
-  cold ISR render, and each one also wrote its eight Congress.gov responses into the Data Cache, which Vercel meters per
-  read and write, for entries nothing would read again before they expired. A concluded Congress's bill page now makes
-  those requests uncached (`billPageCacheWindow` in `congress/upstream/http.ts`); the page's own segment `revalidate`
-  still holds it for a day, so readers see no difference. The sitting Congress keeps its five-minute fetch window, since
-  that is what keeps its pages fresh. `getBillById` is memoized per render with React's `cache`, because Next's own
-  fetch memoization skips any request carrying an abort signal and every request here carries one.
+- **A bill page's requests are not cached twice.** Crawlers walk bill pages across every Congress, almost never
+  repeating, and each cold render would write eight Congress.gov responses into the metered Data Cache for nothing. A
+  concluded Congress's bill page makes those requests uncached (`billPageCacheWindow` in `congress/upstream/http.ts`);
+  its segment `revalidate` still holds the page for a day. The sitting Congress keeps its five-minute fetch window.
+  `getBillById`, `getMemberProfile`, and `getCommitteeProfile` are memoized per render with React's `cache`, because
+  Next's fetch memoization skips requests carrying an abort signal, and every request here carries one.
 - **The homepage ships only what the seating chart draws.** The chart is a client component, so its props travel in the
-  page's RSC payload. It never showed portraits, yet every member's image URL and attribution rode along on the site's
-  most-served page. `compositionForSeating` strips them: about a seventh of the page's compressed size, and the homepage
-  is most of the project's Fast Data Transfer.
+  RSC payload. `compositionForSeating` strips the portraits it never shows — about a seventh of the most-served page's
+  compressed size.
 - **The API routes are cached at the CDN.** `/api/bills` and `/api/bills/search` read their query, so Next leaves them
-  uncached. They now send `s-maxage` for the shared five-minute window (`src/lib/edge-cache.ts`), so a repeated "Load
-  More" page or search query is answered by the CDN rather than by a function. Search matters most: each call reads and
-  validates up to 250 bills from every supported Congress before filtering.
-- **One deployment per push, and none for a docs-only one.** See step 6 above: two pipelines building every commit
-  doubled build usage for nothing. `deploy-vercel.yml` also skips a push or pull request that touches only `docs/` or
-  Markdown, since it would ship an identical bundle to a fresh deployment whose on-demand pages all start uncached.
+  uncached; they send `s-maxage` for the shared five-minute window (`src/lib/edge-cache.ts`), so a repeated request is
+  answered by the CDN. Search matters most: each call reads up to 250 bills from every supported Congress.
+- **One deployment per push, and none for a docs-only one.** See step 6 above. `deploy-vercel.yml` skips a push or pull
+  request touching only `docs/` or Markdown, which would ship an identical bundle whose on-demand pages all start
+  uncached.
 
-If the team is paused again, the dashboard's **Usage** tab names the metric that tripped it. Upgrading to Pro lifts a
-pause; so, sometimes, does asking Vercel support to reset it once the cause is fixed.
+If the team is paused, the dashboard's **Usage** tab names the metric that tripped it. Upgrading to Pro lifts a pause;
+so, sometimes, does asking Vercel support to reset it once the cause is fixed.
 
 Any other Node-capable host (Railway, Render, Fly.io, a plain VPS) works the same way. Vercel is just the path with an
 official GitHub Action and zero server config.

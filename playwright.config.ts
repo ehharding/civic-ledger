@@ -1,14 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Browser-level test configuration. Vitest owns the unit and component checks separately — see `vitest.config.mts` and
- * the `*.test.ts(x)` files beside each module.
- *
- * The split is by *what can be observed*, not by how heavy the test is. Vitest renders into jsdom, which has no layout
- * engine and no computed colors, so three of this project's stated commitments are invisible to it: the reflow promise
- * at 320px, the target-size floor, and every contrast token in both color schemes. Those live in `tests/e2e`, along
- * with the keyboard journeys through the chamber diagram. Everything a rendered tree can answer stays in Vitest, which
- * answers it in milliseconds.
+ * Browser-level test configuration, for what jsdom can't observe: 320px reflow, target sizes, contrast in both color
+ * schemes, and keyboard journeys. Everything a rendered tree can answer stays in Vitest.
  */
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -43,27 +37,15 @@ export default defineConfig({
     // stub.
     reducedMotion: "reduce",
   },
-  // Chromium only. The checks here are about this app's own markup, geometry, and keyboard model rather than about
-  // engine differences, and every one of them would assert the same thing three times over on three engines for triple
-  // the CI minutes. Add a project when a finding is actually engine-specific.
-  //
-  // The `warmup` project ahead of it compiles every route and primes this app's upstream cache before anything is
-  // asserted against, which is what keeps the cold-compile timeout described under `retries` from being a thing a
-  // contributor meets on a fresh checkout. @see tests/e2e/warmup.setup.ts. The two are split by filename — `.setup.ts`
-  // against `.spec.ts` — so the warm-up cannot be collected as a spec, and a spec cannot accidentally run before it.
+  // Chromium only: these checks are about this app's markup and keyboard model, not engine differences. The `warmup`
+  // project (`.setup.ts`, never collected as a spec) compiles every route first. @see tests/e2e/warmup.setup.ts
   projects: [
     { name: "warmup", testMatch: /\.setup\.ts$/ },
     { name: "chromium", testMatch: /\.spec\.ts$/, use: { ...devices["Desktop Chrome"] }, dependencies: ["warmup"] },
   ],
   webServer: {
-    // The dev server rather than `next build && next start`, which is the deliberate half of this and worth knowing
-    // before reading a failure. It costs a slower first navigation per route, since Turbopack compiles on demand — and
-    // it is what lets these specs run against the same server a contributor already has open, with
-    // `reuseExistingServer` below, instead of waiting on a production build to check whether a link works.
-    //
-    // What that trades away: this suite does not exercise the production build's output. The `quality` and
-    // `static-export` jobs in ci.yml both build, so a change that only breaks under `next build` still fails CI — just
-    // in a different job than this one.
+    // The dev server, so specs can reuse one a contributor already has open. Production builds are exercised by the
+    // `quality` and `static-export` CI jobs instead.
     command: "pnpm dev",
     url: "http://127.0.0.1:3000",
     // Reuse whatever is already listening locally; always start a fresh one in CI, where "already running" would mean a

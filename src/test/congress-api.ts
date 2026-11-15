@@ -10,10 +10,23 @@ import { type Mock, vi } from "vitest";
 /**
  * Puts the adapter on its live path: configures a Congress.gov key and replaces `fetch` with `fetchMock`.
  *
+ * @param fetchMock - The stand-in for `fetch`. Defaults to a bare mock, for tests asserting nothing was requested.
  * @returns `fetchMock`, so a test can stub and keep a handle in one line.
  */
-export function stubLiveApi<FetchMock extends Mock>(fetchMock: FetchMock): FetchMock {
+export function stubLiveApi<FetchMock extends Mock>(fetchMock: FetchMock = vi.fn() as FetchMock): FetchMock {
   vi.stubEnv("CONGRESS_API_KEY", "test-key");
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+/**
+ * Puts the adapter on its preview path: no Congress.gov key, and a bare `fetch` mock.
+ *
+ * @returns The `fetch` mock, so a test can assert the preview path never requested anything.
+ */
+export function stubPreviewApi(): Mock {
+  const fetchMock: Mock = vi.fn();
+  vi.stubEnv("CONGRESS_API_KEY", undefined);
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }

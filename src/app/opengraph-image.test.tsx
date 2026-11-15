@@ -5,15 +5,8 @@
 // this suite needs the Node environment to see the Web Streams API at all. @see `pool` in vitest.config.mts.
 
 /**
- * Covers the shared Open Graph card.
- *
- * The card is *constructed* here but deliberately not rasterized: `ImageResponse` hands its SVG to a native/WASM
- * rasterizer that isn't available under jsdom, and pulling one in would mean this suite maintained an image pipeline to
- * assert on pixels nobody reads. What is checkable — and what actually breaks — is everything around the drawing: that
- * the route declares the content type and size the `og:image` tags advertise, that those numbers come from the same
- * constant `pageMetadata` reads rather than a second copy, and that the card composes without Satori rejecting a style
- * it can't lay out. That last one is the real regression risk: Satori supports a subset of CSS, and a `display` or
- * `gap` it doesn't implement fails at build time, not at review time.
+ * Covers the shared Open Graph card. Not rasterized (no rasterizer under jsdom); instead pins the declared content type
+ * and size against `pageMetadata`'s constant, and that the card composes with only the CSS Satori supports.
  */
 import { describe, expect, it } from "vitest";
 

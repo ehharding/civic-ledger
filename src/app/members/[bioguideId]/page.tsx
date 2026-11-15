@@ -21,11 +21,8 @@ type MemberPageProps = {
 };
 
 /**
- * Pre-renders the placeholder members at build time.
- *
- * In the default server build this is only a performance win — every real member still resolves live, on demand. In a
- * static export these are the *only* member pages that can exist, since there's no server left at request time and no
- * key to look anyone up with.
+ * Pre-renders the placeholder members — a performance win on a server build, and the only member pages a static export
+ * has.
  *
  * @returns One params object per preview member fixture.
  */
@@ -36,11 +33,7 @@ export function generateStaticParams(): { bioguideId: string }[] {
 }
 
 /**
- * Builds the per-member title and description, so a member page reads as itself in a browser tab, a share card, or a
- * search result rather than falling back to the site-wide default.
- *
- * Calls `getMemberProfile` a second time without a second upstream request: Next memoizes `fetch` per request, so this
- * and the page component below share one response for the same route.
+ * Builds the per-member title and description. Shares the page's read: `getMemberProfile` is memoized per render.
  *
  * @param params - The member's route params.
  * @returns The member's metadata, or a "Member Not Found" title when the ID doesn't resolve.
@@ -62,13 +55,9 @@ export async function generateMetadata({ params }: MemberPageProps): Promise<Met
 }
 
 /**
- * Individual member route.
+ * Individual member route, keyed on Bioguide ID.
  *
- * Reached from any seat in the home page's chamber diagram, from a bill's sponsor line, and from any other place a
- * person is named — so the Bioguide ID in the URL is the same identifier the rest of the app already keys members on.
- *
- * @param params - The member's route params, straight from the URL and therefore untrusted.
- *   @see normalizeBioguideId for the guard that keeps a malformed ID from reaching Congress.gov.
+ * @param params - The member's route params, untrusted. @see normalizeBioguideId
  * @returns The member page, or the 404 page when the ID resolves to nobody.
  */
 export default async function MemberPage({ params }: MemberPageProps): Promise<JSX.Element> {

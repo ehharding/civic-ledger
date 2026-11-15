@@ -23,25 +23,19 @@ computed rather than received says so.**
 ### The Official-Record Link Is Published Where It Can Be, Derived Where It Can't
 
 Congress.gov's `url` field on a bill record is a _self-referential API_ link
-(`https://api.congress.gov/v3/bill/119/hr/284?format=json`), not the public page a reader wants. Passing it through
-meant the bill page's "Open the Official Record" link — the single most important link in an app whose whole premise is
-provenance — served raw JSON, or a 403 to anyone without a key of their own. It is the one field on a bill this app
-deliberately never reads.
+(`https://api.congress.gov/v3/bill/119/hr/284?format=json`), not the public page a reader wants — it serves raw JSON, or
+a 403 without a key. This app never reads it.
 
 Two other things can supply that link, and `mapCongressBill` prefers them in this order:
 
-1. **`legislationUrl`, where the record publishes it.** The item-level bill endpoint has carried the public
-   congress.gov page since August 2025 — `https://www.congress.gov/bill/119th-congress/house-bill/1` verbatim — and a
-   published URL beats a derived one on the same rule that governs `laws`, `committeeWebsiteUrl`, and everything else
-   in this document: a fact the publisher states outright cannot be wrong in the way a construction of ours can.
-2. **`congressGovBillUrl` (`src/lib/congress/bills/model.ts`) otherwise.** The derivation still earns its place, because
-   the _list_ endpoint sends no `legislationUrl` at all and a directory card needs the link as much as a detail page
-   does. It builds the same string from the bill's own identity, which `mapCongressBill` already requires before it will
-   map a record at all. An unrecognized bill type falls back to the Congress.gov home page rather than emitting a
-   confidently wrong deep link.
+1. **`legislationUrl`, where the record publishes it.** The item-level bill endpoint carries the public page
+   (`https://www.congress.gov/bill/119th-congress/house-bill/1`), and a published URL beats a derived one — the rule
+   that governs `laws`, `committeeWebsiteUrl`, and everything else in this document.
+2. **`congressGovBillUrl` (`src/lib/congress/bills/model.ts`) otherwise.** The _list_ endpoint sends no
+   `legislationUrl`, so directory cards need the derivation, built from the bill's own identity. An unrecognized bill
+   type falls back to the Congress.gov home page rather than a confidently wrong deep link.
 
-The two coexisting is the point rather than a transitional state: neither covers both endpoints, and dropping the
-derivation to use only the published field would leave every card in the bill directory without an outbound link.
+Neither source covers both endpoints, so both stay.
 
 ## Preview Data Is Labeled Fiction
 
@@ -387,9 +381,8 @@ further the longer the name gets. A guessed slug that happens to be wrong produc
 lands on a 404, which is worse here than one extra click. The page links Congress.gov's committee index and prints the
 system code beside it, which is what actually identifies the committee at the destination.
 
-**What the page does link is the committee's own site**, because the API states that URL
-outright — `committeeWebsiteUrl` was added to the committee item endpoint in December 2025, and House Agriculture's
-record returns `https://agriculture.house.gov/` verbatim. That is the same rule as above rather than an exception to it:
+**What the page does link is the committee's own site**, because the committee item endpoint publishes it as
+`committeeWebsiteUrl` (House Agriculture's returns `https://agriculture.house.gov/` verbatim) — the same rule as above:
 a published URL is linkable and a derived one is not. The link's own copy says the roster lives at that destination and
 not on this page, which is a more useful thing to tell a reader than silence about why the membership is missing.
 
@@ -477,43 +470,26 @@ product. The member page says so in its own closing card rather than leaving the
 
 ### Analytics Records the Page, Not the Reader
 
-Vercel Web Analytics and Speed Insights are mounted once in the root layout. Both were chosen on the same property: they
-are cookieless and store no cross-site identifier, so adding them does not turn a reader of public legislative records
-into a tracked subject. That is a low bar, and it is not the interesting part.
+Vercel Web Analytics and Speed Insights are mounted once in the root layout. Both are cookieless and store no
+cross-site identifier.
 
-The interesting part is that this app's own best feature would have quietly defeated it. Shareable narrowed directories
-are why `/members?party=republican&state=Ohio` and `/bills?q=broadband` exist at all — and an unfiltered analytics feed
-of those URLs is a log of what each reader searched for and whose delegation they went looking at. A stance against
-affiliation targeting would be decorative if the measurement layer assembled the raw material for it as a side effect of
-a feature rather than by anyone's decision.
-
-So `redactUrl` (`src/lib/observability/redact.ts`) cuts everything from the first `?` or `#` before either collector
-reports anything. What survives is the page — `/bills`, `/members`, `/committees/house/hsag00` — which answers
-"which parts of this are worth keeping" without answering "who is reading it." It is enforced in a `beforeSend` callback
-rather than a dashboard setting, because a dashboard setting is a thing someone can flip and a callback is a thing that
-shows up in a diff. It has its own test for the same reason: a promise made in prose and kept by one uncovered line is a
-promise that survives until the next refactor.
+Shareable directories put views like `/members?party=republican&state=Ohio` and `/bills?q=broadband` in the address bar,
+so an unfiltered analytics feed would be a log of what each reader looked for. `redactUrl`
+(`src/lib/observability/redact.ts`) cuts everything from the first `?` or `#` before either collector reports, leaving
+only the page — `/bills`, `/members`, `/committees/house/hsag00`. It's enforced in a tested `beforeSend` callback rather
+than a dashboard setting, so it shows up in a diff.
 
 The static GitHub Pages demo ships neither collector — see
 [Deployment](deployment.md#secondary-github-pages-static-demo).
 
 ### An Error Report Names a Page, Never a Query
 
-Sentry reports crashes and upstream failures, and it is held to the rule above rather than exempted from it. Left on its
-defaults it would break that rule outright, which is why this section exists.
+Sentry reports crashes and upstream failures, and is held to the rule above. On its defaults it would break it: SDK
+v11's `dataCollection` defaults send full request URLs, query strings included. The same applies to `console`: on a
+managed host a function log is a third-party sink, so every log line is built and redacted in
+`src/lib/observability/log.ts` and written to both sinks from there.
 
-The rule covers `console` too, and that took a change to be true. The redaction below was wired into Sentry's callbacks
-and nowhere else, which left every `console.error` in the app as the one path out of this process with nothing scrubbing
-it — including the one in `requestCongressJson`, whose argument is a caught error that can be carrying a Congress.gov
-URL with the key still on it. On a managed host a function log is a third-party sink like any other, so the promise this
-document makes applies to it. Every log line is now built in `src/lib/observability/log.ts`, redacted there, and written
-to both sinks from one place.
-
-Sentry's own documentation was explicit, back when the SDK had a `sendDefaultPii` switch: with it off and every other
-default in place, "the full request URL of outgoing and incoming HTTP requests is always sent," query string included.
-SDK v11 replaced that switch with per-category `dataCollection` settings whose defaults are _more_ permissive, so the
-sentence understates the position now rather than overstating it. In this app that sentence describes
-two separate leaks that happen to have one fix:
+Unredacted URLs would leak two things with one fix:
 
 - **The Congress.gov key travels in the query string.** `buildCongressUrl` appends `api_key=…` to every outbound URL, so
   an unfiltered breadcrumb or span is a published credential. The rule at the top of this document — that the key never
@@ -522,31 +498,22 @@ two separate leaks that happen to have one fix:
   arrive on every crash report: the same dataset the section above refuses, collected through a different door by a tool
   nobody thinks of as a measurement layer.
 
-So both layers make the same cut through the same function. `redactUrl` lives in `src/lib/observability/redact.ts`
-rather than beside either caller, because a promise kept by two copies of a function is a promise that survives until
-someone edits one of them.
+So analytics and error reporting make the same cut through the one `redactUrl`.
 
 What the error tracker is allowed to collect is set in `src/lib/observability/sentry-options.ts`, in code rather than in
 a Sentry project setting: query params, request and response headers, cookies, request bodies, user info, captured local
 variables, database query text, GenAI inputs and outputs, queue payloads, and GraphQL documents are all refused
-outright — the last four for categories this app does not produce yet, because SDK v11 collects each of them unless told
-not to. The redaction callbacks then run over every event as a backstop, so a field a future SDK version adds is covered
-before anyone here has heard of it. There are four of them, not three — `beforeSend`, `beforeSendSpan`,
-`beforeBreadcrumb`, and `beforeSendLog` — because structured logs are a separate pipeline that the first three do not
-touch. (`beforeSendSpan` is the tracing hook since SDK v11 streamed spans individually; the `beforeSendTransaction` hook
-it replaced still type-checks and is never called.) Calling `Sentry.logger` without the fourth would open an exit from
-this process that none of the scrubbing above covers, and would open it quietly, since a log body looks like text nobody
-put a URL in until someone does. Local variables get both treatments because the key can reach a stack frame with no
-`api_key=` prefix for a pattern to find — so the redactor also strips the key's literal value, which is the pass that
-makes this airtight rather than merely careful.
+outright — the last four for categories this app doesn't produce yet, since SDK v11 collects them unless told not to.
+Four redaction callbacks then run as a backstop over every event — `beforeSend`, `beforeSendSpan`, `beforeBreadcrumb`,
+and `beforeSendLog` (structured logs are a separate pipeline). `beforeSendTransaction` is unused: it still type-checks,
+but SDK v11 never calls it. The redactor also strips the key's literal value, since it can reach a stack frame without
+an `api_key=` prefix.
 
-**No Session Replay.** It is the SDK's headline feature and the wrong feature for this product: it records the DOM, and
-the DOM here is the congressional record a reader was reading plus whatever they typed into a search box. Adding it
-would rebuild, in higher fidelity, precisely the dataset this section refuses. Turning it on needs an argument in this
-document, not a line in a config file.
+**No Session Replay.** It records the DOM, including whatever a reader typed into a search box — the dataset this
+section refuses. Turning it on needs an argument in this document, not a config change.
 
-As with the analytics cut, all of this has its own tests (`redact.test.ts`, `sentry-options.test.ts`) — and for the same
-reason. The static GitHub Pages demo carries no error tracker at all; the SDK is replaced with a no-op at build time.
+All of this is tested (`redact.test.ts`, `sentry-options.test.ts`). The static GitHub Pages demo carries no error
+tracker; the SDK is replaced with a no-op at build time.
 
 ## Working With the Upstream API
 

@@ -31,7 +31,9 @@ export type CommitteeTypeFilter = FacetFilter<CommitteeType>;
 export type CommitteeFilters = {
   /** Raw search text, as typed. Trimmed internally. */
   query: string;
+  /** The chamber to narrow to. */
   chamber: CommitteeChamberFilter;
+  /** The committee type to narrow to. */
   type: CommitteeTypeFilter;
 };
 
@@ -165,7 +167,9 @@ export const COMMITTEE_DIRECTORY_PARAMS = {
 
 /** Everything the `/committees` URL can express: what to show, and in what order. */
 export type CommitteeDirectoryQuery = {
+  /** What to show. */
   filters: CommitteeFilters;
+  /** The order to show it in. */
   sort: CommitteeSort;
 };
 

@@ -33,11 +33,8 @@ import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { billHref } from "@/lib/routes";
 
 /**
- * The *longest* a bill page is cached: one day, the concluded-Congress window. A ceiling, on the same rule as
- * `/bills/[congress]`: every request this page makes is scoped to the bill's own Congress, so a bill in the current
- * Congress is still refreshed every five minutes and one from a concluded Congress daily. Without a segment value the
- * window would come from the fetches alone, and a page rendered while every one of them failed would carry none.
- * @see revalidateSecondsForCongress
+ * The *longest* a bill page is cached: one day. Its fetches shorten that to five minutes for the current Congress; the
+ * ceiling bounds a page whose fetches all failed. @see revalidateSecondsForCongress
  */
 export const revalidate: number = 86_400;
 
@@ -47,10 +44,7 @@ type BillPageProps = {
 };
 
 /**
- * Pre-renders the preview bills at build time.
- *
- * In the default server build this is only a performance win — every other bill still resolves live, on demand. In a
- * static export these are the *only* bill pages that can exist, since there's no server left at request time.
+ * Pre-renders the preview bills — a performance win on a server build, and the only bill pages a static export has.
  *
  * @returns One params object per preview fixture.
  */
@@ -65,12 +59,7 @@ export function generateStaticParams(): BillRouteParams[] {
 }
 
 /**
- * Builds the per-bill title and description, so a bill page reads as itself in a browser tab, a share card, or a search
- * result rather than falling back to the site-wide default.
- *
- * Calls `getBillById` a second time without a second upstream request: `getBillById` is memoized per render, so this
- * and the page component below share one response for the same route. (Next's own `fetch` memoization does not cover
- * it — it skips any request carrying an abort signal, and every Congress.gov request carries its timeout's.)
+ * Builds the per-bill title and description. Shares the page's read: `getBillById` is memoized per render.
  *
  * @param params - The bill's route params.
  * @returns The bill's metadata, or a "Bill Not Found" title when it doesn't resolve.
@@ -81,13 +70,8 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 
   if (!bill) return notFoundMetadata("Bill Not Found");
 
-  // The latest action is the most useful single sentence about a bill — it says where the bill actually *is*, which is
-  // the question someone following a shared link is most often asking. A freshly introduced record can carry no action
-  // prose at all, and naming the bill is a better link preview than the placeholder that stands in for it elsewhere.
-  //
-  // A comparison rather than a nullish check, because `latestAction.text` is a required string on the model: the
-  // absence is spelled as that placeholder, not as a missing field, so a `??` here would type-check and never fire.
-  // @see NO_LATEST_ACTION_TEXT.
+  // The latest action says where the bill *is*; with none recorded, naming the bill beats the placeholder. Compared
+  // rather than `??`'d, since absence is spelled as `NO_LATEST_ACTION_TEXT`, not a missing field.
   const hasActionText: boolean = bill.latestAction.text !== NO_LATEST_ACTION_TEXT;
 
   return pageMetadata({
@@ -100,17 +84,9 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 }
 
 /**
- * Individual bill record route.
- *
- * Resolves the bill by direct lookup rather than by filtering the homepage snapshot, so any real bill number
- * works — not just the dozen the list endpoint most recently returned. The bill, its CRS summaries, its official text
- * versions, its action history, its committee referrals, its cosponsors, the amendments offered to it, and the measures
- * it is related to are independent reads, so all eight go out together rather than in sequence.
- *
- * Independent in their failures, too, which is why the seven collections arrive as {@link BillSubResource}s rather than
- * as bare arrays: the bill itself can resolve from the cached list snapshot while a sub-resource request fails, and in
- * that state the bill carries no `collectionCounts` to check an empty list against. Each collection therefore says for
- * itself whether it was answered. @see EmptySectionNote for what the page does with that.
+ * Individual bill record route. Looks the bill up directly (so any real bill number works) and fetches its seven
+ * collections in parallel. Each arrives as a {@link BillSubResource} saying whether it was answered, since they can
+ * fail independently of the bill. @see EmptySectionNote
  *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.

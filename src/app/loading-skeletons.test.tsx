@@ -1,13 +1,6 @@
 /**
- * Covers all seven `loading.tsx` routes together.
- *
- * One file rather than seven, because the assertion worth making is a *shared* one and only reads as a rule when every
- * route is checked against it in the same place: a skeleton is a wall of contentless boxes, so every placeholder must
- * be hidden from assistive technology and each route must say "loading" exactly once, out loud, instead. Seven
- * near-identical files would each restate that and none of them would enforce it across the set.
- *
- * The per-route copy is checked too, since matching the real page's wording is the entire reason these exist — a
- * skeleton whose heading differs from the page it resolves into is a visible jump rather than a smooth arrival.
+ * Covers all seven `loading.tsx` routes against one shared rule: every placeholder is hidden from assistive technology
+ * and the route announces "loading" exactly once. Also checks each skeleton's copy matches its page.
  */
 import { render, screen, within } from "@testing-library/react";
 import type { JSX } from "react";

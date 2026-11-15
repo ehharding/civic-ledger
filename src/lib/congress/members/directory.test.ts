@@ -13,7 +13,7 @@ import {
   type MemberDirectoryEntry,
 } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
-import { jsonResponse } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 
 /** A live member-list payload, in the shape the list endpoint actually returns. */
 function liveMemberListPayload(members: Record<string, unknown>[]): Record<string, unknown> {
@@ -134,8 +134,6 @@ describe("buildMemberDirectory", (): void => {
 
 describe("getMemberDirectory without an API key", (): void => {
   it("falls back to the placeholder people and labels them as such", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: MemberDirectoryResult = await getMemberDirectory();
 
     expect(result.source).toBe("preview");
@@ -144,8 +142,6 @@ describe("getMemberDirectory without an API key", (): void => {
   });
 
   it("offers placeholder rows that resolve to real member pages, not dead links", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: MemberDirectoryResult = await getMemberDirectory();
     const known: Set<string> = new Set(previewMemberProfiles.map((profile): string => profile.bioguideId));
 
@@ -157,16 +153,12 @@ describe("getMemberDirectory without an API key", (): void => {
     // this app's fiction could be taken for the record, far more so than a plausible name or a fabricated deep link.
     // Held here rather than only in the fixtures, so adding a portrait to one would fail a test that says why.
     // @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: MemberDirectoryResult = await getMemberDirectory();
 
     expect(result.members.every((entry: MemberDirectoryEntry): boolean => entry.depiction === undefined)).toBe(true);
   });
 
   it("orders the placeholder roster alphabetically, like the live one", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const names: string[] = (await getMemberDirectory()).members.map(
       (entry: MemberDirectoryEntry): string => entry.name,
     );
@@ -177,20 +169,21 @@ describe("getMemberDirectory without an API key", (): void => {
 
 describe("getMemberDirectory with an API key", (): void => {
   it("maps a live roster and reports it as live", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse(
-        liveMemberListPayload([
-          liveMember(),
-          liveMember({
-            bioguideId: "A000002",
-            name: "Alvarez, Priya R.",
-            partyName: "Republican",
-            state: "Arizona",
-            district: undefined,
-            terms: { item: [{ chamber: "Senate" }] },
-          }),
-        ]),
+    stubLiveApi(
+      vi.fn().mockResolvedValue(
+        jsonResponse(
+          liveMemberListPayload([
+            liveMember(),
+            liveMember({
+              bioguideId: "A000002",
+              name: "Alvarez, Priya R.",
+              partyName: "Republican",
+              state: "Arizona",
+              district: undefined,
+              terms: { item: [{ chamber: "Senate" }] },
+            }),
+          ]),
+        ),
       ),
     );
 
@@ -205,10 +198,8 @@ describe("getMemberDirectory with an API key", (): void => {
   });
 
   it("falls back to placeholders when the roster can't be read, rather than showing an empty directory", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
-    // The adapter logs this failure by design, and it is deliberate here, so it should not read as a real fault in the
-    // run's output. Kept out of it by `onConsoleLog` in vitest.config.mts rather than by a spy in every such test.
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "boom" }, 500));
+    // The adapter logs this failure by design; `onConsoleLog` in vitest.config.mts keeps it out of the run's output.
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ error: "boom" }, 500)));
 
     const result: MemberDirectoryResult = await getMemberDirectory(119);
 

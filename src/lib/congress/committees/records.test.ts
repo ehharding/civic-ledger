@@ -1,15 +1,7 @@
 /**
- * Covers the committee record model's URL rules and paging arithmetic.
- *
- * The load-bearing cases here are the total ones. Every parser below has to resolve *any* input to something usable,
- * because these params arrive from a URL bar that gets hand-edited, truncated by chat clients, and opened a year after
- * it was shared — and a committee page is a link people send. A `?page=` of `"seventeen"`, `"-4"`, `"1e999"`, or
- * nothing at all must all land on a readable page rather than an error, and each of those is tested rather than
- * assumed.
- *
- * The round trip is tested as a round trip: whatever `committeeRecordsQueryString` writes,
- * `parseCommitteeRecordsQuery` has to read back as the same view. That is the one property that makes a shared link
- * mean the same thing to the route that resolved it and to the browser that opened it.
+ * Covers the committee record model's URL rules and paging. Every parser is total — `?page=seventeen`, `-4`, `1e999`,
+ * or nothing all land on a readable page — and `committeeRecordsQueryString` round-trips through
+ * `parseCommitteeRecordsQuery`.
  */
 import { describe, expect, it } from "vitest";
 

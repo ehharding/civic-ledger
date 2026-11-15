@@ -1,11 +1,6 @@
 /**
- * Covers `robots.txt` generation.
- *
- * Two things are worth pinning here, and neither is the file's shape: that the sitemap pointer is an absolute URL built
- * from the same resolver the canonical tags use (a relative one is silently ignored by every crawler), and that `/api/`
- * stays disallowed for the reason the route's own comment gives — those endpoints are this app's internal proxies, and
- * indexing them would surface bare JSON in place of the pages that make it mean something. The query-variant rules are
- * pinned for the same kind of reason: they are what keeps a crawler from paying for an on-demand render per facet.
+ * Covers `robots.txt`: the sitemap pointer is absolute and built from the canonical resolver (crawlers ignore relative
+ * ones), `/api/` stays disallowed, and the query-variant rules keep crawlers off on-demand renders.
  */
 import type { MetadataRoute } from "next";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

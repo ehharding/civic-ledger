@@ -33,19 +33,11 @@ import {
 } from "@/lib/congress/members/model";
 
 /**
- * Clearly labeled fixture records, so the application renders without an API key.
+ * Clearly labeled fixture records, so the app renders without an API key. **Not real records; never present them as
+ * live.** Every surface pairs them with a `DataSourceNotice`, and each links only to {@link CONGRESS_GOV_HOME} — a
+ * fabricated deep link is the easiest way for fiction to pass as the record.
  *
- * **These are not real legislative records and must never be represented as live data.** Every surface that displays
- * them pairs them with a `DataSourceNotice` saying so, and each fixture links only to the Congress.gov *home page*
- * rather than to a plausible-looking bill URL — a fabricated deep link is the single easiest way for preview content to
- * be mistaken for the official record.
- *
- * That last rule is spelled {@link CONGRESS_GOV_HOME} at every fixture rather than as a copy of the URL, so it reads as
- * the deliberate choice it is. Seven identical string literals read as seven records that happen to share a link, and
- * an eighth fixture written by hand is one keystroke away from being a deep link nobody notices.
- *
- * The set deliberately spans several Congresses and every `BillStage`, so filtering, the Congress switcher, and the
- * journey stepper are all exercisable without a key.
+ * Spans several Congresses and every `BillStage`, so filters, the Congress switcher, and the stepper all work.
  */
 export const previewBills: LegislativeBill[] = [
   {
@@ -182,21 +174,10 @@ export const previewBills: LegislativeBill[] = [
 export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeBill;
 
 /**
- * Fictional cosponsors for the preview fixtures, keyed by `billIdentityKey`.
- *
- * Drawn *only* from the seven placeholder members the fixtures already name as sponsors, which is what keeps this from
- * widening the fiction: every person here already has a preview page, already appears on a preview bill, and already
- * carries a `PREVIEW-n` id that deliberately fails `isBioguideId` — so none of them can be sent upstream or linked to a
- * real person's biography. @see docs/data-policy.md, "Placeholder members exist where a placeholder roster still
- * doesn't."
- *
- * These exist so the no-key build — which is what the GitHub Pages demo runs, and the only thing a UI reviewer can
- * see — shows the cosponsor section doing its job rather than showing its empty state. The one thing the preview path
- * must not do is credit Congress.gov with a count for a bill it never published, which is why the section drops the
- * published figure entirely when `source` is `"preview"`. @see CosponsorList.
- *
- * The `isOriginal` flags are mixed on purpose, so the preview exercises both branches of the row and both halves of the
- * sentence above it rather than only the one a uniform list would reach.
+ * Fictional cosponsors for the preview fixtures, keyed by `billIdentityKey`, so the static demo shows the section
+ * working. Drawn only from the seven placeholder sponsors, whose `PREVIEW-n` IDs fail `isBioguideId` and so never reach
+ * upstream. `isOriginal` is mixed to exercise both row branches.
+ * @see docs/data-policy.md
  */
 export const previewCosponsors: Record<string, BillCosponsor[]> = {
   "119-HR-284": [
@@ -292,21 +273,9 @@ export const previewSummaries: Record<string, string> = {
 };
 
 /**
- * Placeholder member records for the fictional sponsors named in {@link previewBills}, so the member page renders
- * without an API key.
- *
- * This does *not* loosen the policy that keeps the preview chamber diagram unattributed. The distinction is that these
- * seven people are already named on the preview bill records, so a reader who clicks a sponsor's name has already been
- * told they're looking at preview data — whereas a chamber diagram of 535 plausible names invites a reader to look up
- * their *own* representative and be quietly misinformed about who that is. Adding a page for a name the fixtures
- * already print is a smaller claim than inventing a roster.
- *
- * Two safeguards make the fiction impossible to mistake for a record:
- *
- * - **The IDs cannot be real.** `PREVIEW-1` and friends fail {@link isBioguideId}, so they're never sent upstream and
- *   never produce a Biographical Directory link — the page structurally cannot point at a real person's biography.
- * - **No official website.** Same reasoning as `previewBills`' bare congress.gov link: a fabricated deep link is the
- *   single easiest way for preview content to be mistaken for the official record.
+ * Placeholder members for the fictional sponsors {@link previewBills} already names — a smaller claim than a 535-name
+ * roster, which the chamber diagram avoids. Their `PREVIEW-n` IDs fail {@link isBioguideId}, so they're never sent
+ * upstream or linked to a real biography, and none has an official website.
  */
 export const previewMemberProfiles: MemberProfile[] = [
   {
@@ -428,8 +397,7 @@ export const previewMemberProfiles: MemberProfile[] = [
  * Locates a preview member by ID.
  *
  * @param bioguideId - The raw route param, matched case-insensitively so a hand-typed URL still resolves.
- * @returns The matching placeholder member, or `undefined` — which the route renders as a 404, exactly as it would for
- *   a real ID that doesn't exist.
+ * @returns The matching placeholder member, or `undefined` (a 404).
  */
 export function findPreviewMemberProfile(bioguideId: string): MemberProfile | undefined {
   const wanted: string = bioguideId.trim().toUpperCase();
@@ -437,16 +405,8 @@ export function findPreviewMemberProfile(bioguideId: string): MemberProfile | un
 }
 
 /**
- * The placeholder members as directory rows.
- *
- * Derived from {@link previewMemberProfiles} rather than kept as a second hand-maintained list, so the directory and
- * the member pages it links to can never disagree about who exists.
- *
- * This is a smaller claim than the chamber diagram's, and stays within the same policy: these seven names are already
- * printed on the preview bills, and the directory is the same length as that list — plainly seven placeholder people,
- * not a plausible-looking roster of a chamber. Note that some of them are *former* members, which a live directory of
- * currently-seated members would never contain; the route says which kind of list a reader is looking at rather than
- * quietly filtering the fixtures down to match a shape they were never built for.
+ * The placeholder members as directory rows, derived from {@link previewMemberProfiles} so the two can't disagree. Some
+ * are former members; the route labels the list as placeholders rather than filtering them out.
  *
  * @returns One row per placeholder member, alphabetically.
  */
@@ -467,14 +427,10 @@ export function previewMemberDirectory(): MemberDirectoryEntry[] {
 }
 
 /**
- * The preview bills a placeholder member sponsored.
- *
- * Derived from `previewBills` by matching on the sponsor's ID rather than kept as a second hand-maintained list, so a
- * fixture bill and its sponsor's page can't disagree about who sponsored what.
+ * The preview bills a placeholder member sponsored, derived from `previewBills` so the two can't disagree.
  *
  * @param bioguideId - The placeholder member's ID, or `undefined` when no member resolved.
- * @returns Their sponsored bills, and an always-empty cosponsored list — the fixtures record a single sponsor per bill
- *   and nothing about cosponsors, and inventing a cosponsorship history would be a claim with nothing behind it.
+ * @returns Their sponsored bills, and an always-empty cosponsored list (no history is invented).
  */
 export function previewMemberLegislation(bioguideId: string | undefined): {
   sponsored: LegislativeBill[];
@@ -493,13 +449,8 @@ export function previewMemberLegislation(bioguideId: string | undefined): {
 }
 
 /**
- * The party split used to draw the preview chamber diagram.
- *
- * These are **illustrative placeholder counts**, chosen to be plainly round rather than to approximate any real
- * Congress — the point is to exercise the chart's layout, legend, and responsive behavior without an API key, in the
- * same spirit as `previewBills`. Reporting a real-looking party balance would be a factual claim about the current
- * Congress that this fixture has no way to keep true, which is exactly the kind of accidental misinformation the
- * preview-data policy exists to prevent. The chart labels these seats as placeholders wherever they're shown.
+ * The preview chamber diagram's party split: plainly round placeholder counts, not an approximation of any real
+ * Congress, which would be a claim this fixture can't keep true.
  */
 const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = {
   house: [
@@ -514,11 +465,8 @@ const previewChamberPartySplits: Record<CongressChamber, PartyTally[]> = {
 };
 
 /**
- * Builds one chamber's worth of unattributed placeholder seats.
- *
- * Each seat is named "Preview Seat N" rather than given a fictional member's name and jurisdiction. A chamber diagram
- * invites a reader to look up *their own* representative, and a fabricated roster of 535 plausible-looking names and
- * districts is a far easier thing to mistake for real data than a labeled placeholder is.
+ * Builds one chamber's worth of unattributed "Preview Seat N" placeholders — no invented names, since readers look up
+ * their own representative on a chamber diagram.
  *
  * @param chamber - Which chamber to populate.
  * @returns Placeholder members in the party proportions from {@link previewChamberPartySplits}.
@@ -536,10 +484,7 @@ function previewChamberMembers(chamber: CongressChamber): CongressMember[] {
 }
 
 /**
- * Assembles a complete, clearly labeled placeholder {@link CongressComposition}.
- *
- * Used by the adapter's no-key and upstream-failure paths, and by tests that need a composition without stubbing a
- * fetch.
+ * Assembles a clearly labeled placeholder {@link CongressComposition}, for the no-key and upstream-failure paths.
  *
  * @param congress - The Congress the placeholder stands in for.
  * @param retrievedAt - The timestamp to report, so preview data carries the same freshness signal live data does.
@@ -564,16 +509,9 @@ export function buildPreviewComposition(
 }
 
 /**
- * Clearly labeled placeholder committees, so `/committees` renders without an API key.
- *
- * Held to the same policy as every other fixture in this file, with one extra care that is specific to committees. A
- * committee name is a *real-world institution's* name in a way a bill title isn't — "Committee on Agriculture" names a
- * body that exists — so these are deliberately built not to collide with one. Each is named for a subject no standing
- * committee of either chamber holds jurisdiction over, and each carries a system code that cannot pass
- * `isCommitteeSystemCode`, which is what stops a placeholder from ever being handed an official-record reference.
- *
- * The set spans all three chambers and four of the five committee types, so the directory's filters, sort, and empty
- * state are all exercisable without a key — the same reason `previewBills` spans several Congresses and every stage.
+ * Placeholder committees, so `/committees` renders without an API key. Named for subjects no real committee covers, so
+ * none collides with a real institution, and given system codes that fail `isCommitteeSystemCode`. Spans all three
+ * chambers and four committee types to exercise the directory's filters.
  */
 export const previewCommitteeProfiles: CommitteeProfile[] = [
   {
@@ -672,21 +610,11 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
 ];
 
 /**
- * Placeholder record collections, so a committee page's bills, reports, and nominations render without an API key.
+ * Placeholder bills, reports, and nominations for the committee pages, keyed by {@link previewCommitteeProfiles}'
+ * system codes and sized to match each profile's printed counts.
  *
- * Keyed by the same system codes {@link previewCommitteeProfiles} uses, and sized to match each profile's declared
- * counts exactly — those counts are printed as headings directly above these records, so a set that disagreed with its
- * own count would be a fixture contradicting itself on screen.
- *
- * The referrals reuse {@link previewBills} rather than inventing measures of their own. That is the same rule the
- * preview member legislation follows, and it buys the same thing: a placeholder committee's bill list links to pages
- * that exist in preview mode, so following one is a working journey rather than a 404 that makes the fixtures look
- * broken. One referral per committee deliberately carries **no** bill record, which is what makes the
- * title-lookup-failed row reachable without a key.
- *
- * The reports and nominations are fictional in the strong sense: no real report citation or nomination number appears
- * here. `PREVIEW` where a chamber's letter would go is what keeps `"PREVIEW Rept. 119-4"` from being mistaken for a
- * citation anyone could look up.
+ * Referrals reuse {@link previewBills} so their links work in preview; one per committee has no bill record, to
+ * exercise the failed-title-lookup row. Report and nomination citations carry `PREVIEW` so none can pass as real.
  */
 const PREVIEW_COMMITTEE_RECORDS: Record<string, CommitteeRecordSets> = {
   "preview-01": {
@@ -851,8 +779,8 @@ type CommitteeRecordSets = {
  * @param key - The bill's `billIdentityKey`, e.g., `"119-HR-284"`.
  * @param relationship - What the committee did with it.
  * @param actionDate - When, as an ISO 8601 timestamp.
- * @returns The referral, carrying the preview bill's own record so the row renders with a title. A key naming no
- *   preview bill yields a referral with no bill, which is the same shape a failed live title lookup produces.
+ * @returns The referral, carrying the preview bill's record — or none, like a failed live title lookup, when the key
+ *   names no preview bill.
  */
 function previewReferral(key: string, relationship: string, actionDate: string): CommitteeBillReferral {
   const bill: LegislativeBill | undefined = previewBills.find(
@@ -864,12 +792,8 @@ function previewReferral(key: string, relationship: string, actionDate: string):
 }
 
 /**
- * Resolves one page of a placeholder committee's records.
- *
- * Pages the fixture list with the same arithmetic the live path uses rather than always returning everything, so the
- * pager's own behavior — a clamped page, a correct range line, a disabled edge — is exercisable without a key. A code
- * naming no placeholder committee yields an empty page rather than nothing, since the caller has already decided a page
- * is being rendered.
+ * Resolves one page of a placeholder committee's records, paged like the live path so the pager works without a key. An
+ * unknown code yields an empty page.
  *
  * @param systemCode - The raw system code route param, matched case-insensitively.
  * @param query - Which collection to read and how far into it.
@@ -891,10 +815,7 @@ export function previewCommitteeRecords(systemCode: string, query: CommitteeReco
 }
 
 /**
- * The placeholder committees as directory rows.
- *
- * Derived from {@link previewCommitteeProfiles} rather than kept as a second hand-maintained list, so the directory and
- * the pages it links to can never disagree about which committees exist.
+ * The placeholder committees as directory rows, derived from {@link previewCommitteeProfiles}.
  *
  * @returns One row per placeholder committee, alphabetically.
  */
@@ -914,19 +835,12 @@ export function previewCommitteeDirectory(): CommitteeSummary[] {
 }
 
 /**
- * Locates a preview committee by chamber and system code.
- *
- * Matched on both, not just the code, for the same reason the live lookup takes both: a committee's chamber is part of
- * its identity, and resolving `/committees/senate/preview-01` to a House committee would render a page that contradicts
- * the URL that reached it.
- *
- * Subcommittees resolve too, promoted to profiles of their own: a parent's page links to each of them, and a link that
- * 404s in preview mode would make the fixtures look broken rather than placeholder.
+ * Locates a preview committee by chamber and system code (chamber is part of its identity). Subcommittees resolve too,
+ * promoted to profiles, since parent pages link to them.
  *
  * @param chamber - The raw chamber route param, matched case-insensitively.
  * @param systemCode - The raw system code route param, matched case-insensitively.
- * @returns The matching placeholder committee, or `undefined` — which the route renders as a 404, exactly as it would
- *   for a real code that doesn't exist.
+ * @returns The matching placeholder committee, or `undefined` (a 404).
  */
 export function findPreviewCommitteeProfile(chamber: string, systemCode: string): CommitteeProfile | undefined {
   const wantedChamber: string = chamber.trim().toLowerCase();

@@ -44,26 +44,14 @@ type BillDirectoryProps = {
   initialStage?: BillStageFilter;
   /** Only live Congress.gov data supports paging further; preview data is a fixed sample. */
   canLoadMore: boolean;
-  /**
-   * Scopes "Load More" to a specific Congress. Omitted on the default `/bills` route, where `/api/bills` already
-   * defaults to the current Congress on its own.
-   */
+  /** Scopes "Load More" to a specific Congress. Omitted on `/bills`, where the API defaults to the current one. */
   congress?: number;
 };
 
 /**
- * Interactive bill directory.
- *
- * With no search text this browses `bills` — the page the server passed in — with "Load More" fetching further pages
- * from `/api/bills` when `canLoadMore` is true.
- *
- * Once the user types, search shifts entirely to `/api/bills/search`, which sweeps every Congress this app supports
- * rather than only what's already on screen. Congress.gov has no full-text search endpoint, so that sweep has to happen
- * server-side; filtering the dozen already-loaded bills would look like search while silently answering a much smaller
- * question. @see useBillSearch for the debouncing, cancellation, and offline-fallback behavior behind that.
- *
- * The stage filter applies to whichever list is showing, browse or search, so narrowing by stage never silently changes
- * which set of bills is being narrowed.
+ * Interactive bill directory. With no search text it browses `bills`, with "Load More" paging through `/api/bills`.
+ * Once the user types, search moves to `/api/bills/search`, which sweeps every supported Congress server-side
+ * (@see useBillSearch). The stage filter applies to whichever list is showing.
  *
  * @param props - @see BillDirectoryProps
  * @returns The search and filter controls, the result grid or an empty state, and the "Load More" control when more
@@ -89,12 +77,7 @@ export function BillDirectory({
   const queryString: string = billDirectoryQueryString(query, stage);
   const requestedQueryString: string = billDirectoryQueryString(initialQuery, initialStage);
 
-  /**
-   * Takes the view a URL names as the current one.
-   *
-   * Read through the same parser the route uses, so the browser and the server cannot disagree about what a link means.
-   * @see parseBillDirectoryQuery
-   */
+  /** Takes the view a URL names as the current one, via the route's own parser. */
   const adoptUrl: (location: string) => void = useCallback((location: string): void => {
     const view: BillDirectoryQuery = parseBillDirectoryQuery(new URLSearchParams(location));
 
@@ -102,29 +85,11 @@ export function BillDirectory({
     setStage(view.stage);
   }, []);
 
-  /**
-   * Mirrors the current search and stage into the address bar, and follows the URL when something else moves it.
-   *
-   * The site header's search form sends a `?q=` link into this route, and this is what produces one back out of it, so
-   * a reader who finds something here can hand it to someone else. Both halves go through the same spelling of that
-   * URL. @see billDirectoryQueryString
-   *
-   * Reconciling in both directions rather than only writing is what makes the header's own "Bills" link work from an
-   * already-narrowed directory: a soft navigation to `/bills` changes the URL without remounting this component, so a
-   * write-only mirror would put the stale query string straight back and the page would appear to ignore the click.
-   * @see useDirectoryUrlSync, shared with the member and committee directories.
-   */
   useDirectoryUrlSync({ adopt: adoptUrl, queryString, requestedQueryString });
 
   /**
-   * Fetches the next page from `/api/bills` and appends it.
-   *
-   * The offset is the number of bills already held, so paging stays correct however many pages have been loaded.
-   * Further pages stop being offered once a short or empty page comes back — there is nothing left — and a failed
-   * request surfaces an error beside the button rather than leaving it looking idle.
-   *
-   * The URL comes from {@link billPageRequestUrl} rather than being spelled here, so the param names this writes and
-   * the ones the handler reads are the same declaration. @see BILL_API_PARAMS.
+   * Fetches the next page from `/api/bills` (offset = bills held) and appends it. A short or empty page ends paging; a
+   * failure shows an error beside the button.
    */
   async function loadMore(): Promise<void> {
     setIsLoadingMore(true);
@@ -172,13 +137,7 @@ export function BillDirectory({
   const showNoRecordsYet: boolean = !isSearchActive && allBills.length === 0;
   const showNoMatches: boolean = !showNoRecordsYet && displayedBills.length === 0 && !isInitialSearchLoad;
 
-  /**
-   * Returns the directory to browsing everything.
-   *
-   * Both controls at once, because both narrow the same grid and a reader who has emptied it rarely knows which of the
-   * two did it — a search that survived a stage change looks exactly like a stage that survived a search. The member
-   * and committee directories clear all of their facets together for the same reason.
-   */
+  /** Clears search and stage together, since a reader who emptied the grid rarely knows which one did it. */
   function clearFilters(): void {
     setQuery("");
     setStage(ANY_FACET);

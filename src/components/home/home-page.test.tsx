@@ -50,13 +50,8 @@ describe("HomePage", (): void => {
   });
 
   /**
-   * The preview fixtures already arrive in descending activity order, so every assertion above this one would pass
-   * against a component that did no sorting at all — which is the whole reason this test hands it a snapshot in the
-   * wrong order rather than reusing `previewBills`. Live data has no such courtesy: the list endpoint sorts on
-   * `updateDate`, a maintenance timestamp, and routinely returns a bill last acted on in April above one acted on in
-   * August.
-   *
-   * @see docs/architecture.md, "a list documented as 'most recent first' is sorted, not hoped for".
+   * Fixtures already arrive sorted, so this hands the component an out-of-order snapshot; live data, sorted upstream by
+   * `updateDate`, often is.
    */
   it("orders the featured bill and the grid by latest action, not by the order the snapshot arrived in", (): void => {
     const reversed: LegislativeBill[] = [...previewBills].reverse();

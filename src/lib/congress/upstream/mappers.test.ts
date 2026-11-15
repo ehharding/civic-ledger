@@ -1,17 +1,7 @@
 /**
- * Covers the upstream-to-internal translation layer directly.
- *
- * Every mapper here follows one contract — return `null` when a record is missing something the app genuinely depends
- * on — and that contract is only worth anything if the *narrowness* of "genuinely depends on" holds: a bill with no
- * policy area is fine, a bill with no title is not. These tests exercise both halves of every such decision, because
- * the failure mode either way is invisible at a glance. Too strict and real records silently vanish from a directory;
- * too loose and a card renders with a blank heading.
- *
- * The fallbacks matter for the same reason. Congress.gov spells the same field differently across its list and detail
- * endpoints, reports party only as a history, and omits the chamber from a committee item record entirely — so several
- * of the branches below are the mappers reconciling a payload that is internally inconsistent by design. They are
- * reachable only from a shape a healthy request rarely produces, which is exactly why they need a test rather than a
- * hope.
+ * Covers the upstream-to-internal mappers. Each returns `null` only when a record lacks something the app depends on (a
+ * title, not a policy area); both halves of each decision are tested. Also covers the fallbacks for Congress.gov's
+ * inconsistent field spellings across endpoints.
  */
 import { describe, expect, it } from "vitest";
 

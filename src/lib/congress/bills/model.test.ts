@@ -1,22 +1,13 @@
 /**
- * Covers model.ts's pure helpers — the small functions that decide what a bill *is* across the whole app.
+ * Covers model.ts's pure helpers:
  *
- * Three of them carry a documented rule worth pinning down:
- *
- * - `congressGovBillUrl` derives the public record URL from the bill's own identity rather than passing through the
- *   API's self-referential `url` field (docs/data-policy.md, "The Official-Record Link Is Published Where It Can Be,
- *   Derived Where It Can't"). It must never emit a confidently-wrong deep link, which is why an unrecognized type falls
- *   back to the site's home page rather than guessing a path segment. `mapCongressBill` prefers the item endpoint's
- *   published `legislationUrl` over this, but the list endpoint sends none, so the derivation still covers every card.
- * - `billIdentityKey` is the single answer to "is this the same bill?", so a live record and a route param naming the
- *   same bill have to produce the same key despite differing in case and in the type of `congress`.
- * - `compareBillsByRecency` and `compareBillsByActivity` have to stay total: a bill carrying no date at all must sort
- *   somewhere predictable rather than wherever an undefined comparison happens to put it. The pair also has to stay
- *   *distinguishable* — they answer two different questions about the same bill, and a test that only ever feeds them
- *   records whose two dates agree would pass on either one being quietly rewritten into the other.
- *
- * `BILL_TYPE_CODES` and `BILL_TYPE_PATH_SEGMENTS` are derived from the same map `congressGovBillUrl` reads, and are
- * checked here to stay in step with it.
+ * - `congressGovBillUrl` derives the public URL from identity, falling back to the home page for an unknown type rather
+ *   than guessing.
+ *   @see docs/data-policy.md
+ * - `billIdentityKey` must match a live record and a route param despite case and `congress` type differences.
+ * - `compareBillsByRecency` and `compareBillsByActivity` stay total for undated bills, and distinguishable from each
+ *   other.
+ * - `BILL_TYPE_CODES` and `BILL_TYPE_PATH_SEGMENTS` stay in step with the map they derive from.
  */
 import { describe, expect, it } from "vitest";
 
@@ -406,8 +397,7 @@ describe("describeOriginalCosponsors", (): void => {
   });
 
   it("does not claim a remainder that does not exist when every name is original", (): void => {
-    // The bug this pins: "3 of the names below were… ; the other 0 joined later" on the very common small bill whose
-    // cosponsors all signed at introduction.
+    // Not "…; the other 0 joined later" — common on small bills whose cosponsors all signed at introduction.
     expect(describeOriginalCosponsors(3, 3)).toBe(
       "Every one of them — all 3 — was on the bill when it was introduced.",
     );

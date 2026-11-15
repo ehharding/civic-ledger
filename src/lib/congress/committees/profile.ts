@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import type { CommitteeChamber, CommitteeProfile } from "@/lib/congress/committees/model";
 import {
@@ -17,37 +19,42 @@ import {
 import { mapCommitteeProfile } from "@/lib/congress/upstream/mappers";
 
 /**
- * One committee's own record — what the individual committee page reads.
- *
- * The committee counterpart to `members/profile.ts`, and it holds the same invariants: nothing throws, provenance
- * travels with the data, and a page degrades to a clearly labeled preview rather than to an error boundary.
- *
- * What this deliberately does *not* fetch is a membership roster, because Congress.gov's committee endpoints do not
- * publish one. @see CommitteeProfile.
+ * One committee's own record, for the committee page. Nothing throws, and provenance travels with the data. No
+ * membership roster: Congress.gov doesn't publish one.
  */
 
 /** What {@link getCommitteeProfile} resolved: the committee (if any), and where it came from. */
 export type CommitteeProfileResult = {
   /** `undefined` means "no such committee" and should render as a 404 — never "something went wrong". */
   profile: CommitteeProfile | undefined;
+  /** Whether this is a live record or a labeled placeholder. */
   source: CongressSnapshot["source"];
   /** User-facing explanation shown when `source` is "preview". */
   notice?: string;
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
 };
 
 /**
- * Fetches one committee's record.
- *
- * Both route params are untrusted — they arrive from the URL bar — so both are narrowed to a known shape before either
- * reaches an outbound path. @see normalizeCommitteeChamberSegment and normalizeSystemCode.
+ * Fetches one committee's record. Both untrusted route params are normalized before reaching an outbound path.
  *
  * @param rawChamber - The raw `chamber` route param.
  * @param rawSystemCode - The raw `systemCode` route param.
  * @returns The committee, always labeled live or preview. A missing key, a malformed param, or a failed request
  *   resolves against the preview fixtures rather than throwing.
  */
-export async function getCommitteeProfile(rawChamber: string, rawSystemCode: string): Promise<CommitteeProfileResult> {
+export function getCommitteeProfile(rawChamber: string, rawSystemCode: string): Promise<CommitteeProfileResult> {
+  return lookUpCommitteeOnce(rawChamber, rawSystemCode);
+}
+
+/**
+ * {@link getCommitteeProfile}, memoized for one server render: the route reads it in both `generateMetadata` and the
+ * page, and Next's `fetch` dedupe skips requests carrying an `AbortSignal` (ours all do).
+ */
+const lookUpCommitteeOnce = cache(lookUpCommittee);
+
+/** The uncached body of {@link getCommitteeProfile}. */
+async function lookUpCommittee(rawChamber: string, rawSystemCode: string): Promise<CommitteeProfileResult> {
   const retrievedAt: string = new Date().toISOString();
   const apiKey: string | undefined = getCongressApiKey();
   const chamber: CommitteeChamber | null = normalizeCommitteeChamberSegment(rawChamber);

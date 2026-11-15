@@ -30,7 +30,9 @@ export type MemberDirectoryResult = {
   congress: number;
   /** Every listable member, alphabetically by last-name-first name. */
   members: MemberDirectoryEntry[];
+  /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];
+  /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview". */
   notice?: string;

@@ -50,11 +50,7 @@ import { formatOrdinal } from "@/lib/format";
 const CHAMBER_OPTIONS: readonly CommitteeChamberFilter[] = [ANY_FACET, ...committeeChambers];
 
 /**
- * Reads a view out of a URL, through the same parser the route uses, so the browser and the server cannot disagree
- * about what a link means.
- *
- * At module scope rather than inside the component, which is all this directory needs to satisfy
- * {@link useFacetedDirectory}'s stability requirement — nothing here closes over a prop.
+ * Reads a view out of a URL with the route's own parser. Module-scoped, so it's stable for {@link useFacetedDirectory}.
  *
  * @param search - The address bar's query string.
  * @returns The view the URL asks for.
@@ -80,14 +76,8 @@ type CommitteeDirectoryProps = {
 };
 
 /**
- * Browsable directory of every committee of a Congress.
- *
- * Every narrowing happens in the browser against the list the server already sent — no request per keystroke, no
- * debounce, no loading state, and nothing to go wrong offline or in the static export. This is the same shape as
- * `MemberDirectory` down to the URL reconciliation, and deliberately so: the two are the same kind of page and a reader
- * should not have to learn each of them separately — which is why the whole of that shape is one shared hook rather
- * than two copies that can drift.
- * @see useFacetedDirectory.
+ * Browsable directory of every committee of a Congress, narrowed in the browser exactly as `MemberDirectory` is.
+ * @see useFacetedDirectory
  *
  * @param props - @see CommitteeDirectoryProps
  * @returns The search, facet, and sort controls, the result count and scope note, and the committee grid or an empty

@@ -1,12 +1,6 @@
 /**
- * Covers the root layout's document shell and the site-wide metadata every route starts from.
- *
- * Rendered to a static string rather than into jsdom on purpose: this component *is* the `<html>` element, and mounting
- * it inside a container div is a DOM-nesting violation that says nothing about whether the shell is correct.
- *
- * The metadata assertions matter more than they look. The home page has no `metadata` export of its own, so what's here
- * is the home page's — and the Open Graph block is spelled out rather than inherited from nowhere. A refactor that
- * "simplified" it away would leave the site's own front door as the one page with no link preview.
+ * Covers the root layout's document shell and site-wide metadata, which doubles as the home page's link preview.
+ * Rendered to a static string, since mounting an `<html>` element inside a container is a DOM-nesting violation.
  */
 import type { Metadata } from "next";
 import { renderToStaticMarkup } from "react-dom/server";

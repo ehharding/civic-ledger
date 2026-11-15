@@ -373,9 +373,11 @@ const BILL_NUMBER_SEGMENT_PATTERN: RegExp = /^\d{1,6}$/;
 
 /** Bill route params proven safe to interpolate into an outbound URL path. @see normalizeBillRouteParams */
 export type NormalizedBillRoute = {
+  /** The Congress number, digits only. */
   congress: string;
   /** Lower-cased, as Congress.gov's path segments expect. */
   type: string;
+  /** The bill number, digits only. */
   number: string;
 };
 

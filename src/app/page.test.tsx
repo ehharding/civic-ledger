@@ -1,11 +1,6 @@
 /**
- * Covers the home route's own job, which is narrower than the page it renders: resolve two independent datasets and
- * hand them to {@link HomePage}. The rendering is `home-page.test.tsx`'s subject; what's pinned here is the wiring.
- *
- * The claim worth testing is the one the route's comment makes and nothing else enforces — that the two fetches are
- * independent, so a failure in one still lets the other render honestly rather than dragging the whole page onto
- * preview data. That is exactly the kind of promise a well-meaning refactor to sequential `await`s would keep passing
- * every other test in the suite while quietly breaking.
+ * Covers the home route's wiring (rendering is `home-page.test.tsx`'s job): its two fetches are independent, so one
+ * failing doesn't drag the other onto preview data.
  */
 import { render, screen } from "@testing-library/react";
 import type React from "react";

@@ -2,14 +2,14 @@
  * Covers the committee adapter end to end: the mappers that turn upstream records into the app's model, the
  * subcommittee-folding rule the directory is built on, and both fetchers' preview fallbacks.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildCommitteeDirectory, type CommitteeDirectoryResult, getCommitteeDirectory } from "@/lib/congress/client";
 import type { CommitteeProfile, CommitteeSummary } from "@/lib/congress/committees/model";
 import { type CommitteeProfileResult, getCommitteeProfile } from "@/lib/congress/committees/profile";
 import { findPreviewCommitteeProfile, previewCommitteeDirectory } from "@/lib/congress/upstream/fixtures";
 import { mapCommitteeProfile, mapCommitteeRef, mapCongressCommittee } from "@/lib/congress/upstream/mappers";
-import { jsonResponse } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 
 /** A raw committee record, in the shape the list endpoint actually returns. */
 function liveCommittee(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -21,10 +21,6 @@ function liveCommittee(overrides: Record<string, unknown> = {}): Record<string, 
     ...overrides,
   };
 }
-
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
 
 describe("mapCommitteeRef", (): void => {
   it("maps a reference carrying both a code and a name", (): void => {
@@ -261,8 +257,6 @@ describe("buildCommitteeDirectory", (): void => {
 
 describe("getCommitteeDirectory", (): void => {
   it("returns the labeled preview list when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: CommitteeDirectoryResult = await getCommitteeDirectory(119);
 
     expect(result.source).toBe("preview");
@@ -271,9 +265,7 @@ describe("getCommitteeDirectory", (): void => {
   });
 
   it("returns the live list when the fetch succeeds", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse({ committees: [liveCommittee()], pagination: { count: 1 } }),
-    );
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ committees: [liveCommittee()], pagination: { count: 1 } })));
 
     const result: CommitteeDirectoryResult = await getCommitteeDirectory(119);
 
@@ -284,7 +276,7 @@ describe("getCommitteeDirectory", (): void => {
 
   /* "This Congress has no committees" is never a true statement, so an empty result is a failed fetch. */
   it("falls back to preview rather than rendering an empty directory", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ committees: [], pagination: { count: 0 } }));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ committees: [], pagination: { count: 0 } })));
 
     const result: CommitteeDirectoryResult = await getCommitteeDirectory(119);
 
@@ -293,7 +285,7 @@ describe("getCommitteeDirectory", (): void => {
   });
 
   it("falls back to preview on an upstream failure rather than throwing", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     await expect(getCommitteeDirectory(119)).resolves.toMatchObject({ source: "preview" });
   });
@@ -301,15 +293,17 @@ describe("getCommitteeDirectory", (): void => {
 
 describe("getCommitteeProfile", (): void => {
   it("maps a live record", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse({
-        committee: {
-          systemCode: "hsag00",
-          type: "Standing",
-          isCurrent: true,
-          history: [{ officialName: "Committee on Agriculture", startDate: "1975-01-14T00:00:00Z" }],
-        },
-      }),
+    stubLiveApi(
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          committee: {
+            systemCode: "hsag00",
+            type: "Standing",
+            isCurrent: true,
+            history: [{ officialName: "Committee on Agriculture", startDate: "1975-01-14T00:00:00Z" }],
+          },
+        }),
+      ),
     );
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
@@ -320,9 +314,11 @@ describe("getCommitteeProfile", (): void => {
   });
 
   it("asks the chamber-and-code endpoint, with the code lower-cased", async (): Promise<void> => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(jsonResponse({ committee: { history: [{ officialName: "Committee on Agriculture" }] } }));
+    const fetchSpy = stubLiveApi(
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ committee: { history: [{ officialName: "Committee on Agriculture" }] } })),
+    );
 
     await getCommitteeProfile("HOUSE", "HSAG00");
 
@@ -331,7 +327,7 @@ describe("getCommitteeProfile", (): void => {
 
   /* A 404 is a true answer — no such committee — and the route renders it as one. */
   it("reports an unknown committee as absent rather than as a failure", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({}, 404));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsxx00");
 
@@ -344,7 +340,7 @@ describe("getCommitteeProfile", (): void => {
    * that matters the first time this wording becomes reachable.
    */
   it("never sends a malformed identifier upstream", async (): Promise<void> => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const fetchSpy = stubLiveApi();
 
     const badCode: CommitteeProfileResult = await getCommitteeProfile("house", "../bill/119");
     const badChamber: CommitteeProfileResult = await getCommitteeProfile("assembly", "hsag00");
@@ -356,8 +352,6 @@ describe("getCommitteeProfile", (): void => {
   });
 
   it("resolves a preview committee when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "preview-01");
 
     expect(result.source).toBe("preview");
@@ -373,7 +367,7 @@ describe("getCommitteeProfile", (): void => {
    * distinguishes this branch from a genuine 404 for anything downstream that reads it.
    */
   it("falls back to the preview path on an upstream failure rather than reporting a 404", async (): Promise<void> => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network down"));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
 
@@ -383,7 +377,7 @@ describe("getCommitteeProfile", (): void => {
 
   /* A preview code never reaches the network at all — it fails the guard and resolves against the fixtures. */
   it("resolves a preview code without a request, even with a key configured", async (): Promise<void> => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const fetchSpy = stubLiveApi();
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "preview-01");
 
@@ -431,8 +425,7 @@ describe("getCommitteeDirectory pagination", (): void => {
    * every later page is answered by `laterPage`, which individual cases use to break one of them.
    */
   function stubPagedList(first: unknown, laterPage: (offset: string | null) => Promise<Response>): void {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
         const offset: string | null = new URL(String(input)).searchParams.get("offset");
         if (offset === "0") return Promise.resolve(jsonResponse(first));
@@ -486,7 +479,7 @@ describe("getCommitteeDirectory pagination", (): void => {
 
   it("asks for no further pages when the first one carries no count to page through", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ committees: [liveCommittee()] }));
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     const result: CommitteeDirectoryResult = await getCommitteeDirectory();
 
@@ -496,7 +489,7 @@ describe("getCommitteeDirectory pagination", (): void => {
 
   it("falls back to preview when the first page arrives carrying nothing usable", async (): Promise<void> => {
     // No `committees` key at all — an empty directory would be a claim that Congress has no committees.
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ pagination: { count: 0 } })));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ pagination: { count: 0 } })));
 
     const result: CommitteeDirectoryResult = await getCommitteeDirectory();
 
@@ -506,7 +499,7 @@ describe("getCommitteeDirectory pagination", (): void => {
 
 describe("getCommitteeProfile with an unusable live payload", (): void => {
   it("treats a 200 carrying no committee as no such record", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({})));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({})));
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
 
@@ -518,10 +511,7 @@ describe("getCommitteeProfile with an unusable live payload", (): void => {
   it("treats a committee its history cannot name as no such record", async (): Promise<void> => {
     // Present in the payload, but with no history entry carrying a name — and inventing one from the system code would
     // be a guess printed as a fact.
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ committee: { systemCode: "hsag00", history: [] } })),
-    );
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ committee: { systemCode: "hsag00", history: [] } })));
 
     const result: CommitteeProfileResult = await getCommitteeProfile("house", "hsag00");
 

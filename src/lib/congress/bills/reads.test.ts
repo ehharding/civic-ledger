@@ -1,16 +1,9 @@
 /**
- * Covers the bill adapter's degraded and edge paths.
- *
- * `client.test.ts` covers the shapes a healthy request produces — preview fallback, live mapping, 404 versus outage.
- * What is left, and what this file is for, are the paths that only appear when something is wrong at the *same time* as
- * something else: a route param that can't be normalized while a key is configured, an upstream 200 whose body carries
- * no record, a single Congress dropping out of a search sweep while the rest succeed.
- *
- * These matter more than their rarity suggests, because they are where the adapter's two invariants — nothing throws,
- * and provenance travels with the data — are easiest to break without any test noticing. A page that renders a bill
- * while labeling it `live` after the live lookup failed is a worse bug than a page that fails to render at all.
+ * Covers the bill adapter's degraded and edge paths (`client.test.ts` covers healthy ones): an unnormalizable route
+ * with a key, a 200 carrying no record, one Congress dropping out of a sweep. These are where "nothing throws" and
+ * "provenance travels with the data" are easiest to break.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillSearchResponse } from "@/lib/api-contract";
 import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
@@ -25,7 +18,7 @@ import {
   getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
-import { jsonResponse } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 /**
  * Route params that pass this app's own shape guard nowhere: an unknown type code, a non-numeric congress, and a bill
@@ -37,14 +30,9 @@ const MALFORMED_ROUTES: readonly BillRouteParams[] = [
   { congress: "119", type: "hr", number: "../secrets" },
 ];
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getBillById", (): void => {
   it("rejects a malformed route without ever issuing a request", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     for (const route of MALFORMED_ROUTES) {
       const result: BillLookupResult = await getBillById(route);
@@ -58,7 +46,7 @@ describe("getBillById", (): void => {
   });
 
   it("treats a 200 carrying no bill as no such record", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({})));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({})));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
@@ -69,10 +57,7 @@ describe("getBillById", (): void => {
   it("treats a 200 carrying an unmappable bill as no such record", async (): Promise<void> => {
     // Present in the payload but missing a title, so `mapCongressBill` returns null. Rendering a card with a blank
     // heading would be worse than a 404.
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ bill: { congress: 119, type: "hr", number: 284 } })),
-    );
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({ bill: { congress: 119, type: "hr", number: 284 } })));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
@@ -83,7 +68,7 @@ describe("getBillById", (): void => {
   it("falls back through the snapshot to the preview fixtures when the lookup fails outright", async (): Promise<void> => {
     // Both the direct lookup and the snapshot request fail, so the only thing left is the labeled fixture set — and the
     // result must say `preview`, because that is what it is.
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
@@ -92,7 +77,7 @@ describe("getBillById", (): void => {
   });
 
   it("reports nothing found when a transient failure leaves no fixture to fall back to either", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "424242" });
 
@@ -101,13 +86,8 @@ describe("getBillById", (): void => {
   });
 
   /**
-   * The fallback has to read the Congress the *bill* is in, not the one currently seated.
-   *
-   * Every other test in this describe block looks up a bill in the current Congress, where those two are the same
-   * number and the distinction is invisible. That is exactly how this went wrong: the snapshot fallback fetched the
-   * current Congress's first page for an older bill, could not possibly find it there, and then reported that
-   * unrelated snapshot's own `source` — handing the route a `bill: undefined` labeled `live`, which it renders as a
-   * hard 404. A reader asking for a real 117th-Congress bill during a Congress.gov blip was told it does not exist.
+   * The fallback must read the *bill's* Congress, not the current one — otherwise an older bill is searched for in the
+   * wrong snapshot and reported as a `live` 404.
    */
   describe("when the lookup fails for a bill outside the seated Congress", (): void => {
     const OLDER_CONGRESS: number = getCurrentCongress() - 2;
@@ -140,7 +120,7 @@ describe("getBillById", (): void => {
         return Promise.resolve(jsonResponse({ bills: [CURRENT_CONGRESS_BILL] }));
       });
 
-      vi.stubGlobal("fetch", fetchMock);
+      stubLiveApi(fetchMock);
       return fetchMock;
     }
 
@@ -186,7 +166,7 @@ describe("getBillById", (): void => {
 
 describe("getMoreBills", (): void => {
   it("returns an empty page when the request fails, so the UI simply stops offering more", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     expect(await getMoreBills(20)).toEqual([]);
   });
@@ -194,8 +174,7 @@ describe("getMoreBills", (): void => {
 
 describe("bill sub-resources", (): void => {
   it("refuse a malformed route without issuing a request", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     for (const route of MALFORMED_ROUTES) {
       expect(await getBillSummaries(route), JSON.stringify(route)).toEqual({ entries: [], unavailable: false });
@@ -213,8 +192,7 @@ describe("getBillActions", (): void => {
   it("maps an action history newest first, keeping the near-duplicate rows", async (): Promise<void> => {
     // The same moment reported by two source systems is the endpoint's own shape, not noise — merging them would mean
     // this app deciding which official log to believe.
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           actions: [
@@ -234,8 +212,7 @@ describe("getBillActions", (): void => {
   });
 
   it("carries a recorded vote's reference through to the model", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           actions: [
@@ -275,15 +252,13 @@ describe("getBillActions", (): void => {
     // Never an error — but never a silent empty list either. The page words an unread history differently from a bill
     // that genuinely has no actions, and this flag is the only thing that lets it: the two are the same zero rows. The
     // stepper meanwhile falls back to the prose classifier rather than to "introduced".
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     expect(await getBillActions(route)).toEqual({ entries: [], unavailable: true });
   });
 
   it("returns nothing in preview mode, since fixtures fabricate no action record", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     expect(await getBillActions(route)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -294,8 +269,7 @@ describe("getSearchResults", (): void => {
   /** Stubs the sweep: `bills` for the current Congress, and whatever `others` says for every other request. */
   function stubSweep(bills: unknown[], others: () => Promise<Response>): void {
     const currentCongress: number = getCurrentCongress();
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
         const url: URL = new URL(String(input));
         if (url.pathname === `/v3/bill/${currentCongress}`) return Promise.resolve(jsonResponse({ bills }));
@@ -367,8 +341,7 @@ describe("getSearchResults", (): void => {
     // The comparator's pinned branch only runs when the pinned bill has something to be compared *against* — a sweep
     // that returned nothing else would never exercise it.
     const currentCongress: number = getCurrentCongress();
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
         const url: URL = new URL(String(input));
 
@@ -428,8 +401,7 @@ describe("getSearchResults", (): void => {
       latestAction: { actionDate: `2026-0${index + 1}-01`, text: "Introduced in House." },
     }));
 
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
         const url: URL = new URL(String(input));
         if (url.pathname === `/v3/bill/${currentCongress}/hr/284`) {
@@ -468,8 +440,7 @@ describe("getSearchResults", (): void => {
       latestAction: { actionDate: "2026-01-01", text: "Introduced in House." },
     };
 
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
         const url: URL = new URL(String(input));
         if (url.pathname === `/v3/bill/${currentCongress}/hr/284`)

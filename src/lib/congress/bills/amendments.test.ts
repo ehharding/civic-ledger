@@ -1,19 +1,13 @@
 /**
- * Covers the amendments read: the request it issues, the shape it maps, the completeness bar it holds a reference to,
- * and the publisher order it leaves alone.
- *
- * The bar is the interesting assertion in this file, and it is deliberately lower than the one `related.test.ts` pins.
- * Congress.gov's bill-level amendment collection sends identity for every entry and prose for roughly one in fifteen,
- * so a mapper that required a purpose the way `mapRelatedBill` requires a title would silently discard most of a
- * heavily amended bill's record — and the section above it would then state a published count of 493 beside thirty
- * rows. The fixture below is shaped like the real payload for that reason: mostly bare.
+ * Covers the amendments read: request, mapping, and publisher order. The mapper requires identity only — most entries
+ * carry no purpose — so the fixture is shaped like the real, mostly bare payload.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillAmendment, BillRouteParams } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getBillAmendments } from "@/lib/congress/client";
-import { jsonResponse, requestedUrl } from "@/test/congress-api";
+import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "119", type: "hr", number: "1" };
 
@@ -45,14 +39,10 @@ const PAYLOAD = {
   ],
 };
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getBillAmendments", (): void => {
   it("requests the bill's own amendments sub-resource, at the page ceiling", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PAYLOAD));
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     await getBillAmendments(ROUTE);
 
@@ -66,7 +56,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("keeps the publisher's order rather than sorting by the row's last-touched date", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries }: BillSubResource<BillAmendment> = await getBillAmendments(ROUTE);
 
@@ -76,7 +66,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("keeps an entry carrying nothing but its identity, since that is still an openable reference", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries }: BillSubResource<BillAmendment> = await getBillAmendments(ROUTE);
 
@@ -92,7 +82,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("prefers the amendment's own purpose and falls back to the House's description", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries }: BillSubResource<BillAmendment> = await getBillAmendments(ROUTE);
 
@@ -103,8 +93,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("treats a blank purpose as no purpose rather than as an empty line on the page", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           amendments: [
@@ -123,7 +112,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("upper-cases the type so the citation and the derived URL agree on it", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries }: BillSubResource<BillAmendment> = await getBillAmendments(ROUTE);
 
@@ -132,7 +121,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("keeps an amendment sitting in a different Congress from the bill pointing at it", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries }: BillSubResource<BillAmendment> = await getBillAmendments(ROUTE);
 
@@ -141,8 +130,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("carries a latest action only when it has text to show", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           amendments: [
@@ -164,8 +152,7 @@ describe("getBillAmendments", (): void => {
   });
 
   it("drops a reference missing anything its citation and link are built from", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           amendments: [
@@ -184,17 +171,14 @@ describe("getBillAmendments", (): void => {
   });
 
   it("returns nothing without ever requesting when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     expect(await getBillAmendments(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns nothing without ever requesting for a malformed route", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     expect(await getBillAmendments({ congress: "119", type: "notatype", number: "1" })).toEqual({
       entries: [],
@@ -208,11 +192,11 @@ describe("getBillAmendments", (): void => {
     // to this bill" is a claim about the congressional record, and a request that never resolved has not earned it.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getBillAmendments(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
     expect(await getBillAmendments(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });

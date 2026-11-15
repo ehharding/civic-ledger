@@ -1,11 +1,6 @@
 /**
- * Covers the learning-module registry's invariants.
- *
- * These are content tests, which is unusual — but the rules in `lessons.ts`'s module comment are the reason
- * `docs/roadmap.md` allowed a second, third, and fourth module at all, and a rule with no enforcement point is a wish.
- * What is pinned here is not the prose (that changes) but the properties every module has to keep: it cites primary
- * sources, it says what it leaves out, its steps are numbered from a single list, and the lifecycle module still walks
- * the same five stages the rest of the app draws.
+ * Covers the lesson registry's invariants rather than its prose: every lesson cites primary sources, says what it
+ * leaves out, numbers its steps from one list, and the lifecycle lesson walks the app's five stages.
  */
 import { describe, expect, it } from "vitest";
 

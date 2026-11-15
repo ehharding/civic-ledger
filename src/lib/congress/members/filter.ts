@@ -43,8 +43,11 @@ export type StateFilter = string;
 export type MemberFilters = {
   /** Raw search text, as typed. Trimmed internally. */
   query: string;
+  /** The chamber to narrow to. */
   chamber: ChamberFilter;
+  /** The party to narrow to. */
   party: PartyFilter;
+  /** The state or territory to narrow to. */
   state: StateFilter;
 };
 
@@ -258,7 +261,9 @@ export const MEMBER_DIRECTORY_PARAMS = {
 
 /** Everything the `/members` URL can express: what to show, and in what order. */
 export type MemberDirectoryQuery = {
+  /** What to show. */
   filters: MemberFilters;
+  /** The order to show it in. */
   sort: MemberSort;
 };
 

@@ -5,25 +5,11 @@ import { expect, test } from "@playwright/test";
 import { PAGE_ROUTES, type TestFixtures } from "./routes";
 
 /**
- * The enforcement point for the accessibility baseline in `docs/architecture.md`.
+ * An axe sweep of every route shape, enforcing the accessibility baseline in `docs/architecture.md` — the
+ * machine-checkable half of WCAG, including contrast, which jsdom can't see. Whether names are useful or focus order
+ * makes sense stays with `navigation.spec.ts` and review.
  *
- * That section makes a dozen specific claims — semantic landmarks, labeled controls, real links, contrast-conscious
- * colors, a heading order that skips no level — and a rule with no named enforcement point is a wish. This is the
- * point: an automated sweep of every route shape the app serves, run in CI on the same job the rest of the browser
- * suite is. It is also the only check in the project that reads the page the way a browser paints it, which is what
- * makes it the one that can see a color at all — Vitest renders into jsdom, which has no layout and no computed colors.
- *
- * **What this does and does not buy.** Automated rules catch roughly the machine-checkable half of WCAG: a control with
- * no accessible name, an `aria-labelledby` pointing at nothing, insufficient contrast, a heading level skipped, a
- * landmark nested wrong. They cannot tell whether a name is *useful*, whether focus order makes sense, or whether the
- * chamber diagram's arrow-key model is discoverable. Those stay with `navigation.spec.ts`, which drives the keyboard
- * directly, and with review. This file exists to keep the mechanical half from regressing silently, not to certify the
- * page.
- *
- * **Both color schemes are swept**, because `tokens.css` carries a full second palette behind
- * `prefers-color-scheme: dark` and contrast is a property of the palette in force rather than of the markup. A dark
- * token that fails contrast is invisible to a light-mode run and to a reviewer who does not use dark mode, which is
- * exactly the kind of failure that ships.
+ * Both color schemes are swept, since `tokens.css` carries a full dark palette.
  */
 
 /**
@@ -47,13 +33,10 @@ type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 type AxeViolation = AxeResults["violations"][number];
 
 /**
- * Runs the sweep and reports every violation as one readable failure.
- *
- * Axe's own result objects are large and nested, so a bare `toEqual([])` prints a wall of JSON that buries which rule
- * broke. The mapped summary is what makes a red CI job diagnosable from the log alone.
+ * Runs the sweep and reports violations as one readable summary rather than axe's raw JSON.
  *
  * @param page - The page to scan, already navigated.
- * @param testInfo - The running test, used to attach the full results for a failure worth reading in detail.
+ * @param testInfo - The running test, used to attach the full results.
  * @returns Nothing; asserts.
  */
 async function expectNoViolations(page: Page, testInfo: TestInfo): Promise<void> {

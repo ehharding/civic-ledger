@@ -47,12 +47,11 @@ function liveMemberPayload(overrides: Record<string, unknown> = {}): Record<stri
 }
 
 /**
- * Stubs `fetch` with a live member whose sponsored-legislation list is `sponsored`, and whose cosponsored list is
- * empty — the shape the legislation tests below vary.
+ * Puts the adapter on its live path with a member whose sponsored-legislation list is `sponsored`, and whose
+ * cosponsored list is empty — the shape the legislation tests below vary.
  */
 function stubMemberWithSponsored(sponsored: Record<string, unknown>[]): void {
-  vi.stubGlobal(
-    "fetch",
+  stubLiveApi(
     vi.fn().mockImplementation((url: URL): Promise<Response> => {
       if (String(url).includes("/sponsored-legislation")) {
         return Promise.resolve(jsonResponse({ sponsoredLegislation: sponsored }));
@@ -65,7 +64,6 @@ function stubMemberWithSponsored(sponsored: Record<string, unknown>[]): void {
 
 describe("getMemberProfile without an API key", (): void => {
   it("resolves a placeholder member and labels it as one", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
     const expected: MemberProfile = previewMemberProfiles[0] as MemberProfile;
 
     const result: MemberProfileResult = await getMemberProfile(expected.bioguideId);
@@ -76,14 +74,10 @@ describe("getMemberProfile without an API key", (): void => {
   });
 
   it("matches a placeholder ID case-insensitively, so a hand-typed URL still resolves", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     expect((await getMemberProfile("preview-1")).profile?.bioguideId).toBe("PREVIEW-1");
   });
 
   it("pairs a placeholder member with the preview bills they sponsored", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     const result: MemberProfileResult = await getMemberProfile("PREVIEW-1");
 
     expect(result.sponsored.length).toBeGreaterThan(0);
@@ -93,8 +87,6 @@ describe("getMemberProfile without an API key", (): void => {
   });
 
   it("resolves an unknown ID to nobody, which the route renders as a 404", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-
     expect((await getMemberProfile("Z999999")).profile).toBeUndefined();
   });
 });
@@ -134,8 +126,7 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("never sends a malformed Bioguide ID upstream", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    stubLiveApi(fetchMock);
+    const fetchMock = stubLiveApi();
 
     const result: MemberProfileResult = await getMemberProfile("../../bill/119/hr/284");
 
@@ -179,7 +170,6 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("maps sponsored legislation into ordinary bill records", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     stubMemberWithSponsored([
       {
         congress: 117,
@@ -199,7 +189,6 @@ describe("getMemberProfile with an API key", (): void => {
   });
 
   it("orders legislation newest first rather than trusting the order it arrived in", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", "test-key");
     // Deliberately out of order, and deliberately including a record with no introduction date — which is what the
     // type's "most recent first" promise has to hold up against.
     stubMemberWithSponsored([

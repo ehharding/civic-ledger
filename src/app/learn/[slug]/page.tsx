@@ -20,14 +20,7 @@ type LessonPageProps = {
 };
 
 /**
- * The learning modules, one route.
- *
- * A dynamic segment rather than a file per lesson because the lessons are already a list — `src/lib/lessons.ts` — and a
- * page file per entry would restate the same twelve lines of metadata-and-shell per module. Adding a module is an edit
- * to the registry alone: this route, the hub's index, and `sitemap.ts` all read it.
- *
- * Every slug is known at build time, so this still prerenders to one static page per lesson and `output: "export"`
- * works. Anything not in the registry is a 404, not an empty lesson.
+ * One static page per lesson in `src/lib/lessons.ts`; any other slug is a 404.
  *
  * @returns One param object per lesson.
  */

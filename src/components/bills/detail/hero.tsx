@@ -10,19 +10,12 @@ import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
 import { memberHref } from "@/lib/routes";
 
 /**
- * The three sections at the top of a bill's page: what the bill *is*, where it has got to, and what happened to it
- * last.
- *
- * The only file in this directory holding no record collection, which is the line it is drawn on. Everything in the
- * eight beside it lists something Congress.gov publishes *alongside* the bill and has to word an empty case; these
- * three read the bill record itself, so none of them can be empty while the page exists at all.
+ * The three sections at the top of a bill's page, read from the bill record itself (so never empty): what the bill is,
+ * where it has got to, and what happened to it last.
  */
 
 /**
  * The bill's identity: citation, title, and the facts that qualify it.
- *
- * Split out from the page body because it is the one section that is *not* a record collection — everything below it
- * lists something Congress.gov publishes alongside the bill, while this states what the bill is.
  *
  * @param bill - The record being shown.
  * @param stage - The stage resolved from the action history, which the label reads from rather than from `bill.stage`.
@@ -49,9 +42,7 @@ export function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillSt
           <span>
             Sponsor:{" "}
             {bill.sponsor.bioguideId ? (
-              // Links inward rather than straight out to the Biographical Directory: the sponsor's own page collects
-              // their seat, service record, and the rest of what they've introduced — and carries the official
-              // biography link onward, so nothing is lost by making this the first stop instead of the last.
+              // Links to the sponsor's page here, which carries the official biography link onward.
               <RecordLink className="text-link" href={memberHref(bill.sponsor.bioguideId)}>
                 {bill.sponsor.fullName}
               </RecordLink>

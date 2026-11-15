@@ -322,8 +322,7 @@ describe("normalizeJurisdiction", (): void => {
 
 describe("normalizePartyCode", (): void => {
   it("maps the one-letter abbreviations the sponsor and cosponsor records use", (): void => {
-    // The bug this pins: a cosponsor arriving as "R" fell through normalizePartyName's stem list to "other" and was
-    // tinted the neutral gray reserved for parties this app does not recognize.
+    // Sponsor and cosponsor records use one-letter codes, which must not fall through to "other".
     expect(normalizePartyCode("D")).toBe("democratic");
     expect(normalizePartyCode("R")).toBe("republican");
     expect(normalizePartyCode("I")).toBe("independent");

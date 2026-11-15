@@ -10,14 +10,8 @@ import { getSiteUrl } from "@/lib/site";
 export const dynamic = "force-static";
 
 /**
- * Static top-level routes. Their content changes rarely, so they carry a low change frequency.
- *
- * `/members` and `/committees` belong here even though the data behind them is live: the *routes* are fixed and
- * reachable without an API key, which is all a crawler needs. Individual member, bill, and committee pages stay out:
- * enumerating them requires a live Congress.gov request, which would make sitemap generation depend on an API key and a
- * healthy upstream at build time — a new failure mode for a file whose whole job is to be cheaply and reliably
- * generated. Each directory is the page that leads a crawler to all of them.
- * @see docs/architecture.md, "Crawlability".
+ * Static top-level routes. Individual records stay out, since listing them would need a live API call at build time;
+ * each directory leads a crawler to them. @see docs/architecture.md, "Crawlability"
  */
 const STATIC_ROUTES: readonly string[] = [
   "",
@@ -33,18 +27,10 @@ const STATIC_ROUTES: readonly string[] = [
 ];
 
 /**
- * Generates `sitemap.xml`, referenced by `robots.ts`.
+ * Generates `sitemap.xml`: the static routes plus one directory per supported Congress, which a crawler would otherwise
+ * only find behind a `<select>`.
  *
- * Includes the static top-level routes and one entry per Congress the directory supports browsing — those are real,
- * stable, individually useful pages (`/bills/118` answers "what did the last Congress do?"), and there are a few dozen
- * of them rather than an unbounded set, so listing them is both cheap and genuinely helpful to a crawler that would
- * otherwise only ever see them behind a `<select>` control it can't operate.
- *
- * Individual bill records are deliberately *not* enumerated: there are hundreds of thousands, they'd need constant
- * regeneration to stay accurate, and each is already reachable from its Congress's directory page.
- *
- * @returns Every URL to advertise, each with a last-modified date and a change frequency reflecting how often that kind
- *   of page actually changes.
+ * @returns Every URL to advertise, with a last-modified date and change frequency.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl: string = getSiteUrl();

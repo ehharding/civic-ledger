@@ -11,29 +11,12 @@ import { formatDate, pluralize } from "@/lib/format";
 import { lessonHref } from "@/lib/routes";
 
 /**
- * The roll calls taken on a bill.
- *
- * Its own file rather than part of `actions.tsx`, despite reading the same resource: this is the one section on the
- * page that is *derived* rather than fetched, and keeping the derivation visible is the point. It also carries the
- * app's largest standing gap — Congress.gov publishes no Senate vote resource — which `docs/roadmap.md` tracks and
- * this section's own copy has to keep honest.
- */
-
-/**
- * The roll-call votes taken on a bill, each linking to the chamber's own tally.
- *
- * What this section does *not* do is as deliberate as what it does. It prints no counts, no margins, and no member
- * positions — Congress.gov's bill record names the votes but does not carry their arithmetic, and the chambers publish
- * the arithmetic themselves. So this says a recorded vote happened, which chamber took it, and where the numbers are.
- *
- * The House/Senate asymmetry a reader might notice is upstream, not here: Congress.gov has a dedicated House vote
- * resource and no Senate counterpart, but both chambers' roll calls are referenced from a bill's own actions, which is
- * what this reads. So both appear, on the same footing.
+ * The roll-call votes taken on a bill, each linking to the chamber's own tally. No counts or positions: the bill record
+ * names votes but doesn't carry their arithmetic. Both chambers' votes are read from the bill's actions, so they appear
+ * on the same footing.
  *
  * @param votes - Every distinct recorded vote on the bill, most recent first.
- * @param unavailable - Whether the action history these were read from failed to load. This section is derived rather
- *   than fetched, so it inherits its uncertainty: with no actions to search, "no recorded vote appears in this bill's
- *   actions" describes an empty search rather than a quiet bill, and the two are not the same sentence.
+ * @param unavailable - Whether the action history failed to load, in which case "no recorded vote" can't be claimed.
  * @returns The vote list, a line saying the record could not be read, or a line saying none is on it.
  */
 function RecordedVotes({ votes, unavailable }: { votes: RecordedVote[]; unavailable: boolean }): JSX.Element {
@@ -85,10 +68,7 @@ function RecordedVotes({ votes, unavailable }: { votes: RecordedVote[]; unavaila
 }
 
 /**
- * The roll calls found in the action history.
- *
- * Reads from the actions rather than from a collection of its own, which is why this takes the action resource: a
- * recorded vote reaches this app only as a link hanging off the action that produced it.
+ * The roll calls found in the action history — derived rather than fetched.
  * @see collectRecordedVotes
  *
  * @param props - @see BillSectionProps

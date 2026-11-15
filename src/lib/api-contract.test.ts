@@ -1,14 +1,6 @@
 /**
- * Covers the request half of this app's own API contract: the param names, and the two URL builders that write them.
- *
- * The assertions here are deliberately *round trips* rather than string comparisons. What these builders promise is not
- * a particular spelling — it is that what the browser writes, the handler reads back unchanged. That is a promise with
- * two ends in two runtimes, and pinning only the string would leave the half that matters untested: a query encoded one
- * way and decoded another produces a URL that looks perfect in a network panel and searches for the wrong thing.
- *
- * So each case builds a URL, parses it exactly as the route handler does — `new URL(request.url).searchParams` — and
- * hands the result to the same parser in `api-query.ts` the handler uses. A change to either side that breaks the other
- * fails here, which is the whole reason the param names stopped being string literals in four places.
+ * Covers the request half of the API contract as round trips: each URL the browser builds is parsed exactly as the
+ * route handler does and fed to the same `api-query.ts` parser, so a change to either side that breaks the other fails.
  */
 import { describe, expect, it } from "vitest";
 

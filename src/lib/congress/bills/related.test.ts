@@ -6,12 +6,12 @@
  * judgment some body made rather than something either bill records, so a relationship that arrived without its
  * `identifiedBy` and one that arrived with it are different claims — and the page prints the difference.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
 import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import { getRelatedBills } from "@/lib/congress/client";
-import { jsonResponse, requestedUrl } from "@/test/congress-api";
+import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 const ROUTE: BillRouteParams = { congress: "119", type: "hr", number: "1" };
 
@@ -44,14 +44,10 @@ const PAYLOAD = {
   ],
 };
 
-beforeEach((): void => {
-  vi.stubEnv("CONGRESS_API_KEY", "test-key");
-});
-
 describe("getRelatedBills", (): void => {
   it("requests the bill's own relatedbills sub-resource", async (): Promise<void> => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PAYLOAD));
-    vi.stubGlobal("fetch", fetchMock);
+    stubLiveApi(fetchMock);
 
     await getRelatedBills(ROUTE);
 
@@ -63,7 +59,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("keeps the publisher's order, which the API documents no meaning for", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
@@ -71,7 +67,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("upper-cases the bill type so an inward link matches every other link to that bill", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     expect((await getRelatedBills(ROUTE)).entries.map((measure: RelatedBill): string => measure.type)).toEqual([
       "HR",
@@ -81,7 +77,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("carries every relationship with the body that identified it", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
@@ -96,13 +92,13 @@ describe("getRelatedBills", (): void => {
   });
 
   it("keeps a related measure sitting in a different Congress from the bill pointing at it", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     expect((await getRelatedBills(ROUTE)).entries[2]?.congress).toBe(118);
   });
 
   it("carries a latest action only when it has text to show", async (): Promise<void> => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
 
     const { entries: related }: BillSubResource<RelatedBill> = await getRelatedBills(ROUTE);
 
@@ -115,8 +111,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("drops a reference missing anything its inward link is built from", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           relatedBills: [
@@ -136,8 +131,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("returns an empty relationship list when the record named none", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi
         .fn()
         .mockResolvedValue(
@@ -149,8 +143,7 @@ describe("getRelatedBills", (): void => {
   });
 
   it("drops a relationship that names no type, since an attribution alone says nothing", async (): Promise<void> => {
-    vi.stubGlobal(
-      "fetch",
+    stubLiveApi(
       vi.fn().mockResolvedValue(
         jsonResponse({
           relatedBills: [
@@ -172,17 +165,14 @@ describe("getRelatedBills", (): void => {
   });
 
   it("returns nothing without ever requesting when no key is configured", async (): Promise<void> => {
-    vi.stubEnv("CONGRESS_API_KEY", undefined);
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubPreviewApi();
 
     expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns nothing without ever requesting for a malformed route", async (): Promise<void> => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubLiveApi();
 
     expect(await getRelatedBills({ congress: "119", type: "notatype", number: "1" })).toEqual({
       entries: [],
@@ -200,11 +190,11 @@ describe("getRelatedBills", (): void => {
     // someone has to change code. @see src/lib/observability/log.ts.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 404)));
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
     expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: false });
     expect(logged).not.toHaveBeenCalled();
 
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
     expect(await getRelatedBills(ROUTE)).toEqual({ entries: [], unavailable: true });
     expect(logged).toHaveBeenCalledTimes(1);
   });

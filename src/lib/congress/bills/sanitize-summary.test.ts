@@ -78,16 +78,10 @@ describe("HTML comments", (): void => {
 });
 
 /**
- * Regression tests for the overlapping-tag bypass class.
- *
- * These are the payloads that defeat a sanitizer which *patches* its input with a single `.replace()`, letting any text
- * the tag pattern doesn't match through untouched: stripping an inner tag splices the leftover fragments on either side
- * of it into a *new*, live tag, so sanitizing the input is what creates the payload. @see sanitizeSummaryHtml, which
- * builds its output instead.
- *
- * The property each of these asserts is the same one, and it is deliberately stated as "no raw `<` followed by a
- * letter" rather than as an exact output string: what matters is that nothing reaches the browser as markup, not the
- * particular escaping used to achieve that.
+ * Overlapping-tag payloads, which defeat a sanitizer that patches its input: stripping an inner tag splices the
+ * surrounding fragments into a new live tag. Each asserts no raw `<` followed by a letter survives, not an exact
+ * output.
+ * @see sanitizeSummaryHtml
  */
 describe("overlapping and malformed tags", (): void => {
   /** Whether a fragment contains anything a browser would parse as an element. */

@@ -1,14 +1,7 @@
 /**
- * Covers PrimaryNav's destinations, the aria-current marking it derives from the open path, and the drawer the same
- * nav becomes below 640px.
- *
- * What jsdom can and cannot answer about that drawer is worth stating, because it decides what is asserted here and
- * what is left to `tests/e2e`. jsdom has no layout engine and applies none of this app's stylesheets, so *which* of
- * the two arrangements is in force is invisible to it — the panel is never actually off-screen, never actually
- * `visibility: hidden`, and the toggle is never actually `display: none`. What is testable here is the whole of the
- * component's own contract: what it marks open, what it locks, what it closes on, and where it puts focus. Whether the
- * drawer is *painted*, whether the closed panel leaves the tab order, and whether a destination clears the target-size
- * floor inside it are geometry, and they are pinned in `tests/e2e/layout.spec.ts` and `tests/e2e/navigation.spec.ts`.
+ * Covers PrimaryNav's destinations, its `aria-current` marking, and the mobile drawer's own contract: what it marks
+ * open, locks, closes on, and focuses. jsdom applies no stylesheets, so whether the drawer is painted or out of the tab
+ * order is left to `tests/e2e/layout.spec.ts` and `tests/e2e/navigation.spec.ts`.
  */
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";

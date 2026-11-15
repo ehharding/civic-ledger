@@ -1,18 +1,10 @@
 /**
- * Covers the committee records section: the three collection tabs, the three row shapes, the pager, and the empty
- * states.
+ * Covers the committee records section: tabs, row shapes, pager, and empty states. The load-bearing cases:
  *
- * Three of these assertions are about what the section refuses to do, and those are the load-bearing ones:
- *
- * - **An unavailable collection is never reported as an empty one.** Zero rows can mean "this committee has published
- *   no reports" or "Congress.gov did not answer", and printing the first over the second state tells a reader something
- *   false about the congressional record.
- * - **A report is never given an outbound link.** Congress.gov's report URLs look derivable from what the record
- *   carries, and this project cannot verify that they are — congress.gov answers every automated check with a bot
- *   challenge. An authoritative-looking link that 404s is worse than a citation a reader can search.
- * - **Every control navigates.** The tabs and the pager's four steps are real links, and the pager's page field is a
- *   real GET form, so each view is shareable, openable in a new tab, and reachable without JavaScript. A click handler
- *   over local state would pass a "does it switch tabs" test and fail every one of those.
+ * - **An unavailable collection is never reported as empty**, which would misstate the record.
+ * - **A report gets no outbound link** — its Congress.gov URL can't be verified (bot challenge), and a 404 is worse
+ *   than a searchable citation.
+ * - **Every control navigates** — real links and a GET form, so each view is shareable and works without JavaScript.
  */
 import { type RenderResult, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

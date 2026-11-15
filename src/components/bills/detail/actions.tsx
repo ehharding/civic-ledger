@@ -8,19 +8,8 @@ import { type BillAction, describeBillCollection } from "@/lib/congress/bills/mo
 import { formatDate, pluralize } from "@/lib/format";
 
 /**
- * Every step logged on a bill, newest first: the panel, and the collapsed history inside it.
- *
- * The history is undeduplicated on purpose. Congress.gov reports one moment from several source systems at once, so
- * consecutive rows can describe the same event twice — that repetition is the record's own shape, and flattening it
- * would mean this app deciding which of two official logs to believe.
- */
-
-/**
- * The bill's full action history, collapsed.
- *
- * Collapsed rather than dropped, and undeduplicated rather than tidied: Congress.gov reports the same moment from
- * several source systems at once, so consecutive rows can describe one event twice. That repetition is the record's own
- * shape, and flattening it would mean this app deciding which of two official logs to believe.
+ * The bill's full action history, collapsed. Not deduplicated: Congress.gov logs one moment from several source
+ * systems, and merging them would mean choosing which official log to believe.
  *
  * @param actions - Every action on file, most recent first.
  * @returns The collapsible history, or nothing at all when there is none to show.
@@ -57,9 +46,6 @@ function ActionHistory({ actions }: { actions: BillAction[] }): JSX.Element | nu
 
 /**
  * Every step logged on the bill, newest first.
- *
- * The one section whose list renders whether or not the note above it does: {@link ActionHistory} returns `null` for an
- * empty history, so the empty note and the list are siblings rather than two branches of a conditional.
  *
  * @param props - @see BillSectionProps
  * @returns The action-history panel.
