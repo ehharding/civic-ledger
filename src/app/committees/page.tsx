@@ -23,5 +23,5 @@ export const metadata: Metadata = COMMITTEES_METADATA;
  * @see renderCommitteesRoute
  */
 export default function CommitteesPage(): Promise<JSX.Element> {
-  return renderCommitteesRoute(NO_SEARCH_PARAMS);
+  return renderCommitteesRoute(NO_SEARCH_PARAMS, "/committees");
 }

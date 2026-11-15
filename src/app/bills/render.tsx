@@ -10,6 +10,7 @@ import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { getCongressSnapshot } from "@/lib/congress/client";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import { pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
@@ -30,12 +31,18 @@ export const BILLS_METADATA: Metadata = pageMetadata({
  * and renders on demand.
  *
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
+ * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
+ *   cached; see {@link refuseDegradedRender}.
  * @returns The directory page for the current Congress.
  * @see src/lib/query-routes.ts
  * @see resolveBillDirectoryQuery
  */
-export async function renderBillsRoute(searchParams: Promise<RouteSearchParams>): Promise<JSX.Element> {
+export async function renderBillsRoute(
+  searchParams: Promise<RouteSearchParams>,
+  cachedAs?: string,
+): Promise<JSX.Element> {
   const [initialView, snapshot] = await Promise.all([resolveBillDirectoryQuery(searchParams), getCongressSnapshot()]);
+  refuseDegradedRender(snapshot.source === "preview", cachedAs);
 
   return (
     <SiteShell>

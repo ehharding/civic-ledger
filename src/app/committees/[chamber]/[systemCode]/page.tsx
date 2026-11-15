@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { JSX } from "react";
 
 import {
+  COMMITTEE_ROUTE,
   type CommitteeParams,
   committeeMetadata,
   renderCommitteeRoute,
@@ -37,7 +38,7 @@ export function generateStaticParams(): { chamber: string; systemCode: string }[
  * @see committeeMetadata
  */
 export function generateMetadata({ params }: CommitteePageProps): Promise<Metadata> {
-  return committeeMetadata(params);
+  return committeeMetadata(params, COMMITTEE_ROUTE);
 }
 
 /**
@@ -52,5 +53,5 @@ export function generateMetadata({ params }: CommitteePageProps): Promise<Metada
  * @see renderCommitteeRoute
  */
 export default function CommitteePage({ params }: CommitteePageProps): Promise<JSX.Element> {
-  return renderCommitteeRoute(params, NO_SEARCH_PARAMS);
+  return renderCommitteeRoute(params, NO_SEARCH_PARAMS, COMMITTEE_ROUTE);
 }

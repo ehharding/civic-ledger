@@ -5,7 +5,8 @@
 import type { MetadataRoute } from "next";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import robots, { AI_TRAINING_CRAWLERS } from "@/app/robots";
+import robots, { AI_TRAINING_CRAWLERS, billRecordRules } from "@/app/robots";
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { getSiteUrl } from "@/lib/site";
 
 const originalSiteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL;
@@ -27,8 +28,17 @@ describe("robots", (): void => {
       { userAgent: [...AI_TRAINING_CRAWLERS], disallow: "/" },
       {
         userAgent: "*",
-        allow: "/",
-        disallow: ["/api/", "/query/", "/bills?", "/bills/*?", "/members?", "/committees?", "/committees/*/*?"],
+        allow: ["/", `/bills/${getCurrentCongress()}/`, `/bills/${getCurrentCongress() + 1}/`],
+        disallow: [
+          "/api/",
+          "/query/",
+          "/bills?",
+          "/bills/*?",
+          "/members?",
+          "/committees?",
+          "/committees/*/*?",
+          "/bills/*/",
+        ],
       },
     ]);
   });
@@ -68,5 +78,45 @@ describe("robots", (): void => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://elsewhere.test";
 
     expect(robots().sitemap).toBe(`${getSiteUrl()}/sitemap.xml`);
+  });
+
+  /*
+   * Robots matching is longest-path-wins, so these assertions apply that rule to sample paths rather than only
+   * restating the arrays: what matters is which URLs a crawler may fetch.
+   */
+  describe("bill records", (): void => {
+    /**
+     * Resolves a path against allow and disallow prefixes the way Google and Bing do: the longest matching rule wins,
+     * and `*` matches any run of characters.
+     */
+    function isAllowed(path: string, rules: { allow: string[]; disallow: string[] }): boolean {
+      const matchLength = (patterns: string[]): number =>
+        Math.max(
+          -1,
+          ...patterns
+            .filter((pattern: string): boolean =>
+              new RegExp(`^${pattern.replace(/[.?+()]/g, "\\$&").replace(/\*/g, ".*")}`).test(path),
+            )
+            .map((pattern: string): number => pattern.length),
+        );
+      return matchLength(rules.allow) >= matchLength(rules.disallow);
+    }
+
+    const rules = { allow: ["/", ...billRecordRules(119).allow], disallow: billRecordRules(119).disallow };
+
+    it("keeps crawlers off a concluded Congress's bill pages", (): void => {
+      expect(isAllowed("/bills/100/hr/1005", rules)).toBe(false);
+      expect(isAllowed("/bills/118/s/42", rules)).toBe(false);
+    });
+
+    it("leaves the sitting Congress's bill pages, and the next one's, crawlable", (): void => {
+      expect(isAllowed("/bills/119/hr/10357", rules)).toBe(true);
+      expect(isAllowed("/bills/120/hr/1", rules)).toBe(true);
+    });
+
+    it("leaves every Congress's directory crawlable, so readers can still find concluded bills by search", (): void => {
+      expect(isAllowed("/bills/100", rules)).toBe(true);
+      expect(isAllowed("/bills", rules)).toBe(true);
+    });
   });
 });

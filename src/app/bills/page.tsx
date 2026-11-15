@@ -24,5 +24,5 @@ export const metadata: Metadata = BILLS_METADATA;
  * @see renderBillsRoute
  */
 export default function BillsPage(): Promise<JSX.Element> {
-  return renderBillsRoute(NO_SEARCH_PARAMS);
+  return renderBillsRoute(NO_SEARCH_PARAMS, "/bills");
 }

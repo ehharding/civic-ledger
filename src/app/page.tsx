@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { HomePage } from "@/components/home/home-page";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { getCongressComposition, getCongressSnapshot } from "@/lib/congress/client";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import type { CongressComposition } from "@/lib/congress/members/model";
 
 /**
@@ -26,6 +27,8 @@ export default async function Page(): Promise<JSX.Element> {
     getCongressSnapshot(),
     getCongressComposition(),
   ]);
+
+  refuseDegradedRender(snapshot.source === "preview" || composition.source === "preview", "/");
 
   return <HomePage composition={composition} snapshot={snapshot} />;
 }

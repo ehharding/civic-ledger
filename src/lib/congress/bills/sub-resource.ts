@@ -36,7 +36,7 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
  * Requests one bill's own record from the detail endpoint.
  *
  * Two callers reach a single bill by identifier and they want opposite things from a failure — `getBillById` falls back
- * to a snapshot search and then to the preview fixtures, while the committee page's title lookup simply goes without a
+ * to the preview fixtures and flags itself unavailable, while the committee page's title lookup simply goes without a
  * title — so this deliberately hands back the raw {@link CongressRequestResult} rather than a bill. What it does own is
  * everything the two must agree on: the endpoint's path spelling, its schema, and the cache tags that let a title
  * lookup and the bill's own page share one cached response instead of paying for it twice.

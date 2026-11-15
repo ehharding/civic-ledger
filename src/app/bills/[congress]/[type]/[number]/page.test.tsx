@@ -1,6 +1,7 @@
 /**
- * Covers the bill record route: its eight parallel reads, the 404 for a bill that resolves to nothing, and metadata
- * that describes a bill by its latest action — including a fresh record with no action text.
+ * Covers the bill record route: its lookup and the seven collection reads that follow it, the 404 for a bill that
+ * resolves to nothing, and metadata that describes a bill by its latest action — including a fresh record with no
+ * action text.
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
@@ -10,7 +11,7 @@ import BillPage, { generateMetadata, generateStaticParams } from "@/app/bills/[c
 import { type BillRouteParams, type LegislativeBill, NO_LATEST_ACTION_TEXT } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 import { billHref } from "@/lib/routes";
-import { stubLiveApi } from "@/test/congress-api";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 import { expectNotFound } from "@/test/next-not-found";
 import { readerText } from "@/test/reader-text";
 
@@ -149,5 +150,75 @@ describe("BillPage", (): void => {
     );
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(firstPreviewBill.title);
+  });
+
+  describe("collection requests", (): void => {
+    /** Requests the page made, by the path segment after the bill number (`""` for the lookup itself). */
+    function requestedCollections(fetchMock: ReturnType<typeof vi.fn>): string[] {
+      return fetchMock.mock.calls.map((call: unknown[]): string => {
+        const path: string = new URL(String(call[0])).pathname;
+        return path.split("/").slice(6).join("/");
+      });
+    }
+
+    /** A live bill whose record publishes the given collection sizes, answering every collection with an empty list. */
+    function stubLiveBill(record: Record<string, unknown>): ReturnType<typeof vi.fn> {
+      return stubLiveApi(
+        vi.fn().mockImplementation((url: URL | string): Promise<Response> => {
+          const isLookup: boolean = new URL(String(url)).pathname.endsWith("/hr/284");
+          return Promise.resolve(
+            jsonResponse(
+              isLookup
+                ? {
+                    bill: {
+                      congress: 119,
+                      type: "HR",
+                      number: "284",
+                      title: "A Bill With Published Counts",
+                      latestAction: { actionDate: "2026-03-01", text: "Referred to committee." },
+                      ...record,
+                    },
+                  }
+                : {},
+            ),
+          );
+        }),
+      );
+    }
+
+    it("skips a collection the bill's own record publishes as empty", async (): Promise<void> => {
+      const fetchMock = stubLiveBill({
+        actions: { count: 2 },
+        amendments: { count: 0 },
+        relatedBills: { count: 0 },
+        cosponsors: { count: 0, countIncludingWithdrawnCosponsors: 0 },
+      });
+
+      await BillPage({ params: Promise.resolve({ congress: "119", type: "hr", number: "284" }) });
+
+      const requested: string[] = requestedCollections(fetchMock);
+      expect(requested).toContain("actions");
+      expect(requested).not.toContain("amendments");
+      expect(requested).not.toContain("relatedbills");
+      expect(requested).not.toContain("cosponsors");
+    });
+
+    it("still asks when a count is absent, since absence was never confirmed to mean none", async (): Promise<void> => {
+      const fetchMock = stubLiveBill({ actions: { count: 2 } });
+
+      await BillPage({ params: Promise.resolve({ congress: "119", type: "hr", number: "284" }) });
+
+      expect(requestedCollections(fetchMock)).toEqual(
+        expect.arrayContaining(["summaries", "text", "committees", "cosponsors", "relatedbills", "amendments"]),
+      );
+    });
+
+    it("looks the bill up before asking for anything else", async (): Promise<void> => {
+      const fetchMock = stubLiveBill({});
+
+      await BillPage({ params: Promise.resolve({ congress: "119", type: "hr", number: "284" }) });
+
+      expect(requestedCollections(fetchMock)[0]).toBe("");
+    });
   });
 });

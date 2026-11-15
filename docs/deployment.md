@@ -67,6 +67,14 @@ upstream traffic but rendering: every directory (`/bills`, `/bills/[congress]`, 
 committee page read its `searchParams`, which made each of them render on the server for every single visit. A crawler
 walking the sitemap, or every facet combination, paid a full render per URL.
 
+On 2026-11-15, two days after the pause was lifted, every page showed preview data. Congress.gov was answering `429`:
+something walking bill pages in order through the 100th Congress had used up the key's hourly quota (each bill page was
+nine requests then), and every route that revalidated during the outage cached its preview fallback. A concluded
+Congress's bill page kept it for a day, and a bill no fixture covered was cached as "Bill Not Found". The same walk
+drove ISR writes to 283K against 9.7K reads in two days: pages written once and never read back. The Bot Name breakdown
+accounted for under a thousand of the 74K requests in those twelve hours, so most of it came from clients that do not
+identify as bots, which `robots.txt` does not bind.
+
 What keeps that bounded now:
 
 - **Plain routes are static.** None of those routes reads its query any more, so each is prerendered and regenerated at
@@ -105,6 +113,27 @@ What keeps that bounded now:
   its segment `revalidate` still holds the page for a day. The sitting Congress keeps its five-minute fetch window.
   `getBillById`, `getMemberProfile`, and `getCommitteeProfile` are memoized per render with React's `cache`, because
   Next's fetch memoization skips requests carrying an abort signal, and every request here carries one.
+- **A failed read is never cached.** On a production server, a cached route whose Congress.gov read failed throws
+  `LiveDataUnavailableError` instead of rendering preview data, and Next keeps serving the last good copy (a route with
+  no copy yet shows the error page, which is a 500 and uncached). The record pages' metadata refuses too, so a failed
+  lookup cannot title a real bill "Bill Not Found". The `/query` twins are never cached, so they still render the
+  labeled preview. `next build` is exempt, so a rate-limited API cannot fail a deploy. See
+  `src/lib/congress/live-render.ts`. These refusals reach Sentry as issues; during a quota outage expect one per route
+  that tried to revalidate, all with the same message.
+- **Crawlers stay off a concluded Congress's bill records.** `robots.txt` disallows `/bills/*/` and allows back the
+  sitting Congress and the next (`billRecordRules` in `src/app/robots.ts`). Those pages are the long tail, about ten
+  thousand per Congress back to the 93rd, and each cold one cost a render, an ISR write that was rarely read again, and
+  up to eight API requests. Every Congress's directory stays crawlable.
+- **A bill page looks the bill up before anything else.** A failed lookup refuses the render after one request instead
+  of nine, and a collection the record publishes with a count of `0` is not requested at all. An absent count is not
+  treated as zero: whether Congress.gov omits an empty collection or publishes `0` has not been confirmed against a live
+  response. If it turns out to omit them, skipping on absence would save most of the remaining requests, at the cost of
+  trusting that omission.
+- **Unidentified crawlers are rate-limited at the edge.** `robots.txt` binds only clients that read it. A Vercel
+  Firewall custom rule on the project limits each IP to 40 requests per 60 seconds on paths starting with `/bills/`,
+  answering `429` past that, before any function runs. A reader never comes close; a hover-prefetch that hits the limit
+  just fails quietly. It is configured in the dashboard (Firewall → Configure → New Rule), not in this repository, so
+  check it is still there after any change to the project's firewall.
 - **The homepage ships only what the seating chart draws.** The chart is a client component, so its props travel in the
   RSC payload. `compositionForSeating` strips the portraits it never shows — about a seventh of the most-served page's
   compressed size.
@@ -114,6 +143,10 @@ What keeps that bounded now:
 - **One deployment per push, and none for a docs-only one.** See step 6 above. `deploy-vercel.yml` skips a push or pull
   request touching only `docs/` or Markdown, which would ship an identical bundle whose on-demand pages all start
   uncached.
+
+If every page shows preview data while the key is set, search the runtime logs for `congress.request-failed`: a `status`
+of `429` means the key's hourly quota is spent, and it recovers on its own within the hour. A quota that keeps running
+out can be raised by asking api.data.gov, which issues Congress.gov keys.
 
 If the team is paused, the dashboard's **Usage** tab names the metric that tripped it. Upgrading to Pro lifts a pause;
 so, sometimes, does asking Vercel support to reset it once the cause is fixed.

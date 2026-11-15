@@ -237,14 +237,19 @@ export type BillLookupResult = {
   notice?: string;
   /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
+  /**
+   * Congress.gov did not answer, so `bill` is a preview fixture or nothing, never evidence the bill doesn't exist. The
+   * bill page refuses to cache such a render rather than 404ing it. See refuseDegradedRender.
+   */
+  unavailable: boolean;
 };
 
 /**
  * Looks up a single bill directly, reporting the source the result came from.
  *
  * @param input - The bill's route params, straight from the URL.
- * @returns The lookup result. A `bill` of `undefined` means "no such record" (a 404), never a failure — a transient
- *   failure falls back to a snapshot search and then preview data first.
+ * @returns The lookup result. A `bill` of `undefined` with `unavailable` false means "no such record" (a 404). A
+ *   transient failure sets `unavailable` and falls back to the preview fixture, if one covers this bill.
  */
 export function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
   return lookUpBillOnce(input.congress, input.type, input.number);
@@ -271,12 +276,12 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
   const retrievedAt: string = new Date().toISOString();
 
   if (!apiKey) {
-    return { bill: findPreviewBill(input), source: "preview", retrievedAt };
+    return { bill: findPreviewBill(input), source: "preview", retrievedAt, unavailable: false };
   }
 
   const route: NormalizedBillRoute | null = normalizeBillRouteParams(input);
   if (!route) {
-    return { bill: undefined, source: "live", retrievedAt };
+    return { bill: undefined, source: "live", retrievedAt, unavailable: false };
   }
 
   const result: CongressRequestResult<CongressApiDetailResponse> = await requestBillDetail(
@@ -286,25 +291,22 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
     billPageCacheWindow(route.congress),
   );
 
-  if (result.outcome === "not-found") return { bill: undefined, source: "live", retrievedAt };
+  if (result.outcome === "not-found") return { bill: undefined, source: "live", retrievedAt, unavailable: false };
 
   if (result.outcome === "ok") {
     const bill: LegislativeBill | null = result.data.bill ? mapCongressBill(result.data.bill) : null;
-    return { bill: bill ?? undefined, source: "live", retrievedAt };
+    return { bill: bill ?? undefined, source: "live", retrievedAt, unavailable: false };
   }
 
-  // A transient failure mustn't read as "not found": fall back to a snapshot search, then preview data. The snapshot is
-  // scoped to *this bill's* Congress — the current Congress's page can't contain an older bill, and a `live` miss would
-  // render as a 404 for a bill that exists.
-  const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(Number(route.congress));
-  const key: string = billIdentityKey(input);
-  const bill: LegislativeBill | undefined =
-    snapshot.bills.find((candidate: LegislativeBill): boolean => billIdentityKey(candidate) === key) ??
-    findPreviewBill(input);
-
-  // The snapshot's own retrievedAt reflects when that fallback data was actually fetched, which is more accurate here
-  // than this function's own start time.
-  return { bill, source: snapshot.source, notice: snapshot.notice, retrievedAt: snapshot.retrievedAt };
+  // No second request for a list snapshot to search: when Congress.gov is rate-limiting, it fails too, and spends quota
+  // doing it. The page refuses to cache this render anyway, so the fixture only matters to the build's prerender.
+  return {
+    bill: findPreviewBill(input),
+    source: "preview",
+    notice: "Live records are temporarily unavailable, so preview records are shown.",
+    retrievedAt,
+    unavailable: true,
+  };
 }
 
 /**

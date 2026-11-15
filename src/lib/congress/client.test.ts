@@ -144,7 +144,7 @@ describe("getCongressSnapshotForCongress", (): void => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ summaries: [] }))
-      // A 404 is a true answer, so the lookup ends there rather than falling back to the (cached) list snapshot.
+      // A 404 is a true answer, so the lookup ends there.
       .mockResolvedValueOnce(new Response("", { status: 404 }))
       .mockResolvedValueOnce(jsonResponse({ summaries: [] }));
     stubLiveApi(fetchMock);
@@ -218,7 +218,7 @@ describe("getBillById", (): void => {
     expect(result.source).toBe("live");
   });
 
-  it("falls back to a snapshot search and reports that source when the direct lookup throws", async (): Promise<void> => {
+  it("falls back to the preview fixture and reports that source when the direct lookup throws", async (): Promise<void> => {
     stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const target: LegislativeBill = firstPreviewBill;
@@ -228,7 +228,6 @@ describe("getBillById", (): void => {
       number: target.number,
     });
 
-    // The direct lookup's fetch rejects, and so does the snapshot search's own fetch, so both fall back to preview.
     expect(result.bill).toEqual(target);
     expect(result.source).toBe("preview");
     expect(result.notice).toMatch(/temporarily unavailable/i);

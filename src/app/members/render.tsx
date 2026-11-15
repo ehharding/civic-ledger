@@ -6,6 +6,7 @@ import { SiteShell } from "@/components/layout/site-shell";
 import { MemberDirectory } from "@/components/members/member-directory";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { getMemberDirectory, type MemberDirectoryResult } from "@/lib/congress/client";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import {
   type JurisdictionOption,
   listMemberJurisdictions,
@@ -30,13 +31,19 @@ export const MEMBERS_METADATA: Metadata = pageMetadata({
  * Shared by the static `/members` (no query) and the on-demand `/query/members`.
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`.
+ * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
+ *   cached; see {@link refuseDegradedRender}.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
  * @see getMemberDirectory
  * @see resolveMemberDirectoryQuery
  * @see src/lib/query-routes.ts
  */
-export async function renderMembersRoute(searchParams: Promise<RouteSearchParams>): Promise<JSX.Element> {
+export async function renderMembersRoute(
+  searchParams: Promise<RouteSearchParams>,
+  cachedAs?: string,
+): Promise<JSX.Element> {
   const { members, congress, source, notice, retrievedAt }: MemberDirectoryResult = await getMemberDirectory();
+  refuseDegradedRender(source === "preview", cachedAs);
 
   const initialQuery: MemberDirectoryQuery = await resolveMemberDirectoryQuery(
     searchParams,

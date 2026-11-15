@@ -4,6 +4,7 @@ import type { JSX } from "react";
 
 import { MemberDetail } from "@/components/members/member-detail";
 import { getMemberProfile, MEMBER_LEGISLATION_LIMIT, type MemberProfileResult } from "@/lib/congress/client";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import {
   chamberLabels,
   formatMemberName,
@@ -14,6 +15,9 @@ import {
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { memberHref } from "@/lib/routes";
+
+/** This route's pattern, as a refused render names it. */
+const MEMBER_ROUTE: string = "/members/[bioguideId]";
 
 /** Params for the individual member route (`/members/[bioguideId]`). */
 type MemberPageProps = {
@@ -40,8 +44,9 @@ export function generateStaticParams(): { bioguideId: string }[] {
  */
 export async function generateMetadata({ params }: MemberPageProps): Promise<Metadata> {
   const { bioguideId } = await params;
-  const { profile }: MemberProfileResult = await getMemberProfile(bioguideId);
+  const { profile, source }: MemberProfileResult = await getMemberProfile(bioguideId);
 
+  refuseDegradedRender(source === "preview", MEMBER_ROUTE);
   if (!profile) return notFoundMetadata("Member Not Found");
 
   const seat: string = formatMemberSeat(profile, profile.chamber);
@@ -66,6 +71,7 @@ export default async function MemberPage({ params }: MemberPageProps): Promise<J
   const { profile, sponsored, cosponsored, source, notice, retrievedAt }: MemberProfileResult =
     await getMemberProfile(bioguideId);
 
+  refuseDegradedRender(source === "preview", MEMBER_ROUTE);
   if (!profile) notFound();
 
   return (

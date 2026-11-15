@@ -123,8 +123,11 @@ committees, `committees/model.ts` is what a committee _is_, and neither name has
 
 Two invariants hold across every exported read:
 
-1. **Nothing throws.** Upstream failure is an expected condition, not an exception — a page degrades to clearly labeled
-   preview data, never to an error boundary.
+1. **Nothing throws.** Upstream failure is an expected condition, not an exception: a read returns clearly labeled
+   preview data and says so. Whether a page _shows_ it is the route's decision. A cached route on a production server
+   refuses the render instead (`refuseDegradedRender`, `live-render.ts`), so Next keeps serving its last good copy
+   rather than caching preview data for the route's whole window; an on-demand `/query` twin, never cached, still shows
+   it.
 2. **Provenance travels with the data.** Anything that can come from either live or preview data reports which it was,
    on the same returned value, so no caller can render one while claiming the other.
 
@@ -146,7 +149,9 @@ page. Only a payload that isn't an object at all is rejected outright.
    one request per supported Congress at once.
 3. The adapter maps only known fields into `LegislativeBill`, which keeps the rest of the app insulated from upstream
    changes.
-4. If no key exists or the request fails, the app renders transparent preview data instead of a broken dashboard.
+4. If no key exists, the app renders transparent preview data instead of a broken dashboard. If the request fails, a
+   cached route keeps its last good copy (see invariant 1 above), and only a route with no copy yet shows the error
+   boundary; an on-demand twin renders the labeled preview.
 5. A reader can always leave for the official record: from a bill page to its public Congress.gov record, and from any
    member's page to their entry in the Biographical Directory. Seats in the chamber diagram and sponsor lines on bill
    pages both link _inward_ first, to that member's own page, which carries the outbound link onward.
@@ -218,9 +223,10 @@ fixtures rather than sent upstream.
 
 ### A Bill's Committees, and Why That Direction Is the Cheap One
 
-`/bills/[congress]/[type]/[number]` reads `/v3/bill/{congress}/{type}/{number}/committees` alongside the bill itself,
-its summaries, its text versions, its actions, its cosponsors, its related measures, and its amendments — eight
-independent reads, issued together.
+`/bills/[congress]/[type]/[number]` reads `/v3/bill/{congress}/{type}/{number}/committees` alongside its summaries, its
+text versions, its actions, its cosponsors, its related measures, and its amendments: seven reads, issued together once
+the bill's own lookup has answered. The lookup goes first, alone, so a failed one costs one request instead of eight,
+and any collection the record publishes with a count of zero is never requested.
 
 This is the mirror image of the committee page's referral list below, and it is the far cheaper direction. Asking a
 _committee_ which bills it handled costs one request for the referrals plus one bill lookup per row, because that

@@ -54,5 +54,5 @@ export function generateMetadata({ params }: CongressBillsPageProps): Promise<Me
  * @see renderCongressBillsRoute
  */
 export default function CongressBillsPage({ params }: CongressBillsPageProps): Promise<JSX.Element> {
-  return renderCongressBillsRoute(params, NO_SEARCH_PARAMS);
+  return renderCongressBillsRoute(params, NO_SEARCH_PARAMS, "/bills/[congress]");
 }

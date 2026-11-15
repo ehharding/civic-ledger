@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { QUERY_ROUTE_PREFIX, QUERY_ROUTES, type QueryRoute } from "@/lib/query-routes";
 import { getSiteUrl } from "@/lib/site";
 
@@ -15,6 +16,33 @@ import { getSiteUrl } from "@/lib/site";
  */
 function queryRouteDisallows(): string[] {
   return QUERY_ROUTES.map((route: QueryRoute): string => `${route.source.replace(/:\w+/g, "*")}?`);
+}
+
+/**
+ * Keeps crawlers off bill pages from a concluded Congress while leaving the sitting Congress's open.
+ *
+ * Those pages are the site's long tail, about ten thousand per Congress back to the 93rd, and a crawler walking them
+ * pays a cold render, an ISR write that is almost never read back, and up to eight Congress.gov requests per page. One
+ * such walk through of the 100th Congress used up the API key's hourly quota, and every page on the site fell back to
+ * preview data. A concluded Congress's bills stay reachable to readers, and its directory stays crawlable; only the
+ * individual records are withheld from crawlers.
+ *
+ * Robots rules resolve by the longest matching path, so an allowed Congress's prefix outranks the shorter wildcard
+ * rule. The next Congress is allowed too, because this file is built once per deploy, and a new Congress convenes every
+ * other January whether or not anything deployed that day.
+ *
+ * @param currentCongress - The Congress now sitting. A parameter so tests can pin it.
+ * @returns The allow and disallow entries for bill records.
+ * @see docs/deployment.md, "Keeping Server Work Bounded"
+ */
+export function billRecordRules(currentCongress: number = getCurrentCongress()): {
+  allow: string[];
+  disallow: string[];
+} {
+  return {
+    allow: [`/bills/${currentCongress}/`, `/bills/${currentCongress + 1}/`],
+    disallow: ["/bills/*/"],
+  };
 }
 
 /**
@@ -59,19 +87,26 @@ export const AI_TRAINING_CRAWLERS: readonly string[] = [
  * combination of facets is exactly the traffic that is pure server cost and no search value. The paths are built from
  * the rewrite table, so a route that gains a twin is covered here without a second list.
  *
- * AI training crawlers are refused the whole site.
+ * AI training crawlers are refused the whole site, and every other crawler is refused a concluded Congress's bill
+ * records.
  *
  * @returns The robots rules and a pointer to the generated sitemap.
  * @see src/lib/query-routes.ts
  * @see AI_TRAINING_CRAWLERS
+ * @see billRecordRules
  */
 export default function robots(): MetadataRoute.Robots {
   const siteUrl: string = getSiteUrl();
+  const bills: { allow: string[]; disallow: string[] } = billRecordRules();
 
   return {
     rules: [
       { userAgent: [...AI_TRAINING_CRAWLERS], disallow: "/" },
-      { userAgent: "*", allow: "/", disallow: ["/api/", `${QUERY_ROUTE_PREFIX}/`, ...queryRouteDisallows()] },
+      {
+        userAgent: "*",
+        allow: ["/", ...bills.allow],
+        disallow: ["/api/", `${QUERY_ROUTE_PREFIX}/`, ...queryRouteDisallows(), ...bills.disallow],
+      },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
   };

@@ -11,6 +11,7 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { getCongressSnapshotForCongress } from "@/lib/congress/client";
 import { getCongressYearRange, listCongresses, parseCongressParam } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
@@ -54,6 +55,8 @@ export async function congressBillsMetadata(params: CongressBillsParams): Promis
  *
  * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
+ * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
+ *   cached; see {@link refuseDegradedRender}.
  * @returns The directory page for that Congress.
  * @see src/lib/query-routes.ts
  * @see parseCongressParam
@@ -62,12 +65,14 @@ export async function congressBillsMetadata(params: CongressBillsParams): Promis
 export async function renderCongressBillsRoute(
   params: CongressBillsParams,
   searchParams: Promise<RouteSearchParams>,
+  cachedAs?: string,
 ): Promise<JSX.Element> {
   const [{ congress: rawCongress }, initialView] = await Promise.all([params, resolveBillDirectoryQuery(searchParams)]);
   const congress: number | null = parseCongressParam(rawCongress);
   if (congress === null) notFound();
 
   const snapshot: CongressSnapshot = await getCongressSnapshotForCongress(congress);
+  refuseDegradedRender(snapshot.source === "preview", cachedAs);
   const { startYear, endYear } = getCongressYearRange(congress);
   const isCurrent: boolean = congress === getCurrentCongress();
 

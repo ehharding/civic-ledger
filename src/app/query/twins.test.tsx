@@ -4,6 +4,7 @@
  * 1. **It passes the query through** — otherwise every shared link renders unfiltered.
  * 2. **It carries the same metadata as its route,** canonical path included, since it's a view of that page.
  * 3. **It streams the same loading skeleton.**
+ * 4. **It degrades rather than refuses** under an outage, since its render is never cached. See refuseDegradedRender.
  *
  * Lives inside `src/app/query` so the static demo build, which deletes that directory, drops these tests too.
  *
@@ -11,7 +12,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import type { Metadata } from "next";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // The bill directories render the Congress switcher, a client component that navigates and so needs a router. Only
 // `useRouter` is replaced, exactly as in the bill routes' own tests.
@@ -58,6 +59,7 @@ import QueryMembersLoading from "@/app/query/members/loading";
 import QueryMembersPage, { metadata as queryMembersMetadata } from "@/app/query/members/page";
 import type { CommitteeProfile } from "@/lib/congress/committees/model";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
+import { jsonResponse, stubLiveApi } from "@/test/congress-api";
 
 const firstCommittee: CommitteeProfile = previewCommitteeProfiles[0] as CommitteeProfile;
 const committeeParams: Promise<{ chamber: string; systemCode: string }> = Promise.resolve({
@@ -141,5 +143,48 @@ describe("each /query twin streams its route's loading skeleton", (): void => {
     { name: "/query/committees/[chamber]/[systemCode]", twin: QueryCommitteeLoading, route: CommitteeLoading },
   ])("$name", ({ twin, route }: { twin: unknown; route: unknown }): void => {
     expect(twin).toBe(route);
+  });
+});
+
+describe("each /query twin degrades rather than refuses under a rate limit", (): void => {
+  afterEach((): void => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  /** A production server whose every Congress.gov request is rate-limited, as for the cached routes. */
+  function stubRateLimitedProduction(): void {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PHASE", "phase-production-server");
+    stubLiveApi(vi.fn().mockImplementation((): Promise<Response> => Promise.resolve(jsonResponse({}, 429))));
+  }
+
+  const cases: [string, () => Promise<unknown>][] = [
+    ["/query/bills", (): Promise<unknown> => QueryBillsPage({ searchParams: Promise.resolve({ q: "farm" }) })],
+    [
+      "/query/bills/[congress]",
+      (): Promise<unknown> =>
+        QueryCongressBillsPage({ params: Promise.resolve({ congress: "118" }), searchParams: Promise.resolve({}) }),
+    ],
+    ["/query/members", (): Promise<unknown> => QueryMembersPage({ searchParams: Promise.resolve({ q: "smith" }) })],
+    ["/query/committees", (): Promise<unknown> => QueryCommitteesPage({ searchParams: Promise.resolve({ q: "x" }) })],
+    [
+      "/query/committees/[chamber]/[systemCode]",
+      (): Promise<unknown> => QueryCommitteePage({ params: committeeParams, searchParams: Promise.resolve({}) }),
+    ],
+  ];
+
+  it.each(cases)("%s", async (_route: string, renderRoute: () => Promise<unknown>): Promise<void> => {
+    stubRateLimitedProduction();
+
+    await expect(renderRoute()).resolves.toBeDefined();
+  });
+  it("/query/committees/[chamber]/[systemCode] metadata", async (): Promise<void> => {
+    // Shared with the cached route, which refuses here; the twin must not inherit that.
+    stubRateLimitedProduction();
+
+    await expect(
+      generateQueryCommitteeMetadata({ params: committeeParams, searchParams: Promise.resolve({}) }),
+    ).resolves.toBeDefined();
   });
 });

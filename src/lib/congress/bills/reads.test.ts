@@ -65,102 +65,41 @@ describe("getBillById", (): void => {
     expect(result.source).toBe("live");
   });
 
-  it("falls back through the snapshot to the preview fixtures when the lookup fails outright", async (): Promise<void> => {
-    // Both the direct lookup and the snapshot request fail, so the only thing left is the labeled fixture set — and the
-    // result must say `preview`, because that is what it is.
+  it("falls back to the preview fixture and flags the lookup unavailable when it fails outright", async (): Promise<void> => {
     stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
     expect(result.source).toBe("preview");
     expect(result.bill?.number).toBe("284");
+    expect(result.unavailable).toBe(true);
   });
 
-  it("reports nothing found when a transient failure leaves no fixture to fall back to either", async (): Promise<void> => {
+  it("flags a failure with no fixture to fall back to, so it is never read as a 404", async (): Promise<void> => {
     stubLiveApi(vi.fn().mockRejectedValue(new Error("network down")));
 
     const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "424242" });
 
     expect(result.bill).toBeUndefined();
     expect(result.source).toBe("preview");
+    expect(result.unavailable).toBe(true);
   });
 
-  /*
-   * The fallback must read the *bill's* Congress, not the current one — otherwise an older bill is searched for in the
-   * wrong snapshot and reported as a `live` 404.
-   */
-  describe("when the lookup fails for a bill outside the seated Congress", (): void => {
-    const OLDER_CONGRESS: number = getCurrentCongress() - 2;
-    const olderRoute: BillRouteParams = { congress: String(OLDER_CONGRESS), type: "hr", number: "1" };
+  it("spends one request on a failed lookup, not a second on a list snapshot", async (): Promise<void> => {
+    // Under a 429 the snapshot fails too, and only spends more of the hourly quota doing it.
+    const fetchMock = stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 429)));
 
-    /** A bill the current Congress's list would return — never the one being looked up. */
-    const CURRENT_CONGRESS_BILL = {
-      congress: getCurrentCongress(),
-      type: "HR",
-      number: "9999",
-      title: "An unrelated bill from the Congress currently seated",
-      latestAction: { actionDate: "2026-03-01", text: "Referred to committee." },
-    };
+    await getBillById({ congress: String(getCurrentCongress() - 2), type: "hr", number: "1" });
 
-    /**
-     * Fails the detail lookup, then answers the snapshot retry *according to which Congress it asks for*.
-     *
-     * Answering every URL with the same body is what makes this bug invisible, so the mock has to route: the older
-     * Congress's list returns `olderBills`, and the current Congress's returns an unrelated — crucially non-empty —
-     * page. Non-empty matters, because an empty snapshot degrades to `preview` on its own and would mask a wrong-
-     * Congress fetch behind the right-looking outcome.
-     */
-    function stubFailedLookupThenSnapshot(olderBills: unknown[]): ReturnType<typeof vi.fn> {
-      const fetchMock = vi.fn().mockImplementation((url: URL | string): Promise<Response> => {
-        const href: string = String(url);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
-        if (href.includes(`/bill/${OLDER_CONGRESS}/`)) return Promise.reject(new Error("network down"));
-        if (href.includes(`/bill/${OLDER_CONGRESS}?`)) return Promise.resolve(jsonResponse({ bills: olderBills }));
+  it("marks an answered lookup, found or not, as available", async (): Promise<void> => {
+    stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));
 
-        return Promise.resolve(jsonResponse({ bills: [CURRENT_CONGRESS_BILL] }));
-      });
+    const result: BillLookupResult = await getBillById({ congress: "119", type: "hr", number: "284" });
 
-      stubLiveApi(fetchMock);
-      return fetchMock;
-    }
-
-    it("asks the bill's own Congress for the snapshot it falls back to", async (): Promise<void> => {
-      const fetchMock = stubFailedLookupThenSnapshot([]);
-
-      await getBillById(olderRoute);
-
-      // The retry's path names the older Congress. Before the fix it named the current one, which is why the `find`
-      // below it could never hit.
-      const retryUrl: string = String(fetchMock.mock.calls[1]?.[0]);
-      expect(retryUrl).toContain(`/bill/${OLDER_CONGRESS}?`);
-    });
-
-    it("resolves the bill from that Congress's snapshot rather than 404ing it", async (): Promise<void> => {
-      stubFailedLookupThenSnapshot([
-        {
-          congress: OLDER_CONGRESS,
-          type: "HR",
-          number: "1",
-          title: "A bill from a Congress that is no longer seated",
-          latestAction: { actionDate: "2022-03-01", text: "Referred to committee." },
-        },
-      ]);
-
-      const result: BillLookupResult = await getBillById(olderRoute);
-
-      expect(result.bill?.title).toBe("A bill from a Congress that is no longer seated");
-      expect(result.bill?.congress).toBe(OLDER_CONGRESS);
-    });
-
-    it("never reports a live 'no such record' for what was only a transient failure", async (): Promise<void> => {
-      // The snapshot succeeds and simply does not contain this bill. The result must not be the pairing the route
-      // reads as a 404 — `bill: undefined` alongside `source: "live"`.
-      stubFailedLookupThenSnapshot([]);
-
-      const result: BillLookupResult = await getBillById(olderRoute);
-
-      expect(result.bill === undefined && result.source === "live").toBe(false);
-    });
+    expect(result.unavailable).toBe(false);
   });
 });
 

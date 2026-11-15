@@ -27,6 +27,7 @@ import {
   getRelatedBills,
 } from "@/lib/congress/client";
 import type { BillCommittee } from "@/lib/congress/committees/model";
+import { refuseDegradedRender } from "@/lib/congress/live-render";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
 import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
@@ -39,6 +40,9 @@ import { billHref } from "@/lib/routes";
  * @see revalidateSecondsForCongress
  */
 export const revalidate: number = 86_400;
+
+/** This route's pattern, as a refused render names it. */
+const BILL_ROUTE: string = "/bills/[congress]/[type]/[number]";
 
 /** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {
@@ -68,8 +72,10 @@ export function generateStaticParams(): BillRouteParams[] {
  */
 export async function generateMetadata({ params }: BillPageProps): Promise<Metadata> {
   const route: BillRouteParams = await params;
-  const { bill }: BillLookupResult = await getBillById(route);
+  const { bill, unavailable }: BillLookupResult = await getBillById(route);
 
+  // Before the 404 title: a lookup that failed would otherwise title a real bill's error page "Bill Not Found".
+  refuseDegradedRender(unavailable, BILL_ROUTE);
   if (!bill) return notFoundMetadata("Bill Not Found");
 
   // The latest action says where the bill *is*; with none recorded, naming the bill beats the placeholder. Compared
@@ -86,9 +92,40 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 }
 
 /**
- * Individual bill record route. Looks the bill up directly (so any real bill number works) and fetches its seven
+ * An answered, empty collection, standing in for a request the bill's own record says would find nothing.
+ *
+ * @typeParam Entry - The collection's entry type.
+ * @returns An empty collection marked answered.
+ */
+function noneOnRecord<Entry>(): Promise<BillSubResource<Entry>> {
+  return Promise.resolve({ entries: [], unavailable: false });
+}
+
+/**
+ * Requests one collection unless the bill's live record publishes its size as zero. Only an explicit zero skips:
+ * whether Congress.gov omits an empty collection's count or publishes `0` is unconfirmed, and skipping on absence would
+ * state "none on record" about a collection nobody asked for.
+ *
+ * @typeParam Entry - The collection's entry type.
+ * @param published - The bill's published count for this collection, if any.
+ * @param read - The collection's read.
+ * @returns The read's result, or {@link noneOnRecord}.
+ */
+function unlessPublishedEmpty<Entry>(
+  published: number | undefined,
+  read: () => Promise<BillSubResource<Entry>>,
+): Promise<BillSubResource<Entry>> {
+  return published === 0 ? noneOnRecord() : read();
+}
+
+/**
+ * Individual bill record route. Looks the bill up directly (so any real bill number works), then fetches its seven
  * collections in parallel. Each arrives as a {@link BillSubResource} saying whether it was answered, since they can
  * fail independently of the bill.
+ *
+ * The lookup goes first, alone, for two reasons that both spend less of the shared Congress.gov quota: a failed lookup
+ * refuses the render after one request instead of nine, and a collection the record publishes as empty isn't requested.
+ * A render with any unanswered read is refused rather than cached for the day. See refuseDegradedRender.
  *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
@@ -96,17 +133,18 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;
-  const [
-    { bill, source, notice, retrievedAt },
-    summaries,
-    textVersions,
-    actions,
-    committees,
-    cosponsors,
-    related,
-    amendments,
-  ]: [
-    BillLookupResult,
+  const { bill, source, notice, retrievedAt, unavailable }: BillLookupResult = await getBillById(route);
+
+  refuseDegradedRender(unavailable, BILL_ROUTE);
+  if (!bill) notFound();
+
+  // Preview fixtures publish counts that describe the fixture, not what the preview reads return, so only a live
+  // record's counts gate anything.
+  const counts: LegislativeBill["collectionCounts"] = source === "live" ? bill.collectionCounts : undefined;
+  const cosponsorCount: number | undefined =
+    source === "live" ? (bill.cosponsorTally?.includingWithdrawn ?? bill.cosponsorTally?.current) : undefined;
+
+  const [summaries, textVersions, actions, committees, cosponsors, related, amendments]: [
     BillSubResource<BillSummary>,
     BillSubResource<BillTextVersion>,
     BillSubResource<BillAction>,
@@ -115,17 +153,21 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
     BillSubResource<RelatedBill>,
     BillSubResource<BillAmendment>,
   ] = await Promise.all([
-    getBillById(route),
-    getBillSummaries(route),
-    getBillTextVersions(route),
-    getBillActions(route),
-    getBillCommittees(route),
-    getBillCosponsors(route),
-    getRelatedBills(route),
-    getBillAmendments(route),
+    unlessPublishedEmpty(counts?.summaries, () => getBillSummaries(route)),
+    unlessPublishedEmpty(counts?.textVersions, () => getBillTextVersions(route)),
+    unlessPublishedEmpty(counts?.actions, () => getBillActions(route)),
+    unlessPublishedEmpty(counts?.committees, () => getBillCommittees(route)),
+    unlessPublishedEmpty(cosponsorCount, () => getBillCosponsors(route)),
+    unlessPublishedEmpty(counts?.relatedBills, () => getRelatedBills(route)),
+    unlessPublishedEmpty(counts?.amendments, () => getBillAmendments(route)),
   ]);
 
-  if (!bill) notFound();
+  refuseDegradedRender(
+    [summaries, textVersions, actions, committees, cosponsors, related, amendments].some(
+      (collection: { unavailable: boolean }): boolean => collection.unavailable,
+    ),
+    BILL_ROUTE,
+  );
 
   return (
     <BillDetail

@@ -73,6 +73,13 @@ declare namespace NodeJS {
      */
     NEXT_RUNTIME?: string;
 
+    /**
+     * Set by `next build` to `phase-production-build`, inherited by its prerender workers.
+     *
+     * @see src/lib/congress/live-render.ts, which won't refuse a degraded render during the build.
+     */
+    NEXT_PHASE?: string;
+
     /** Set by the runner. Turns on `forbidOnly`, retries, and the list reporter in playwright.config.ts. */
     CI?: string;
 

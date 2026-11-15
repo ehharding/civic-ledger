@@ -39,8 +39,10 @@ Neither source covers both endpoints, so both stay.
 
 ## Preview Data Is Labeled Fiction
 
-The app runs with clearly marked preview records until `CONGRESS_API_KEY` is set, and falls back to them whenever an
-upstream read fails. Preview content is fictional and is never presented as live congressional data.
+The app runs with clearly marked preview records until `CONGRESS_API_KEY` is set. When an upstream read fails with a key
+set, a cached route keeps serving its last live copy rather than replacing it with preview records, and only an
+on-demand `/query` view (or a route with no copy yet, which shows the error page) goes without. Preview content is
+fictional and is never presented as live congressional data.
 
 - Fixture bills link only to the Congress.gov **home page**, never to a plausible-looking deep link, so they cannot be
   mistaken for official bill pages.
@@ -93,9 +95,9 @@ upstream read fails. Preview content is fictional and is never presented as live
 
   The bill's own published `collectionCounts` are a second guard rather than this one, and they do not cover it. They
   let a section state both figures — "Congress.gov records 38 measures on this bill; this page shows 0" — but they come
-  from the _detail_ endpoint, and the bill page reaches its record from the cached list snapshot whenever that endpoint
-  is the thing that failed. In exactly the state where the sub-resource requests are most likely to be failing too,
-  there is no count to check them against, which is why the flag rather than the count is the rule.
+  from the _detail_ endpoint, which is absent in exactly the state where the sub-resource requests are most likely to be
+  failing too. That is why the flag rather than the count is the rule. The one thing a count does decide is whether to
+  ask at all: a collection published as `0` is not requested, and an absent count is never read as zero.
 
 ## What the Chamber Diagram Claims
 

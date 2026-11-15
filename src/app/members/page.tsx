@@ -24,5 +24,5 @@ export const metadata: Metadata = MEMBERS_METADATA;
  * @see renderMembersRoute
  */
 export default function MembersPage(): Promise<JSX.Element> {
-  return renderMembersRoute(NO_SEARCH_PARAMS);
+  return renderMembersRoute(NO_SEARCH_PARAMS, "/members");
 }
