@@ -27,7 +27,7 @@ type DirectorySearchProps = {
 /**
  * A directory's search field. `type="search"` gets the browser's clear button and a search key on touch keyboards.
  *
- * @param props - @see DirectorySearchProps
+ * @param props - {@link DirectorySearchProps}.
  * @returns The labeled search field with its leading icon.
  */
 export function DirectorySearch({ id, label, placeholder, value, onChange }: DirectorySearchProps): JSX.Element {
@@ -66,7 +66,7 @@ type SegmentedFilterProps<T extends string> = {
  * A row of mutually exclusive filter buttons. A `<fieldset>` and hidden `<legend>` tell a screen reader what the group
  * filters; `aria-pressed` (not tabs) because nothing here reveals a panel.
  *
- * @param props - @see SegmentedFilterProps
+ * @param props - {@link SegmentedFilterProps}.
  * @returns The filter group.
  */
 export function SegmentedFilter<T extends string>({
@@ -105,10 +105,10 @@ type FacetOptionsProps<Value extends string> = {
 
 /**
  * A facet dropdown's `<option>` list, each labeled with its count.
- * @see FacetOption
  *
- * @param props - @see FacetOptionsProps
+ * @param props - {@link FacetOptionsProps}.
  * @returns One `<option>` per value.
+ * @see FacetOption
  */
 export function FacetOptions<Value extends string>({ options }: FacetOptionsProps<Value>): JSX.Element {
   return (
@@ -146,7 +146,7 @@ type DirectoryFacetProps<Value extends string> = {
 /**
  * One labeled facet dropdown, with {@link ANY_FACET} always offered first.
  *
- * @param props - @see DirectoryFacetProps
+ * @param props - {@link DirectoryFacetProps}.
  * @returns The labeled dropdown.
  */
 export function DirectoryFacet<Value extends string>({
@@ -190,7 +190,7 @@ type DirectorySortProps<Sort extends string> = {
  * A directory's "Sort By" control. Reordering in place isn't otherwise announced, so callers name the chosen order in
  * {@link DirectoryResultCount}'s live region.
  *
- * @param props - @see DirectorySortProps
+ * @param props - {@link DirectorySortProps}.
  * @returns The labeled sort dropdown.
  */
 export function DirectorySort<Sort extends string>({
@@ -257,7 +257,7 @@ type DirectoryEmptyStateProps = {
  * What a directory shows in place of its grid when nothing survived. Repeats {@link ClearFiltersButton}, since the
  * facet row's copy has usually scrolled out of view by the time a reader sees an empty grid.
  *
- * @param props - @see DirectoryEmptyStateProps
+ * @param props - {@link DirectoryEmptyStateProps}.
  * @returns The empty state, with the clear action when there is something to clear.
  */
 export function DirectoryEmptyState({ heading, body, onClear }: DirectoryEmptyStateProps): JSX.Element {
@@ -281,7 +281,7 @@ type DirectoryResultCountProps = {
 /**
  * The line stating what is currently showing. A live region, so narrowing and reordering are both announced.
  *
- * @param props - @see DirectoryResultCountProps
+ * @param props - {@link DirectoryResultCountProps}.
  * @returns The count line.
  */
 export function DirectoryResultCount({ count, order }: DirectoryResultCountProps): JSX.Element {

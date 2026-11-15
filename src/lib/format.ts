@@ -13,7 +13,8 @@ const textCollator: Intl.Collator = new Intl.Collator("en-US");
  *
  * @param a - One string to compare.
  * @param b - The other string to compare.
- * @returns A standard comparator result. @see textCollator for why the locale is fixed.
+ * @returns A standard comparator result.
+ * @see textCollator for why the locale is fixed.
  */
 export function compareText(a: string, b: string): number {
   return textCollator.compare(a, b);
@@ -96,7 +97,6 @@ function titleCaseWord(word: string, isEdge: boolean): string {
 
 /**
  * Title-cases a short label and collapses irregular whitespace, for Congress.gov's free-text place names.
- * @see normalizeJurisdiction, the only caller.
  *
  * - A word that is already mixed case (`"McCarthy"`) is left exactly as it arrived, since that casing was a decision.
  * - A dotted initialism (`"u.s."`) becomes `"U.S."` rather than `"U.s."`.
@@ -105,6 +105,7 @@ function titleCaseWord(word: string, isEdge: boolean): string {
  * @param value - The label to case.
  * @returns The title-cased label, or an empty string for blank input. `"MCCARTHY"` becomes `"Mccarthy"`, which is why
  *   this is for place names, not people.
+ * @see normalizeJurisdiction, the only caller.
  */
 export function toTitleCase(value: string): string {
   const words: string[] = value.trim().split(/\s+/).filter(Boolean);
@@ -141,6 +142,7 @@ export function formatOrdinal(value: number): string {
 
 /**
  * The date formatter every displayed date runs through, built once since construction is the expensive part.
+ *
  * @see formatDate for why `timeZone: "UTC"` matters.
  */
 const dateFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat("en-US", {

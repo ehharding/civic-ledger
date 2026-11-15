@@ -52,7 +52,7 @@ type SkeletonGridProps = {
  * A fixed-length grid of placeholder blocks, `aria-hidden` (the route's {@link LoadingStatus} speaks for it). Index
  * keys are safe: the blocks are identical and never reorder.
  *
- * @param props - @see SkeletonGridProps
+ * @param props - {@link SkeletonGridProps}.
  * @returns The placeholder grid, hidden from assistive technology.
  */
 export function SkeletonGrid({ count, className, blockClassName }: SkeletonGridProps): JSX.Element {

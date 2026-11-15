@@ -9,7 +9,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** @see error.test.tsx, which mocks the SDK for the same reason: the subject is the handoff, not what Sentry does. */
+// Mocked for the same reason as in error.test.tsx: the subject is the handoff, not what Sentry does.
 const captureException = vi.fn();
 vi.mock("@sentry/nextjs", () => ({
   captureException: (error: unknown): void => captureException(error),
@@ -53,7 +53,7 @@ describe("GlobalError", (): void => {
   });
 
   it("strips the API key from the line it logs", (): void => {
-    // @see error.test.tsx. The same guarantee, asserted separately, because this boundary is the one that runs when the
+    // See error.test.tsx. The same guarantee, asserted separately, because this boundary is the one that runs when the
     // thing that threw was the layout — the case likeliest to be holding a half-built upstream URL when it did.
     render(<GlobalError error={leakyError()} />);
 

@@ -17,8 +17,10 @@ function queryRouteDisallows(): string[] {
   return QUERY_ROUTES.map((route: QueryRoute): string => `${route.source.replace(/:\w+/g, "*")}?`);
 }
 
-// Reads no request data, so it's safe to include in a STATIC_EXPORT=true build — required explicitly because
-// `output: "export"` won't infer it.
+/**
+ * Reads no request data, so it's safe to include in a STATIC_EXPORT=true build — required explicitly because
+ * `output: "export"` won't infer it.
+ */
 export const dynamic = "force-static";
 
 /**
@@ -31,6 +33,7 @@ export const dynamic = "force-static";
  *
  * Short on purpose: robots.txt only binds polite crawlers; the Vercel Firewall's AI Bots ruleset is the enforcement.
  * Add a name when the Bot Name breakdown shows real cost or a vendor documents a new training-only token.
+ *
  * @see docs/deployment.md, "Keeping Server Work Bounded"
  */
 export const AI_TRAINING_CRAWLERS: readonly string[] = [
@@ -54,11 +57,13 @@ export const AI_TRAINING_CRAWLERS: readonly string[] = [
  * narrowed directory is a real page for a reader holding its link, but to a crawler it is a duplicate — its canonical
  * tag already names the plain route — and, unlike that route, it is rendered on demand. A crawler walking every
  * combination of facets is exactly the traffic that is pure server cost and no search value. The paths are built from
- * the rewrite table, so a route that gains a twin is covered here without a second list. @see src/lib/query-routes.ts.
+ * the rewrite table, so a route that gains a twin is covered here without a second list.
  *
- * AI training crawlers are refused the whole site. @see AI_TRAINING_CRAWLERS.
+ * AI training crawlers are refused the whole site.
  *
  * @returns The robots rules and a pointer to the generated sitemap.
+ * @see src/lib/query-routes.ts
+ * @see AI_TRAINING_CRAWLERS
  */
 export default function robots(): MetadataRoute.Robots {
   const siteUrl: string = getSiteUrl();

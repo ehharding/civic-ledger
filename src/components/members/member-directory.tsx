@@ -67,6 +67,7 @@ type MemberDirectoryProps = {
   /**
    * The view the URL asked for, resolved server-side so a shared link renders narrowed on its very first paint rather
    * than flashing the whole roster and then filtering it. Defaults to the unfiltered directory.
+   *
    * @see resolveMemberDirectoryQuery
    */
   initialQuery?: MemberDirectoryQuery;
@@ -77,8 +78,8 @@ type MemberDirectoryProps = {
  * {@link FacetOptions}.
  *
  * @param options - Every jurisdiction in the roster, already ordered.
- *   @see listMemberJurisdictions
  * @returns One `<optgroup>` per non-empty group.
+ * @see listMemberJurisdictions
  */
 function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JSX.Element {
   return (
@@ -102,11 +103,11 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
 /**
  * Browsable directory of everyone serving in a Congress. A Congress is a bounded roster, so every narrowing happens in
  * the browser — unlike the bill directory's server-side search. View state lives in {@link useFacetedDirectory}.
- * @see filterMembers and sortMembers.
  *
- * @param props - @see MemberDirectoryProps
+ * @param props - {@link MemberDirectoryProps}.
  * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
  *   state.
+ * @see filterMembers and sortMembers.
  */
 export function MemberDirectory({
   members,
@@ -132,6 +133,7 @@ export function MemberDirectory({
 
   /**
    * Reads a view out of a URL with the route's own parser, limiting `?state=` to jurisdictions the control offers.
+   *
    * @see parseMemberDirectoryQuery
    */
   const parseUrl = useCallback(
@@ -194,7 +196,7 @@ export function MemberDirectory({
         </DirectoryFacet>
 
         {/* The only facet in the app whose options are grouped, so it hands over `<optgroup>`s rather than the plain
-            `FacetOptions` list its two peers use. @see JurisdictionOptions. */}
+            `FacetOptions` list its two peers use. See JurisdictionOptions. */}
         <DirectoryFacet
           anyLabel="All States and Territories"
           id="member-state-filter"

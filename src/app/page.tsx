@@ -5,6 +5,10 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { getCongressComposition, getCongressSnapshot } from "@/lib/congress/client";
 import type { CongressComposition } from "@/lib/congress/members/model";
 
+/**
+ * The route segment's data-cache window. A literal, as Next requires; `src/app/revalidate.test.ts` holds it to
+ * `REVALIDATE_SECONDS`.
+ */
 export const revalidate: number = 300;
 
 /**

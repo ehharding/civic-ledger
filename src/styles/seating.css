@@ -86,7 +86,7 @@
   overflow: visible;
 }
 
-/* Tinted by the .party-tint--* class the seat also carries. @see src/styles/party.css */
+/* Tinted by the .party-tint--* class the seat also carries. See src/styles/party.css. */
 .seating__seat {
   fill: var(--party-color, var(--party-other));
   cursor: pointer;

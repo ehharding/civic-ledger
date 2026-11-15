@@ -11,6 +11,7 @@ import "./globals.css";
  * The site-wide defaults, which double as the home page's metadata; every other route replaces them via `pageMetadata`.
  * Written by hand because {@link SITE_DEFAULT_TITLE} already names the site and the title template would repeat it.
  * `metadataBase` lets every page's canonical path stay root-relative.
+ *
  * @see getSiteUrl
  */
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export const viewport: Viewport = {
 /**
  * Whether the analytics scripts can load: they're served from `/_vercel/…`, which the static demo doesn't have. Read
  * here because only a server component can see `STATIC_EXPORT`.
+ *
  * @see SiteAnalytics
  */
 const isAnalyticsSupported: boolean = process.env.STATIC_EXPORT !== "true";

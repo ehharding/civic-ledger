@@ -13,7 +13,7 @@ import * as Sentry from "@sentry/nextjs";
 export async function register(): Promise<void> {
   // The static GitHub Pages demo has no server at request time and must never carry a DSN, but `register()` still runs
   // once at build time. Returning early keeps that build from initializing an SDK whose only possible report would be
-  // about the build machine. @see the "Secondary: GitHub Pages Static Demo" section of docs/deployment.md.
+  // about the build machine. See the "Secondary: GitHub Pages Static Demo" section of docs/deployment.md.
   if (process.env.STATIC_EXPORT === "true") return;
 
   if (process.env.NEXT_RUNTIME === "nodejs") await import("@/sentry.server.config");

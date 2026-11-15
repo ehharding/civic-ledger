@@ -27,7 +27,7 @@ describe("BillCard", (): void => {
 
   // The list endpoint every one of this card's surfaces reads from publishes no `policyArea`, so this is the live case
   // rather than an edge one — and what it must not do is print a placeholder standing in for a value nothing is
-  // fetching. @see BillCard.
+  // fetching. See BillCard.
   it("says nothing about the policy area when the record carries none", (): void => {
     const bill: LegislativeBill = { ...firstPreviewBill, policyArea: undefined };
     const { container } = render(<BillCard bill={bill} />);

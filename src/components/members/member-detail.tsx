@@ -72,10 +72,11 @@ function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: s
  * @param headingId - The id this section's `aria-labelledby` points at, so each list is its own labeled region.
  * @param kicker - The small label above the heading.
  * @param heading - The section heading.
- * @param emptyNote - What to say when the list is empty (ordinary for a newly seated member). @see EmptySectionNote
+ * @param emptyNote - What to say when the list is empty (ordinary for a newly seated member).
  * @param total - The member's complete count for this list, when Congress.gov reports one.
  * @param limit - The cap the list was sliced to, so the copy can distinguish "all of them" from "the most recent few".
  * @returns The labeled section.
+ * @see EmptySectionNote
  */
 function LegislationSection({
   bills,
@@ -131,7 +132,7 @@ function LegislationSection({
  * Individual member page. Purely presentational: the route resolves every value. Reports only what Congress.gov
  * publishes — no voting scores, ratings, or ideological placement, which are editorial judgments.
  *
- * @param props - @see MemberDetailProps
+ * @param props - {@link MemberDetailProps}.
  * @returns The member page.
  */
 export function MemberDetail({

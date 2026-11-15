@@ -28,7 +28,7 @@
   text-align: center;
 }
 
-/* Derived from the 25px dot below: half of it plus a hair of clearance either side. @see the file header. */
+/* Derived from the 25px dot below: half of it plus a hair of clearance either side. See the file header. */
 .bill-journey li::after {
   position: absolute;
   z-index: 0;
@@ -94,14 +94,14 @@
    at (0, 2, 0). Nothing is being overridden — those rules set color and border, this one sets size — but a
    lower-specificity selector for the same element after a higher-specificity one is the shape of a bug even when it is
    not one here, and Biome's `noDescendingSpecificity` reads it as such. The modifier is only ever set alongside the
-   base class (@see bill-journey.tsx), so the extra class matches exactly what the single class already matched. */
+   base class (see bill-journey.tsx), so the extra class matches exactly what the single class already matched. */
 .bill-journey.bill-journey--compact .journey-dot {
   width: 18px;
   height: 18px;
   font-size: var(--text-4xs);
 }
 
-/* The same derivation as above against the compact 18px dot. @see the file header. */
+/* The same derivation as above against the compact 18px dot. See the file header. */
 .bill-journey--compact li::after {
   top: 9px;
   left: calc(50% + 10px);
@@ -196,7 +196,7 @@
   gap: var(--space-4);
 }
 
-/* Border, radius and ground come from the shared card recipe. @see src/styles/surfaces.css. */
+/* Border, radius and ground come from the shared card recipe. See src/styles/surfaces.css. */
 .bill-card {
   /* Let the page's radial wash show through, which a solid paper fill would flatten. */
   --surface-card-bg: color-mix(in srgb, var(--paper) 78%, transparent);
@@ -276,9 +276,9 @@
   line-height: 1.12;
 }
 
-/* The title goes burgundy while the card is hovered, not just the title — the whole card is the link (@see the
-   stretched link in surfaces.css), so the hover names where a click anywhere on it will go. The card half sits in
-   `:where()` so this weighs no more than `.bill-card__footer a` below; it targets a different link, but Biome's
+/* The title goes burgundy while the card is hovered, not just the title — the whole card is the link (see the stretched
+   link in surfaces.css), so the hover names where a click anywhere on it will go. The card half sits in `:where()` so
+   this weighs no more than `.bill-card__footer a` below; it targets a different link, but Biome's
    `noDescendingSpecificity` compares the two as if it did not. */
 :where(.bill-card:hover) h3 a {
   color: var(--burgundy);
@@ -297,7 +297,7 @@
 
 /* The date under the clamped action text. Quieter than the action itself and set on the card's smallest size, because
    it qualifies that sentence rather than competing with it — the reader should land on what happened and pick up when
-   afterwards. @see BillCard, and `.date-label` in bill-detail.css, which is the same idea under a panel heading and
+   afterwards. See BillCard, and `.date-label` in bill-detail.css, which is the same idea under a panel heading and
    carries a heading-sized top margin this position has no use for. */
 .bill-card__action-date {
   margin-top: var(--space-2);

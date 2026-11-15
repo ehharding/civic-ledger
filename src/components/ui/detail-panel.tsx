@@ -20,10 +20,12 @@ type DetailPanelProps = {
   heading: string;
   /**
    * The heading's `id`, which is also what this panel's `aria-labelledby` points at. One value for both, which is the
-   * whole point — @see DetailPanel. Must be unique within the page.
+   * whole point. Must be unique within the page.
+   *
+   * @see DetailPanel
    */
   headingId: string;
-  /** @see DetailPanelElement. Defaults to `"section"`. */
+  /** The element the panel renders as, as a {@link DetailPanelElement}. Defaults to `"section"`. */
   as?: DetailPanelElement;
   /** The accent surface, for a panel that should read as a distinct kind of thing from the one beside it. */
   accent?: boolean;
@@ -37,7 +39,7 @@ type DetailPanelProps = {
 /**
  * One labeled panel on a record or lesson page.
  *
- * @param props - @see DetailPanelProps
+ * @param props - {@link DetailPanelProps}.
  * @returns The panel, labeled by its own heading.
  */
 export function DetailPanel({

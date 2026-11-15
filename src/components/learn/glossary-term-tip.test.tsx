@@ -87,7 +87,7 @@ describe("GlossaryTermTip", (): void => {
 
   it("describes the link with the definition even while the bubble is not showing", (): void => {
     // Kept mounted on purpose: a screen reader resolves `aria-describedby` at the moment focus lands, which is before
-    // a bubble mounted by a state update would exist. @see the component's own comment.
+    // a bubble mounted by a state update would exist. See the component's own comment.
     const { word, tip } = renderTerm();
 
     expect(word).toHaveAttribute("aria-describedby", tip.id);

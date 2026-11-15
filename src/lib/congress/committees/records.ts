@@ -21,6 +21,7 @@ import { formatCount } from "@/lib/format";
  */
 export const committeeRecordKinds = ["bills", "reports", "nominations"] as const;
 
+/** One of the {@link committeeRecordKinds}. */
 export type CommitteeRecordKind = (typeof committeeRecordKinds)[number];
 
 /** Which collection a bare committee URL shows: bills, the only one every chamber's committees have. */
@@ -60,13 +61,14 @@ export const committeeRecordKindClauses: Record<CommitteeRecordKind, string> = {
 
 /**
  * The count the committee's *own* record reports for one collection. Used by the route (to clamp the page before
- * fetching — @see clampCommitteeRecordsPage) and by the tabs not currently open. Where a collection was fetched, its
- * endpoint's count wins. @see countFor in `committee-records.tsx`
+ * fetching) and by the tabs not currently open. Where a collection was fetched, its endpoint's count wins.
  *
  * @param profile - The committee whose counts to read.
  * @param kind - Which collection.
  * @returns The count, or `undefined` when Congress.gov reported none for it — a different claim from "none", and one
  *   every caller has to keep distinct from zero.
+ * @see clampCommitteeRecordsPage
+ * @see countFor in `committee-records.tsx`
  */
 export function committeeReportedCount(profile: CommitteeProfile, kind: CommitteeRecordKind): number | undefined {
   if (kind === "bills") return profile.billCount;
@@ -78,7 +80,9 @@ export function committeeReportedCount(profile: CommitteeProfile, kind: Committe
 /**
  * One bill's relationship to this committee: what the committee did with it and when, which no other endpoint carries.
  * The endpoint omits titles, so `bill` is filled by a second lookup and stays optional — a row still names and links
- * the measure if that lookup fails. @see withBillTitles
+ * the measure if that lookup fails.
+ *
+ * @see withBillTitles
  */
 export type CommitteeBillReferral = {
   /** The measure's Congress. */
@@ -202,13 +206,17 @@ export function pageOfCommitteeRecords<Kind extends CommitteeRecordKind>(
 
 /**
  * How many records one page of a committee's collection holds — also the number of title lookups a bills page issues,
- * so it's a request budget too. @see withBillTitles
+ * so it's a request budget too.
+ *
+ * @see withBillTitles
  */
 export const COMMITTEE_RECORDS_PAGE_SIZE: number = 12;
 
 /**
  * The furthest page this app requests — well past the largest real collection (~10,000 records), while bounding what a
- * hand-edited `?page=` can cost. @see MAX_BILL_OFFSET
+ * hand-edited `?page=` can cost.
+ *
+ * @see MAX_BILL_OFFSET
  */
 export const MAX_COMMITTEE_RECORDS_PAGE: number = 1_000;
 
@@ -258,7 +266,11 @@ export const COMMITTEE_RECORDS_PARAMS = {
 export type CommitteeRecordsQuery = {
   /** Which record collection to show. */
   kind: CommitteeRecordKind;
-  /** 1-based. Not yet clamped to the collection — @see clampCommitteeRecordsPage. */
+  /**
+   * 1-based. Not yet clamped to the collection.
+   *
+   * @see clampCommitteeRecordsPage
+   */
   page: number;
 };
 

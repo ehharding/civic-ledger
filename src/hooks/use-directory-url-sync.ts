@@ -24,7 +24,7 @@ type DirectoryUrlSyncOptions = {
  * directory) look the same inside a render but need opposite responses. Remembering what this hook last wrote tells
  * them apart.
  *
- * @param options - @see DirectoryUrlSyncOptions
+ * @param options - {@link DirectoryUrlSyncOptions}.
  */
 export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }: DirectoryUrlSyncOptions): void {
   /**

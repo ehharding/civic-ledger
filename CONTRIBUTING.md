@@ -63,7 +63,7 @@ Two kinds of code are worth testing directly even when a component test already 
 
 - **Anything that races.** Debouncing, aborting, out-of-order responses, and reconciling state against the address bar
   all keep working by accident until they don't, and statement coverage through a component says nothing about whether
-  the guard still holds. @see `use-bill-search.test.ts` and `use-directory-url-sync.test.ts`.
+  the guard still holds. See `use-bill-search.test.ts` and `use-directory-url-sync.test.ts`.
 - **Wording a reader is shown.** Display helpers live in the model (`congress/members/model.ts`,
   `congress/committees/model.ts`) specifically so the sentence a page prints can be asserted here rather than only
   reached by rendering a route.
@@ -126,7 +126,7 @@ default — a few current positions, so they don't have to be relitigated per pu
   contrast failure at all — and Playwright on its own drives behavior without judging markup. This is the only check
   that reads a rendered page, which is what makes it the only one that can catch a token that fails contrast, a control
   inheriting user-agent chrome, or an `aria-labelledby` pointing at nothing. It adds one dependency and no build step,
-  and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — @see the
+  and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — see the
   header of `tests/e2e/accessibility.spec.ts` for what stays with review.
 - **No Storybook yet.** Add it when the component inventory justifies it.
 - **`@types/node` is held at the Node major this project runs.** Its major version _is_ a Node version — 24.x describes

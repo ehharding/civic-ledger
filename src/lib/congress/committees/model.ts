@@ -12,6 +12,7 @@ import { compareText } from "@/lib/format";
  */
 export const committeeChambers = ["house", "senate", "joint"] as const;
 
+/** One of the {@link committeeChambers}. */
 export type CommitteeChamber = (typeof committeeChambers)[number];
 
 /**
@@ -52,10 +53,13 @@ export function normalizeCommitteeChamber(chamber?: string): CommitteeChamber | 
 /**
  * The kinds of committee this app groups by. Congress.gov's eight `committeeTypeCode` values collapse to five:
  * "Special" and "Select" mean the same thing in the two chambers, "Task Force" joins "Other", and anything unknown is
- * `"other"`. "Subcommittee" is absent because that's modeled structurally. @see CommitteeSummary.parent
+ * `"other"`. "Subcommittee" is absent because that's modeled structurally.
+ *
+ * @see CommitteeSummary.parent
  */
 export const committeeTypes = ["standing", "select", "joint", "commission", "other"] as const;
 
+/** One of the {@link committeeTypes}. */
 export type CommitteeType = (typeof committeeTypes)[number];
 
 /** How each type reads in a sentence, which differs from its chip label (e.g., "Other" isn't a noun phrase). */
@@ -127,6 +131,7 @@ export function isCommitteeSystemCode(value: string | undefined): boolean {
 /**
  * A committee named from inside another committee's record — a subcommittee's `parent`, or an entry in a parent's
  * `subcommittees`. Just enough to name and link it; one shape for both directions.
+ *
  * @see mapCommitteeRef
  */
 export type CommitteeRef = {
@@ -159,7 +164,11 @@ export type CommitteeSummary = {
   type: CommitteeType;
   /** The verbatim upstream type label, kept so a nuance the five-way grouping flattens isn't lost. */
   typeName?: string;
-  /** Set only when this record is itself a subcommittee. @see buildCommitteeDirectory for why those are folded away. */
+  /**
+   * Set only when this record is itself a subcommittee.
+   *
+   * @see buildCommitteeDirectory for why those are folded away.
+   */
   parent?: CommitteeRef;
   /** How many subcommittees this committee has, as the list record reports them. */
   subcommitteeCount: number;
@@ -202,8 +211,9 @@ export type CommitteeProfile = CommitteeSummary & {
   /**
    * The committee's own website (e.g., `https://agriculture.house.gov/`), when Congress.gov publishes one.
    *
-   * The one per-committee outbound link this page can make, and it is possible only because the API states it
-   * outright — @see CONGRESS_GOV_COMMITTEES for the congress.gov link that still cannot be built.
+   * The one per-committee outbound link this page can make, and it is possible only because the API states it outright.
+   *
+   * @see CONGRESS_GOV_COMMITTEES for the congress.gov link that still cannot be built.
    */
   websiteUrl?: string;
 };
@@ -254,17 +264,19 @@ export type BillCommittee = {
  * Congress.gov's committee index, where a reader verifies a committee. Not a deep link: committee URLs include a name
  * slug (`/committee/house-agriculture/hsag00`) the API doesn't publish, and a guessed slug risks an
  * authoritative-looking 404. The page prints the system code beside this link instead. The committee's own site is
- * linked directly, since the API publishes it. @see CommitteeProfile.websiteUrl
+ * linked directly, since the API publishes it.
+ *
+ * @see CommitteeProfile.websiteUrl
  */
 export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committees";
 
 /**
  * Orders any committee shape alphabetically by name, through the app's pinned collator so server and browser agree.
- * @see compareText
  *
  * @param a - One committee to compare.
  * @param b - The other committee to compare.
  * @returns A standard comparator result.
+ * @see compareText
  */
 export function compareCommitteesByName(a: { name: string }, b: { name: string }): number {
   return compareText(a.name, b.name);

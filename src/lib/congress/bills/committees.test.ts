@@ -138,7 +138,7 @@ describe("getBillCommittees", (): void => {
     // outage is not an answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of
     // this suite's output, where it reads like a failure in a passing run. Transport failures log at `warn`, not
     // `error`: a dropped connection is weather, and `error` is reserved for the payload-shape mismatch that means
-    // someone has to change code. @see src/lib/observability/log.ts.
+    // someone has to change code. See src/lib/observability/log.ts.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
     stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));

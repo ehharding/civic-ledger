@@ -7,7 +7,11 @@ import type { JSX } from "react";
 type DetailBackLinkProps = {
   /** The directory this record belongs to — `/bills`, `/members`, `/committees`. */
   href: Route;
-  /** How the link reads, e.g., `"All Bills"`. Names the collection rather than saying "Back". @see DetailBackLink. */
+  /**
+   * How the link reads, e.g., `"All Bills"`. Names the collection rather than saying "Back".
+   *
+   * @see DetailBackLink
+   */
   label: string;
 };
 
@@ -26,7 +30,7 @@ type DetailBackLinkProps = {
  * directory, not a history step, and on a record reached from a bill's sponsor line or a search result those are
  * different places.
  *
- * @param props - @see DetailBackLinkProps
+ * @param props - {@link DetailBackLinkProps}.
  * @returns The back link, with its leading chevron.
  */
 export function DetailBackLink({ href, label }: DetailBackLinkProps): JSX.Element {

@@ -28,6 +28,7 @@ import { formatOrdinal } from "@/lib/format";
 /**
  * Who holds each seat in each chamber of a Congress — the data behind the home page's chamber diagram. Never throws and
  * always reports provenance.
+ *
  * @see seating.ts for the geometry.
  */
 
@@ -74,9 +75,10 @@ async function fetchMemberPage(input: {
  *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
- * @param currentOnly - Whether to ask only for sitting members. @see fetchMemberPage for why this varies by Congress.
+ * @param currentOnly - Whether to ask only for sitting members.
  * @returns Every member found, or `null` only when the *first* page fails; a later failure yields what arrived.
- *   @see fetchAllPages
+ * @see fetchMemberPage for why this varies by Congress.
+ * @see fetchAllPages
  */
 function fetchAllMembers(apiKey: string, congress: number, currentOnly: boolean): Promise<CongressApiMember[] | null> {
   return fetchAllPages(
@@ -109,8 +111,9 @@ function buildComposition(members: SeatedMember[]): ChamberComposition[] {
  * Fetches who holds each seat in both chambers of a Congress. An empty chamber means the fetch failed.
  *
  * @param congress - The Congress whose membership to read. Defaults to the one currently seated, and reading any other
- *   one changes the question asked upstream — @see fetchMemberPage.
+ *   one changes the question asked upstream.
  * @returns The composition, labeled live or preview; a missing key or failed request yields placeholder seats.
+ * @see fetchMemberPage
  */
 export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
   const apiKey: string | undefined = getCongressApiKey();

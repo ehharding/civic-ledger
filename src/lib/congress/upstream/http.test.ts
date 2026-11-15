@@ -285,7 +285,7 @@ describe("request timeout", (): void => {
 
   it("sends no cache options at all for an uncached request, so the rendering route stays static", (): void => {
     // An explicit `cache: "no-store"` would make an ISR page dynamic. Leaving the options off is what keeps the page
-    // cached while keeping the response out of the Data Cache. @see UNCACHED.
+    // cached while keeping the response out of the Data Cache. See UNCACHED.
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -316,11 +316,11 @@ describe("request timeout", (): void => {
     );
 
     expect(result).toEqual({ outcome: "failed" });
-    // Logged, never rendered — the caller decides what a person sees, and it is never an upstream error message.
-    // At `error` rather than `warn`, and that distinction is the point: a 503 is weather, but a 200 whose body no
-    // longer matches the schema means Congress.gov changed its contract or this app reads it wrongly, and nothing
-    // retries its way out of either. Without a report the symptom is a page section that is permanently, silently
-    // empty. @see src/lib/observability/log.ts.
+    // Logged, never rendered — the caller decides what a person sees, and it is never an upstream error message. At
+    // `error` rather than `warn`, and that distinction is the point: a 503 is weather, but a 200 whose body no longer
+    // matches the schema means Congress.gov changed its contract or this app reads it wrongly, and nothing retries its
+    // way out of either. Without a report the symptom is a page section that is permanently, silently empty. See
+    // src/lib/observability/log.ts.
     expect(consoleError).toHaveBeenCalledWith(
       "[civic-ledger] Congress.gov returned an unrecognized payload shape",
       // The failing field path, not the payload: enough to find the drift, without forwarding a response body to a
@@ -398,7 +398,7 @@ describe("request timeout", (): void => {
       "fetch",
       vi.fn().mockRejectedValue(new DOMException("The operation was aborted due to timeout", "TimeoutError")),
     );
-    // `warn`, like every other transport failure: a stalled socket is weather. @see src/lib/observability/log.ts.
+    // `warn`, like every other transport failure: a stalled socket is weather. See src/lib/observability/log.ts.
     vi.spyOn(console, "warn").mockImplementation((): void => undefined);
 
     const result: CongressRequestResult<unknown> = await requestCongressJson(

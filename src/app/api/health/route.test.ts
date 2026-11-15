@@ -38,7 +38,7 @@ describe("GET /api/health", (): void => {
     }
   });
 
-  /**
+  /*
    * The field exists so that "up and publishing labeled fiction" is distinguishable from "up", which is otherwise a
    * state with no signal attached to it — no error, no non-200, no exception, and a green uptime check.
    */

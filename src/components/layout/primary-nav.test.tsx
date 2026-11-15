@@ -105,8 +105,8 @@ describe("PrimaryNav", (): void => {
   });
 
   /*
-   * The attribute is omitted rather than rendered false, so the stylesheet can select on its presence alone.
-   * @see the `.primary-nav a[aria-current]` rule in src/styles/layout.css.
+   * The attribute is omitted rather than rendered false, so the stylesheet can select on its presence alone. See the
+   * `.primary-nav a[aria-current]` rule in src/styles/layout.css.
    */
   it("omits the attribute on unmarked destinations rather than setting it false", (): void => {
     const nav: HTMLElement = renderNavAt("/bills");

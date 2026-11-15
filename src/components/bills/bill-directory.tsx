@@ -50,10 +50,10 @@ type BillDirectoryProps = {
 
 /**
  * Interactive bill directory. With no search text it browses `bills`, with "Load More" paging through `/api/bills`.
- * Once the user types, search moves to `/api/bills/search`, which sweeps every supported Congress server-side
- * (@see useBillSearch). The stage filter applies to whichever list is showing.
+ * Once the user types, search moves to `/api/bills/search`, which sweeps every supported Congress server-side (see
+ * {@link useBillSearch}). The stage filter applies to whichever list is showing.
  *
- * @param props - @see BillDirectoryProps
+ * @param props - {@link BillDirectoryProps}.
  * @returns The search and filter controls, the result grid or an empty state, and the "Load More" control when more
  *   pages remain.
  */

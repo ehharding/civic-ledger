@@ -18,7 +18,11 @@ import type { GlossaryTerm } from "@/lib/glossary";
 /** How close to an edge of the viewport the bubble is allowed to sit, in pixels. */
 const VIEWPORT_MARGIN: number = 8;
 
-/** Where the bubble ends up once it has been held inside the viewport. @see fitTipToViewport */
+/**
+ * Where the bubble ends up once it has been held inside the viewport.
+ *
+ * @see fitTipToViewport
+ */
 export type TipPlacement = {
   /** The `left` offset to apply, against a bubble whose own transform pulls it back by half its width. */
   left: string;
@@ -67,7 +71,11 @@ type GlossaryTermTipProps = {
   /** The entry to define. Passed in whole rather than looked up here, so the browser bundle carries only the terms a
    *  page actually uses instead of the entire glossary. */
   entry: GlossaryTerm;
-  /** Where the term links, which is always its own entry on `/learn`. @see glossaryHref */
+  /**
+   * Where the term links, which is always its own entry on `/learn`.
+   *
+   * @see glossaryHref
+   */
   href: Route;
   /** The term as it appeared in the source text — its own casing and inflection, never the entry's spelling. */
   children: ReactNode;
@@ -84,7 +92,7 @@ type GlossaryTermTipProps = {
  * The bubble stays mounted and `aria-describedby` always points at it, so a screen reader announces the definition the
  * moment focus arrives rather than after a state update.
  *
- * @param props - @see GlossaryTermTipProps
+ * @param props - {@link GlossaryTermTipProps}.
  * @returns The linked term and its definition bubble.
  */
 export function GlossaryTermTip({ entry, href, children }: GlossaryTermTipProps): JSX.Element {
@@ -104,7 +112,7 @@ export function GlossaryTermTip({ entry, href, children }: GlossaryTermTipProps)
     return (): void => document.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
-  /**
+  /*
    * Measures the bubble each time it opens and corrects it back inside the viewport.
    *
    * Measured on opening rather than on mount because a page can carry dozens of these and only ever show one at a time
@@ -127,7 +135,7 @@ export function GlossaryTermTip({ entry, href, children }: GlossaryTermTipProps)
   }, [isOpen]);
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: the link inside is the control; @see the doc comment above.
+    // biome-ignore lint/a11y/noStaticElementInteractions: the link inside is the control; see the doc comment above.
     <span
       className="glossary-term"
       onBlur={(): void => setIsOpen(false)}

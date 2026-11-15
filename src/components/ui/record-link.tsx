@@ -21,8 +21,8 @@ export type RecordLinkProps = Omit<ComponentProps<typeof Link>, "prefetch" | "hr
  * prefetching, so this follows Next's hover-intent pattern: off until a pointer enters or a finger lands. Links to the
  * static top-level routes keep plain `next/link`.
  *
- * @param props - @see RecordLinkProps. A caller's own `onMouseEnter` and `onTouchStart` still run, after the intent is
- *   recorded.
+ * @param props - {@link RecordLinkProps}. A caller's own `onMouseEnter` and `onTouchStart` still run, after the intent
+ *   is recorded.
  * @returns A `next/link` that prefetches only once the reader shows intent.
  */
 export function RecordLink(props: RecordLinkProps): JSX.Element {

@@ -28,6 +28,6 @@ minimumReleaseAge: 1440
 # everybody learns to scroll past. `pnpm db:generate` is verified against this override.
 #
 # Remove this the day `drizzle-kit` drops `@esbuild-kit/*` — or the day the deferred persistence layer is either built
-# or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. @see docs/roadmap.md.
+# or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. See docs/roadmap.md.
 overrides:
   "@esbuild-kit/core-utils>esbuild": "^0.25.0"

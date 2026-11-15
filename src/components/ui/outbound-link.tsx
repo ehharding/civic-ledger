@@ -26,13 +26,13 @@ type OutboundLinkProps = {
  * All four are composed here rather than spelled out per call site, so the accessibility half of the contract is a
  * thing a new link inherits rather than a thing it has to *remember*: a link that opens a tab cannot ship without
  * announcing that it does.
- * @see WCAG 3.2.5 (Change on Request), and {@link ExternalLinkHint} for the wording itself.
  *
  * Used only for links that genuinely leave the app. In-app navigation uses `next/link`, which neither opens a tab nor
  * needs any of this — see `MemberCard` and `BillCard`.
  *
- * @param props - @see OutboundLinkProps
+ * @param props - {@link OutboundLinkProps}.
  * @returns The anchor, with the glyph and the hidden hint already in place after the link text.
+ * @see WCAG 3.2.5 (Change on Request), and {@link ExternalLinkHint} for the wording itself.
  */
 export function OutboundLink({
   href,

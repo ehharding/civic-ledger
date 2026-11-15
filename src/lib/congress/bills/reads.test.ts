@@ -85,7 +85,7 @@ describe("getBillById", (): void => {
     expect(result.source).toBe("preview");
   });
 
-  /**
+  /*
    * The fallback must read the *bill's* Congress, not the current one — otherwise an older bill is searched for in the
    * wrong snapshot and reported as a `live` 404.
    */

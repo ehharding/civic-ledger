@@ -2,8 +2,7 @@
  * Covers model.ts's pure helpers:
  *
  * - `congressGovBillUrl` derives the public URL from identity, falling back to the home page for an unknown type rather
- *   than guessing.
- *   @see docs/data-policy.md
+ *   than guessing (see docs/data-policy.md).
  * - `billIdentityKey` must match a live record and a route param despite case and `congress` type differences.
  * - `compareBillsByRecency` and `compareBillsByActivity` stay total for undated bills, and distinguishable from each
  *   other.
@@ -127,7 +126,7 @@ describe("describeAmendmentDetail", (): void => {
 describe("congressGovAmendmentUrl", (): void => {
   it("builds the public amendment page for both types Congress.gov publishes", (): void => {
     // Not a guessed pattern: Congress.gov publishes exactly these URLs itself, in the `latestAction.links` array on an
-    // amendment's own item-level record. @see congressGovAmendmentUrl.
+    // amendment's own item-level record. See congressGovAmendmentUrl.
     expect(congressGovAmendmentUrl({ congress: 119, type: "SAMDT", number: "2849" })).toBe(
       "https://www.congress.gov/amendment/119th-congress/senate-amendment/2849",
     );
@@ -236,7 +235,7 @@ describe("compareBillsByActivity", (): void => {
     ]);
   });
 
-  /**
+  /*
    * The distinction from `compareBillsByRecency` in one assertion: the same pair of bills, ordered oppositely by the
    * two comparators. A bill introduced years ago and moved last week is old and active at once, and which of those a
    * page means is a question about the page rather than about the bill.
@@ -304,7 +303,7 @@ describe("billStageLabels", (): void => {
   });
 });
 
-/**
+/*
  * The whole point of this function is *who the sentence credits*, so every case is asserted on the wording rather than
  * on a count: a figure Congress.gov published is a claim about the congressional record, and a figure this app arrived
  * at by counting what it fetched is a claim about this page. Nothing here may state one and mean the other.

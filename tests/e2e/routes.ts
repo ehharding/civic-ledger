@@ -19,7 +19,7 @@ export const PAGE_ROUTES: readonly { path: string; name: string }[] = [
   { path: "/learn/how-a-bill-becomes-law", name: "lesson" },
   { path: "/about", name: "methodology" },
   // A narrowed directory that matched nothing: a different render of the same route, and the one carrying the empty
-  // state's own clear action. @see DirectoryEmptyState.
+  // state's own clear action. See DirectoryEmptyState.
   { path: "/members?q=zzznomatch", name: "member directory, empty" },
 ];
 

@@ -140,7 +140,7 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     // `legislationUrl` is the public congress.gov page, published by the item-level endpoint since August 2025;
     // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
     // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
-    // 403s without a key of the reader's own). @see congressGovBillUrl
+    // 403s without a key of the reader's own). See congressGovBillUrl.
     officialUrl: bill.legislationUrl ?? congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
     sponsor: sponsor?.fullName
       ? ({
@@ -656,7 +656,7 @@ const UNNAMED_COMMITTEE_ACTIVITY: string = "unknown";
  *
  * @param activity - A validated entry from a bill's committee record.
  * @returns The mapped activity, or `null` when it names nothing — including the endpoint's literal `"Unknown"`.
- *   @see UNNAMED_COMMITTEE_ACTIVITY
+ * @see UNNAMED_COMMITTEE_ACTIVITY
  */
 export function mapBillCommitteeActivity(activity: CongressApiBillCommitteeActivity): BillCommitteeActivity | null {
   const name: string = (activity.name ?? "").trim();

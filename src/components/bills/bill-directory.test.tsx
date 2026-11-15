@@ -31,9 +31,9 @@ function searchResponse(bills: LegislativeBill[], truncated = false): { ok: true
 }
 
 /**
- * The address bar is shared state across a file's tests, and this directory now reads it as well as writing it — so a
- * view one test narrows to would otherwise be the view the next one starts from. The member and committee directory
- * test files reset it the same way, for the same reason.
+ * The address bar is shared state across a file's tests, and this directory reads it as well as writing it — so a view
+ * one test narrows to would otherwise be the view the next one starts from. The member and committee directory test
+ * files reset it the same way, for the same reason.
  */
 beforeEach((): void => {
   window.history.replaceState(null, "", "/bills");
@@ -149,7 +149,7 @@ describe("BillDirectory", (): void => {
 
     expect(screen.getByRole("heading", { name: "No Records Yet." })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "No Records Match That Search." })).not.toBeInTheDocument();
-    // Nothing narrowed this list, so nothing here can un-narrow it. @see DirectoryEmptyState.
+    // Nothing narrowed this list, so nothing here can un-narrow it. See DirectoryEmptyState.
     expect(screen.queryByRole("button", { name: "Clear Filters" })).not.toBeInTheDocument();
   });
 
@@ -364,12 +364,12 @@ describe("BillDirectory deep links", (): void => {
   });
 });
 
-/**
+/*
  * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
  * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the half
  * a write-only mirror silently overwrites with whatever the reader last searched for.
  *
- * The member and committee directories reconcile the same way, through the same hook. @see useDirectoryUrlSync
+ * The member and committee directories reconcile the same way, through the same hook: `useDirectoryUrlSync`.
  */
 describe("BillDirectory following a URL it did not write", (): void => {
   /** The titles currently rendered as cards. */

@@ -47,7 +47,11 @@ export type LogAttributes = Record<string, string | number | boolean>;
 export type LogDetails = {
   /** Structured fields, recorded alongside the message and searchable in Sentry. */
   attributes?: LogAttributes;
-  /** The caught value, when there is one. Described rather than logged whole — @see describeCause. */
+  /**
+   * The caught value, when there is one. Described rather than logged whole.
+   *
+   * @see describeCause
+   */
   cause?: unknown;
   /**
    * Literal values that must never appear in the line, forwarded to {@link redactSecrets}. Passed by the caller, since
@@ -156,8 +160,9 @@ function emit(level: "warn" | "error", message: string, details: LogDetails): vo
 /**
  * Records something that went wrong and was handled — a 503, a timeout, a short search sweep. A page still rendered.
  *
- * @param message - A fixed summary. @see emit
+ * @param message - A fixed summary.
  * @param details - Attributes, cause, and secrets.
+ * @see emit
  */
 export function logWarning(message: string, details: LogDetails = {}): void {
   emit("warn", message, details);
@@ -167,8 +172,9 @@ export function logWarning(message: string, details: LogDetails = {}): void {
  * Records a defect rather than weather — e.g., a payload that fails schema validation, meaning Congress.gov changed its
  * contract or this app reads it wrong, and part of a page stays empty until code changes.
  *
- * @param message - A fixed summary. @see emit
+ * @param message - A fixed summary.
  * @param details - Attributes, cause, and secrets.
+ * @see emit
  */
 export function logError(message: string, details: LogDetails = {}): void {
   emit("error", message, details);

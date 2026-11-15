@@ -33,7 +33,8 @@ export function generateStaticParams(): { chamber: string; systemCode: string }[
 
 /**
  * @param params - The committee's route params.
- * @returns The committee's metadata. @see committeeMetadata
+ * @returns The committee's metadata.
+ * @see committeeMetadata
  */
 export function generateMetadata({ params }: CommitteePageProps): Promise<Metadata> {
   return committeeMetadata(params);
@@ -43,10 +44,12 @@ export function generateMetadata({ params }: CommitteePageProps): Promise<Metada
  * Individual committee route, showing its default record view.
  *
  * A URL carrying `?records=` or `?page=` is rewritten to the `/query` twin instead, so this half never reads its query
- * and is cached per committee rather than rendered per visit. @see src/lib/query-routes.ts.
+ * and is cached per committee rather than rendered per visit.
  *
  * @param params - The committee's route params.
- * @returns The committee page. @see renderCommitteeRoute
+ * @returns The committee page.
+ * @see src/lib/query-routes.ts
+ * @see renderCommitteeRoute
  */
 export default function CommitteePage({ params }: CommitteePageProps): Promise<JSX.Element> {
   return renderCommitteeRoute(params, NO_SEARCH_PARAMS);

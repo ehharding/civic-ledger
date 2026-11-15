@@ -20,7 +20,7 @@
   margin-top: var(--space-6);
 }
 
-/* The same gutter .page-shell and the header/footer use, on a narrower measure. @see layout.css. */
+/* The same gutter .page-shell and the header/footer use, on a narrower measure. See layout.css. */
 .error-page {
   width: min(700px, calc(100% - var(--space-12)));
   margin: 0 auto;

@@ -26,7 +26,11 @@ export type LessonSource = {
   title: string;
   /** Who publishes it, in the form a reader would recognize — "house.gov", "U.S. Senate", "National Archives". */
   publisher: string;
-  /** The absolute URL. Always https, always a primary source. @see the module comment above. */
+  /**
+   * The absolute URL. Always https, always a primary source.
+   *
+   * @see the module comment above.
+   */
   href: string;
 };
 
@@ -71,7 +75,11 @@ export type LessonSlug =
   | "how-congress-votes"
   | "how-an-amendment-changes-a-bill";
 
-/** One learning module, in full. @see the module comment for the rules every one of these holds. */
+/**
+ * One learning module, in full.
+ *
+ * @see the module comment for the rules every one of these holds.
+ */
 export type Lesson = {
   /** The lesson's URL segment. */
   slug: LessonSlug;
@@ -100,32 +108,37 @@ export type Lesson = {
   next: LessonNext;
 };
 
-/** The two chambers' own walkthroughs of the process, cited by more than one lesson. */
+// Sources shared between lessons, declared once so a corrected URL is corrected everywhere.
+
+/** The House's own overview of how a bill becomes law. */
 const HOUSE_LEGISLATIVE_PROCESS: LessonSource = {
   title: "The Legislative Process",
   publisher: "house.gov",
   href: "https://www.house.gov/the-house-explained/the-legislative-process",
 };
 
+/** The House's walkthrough of what happens to a bill in committee. */
 const HOUSE_IN_COMMITTEE: LessonSource = {
   title: "In Committee",
   publisher: "house.gov",
   href: "https://www.house.gov/the-house-explained/the-legislative-process/in-committee",
 };
 
-/** The two pages the voting module cites that the amendment module needs too. @see HOUSE_IN_COMMITTEE. */
+/** The House's walkthrough of floor consideration and voting. */
 const HOUSE_FLOOR: LessonSource = {
   title: "House Floor",
   publisher: "house.gov",
   href: "https://www.house.gov/the-house-explained/the-legislative-process/house-floor",
 };
 
+/** The Senate's explanation of the filibuster and the cloture vote that ends one. */
 const SENATE_FILIBUSTERS_CLOTURE: LessonSource = {
   title: "About Filibusters and Cloture",
   publisher: "U.S. Senate",
   href: "https://www.senate.gov/about/powers-procedures/filibusters-cloture.htm",
 };
 
+/** The National Archives' transcription of the Constitution, for the clauses lessons quote. */
 const CONSTITUTION_TRANSCRIPT: LessonSource = {
   title: "The Constitution of the United States: A Transcription",
   publisher: "National Archives",
@@ -163,7 +176,9 @@ const billLifecycleCopy: Record<BillStage, string> = {
 
 /**
  * The lifecycle lesson's steps, derived from `billStages` so their order and headings cannot drift from the stepper the
- * reader meets on every bill page. @see billLifecycleCopy.
+ * reader meets on every bill page.
+ *
+ * @see billLifecycleCopy
  */
 const billLifecycleSteps: LessonStep[] = billStages.map(
   (stage: BillStage): LessonStep => ({

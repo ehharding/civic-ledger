@@ -38,7 +38,7 @@ async function footerGap(page: Page): Promise<number> {
 test.describe("reflow", (): void => {
   test.use({ viewport: { width: REFLOW_WIDTH, height: 900 } });
 
-  /**
+  /*
    * No route may scroll sideways at 320px — the symptom of a grid track whose widest child sets a floor. The message
    * names the offending elements, not just the width.
    */
@@ -79,7 +79,7 @@ test.describe("reflow", (): void => {
   }
 });
 
-/**
+/*
  * The footer belongs at the bottom of a short page, not in the middle of one.
  *
  * `min-height: 100dvh` on the frame reserves the viewport's height but does not say who gets it; without `.page-shell`
@@ -97,7 +97,7 @@ test("the footer sits at the bottom of the window on a page too short to fill it
   expect(await footerGap(page), "the footer is floating above the bottom of the viewport").toBeLessThanOrEqual(2);
 });
 
-/**
+/*
  * The primary nav's destinations clear the target-size floor in both arrangements: the wide-screen row (21px line
  * boxes, lifted by padding) and the drawer below 640px.
  */
@@ -112,7 +112,7 @@ test(`every primary nav destination meets the ${MIN_TARGET}px target-size floor`
   await expectDestinationsClearTheFloor(page);
 });
 
-/**
+/*
  * The same floor, in the drawer.
  *
  * Checked at the reflow width because that is the narrowest window the app promises to work in, and because the panel

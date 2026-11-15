@@ -3,16 +3,21 @@ import type { NextConfig } from "next";
 
 import { type QueryRewrite, queryRewrites } from "@/lib/query-routes";
 
-// The default build is a full Next.js server app: dynamic routes, ISR, and a server-only Congress.gov API key all need
-// one. STATIC_EXPORT=true builds the GitHub Pages demo instead, which can't hold a secret and so always renders labeled
-// preview data. See the "GitHub Pages" section of the README.
+/**
+ * Whether this is the GitHub Pages demo build. The default build is a full Next.js server app: dynamic routes, ISR, and
+ * a server-only Congress.gov API key all need one. STATIC_EXPORT=true builds the demo instead, which can't hold a
+ * secret and so always renders labeled preview data. See the "GitHub Pages" section of the README.
+ */
 const isStaticExport: boolean = process.env.STATIC_EXPORT === "true";
 
-// Empty for the primary deployment at a domain root; the Pages demo lives under /<repo>.
+/** Empty for the primary deployment at a domain root; the Pages demo lives under `/<repo>`. */
 const basePath: string = isStaticExport ? (process.env.GITHUB_PAGES_BASE_PATH ?? "") : "";
 
-// Sentry's build-time instrumentation only pays off in a deployed production build. In `next dev` it roughly doubles
-// cold compiles (enough to push e2e navigations past their timeouts) with no DSN to report to.
+/**
+ * Whether to apply Sentry's build-time instrumentation, which only pays off in a deployed production build. In
+ * `next dev` it roughly doubles cold compiles (enough to push e2e navigations past their timeouts) with no DSN to
+ * report to.
+ */
 const isSentryBuild: boolean = !isStaticExport && process.env.NODE_ENV === "production";
 
 /**
@@ -34,12 +39,13 @@ const SECURITY_HEADERS: readonly { key: string; value: string }[] = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
 ];
 
+/** The app's Next.js configuration, before Sentry wraps it. */
 const nextConfig: NextConfig = {
   typedRoutes: true,
   // Don't advertise the framework to scanners; nothing reads the header.
   poweredByHeader: false,
   // `basePath` isn't applied to raw HTML attributes, and the header's search is a plain `<form action>` so it works
-  // without JavaScript. @see SiteHeader.
+  // without JavaScript. See SiteHeader.
   env: { NEXT_PUBLIC_BASE_PATH: basePath },
   // Playwright drives the dev server over 127.0.0.1, which Next otherwise treats as a foreign origin. Dev-only.
   allowedDevOrigins: ["127.0.0.1"],
@@ -48,8 +54,8 @@ const nextConfig: NextConfig = {
         output: "export",
         basePath,
         images: { unoptimized: true },
-        // The demo has no server and no DSN, so swap Sentry (~65 KB gzipped) for a no-op at bundle time.
-        // @see src/lib/observability/sentry-stub.ts.
+        // The demo has no server and no DSN, so swap Sentry (~65 KB gzipped) for a no-op at bundle time. See
+        // src/lib/observability/sentry-stub.ts.
         turbopack: { resolveAlias: { "@sentry/nextjs": "./src/lib/observability/sentry-stub.ts" } },
       }
     : {
@@ -57,7 +63,7 @@ const nextConfig: NextConfig = {
         headers: (): Promise<{ source: string; headers: { key: string; value: string }[] }[]> =>
           Promise.resolve([{ source: "/:path*", headers: [...SECURITY_HEADERS] }]),
         // Sends a URL with a view in its query string to that route's on-demand `/query` twin, so the route itself can
-        // stay static. @see src/lib/query-routes.ts.
+        // stay static. See src/lib/query-routes.ts.
         rewrites: (): Promise<{ beforeFiles: QueryRewrite[] }> => Promise.resolve({ beforeFiles: queryRewrites() }),
       }),
 };

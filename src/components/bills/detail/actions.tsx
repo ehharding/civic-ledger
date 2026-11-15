@@ -47,7 +47,7 @@ function ActionHistory({ actions }: { actions: BillAction[] }): JSX.Element | nu
 /**
  * Every step logged on the bill, newest first.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The action-history panel.
  */
 export function ActionsPanel({ resource, published, source }: BillSectionProps<BillAction>): JSX.Element {

@@ -17,8 +17,8 @@
 }
 
 /* The honest-limits panel that closes every lesson before its sources. It wears .detail-panel--accent's teal rather
-   than the preview notice's amber deliberately: this is not a warning that something is wrong, it is the lesson
-   naming the simplification it just made. @see LessonArticle. */
+   than the preview notice's amber deliberately: this is not a warning that something is wrong, it is the lesson naming
+   the simplification it just made. See LessonArticle. */
 .lesson-limits {
   margin-top: var(--space-9);
 }

@@ -19,10 +19,10 @@ import { committeeHref } from "@/lib/routes";
  * The subcommittee count is on the card rather than only on the committee's own page because it is the one fact that
  * explains why the directory is shorter than a reader might expect — the list holds parent committees, and this is what
  * says how much sits one level below each of them.
- * @see buildCommitteeDirectory.
  *
  * @param committee - The committee to summarize.
  * @returns The card: type chip, linked name, and the chamber and subcommittee count.
+ * @see buildCommitteeDirectory
  */
 export function CommitteeCard({ committee }: { committee: CommitteeSummary }): JSX.Element {
   const subcommittees: number = committee.subcommitteeCount;
@@ -31,8 +31,8 @@ export function CommitteeCard({ committee }: { committee: CommitteeSummary }): J
     <article className="committee-card">
       <p className={`committee-card__type committee-type--${committee.type}`}>{committeeTypeLabels[committee.type]}</p>
       <h3 className="committee-card__name">
-        {/* Displayed exactly as Congress.gov publishes it. @see committeeSearchTerms for why the leading form a
-            referral line uses is matched by the search box but never substituted here. */}
+        {/* Displayed exactly as Congress.gov publishes it. See committeeSearchTerms for why the leading form a referral
+            line uses is matched by the search box but never substituted here. */}
         <RecordLink href={committeeHref(committee.chamber, committee.systemCode)}>{committee.name}</RecordLink>
       </h3>
       <p className="committee-card__meta">

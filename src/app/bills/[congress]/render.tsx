@@ -50,12 +50,14 @@ export async function congressBillsMetadata(params: CongressBillsParams): Promis
  * behaves identically and no entry is a special case.
  *
  * Shared by `/bills/[congress]`, which passes no query and is therefore static, and `/query/bills/[congress]`, which
- * passes the request's own and renders on demand. @see src/lib/query-routes.ts.
+ * passes the request's own and renders on demand.
  *
  * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
- *   @see parseCongressParam
- * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link. @see resolveBillDirectoryQuery
+ * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
  * @returns The directory page for that Congress.
+ * @see src/lib/query-routes.ts
+ * @see parseCongressParam
+ * @see resolveBillDirectoryQuery
  */
 export async function renderCongressBillsRoute(
   params: CongressBillsParams,

@@ -6,7 +6,7 @@
  * (docs/deployment.md, "Keeping Server Work Bounded"). So each directory, and a committee's record view, comes in two
  * halves: the route never reads its query and is static on the five-minute window, while its twin under `/query` reads
  * the query and renders on demand. The rewrite keeps the shareable URL in the address bar, and a shared link still
- * arrives narrowed on first paint. @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
+ * arrives narrowed on first paint.
  *
  * **Why rewrites rather than a Proxy.** A Proxy is a function invocation per request; a rewrite with a `has` condition
  * is evaluated by the platform before any function runs. `has` matches one query key per rule, so each route gets one
@@ -15,6 +15,8 @@
  * **Why the keys are restated rather than imported.** `next.config.ts` imports this module before the `@/` alias
  * exists, so it can import nothing from the app. `query-routes.test.ts` holds the keys equal to each parser's
  * `*_PARAMS` constant instead.
+ *
+ * @see docs/architecture.md, "A Narrowed Directory Is a Place, So It Has a URL".
  */
 
 /** The path prefix every twin route lives under. Also disallowed in `robots.txt`; nothing should link here. */
@@ -28,7 +30,11 @@ export type QueryRoute = {
   readonly keys: readonly string[];
 };
 
-/** Every route with a twin. @see each route's `*_PARAMS` constant, which `query-routes.test.ts` holds these to. */
+/**
+ * Every route with a twin.
+ *
+ * @see each route's `*_PARAMS` constant, which `query-routes.test.ts` holds these to.
+ */
 export const QUERY_ROUTES: readonly QueryRoute[] = [
   { source: "/bills", keys: ["q", "stage"] },
   { source: "/bills/:congress", keys: ["q", "stage"] },

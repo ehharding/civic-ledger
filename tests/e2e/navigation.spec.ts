@@ -52,8 +52,7 @@ test("primary nav links land on the right page", async ({ page }: TestFixtures):
 
 /*
  * `aria-current` against a real router, which the unit tests (with `usePathname` mocked) can't check across a soft
- * navigation. "page" on a section's front page, "true" on a record inside it.
- * @see navCurrent
+ * navigation. "page" on a section's front page, "true" on a record inside it. See navCurrent.
  */
 test("the primary nav marks the section being read, and keeps marking it across navigations", async ({
   page,
@@ -81,11 +80,10 @@ test("the primary nav marks the section being read, and keeps marking it across 
   await expect(primaryNav.locator("a[aria-current]")).toHaveCount(1);
 });
 
-/**
+/*
  * The mobile navigation drawer, in a browser — jsdom applies no stylesheets, so only here is a closed drawer actually
  * out of the tab order. The component's own contract is covered in `primary-nav.test.tsx`; the narrowest width is in
  * `layout.spec.ts`. 390 × 844 is a mid-size phone.
- * @see PrimaryNav
  */
 test.describe("the mobile navigation drawer", (): void => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -187,7 +185,7 @@ test.describe("the mobile navigation drawer", (): void => {
     await expect(toggle).not.toBeFocused();
   });
 
-  /**
+  /*
    * With scripting off, the drawer's `@media (scripting: enabled)` gate leaves the five destinations as a wrapped row
    * and offers no toggle — a menu button with nothing behind it would leave no menu at all.
    */
@@ -270,7 +268,7 @@ test("the load-more route answers in the shape the directory reads", async ({
   const response: APIResponse = await request.get("/api/bills?offset=12");
 
   // Never an error status, even with no key and no upstream: an empty page means both "there are no more" and "we could
-  // not find out", which is how the button behaves in either case. @see the route handler.
+  // not find out", which is how the button behaves in either case. See the route handler.
   expect(response.status()).toBe(200);
 
   const body = (await response.json()) as Record<string, unknown>;
@@ -354,7 +352,7 @@ test("the committee lesson leads to the committee directory", async ({ page }: T
   await page.getByRole("link", { name: "Start the lesson: What a Committee Actually Does" }).click();
   await expect(page).toHaveURL(/\/learn\/what-committees-do$/);
 
-  // The lesson's headline refusal, and the one this app is most often asked for. @see docs/data-policy.md.
+  // The lesson's headline refusal, and the one this app is most often asked for. See docs/data-policy.md.
   await expect(page.getByText(/publish no roster/)).toBeVisible();
 
   await page.getByRole("link", { name: "Browse Committees" }).click();

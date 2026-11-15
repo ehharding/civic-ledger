@@ -40,7 +40,7 @@ describe("sentry-stub", (): void => {
   it("stubs only the two log levels this app emits, so a third becomes a build failure rather than a silence", (): void => {
     // The whole reason this file is a hand-written list instead of a proxy. A demo build calling `logger.info` should
     // break the static-export job on CI, where someone reads the output — not no-op in a deployed page, where nobody
-    // does. @see the module comment.
+    // does. See the module comment.
     expect(Object.keys(logger).toSorted()).toEqual(["error", "warn"]);
   });
 });

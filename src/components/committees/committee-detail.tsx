@@ -33,7 +33,11 @@ type CommitteeDetailProps = {
   notice?: string;
   /** When this committee's record was actually fetched — passed straight through to `DataSourceNotice`. */
   retrievedAt?: string;
-  /** One page of one of the committee's record collections, fetched by the route. @see CommitteeRecordsSection */
+  /**
+   * One page of one of the committee's record collections, fetched by the route.
+   *
+   * @see CommitteeRecordsSection
+   */
   records: CommitteeRecordsResult;
 };
 
@@ -61,7 +65,7 @@ function HistoryRow({ entry }: { entry: CommitteeHistoryEntry }): JSX.Element {
  * Individual committee page. Purely presentational: the route resolves every value. No membership roster — Congress.gov
  * publishes none, and an inferred one would read as fact.
  *
- * @param props - @see CommitteeDetailProps
+ * @param props - {@link CommitteeDetailProps}.
  * @returns The committee page.
  */
 export function CommitteeDetail({ profile, source, notice, retrievedAt, records }: CommitteeDetailProps): JSX.Element {

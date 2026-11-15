@@ -1,4 +1,4 @@
-/* The in-prose glossary term and its hover/focus definition. @see GlossaryTermTip, which owns the behavior; this file
+/* The in-prose glossary term and its hover/focus definition. See GlossaryTermTip, which owns the behavior; this file
    owns only what it looks like. */
 
 /* Inline, so a defined term sits in the sentence exactly where the word did, and `relative` only so the bubble has
@@ -25,7 +25,7 @@
 
 /* `left` and `data-side` are both written by the component, which measures the bubble once each time it opens and
    corrects it back inside the viewport — a correction CSS cannot express, since `position: absolute` resolves against
-   the word rather than against the window. @see fitTipToViewport. The values here are what it corrects *from*. */
+   the word rather than against the window. See fitTipToViewport. The values here are what it corrects *from*. */
 .glossary-term__tip {
   position: absolute;
   bottom: calc(100% + var(--space-2));
@@ -41,7 +41,7 @@
   box-shadow: var(--shadow);
   transform: translateX(-50%) translateY(3px);
   /* Hidden rather than unmounted: `aria-describedby` resolves its text from the element whether or not it is showing,
-     which is what lets a screen reader announce the definition the instant the term takes focus. @see GlossaryTermTip.
+     which is what lets a screen reader announce the definition the instant the term takes focus. See GlossaryTermTip.
      That requirement is about the element being in the *document*, not about which way it is hidden — the accessible
      name and description spec includes a hidden node that is directly referenced by `aria-describedby`, and `display`
      and `visibility` are the same kind of hidden to it.
@@ -51,7 +51,7 @@
      lesson, where a defined term can sit anywhere in a line, a laid-out closed bubble is a ~277px box centered on a
      word that may be near the edge of the line, and it overhangs the document whether or not anyone has opened it,
      pushing the page into horizontal scrolling. Taken out of flow entirely, a closed tip cannot overhang anything, and
-     the open one is corrected before it can. @see fitTipToViewport.
+     the open one is corrected before it can. See fitTipToViewport.
 
      `allow-discrete` and the `@starting-style` block below are what buy the fade: `display` is a discrete property, so
      without them the two states swap instantly. A browser that knows neither simply shows and hides the bubble without
@@ -119,5 +119,5 @@
   }
 }
 
-/* The entries these tips link to live in learn.css, beside the rest of the /learn page they sit on — @see the
+/* The entries these tips link to live in learn.css, beside the rest of the /learn page they sit on — see the
    `.glossary-entry` block there for the deep-link behavior that answers this file's fragment links. */

@@ -69,10 +69,10 @@ function RecordedVotes({ votes, unavailable }: { votes: RecordedVote[]; unavaila
 
 /**
  * The roll calls found in the action history — derived rather than fetched.
- * @see collectRecordedVotes
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The recorded-votes panel.
+ * @see collectRecordedVotes
  */
 export function RecordedVotesPanel({ resource, source }: Omit<BillSectionProps<BillAction>, "published">): JSX.Element {
   return (

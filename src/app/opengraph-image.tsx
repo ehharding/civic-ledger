@@ -7,15 +7,20 @@ import { OG_IMAGE_ALT, OG_IMAGE_SIZE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/
  * time rather than stored as a binary. Colors are literal (Satori can't read CSS variables): the light-theme surface
  * and ink.
  */
-// Required explicitly for `output: "export"`. That build writes an extensionless file, so GitHub Pages serves it
-// without an `image/png` type and some scrapers skip it — acceptable for the demo.
+
+/**
+ * Required explicitly for `output: "export"`. That build writes an extensionless file, so GitHub Pages serves it
+ * without an `image/png` type and some scrapers skip it — acceptable for the demo.
+ */
 export const dynamic = "force-static";
 
+/** The card's alt text, shared with the `og:image:alt` tag. */
 export const alt: string = OG_IMAGE_ALT;
 
 /** Read from `metadata.ts` so the drawing and the `og:image:width`/`height` tags describing it cannot disagree. */
 export const size: typeof OG_IMAGE_SIZE = OG_IMAGE_SIZE;
 
+/** The card's MIME type, sent as the image's `Content-Type`. */
 export const contentType: string = "image/png";
 
 /**

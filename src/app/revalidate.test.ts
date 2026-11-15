@@ -18,7 +18,9 @@ import { CONCLUDED_CONGRESS_REVALIDATE_SECONDS, REVALIDATE_SECONDS } from "@/lib
 
 /**
  * Every route declaring its own `revalidate`, and which window. `concluded` routes declare the one-day window as a
- * ceiling; their fetches shorten it while their Congress is current. @see revalidateSecondsForCongress
+ * ceiling; their fetches shorten it while their Congress is current.
+ *
+ * @see revalidateSecondsForCongress
  */
 const ROUTES: readonly { path: string; revalidate: number; window: "shared" | "concluded" }[] = [
   { path: "src/app/page.tsx", revalidate: homeRevalidate, window: "shared" },

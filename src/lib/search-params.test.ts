@@ -163,7 +163,7 @@ describe("resolveCommitteeRecordsQuery", (): void => {
 describe("in a static export", (): void => {
   // No server survives to request time, so there is no request to read. Every deep link degrades to the page's own
   // default view — the page still works, it just cannot be pre-filled from the URL, and the directory adopts the
-  // address bar in the browser instead. @see the mount case in useDirectoryUrlSync.
+  // address bar in the browser instead. See the mount case in useDirectoryUrlSync.
   it("hands over each directory's default view rather than reading the request", async (): Promise<void> => {
     process.env.STATIC_EXPORT = "true";
 

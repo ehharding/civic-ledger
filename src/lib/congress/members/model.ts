@@ -6,6 +6,7 @@ import { compareText, formatOrdinal, pluralize, toTitleCase } from "@/lib/format
  */
 export const partyGroups = ["democratic", "republican", "independent", "libertarian", "other"] as const;
 
+/** One of the {@link partyGroups}. */
 export type PartyGroup = (typeof partyGroups)[number];
 
 /** Human-readable labels for each PartyGroup, used anywhere a group needs to be displayed on its own. */
@@ -19,7 +20,9 @@ export const partyGroupLabels: Record<PartyGroup, string> = {
 
 /**
  * The left-to-right order parties are seated in on the chart, following the usual chamber-diagram convention. A
- * presentational choice, not where anyone actually sits. @see buildChamberSeating
+ * presentational choice, not where anyone actually sits.
+ *
+ * @see buildChamberSeating
  */
 export const partySeatingOrder: readonly PartyGroup[] = [
   "democratic",
@@ -46,7 +49,8 @@ export function partySeatingRank(party: PartyGroup): number {
  * prefix.
  *
  * @param party - The group to tint for.
- * @returns The tint class, e.g., `"party-tint--democratic"`. @see src/styles/party.css for the mapping itself.
+ * @returns The tint class, e.g., `"party-tint--democratic"`.
+ * @see src/styles/party.css for the mapping itself.
  */
 export function partyTintClass(party: PartyGroup): string {
   return `party-tint--${party}`;
@@ -96,6 +100,7 @@ export function normalizePartyCode(party?: string): PartyGroup {
 /** The two chambers of Congress, as this app identifies them internally. */
 export const congressChambers = ["house", "senate"] as const;
 
+/** One of the {@link congressChambers}. */
 export type CongressChamber = (typeof congressChambers)[number];
 
 /** Full chamber names, for headings and prose. */
@@ -185,8 +190,9 @@ export type MemberDepiction = {
  *
  * Kept small because it's serialized once per seat: only what the chamber chart and member directory display. Most
  * fields are optional because the list endpoint omits them (and placeholders have no `bioguideId`). Chamber is implied
- * by the `ChamberComposition` the member sits in. The chart receives it without `depiction`
- * @see compositionForSeating.
+ * by the `ChamberComposition` the member sits in. The chart receives it without `depiction`.
+ *
+ * @see compositionForSeating
  */
 export type CongressMember = {
   /** Biographical Directory ID (e.g., "L000174") — the stable key for linking out to an official biography. */
@@ -203,7 +209,9 @@ export type CongressMember = {
   district?: number;
   /**
    * Their official portrait, when Congress.gov publishes one. Never set on a preview placeholder: a real face would
-   * make fiction look like the record. @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
+   * make fiction look like the record.
+   *
+   * @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
    */
   depiction?: MemberDepiction;
 };
@@ -216,7 +224,11 @@ export type MemberPartyFields = {
   partyName?: string;
 };
 
-/** The jurisdiction fields the display helpers below read. @see MemberPartyFields for why this is structural. */
+/**
+ * The jurisdiction fields the display helpers below read.
+ *
+ * @see MemberPartyFields for why this is structural.
+ */
 export type MemberSeatFields = {
   /** The represented state, territory, or district, by full name. */
   state?: string;
@@ -446,7 +458,11 @@ export type MemberProfile = {
   chamber: CongressChamber;
   /** Whether they currently hold a seat. A former member's page is a valid, useful page — just not a current one. */
   currentMember: boolean;
-  /** Their official portrait, when Congress.gov publishes one. @see MemberDepiction */
+  /**
+   * Their official portrait, when Congress.gov publishes one.
+   *
+   * @see MemberDepiction
+   */
   depiction?: MemberDepiction;
   /** Their own house.gov / senate.gov site, when the record carries one. */
   officialWebsiteUrl?: string;
@@ -462,7 +478,9 @@ export type MemberProfile = {
 
 /**
  * One row of the member directory (`/members`): what a reader scans and filters on, plus a chamber and an ID to open.
- * `bioguideId` is required because a row that can't be opened is dropped. @see buildMemberDirectory
+ * `bioguideId` is required because a row that can't be opened is dropped.
+ *
+ * @see buildMemberDirectory
  */
 export type MemberDirectoryEntry = {
   /** Biographical Directory ID, e.g., `"L000174"`. */
@@ -479,18 +497,22 @@ export type MemberDirectoryEntry = {
   district?: number;
   /** The chamber they sit in. */
   chamber: CongressChamber;
-  /** Their official portrait, when published. @see MemberDepiction */
+  /**
+   * Their official portrait, when published.
+   *
+   * @see MemberDepiction
+   */
   depiction?: MemberDepiction;
 };
 
 /**
  * Orders any member shape alphabetically by last-name-first name, through the app's collator so names like Núñez and
  * O'Halleran sort as a reader expects.
- * @see compareText
  *
  * @param a - One member to compare.
  * @param b - The other member to compare.
  * @returns A standard comparator result.
+ * @see compareText
  */
 export function compareMembersByName(a: { name: string }, b: { name: string }): number {
   return compareText(a.name, b.name);

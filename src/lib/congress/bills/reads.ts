@@ -71,7 +71,9 @@ import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
  * `reads.test.ts`.
  *
  * `updateDate` (the only sortable field) is when Congress.gov last touched the row, not legislative activity, so the
- * home page re-sorts. @see compareBillsByActivity
+ * home page re-sorts.
+ *
+ * @see compareBillsByActivity
  */
 const RECENTLY_UPDATED_FIRST: string = "updateDate desc";
 
@@ -92,7 +94,12 @@ function findPreviewBill(input: BillRouteParams): LegislativeBill | undefined {
   return previewBills.find((bill: LegislativeBill): boolean => billIdentityKey(bill) === key);
 }
 
-/** Every preview fixture belonging to one Congress. A bill from another Congress is not a preview of this one. */
+/**
+ * Every preview fixture belonging to one Congress. A bill from another Congress is not a preview of this one.
+ *
+ * @param congress - The Congress to read.
+ * @returns That Congress's fixtures, possibly none.
+ */
 function previewBillsForCongress(congress: number): LegislativeBill[] {
   return previewBills.filter((bill: LegislativeBill): boolean => bill.congress === congress);
 }
@@ -246,14 +253,19 @@ export function getBillById(input: BillRouteParams): Promise<BillLookupResult> {
 /**
  * {@link getBillById}, memoized for one server render. The bill page reads the bill in both `generateMetadata` and the
  * page, and Next's `fetch` dedupe skips requests carrying an `AbortSignal` (ours all do), while concluded-Congress bill
- * requests skip the Data Cache (@see billPageCacheWindow). Keyed on the three strings because `cache` compares by
- * identity.
+ * requests skip the Data Cache (see {@link billPageCacheWindow}). Keyed on the three strings because `cache` compares
+ * by identity.
  */
 const lookUpBillOnce = cache(
   (congress: string, type: string, number: string): Promise<BillLookupResult> => lookUpBill({ congress, type, number }),
 );
 
-/** The uncached body of {@link getBillById}. */
+/**
+ * The uncached body of {@link getBillById}.
+ *
+ * @param input - The bill's route params.
+ * @returns The bill, or `undefined` in its place when nothing matches, with its provenance.
+ */
 async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
   const apiKey: string | undefined = getCongressApiKey();
   const retrievedAt: string = new Date().toISOString();
@@ -300,7 +312,8 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
  *
  * @param input - The bill's route params.
  * @returns Every summary, newest first. In preview mode, the fixture's labeled summary if it has one. Empty and flagged
- *   unavailable on failure. @see BillSubResource
+ *   unavailable on failure.
+ * @see BillSubResource
  */
 export async function getBillSummaries(input: BillRouteParams): Promise<BillSubResource<BillSummary>> {
   if (!getCongressApiKey()) {
@@ -330,15 +343,16 @@ export async function getBillSummaries(input: BillRouteParams): Promise<BillSubR
 }
 
 /**
- * Fetches a bill's full action history, most recent first. The stage stepper reads its action codes
- * (@see inferStageFromActions), and it's the only source of Senate roll calls.
+ * Fetches a bill's full action history, most recent first. The stage stepper reads its action codes (see
+ * {@link inferStageFromActions}), and it's the only source of Senate roll calls.
  *
  * Not deduplicated: which source system recorded an action is part of the record. Only votes are deduplicated.
- * @see collectRecordedVotes
  *
  * @param input - The bill's route params.
  * @returns Every action, newest first. Empty and answered in preview mode and on a 404; empty and flagged unavailable
- *   on failure. @see BillSubResource
+ *   on failure.
+ * @see collectRecordedVotes
+ * @see BillSubResource
  */
 export async function getBillActions(input: BillRouteParams): Promise<BillSubResource<BillAction>> {
   return fetchBillSubResource(input, {
@@ -356,7 +370,8 @@ export async function getBillActions(input: BillRouteParams): Promise<BillSubRes
  *
  * @param input - The bill's route params.
  * @returns Every text version, newest first. Always empty in preview mode (fixtures don't fabricate document links).
- *   Empty and flagged unavailable on failure. @see BillSubResource
+ *   Empty and flagged unavailable on failure.
+ * @see BillSubResource
  */
 export async function getBillTextVersions(input: BillRouteParams): Promise<BillSubResource<BillTextVersion>> {
   return fetchBillSubResource(input, {

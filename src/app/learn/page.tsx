@@ -11,6 +11,7 @@ import { type GlossaryTerm, glossary, glossaryEntryId } from "@/lib/glossary";
 import { lessons } from "@/lib/lessons";
 import { pageMetadata } from "@/lib/metadata";
 
+/** The route's title, description, and canonical path. */
 export const metadata: Metadata = pageMetadata({
   title: "Learn",
   description: "Source-linked lessons on how Congress works, and plain-English definitions for its vocabulary.",
@@ -41,8 +42,8 @@ export default function LearnPage(): JSX.Element {
       <section className="section-heading" aria-labelledby="lessons-heading">
         <div>
           <p className="section-kicker">Lessons</p>
-          {/* The count is derived from the registry rather than typed, so a module added to `lessons` cannot leave
-              this heading confidently wrong about how many there are. @see formatSpelledCount. */}
+          {/* The count is derived from the registry rather than typed, so a module added to `lessons` cannot leave this
+              heading confidently wrong about how many there are. See formatSpelledCount. */}
           <h2 id="lessons-heading">{formatSpelledCount(lessons.length)} Walkthroughs, Each Citing Its Sources.</h2>
         </div>
       </section>

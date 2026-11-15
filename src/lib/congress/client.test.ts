@@ -506,7 +506,7 @@ describe("getSearchResults", (): void => {
     expect(url.searchParams.get("limit")).toBe("250");
   });
 
-  /**
+  /*
    * Asserted on the raw query string: Congress.gov silently ignores a wrong sort value, and `searchParams.get` decodes
    * both the working `+` and the broken `%2B` alike, so only the wire form tells them apart.
    */

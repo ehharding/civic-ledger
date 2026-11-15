@@ -47,7 +47,7 @@ describe("generateMetadata", (): void => {
     // The placeholder `mapCongressBill` substitutes is the right thing on a card, where the alternative is a blank
     // line, and the wrong thing in a link preview, where it is the entire summary someone sees before deciding whether
     // to open the page. This is the one caller that has to tell "no action text" apart from an action, which is why
-    // `NO_LATEST_ACTION_TEXT` is exported rather than inlined at the mapper. @see generateMetadata.
+    // `NO_LATEST_ACTION_TEXT` is exported rather than inlined at the mapper. See generateMetadata.
     stubLiveApi(
       vi.fn().mockResolvedValue(
         new Response(
@@ -84,7 +84,7 @@ describe("BillPage", (): void => {
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(firstPreviewBill.title);
     // The action line runs through `GlossaryProse`, so its defined words are split out and carry hidden definitions.
-    // Reading it back with those stripped is what keeps this an assertion about the sentence. @see reader-text.ts.
+    // Reading it back with those stripped is what keeps this an assertion about the sentence. See reader-text.ts.
     expect(readerText(container.querySelector(".latest-action-copy") as Element)).toBe(
       firstPreviewBill.latestAction.text,
     );

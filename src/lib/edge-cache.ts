@@ -23,6 +23,7 @@ export const EDGE_STALE_SECONDS: number = 3_600;
  * Keyed by the full URL, query included, so `?q=broadband` and `?q=farm` are cached apart. The window is the app's one
  * shared five-minute window, so a cached response is never older than the data behind a page rendered beside it.
  * Nothing here is per-reader: these responses carry public records and read no cookie or header, so `public` is safe.
+ *
  * @see REVALIDATE_SECONDS
  */
 export const EDGE_CACHE_CONTROL: string = `public, max-age=0, s-maxage=${REVALIDATE_SECONDS}, stale-while-revalidate=${EDGE_STALE_SECONDS}`;

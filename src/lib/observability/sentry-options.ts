@@ -3,25 +3,25 @@ import type * as Sentry from "@sentry/nextjs";
 import { redactEvent } from "@/lib/observability/redact";
 
 /**
+ * The single `Sentry.init` configuration, shared by all three runtimes so every rule about what leaves the process
+ * holds everywhere. The three Next.js entry points only call `Sentry.init(sentryInitOptions(…))`.
+ *
+ * Defaults are overridden because this app's URLs carry credentials and searches.
+ *
+ * @see redact.ts
+ */
+
+/**
  * The option bag `Sentry.init` accepts, derived from the function because `@sentry/nextjs` doesn't export the type (and
  * `@sentry/core` is an undeclared transitive dependency).
  */
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
 
-/**
- * The four redaction callbacks, each recovered from the options bag for the same reason as {@link SentryInitOptions}.
- */
+// The four redaction callbacks, each recovered from the options bag for the same reason as `SentryInitOptions`.
 type BeforeSend = NonNullable<SentryInitOptions["beforeSend"]>;
 type BeforeSendSpan = NonNullable<SentryInitOptions["beforeSendSpan"]>;
 type BeforeBreadcrumb = NonNullable<SentryInitOptions["beforeBreadcrumb"]>;
 type BeforeSendLog = NonNullable<SentryInitOptions["beforeSendLog"]>;
-
-/**
- * The single `Sentry.init` configuration, shared by all three runtimes so every rule about what leaves the process
- * holds everywhere. The three Next.js entry points only call `Sentry.init(sentryInitOptions(…))`.
- *
- * Defaults are overridden because this app's URLs carry credentials and searches. @see redact.ts
- */
 
 /** The environment name reported with every event, when nothing more specific is configured. */
 const FALLBACK_ENVIRONMENT: string = "development";
@@ -110,17 +110,15 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     environment: getSentryEnvironment(),
     tracesSampleRate: getTracesSampleRate(),
 
-    // A copy because the SDK's option type wants a mutable array and the list above is a constant. @see IGNORED_ERRORS.
+    // A copy because the SDK's option type wants a mutable array and the list above is a constant. See IGNORED_ERRORS.
     ignoreErrors: [...IGNORED_ERRORS],
 
-    /**
-     * Structured logs need no option: calling `Sentry.logger.*` (from `log.ts`) is the opt-in, which makes
-     * `beforeSendLog` below the only filter between a log line and the network. Logs aren't sampled — a dropped error
-     * log is a failure nobody can count.
-     *
-     * No `consoleLoggingIntegration`: it would forward every dependency's unredacted console output, duplicating what
-     * `log.ts` already sends.
-     */
+    // Structured logs need no option: calling `Sentry.logger.*` (from `log.ts`) is the opt-in, which makes
+    // `beforeSendLog` below the only filter between a log line and the network. Logs aren't sampled — a dropped error
+    // log is a failure nobody can count.
+    //
+    // No `consoleLoggingIntegration`: it would forward every dependency's unredacted console output, duplicating what
+    // `log.ts` already sends.
 
     /**
      * What the SDK is allowed to gather before any of this app's own code sees it.
@@ -168,18 +166,20 @@ export function sentryInitOptions(secrets: readonly string[] = []): SentryInitOp
     },
 
     /**
-     * The backstop, covering every exit: events, breadcrumbs, spans, and logs. @see redact.ts
+     * The backstop, covering every exit: events, breadcrumbs, spans, and logs.
      *
      * All four are pure and never throw, since they run inside the SDK's dispatch. In SDK v11, `beforeSendSpan` is the
      * span hook (`beforeSendTransaction` still type-checks but is never called). `beforeSendLog` backs up the redaction
      * `log.ts` already does.
+     *
+     * @see redact.ts
      */
     // biome-ignore-start lint/nursery/useExplicitReturnType: each `satisfies` clause already types parameter and return
-    // from the SDK's own hook type; spelling them out would stop tracking the SDK. @see SentryInitOptions.
+    // from the SDK's own hook type; spelling them out would stop tracking the SDK. See SentryInitOptions.
     beforeSend: ((event) => redactEvent(event, secrets)) satisfies BeforeSend,
     beforeSendSpan: ((span) => redactEvent(span, secrets)) satisfies BeforeSendSpan,
     beforeBreadcrumb: ((breadcrumb) => redactEvent(breadcrumb, secrets)) satisfies BeforeBreadcrumb,
     beforeSendLog: ((log) => redactEvent(log, secrets)) satisfies BeforeSendLog,
-    // biome-ignore-end lint/nursery/useExplicitReturnType: @see above.
+    // biome-ignore-end lint/nursery/useExplicitReturnType: See above.
   };
 }

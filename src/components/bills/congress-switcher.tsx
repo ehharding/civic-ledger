@@ -15,9 +15,9 @@ import { congressBillsHref } from "@/lib/routes";
  * which that route serves just as well as `/bills` does.
  *
  * @param congresses - Every Congress to offer, most recent first.
- *   @see listCongresses
  * @param selected - The Congress currently being viewed, so the control reflects it rather than resetting.
  * @returns The labeled Congress picker.
+ * @see listCongresses
  */
 export function CongressSwitcher({
   congresses,
@@ -38,6 +38,8 @@ export function CongressSwitcher({
    * `aria-describedby` note do. The guard against re-navigating to the Congress already showing matters for the same
    * reason: on browsers where arrowing through a `<select>` fires `change` per option, it keeps a keyboard user from
    * bouncing through pages they never chose.
+   *
+   * @param event - The select's change event.
    */
   function handleChange(event: ChangeEvent<HTMLSelectElement>): void {
     const nextCongress: string = event.target.value;

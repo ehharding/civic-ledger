@@ -2,8 +2,8 @@
  * Covers SiteHeader's wordmark link, the presence of the nav landmark, and the search form's action/name attributes.
  *
  * The nav's own contents — its five destinations and the `aria-current` marking derived from the open path — are
- * covered in primary-nav.test.tsx, beside the component that now owns them. What belongs here is only that the header
- * still composes the three parts.
+ * covered in primary-nav.test.tsx, beside the component that owns them. What belongs here is only that the header still
+ * composes the three parts.
  */
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -25,8 +25,7 @@ describe("SiteHeader", (): void => {
   /*
    * PrimaryNav is a client component reading usePathname, which returns null outside a router — as here, where the
    * header is rendered on its own. That has to degrade to an unmarked nav rather than an exception, since a throw in
-   * the nav takes the wordmark and the search box down with it.
-   * @see navCurrent.
+   * the nav takes the wordmark and the search box down with it. See navCurrent.
    */
   it("renders without a router, marking nothing current", (): void => {
     render(<SiteHeader />);

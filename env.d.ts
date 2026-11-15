@@ -12,11 +12,16 @@ declare namespace NodeJS {
     /**
      * The Congress.gov API key. **Server-only** — never `NEXT_PUBLIC_`, since the key travels in the request URL and a
      * browser request is a published key. Unset or blank switches the whole app to labeled preview fixtures.
+     *
      * @see getCongressApiKey, which owns what "configured" means.
      */
     CONGRESS_API_KEY?: string;
 
-    /** Postgres connection string for the deferred persistence layer. @see drizzle.config.ts. */
+    /**
+     * Postgres connection string for the deferred persistence layer.
+     *
+     * @see drizzle.config.ts
+     */
     DATABASE_URL?: string;
 
     /**
@@ -50,14 +55,22 @@ declare namespace NodeJS {
     /** The base path that build is published under, e.g., `/civic-ledger`. Read only when `STATIC_EXPORT` is set. */
     GITHUB_PAGES_BASE_PATH?: string;
 
-    /** Injected by Vercel. The deployment's stable production hostname, without a scheme. @see getSiteUrl. */
+    /**
+     * Injected by Vercel. The deployment's stable production hostname, without a scheme.
+     *
+     * @see getSiteUrl
+     */
     VERCEL_PROJECT_PRODUCTION_URL?: string;
     /** Injected by Vercel. This deployment's hostname, without a scheme. The last hostname `getSiteUrl` tries. */
     VERCEL_URL?: string;
     /** Injected by Vercel: `production`, `preview`, or `development`. The Sentry environment's fallback. */
     NEXT_PUBLIC_VERCEL_ENV?: string;
 
-    /** Injected by Next per server runtime: `nodejs` or `edge`. @see src/instrumentation.ts, which branches on it. */
+    /**
+     * Injected by Next per server runtime: `nodejs` or `edge`.
+     *
+     * @see src/instrumentation.ts, which branches on it.
+     */
     NEXT_RUNTIME?: string;
 
     /** Set by the runner. Turns on `forbidOnly`, retries, and the list reporter in playwright.config.ts. */

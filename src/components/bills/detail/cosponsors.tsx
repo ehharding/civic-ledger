@@ -43,7 +43,7 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
         )}
       </span>
       <span className="cosponsor-list__meta">
-        {/* "Original" is the record's own flag, not a date comparison. @see BillCosponsor */}
+        {/* "Original" is the record's own flag, not a date comparison. See BillCosponsor */}
         {cosponsor.isOriginal ? <span className="cosponsor-list__original">Original</span> : null}
         {cosponsor.sponsorshipDate ? (
           <span className="date-label">
@@ -63,12 +63,12 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
  *
  * The published tally is dropped on a preview record: fixture bills carry one for the hero, and printing "Congress.gov
  * records 12 cosponsors" over invented names would credit a real institution with fiction.
- * @see docs/data-policy.md
  *
  * @param cosponsors - Everyone currently signed on, in the publisher's order.
  * @param tally - Congress.gov's own figures, including anyone who later withdrew.
  * @param source - Whether this record is live or preview data.
  * @returns The count lines and the list, the tail of it behind a disclosure.
+ * @see docs/data-policy.md
  */
 function CosponsorList({
   cosponsors,
@@ -106,7 +106,7 @@ function CosponsorList({
 /**
  * Everyone who signed on after the sponsor.
  *
- * @param props - @see BillSectionProps, plus the publisher's own tally.
+ * @param props - {@link BillSectionProps}, plus the publisher's own tally.
  * @returns The cosponsors panel.
  */
 export function CosponsorsPanel({

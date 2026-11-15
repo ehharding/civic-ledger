@@ -5,7 +5,8 @@ import type { JSX } from "react";
  *
  * Named and exported because a route's header copy is occasionally worth writing down away from the markup that renders
  * it — `/bills` shares its header with its own loading skeleton, so that the two cannot drift into a layout shift.
- * @see CURRENT_CONGRESS_BILLS_HEADER.
+ *
+ * @see CURRENT_CONGRESS_BILLS_HEADER
  */
 export type PageHeaderCopy = {
   /** Short category label above the title. */
@@ -22,7 +23,7 @@ export type PageHeaderCopy = {
  * Owns the page's single `<h1>` and the `page-title` id that its section is labeled by, so no route has to remember to
  * establish either — and no two can accidentally both claim to be the page heading.
  *
- * @param props - @see PageHeaderCopy
+ * @param props - {@link PageHeaderCopy}.
  * @returns The banner.
  */
 export function PageHeader({ eyebrow, title, description }: PageHeaderCopy): JSX.Element {

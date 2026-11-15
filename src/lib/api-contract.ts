@@ -13,7 +13,9 @@ import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/mod
  * `/api/bills` — one further page of bills for the directory's "Load More" control.
  *
  * Always a 200 with an array, never an error status: an empty array means both "there are no more" and "we could not
- * find out", which is precisely how the button behaves in either case. @see the route handler for why.
+ * find out", which is precisely how the button behaves in either case.
+ *
+ * @see the route handler for why.
  */
 export type BillPageResponse = {
   /** The next page; empty when there are no more or the read failed. */
@@ -22,7 +24,9 @@ export type BillPageResponse = {
 
 /**
  * `/api/bills/search` — the result of one cross-Congress search, and `getSearchResults`'s return type. The last three
- * fields let the UI state the search's scope. @see BillDirectory
+ * fields let the UI state the search's scope.
+ *
+ * @see BillDirectory
  */
 export type BillSearchResponse = {
   /** The matching bills, most recent first. */
@@ -49,9 +53,10 @@ export const BILL_API_PARAMS = {
  * Builds the request URL for one further page of bills, e.g., `/api/bills?offset=24&congress=118`. Read back by
  * `parseOffsetParam` and `parseCongressQueryParam`.
  *
- * @param offset - How many bills the caller already holds. @see MAX_BILL_OFFSET
+ * @param offset - How many bills the caller already holds.
  * @param congress - Scopes the page to one Congress; omitted for the current one.
  * @returns The same-origin request URL, which keeps `CONGRESS_API_KEY` on the server.
+ * @see MAX_BILL_OFFSET
  */
 export function billPageRequestUrl(offset: number, congress?: number): string {
   const params: URLSearchParams = new URLSearchParams({ [BILL_API_PARAMS.offset]: String(offset) });

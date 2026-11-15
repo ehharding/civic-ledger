@@ -31,7 +31,9 @@ const bill: LegislativeBill = firstPreviewBill;
  *
  * Answered is the default here because it is the assertion nearly every test in this file is making: given these rows,
  * render this. The cases that mean the other thing say so explicitly with {@link unanswered}, and the difference
- * between the two is the whole point of the type — @see BillSubResource.
+ * between the two is the whole point of the type.
+ *
+ * @see BillSubResource
  */
 function sub<Entry>(entries: Entry[]): BillSubResource<Entry> {
   return { entries, unavailable: false };
@@ -99,8 +101,8 @@ describe("BillDetail", (): void => {
     const { container } = renderBill({ bill: withSponsor });
 
     expect(screen.getByText("Sponsor: Rep. Test, Sample A. [D-ZZ-1]")).toBeInTheDocument();
-    // Read through `readerText` because "Cosponsors" is a defined term and so carries its own hidden definition.
-    // @see reader-text.ts — the count and its noun are what this pins, not the markup around them.
+    // Read through `readerText` because "Cosponsors" is a defined term and so carries its own hidden definition. See
+    // reader-text.ts — the count and its noun are what this pins, not the markup around them.
     expect(readerText(container.querySelector(".bill-detail-meta") as Element)).toContain("5 Cosponsors");
   });
 
@@ -119,9 +121,9 @@ describe("BillDetail", (): void => {
     const { container } = renderBill({ bill: withoutSponsor });
 
     expect(screen.queryByText(/^Sponsor:/)).not.toBeInTheDocument();
-    // Scoped to the hero's meta row rather than the whole document: the page now carries a "Cosponsors" section
-    // heading unconditionally, since a bill with none says so in words. What this pins is that the meta row prints no
-    // count when the record published none — which is a different claim from "the word never appears".
+    // Scoped to the hero's meta row rather than the whole document: the page carries a "Cosponsors" section heading
+    // unconditionally, since a bill with none says so in words. What this pins is that the meta row prints no count
+    // when the record published none — which is a different claim from "the word never appears".
     expect(readerText(container.querySelector(".bill-detail-meta") as Element)).not.toContain("Cosponsor");
   });
 
@@ -352,7 +354,7 @@ describe("BillDetail action history and recorded votes", (): void => {
     expect(screen.getByText(/This page shows 2 actions for this bill/)).toBeInTheDocument();
     expect(screen.getByText("Read All 2 Actions")).toBeInTheDocument();
     // Read through `readerText`: action text runs through `GlossaryProse`, so a defined term inside it carries its own
-    // hidden definition and splits the sentence across elements. @see reader-text.ts.
+    // hidden definition and splits the sentence across elements. See reader-text.ts.
     const history: string = readerText(container.querySelector(".action-history__list") as Element);
     expect(history).toContain("Passed/agreed to in House.");
     expect(history).toContain("Referred to the House Committee on Transportation and Infrastructure.");
@@ -502,7 +504,7 @@ describe("BillDetail action history and recorded votes", (): void => {
 
   it("never contradicts a published law with a less advanced action history", (): void => {
     // `passage` establishes "chamber". The record says the bill became law. One page cannot show both, and the record
-    // is the one that isn't a reading. @see resolveBillStage.
+    // is the one that isn't a reading. See resolveBillStage.
     const enacted: LegislativeBill = { ...bill, stage: "law", enactedLaw: { type: "Public Law", number: "119-21" } };
     renderBill({ actions: sub([passage]), bill: enacted });
 
@@ -742,8 +744,8 @@ describe("BillDetail amendments", (): void => {
   it("cites each amendment the way Congress's own records do, and links out to it", (): void => {
     renderBill({ amendments: sub([described]) });
 
-    // Outward rather than inward — the one collection on this page with no page of its own here to link to.
-    // @see AmendmentRow.
+    // Outward rather than inward — the one collection on this page with no page of its own here to link to. See
+    // AmendmentRow.
     const link: HTMLElement = screen.getByRole("link", { name: /S\.Amdt\. 2849/ });
 
     expect(link).toHaveAttribute("href", "https://www.congress.gov/amendment/119th-congress/senate-amendment/2849");
@@ -775,7 +777,7 @@ describe("BillDetail amendments", (): void => {
 
   it("renders a bare amendment as a citation alone rather than as an empty row", (): void => {
     // The ordinary shape of this collection. A placeholder standing in for prose Congress.gov never published would
-    // present the record's own sparseness as a fault in this page. @see BillAmendment.
+    // present the record's own sparseness as a fault in this page. See BillAmendment.
     renderBill({ amendments: sub([bare]) });
 
     expect(screen.getByRole("link", { name: /S\.Amdt\. 2850/ })).toBeInTheDocument();
@@ -808,7 +810,7 @@ describe("BillDetail amendments", (): void => {
 
   it("names both figures when the published count outruns the single page this app fetches", (): void => {
     // The ordinary case for this collection rather than the rare one: HR 1 of the 119th records 493 amendments and the
-    // transport asks for 250. @see BillCollectionCounts.
+    // transport asks for 250. See BillCollectionCounts.
     renderBill({ amendments: sub([described, bare]), bill: { ...bill, collectionCounts: { amendments: 493 } } });
 
     expect(
@@ -820,7 +822,7 @@ describe("BillDetail amendments", (): void => {
     renderBill({ amendments: sub(manyAmendments(20)) });
 
     // Nothing is dropped, and the label carries the number — the property that keeps a cap from reading as a complete
-    // short list. @see DisclosedList.
+    // short list. See DisclosedList.
     expect(screen.getByText("Show the Remaining 5 Amendments")).toBeInTheDocument();
     expect(document.querySelectorAll(".amendment-list > li")).toHaveLength(20);
   });

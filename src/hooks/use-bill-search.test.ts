@@ -116,7 +116,7 @@ describe("useBillSearch", (): void => {
     await flushDebounce();
 
     // `+` for a space and `%26` for the ampersand is `URLSearchParams`' form encoding, which is what the handler's own
-    // `new URL(request.url).searchParams` decodes — @see api-contract.test.ts, which pins that round trip. What matters
+    // `new URL(request.url).searchParams` decodes — see api-contract.test.ts, which pins that round trip. What matters
     // here is that the raw `&` never reaches the URL, where it would truncate the query at "clean air".
     expect(fetchMock).toHaveBeenCalledWith("/api/bills/search?q=clean+air+%26+water", expect.anything());
   });

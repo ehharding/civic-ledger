@@ -2,8 +2,8 @@
    (CalloutCard), and the home page's three-up trust grid.
 
    One panel, two spacings. The only thing that varies between the pages this closes is the gap above it, so that is the
-   whole of the --spacious modifier below rather than a second class restating the other six declarations.
-   @see CalloutSpacing */
+   whole of the --spacious modifier below rather than a second class restating the other six declarations. See
+   CalloutSpacing. */
 
 .reading-card {
   display: grid;

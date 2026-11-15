@@ -20,15 +20,20 @@ type FacetedDirectoryQuery<Filters, Sort> = {
 /** Options for {@link useFacetedDirectory}. */
 type FacetedDirectoryOptions<Filters, Sort> = {
   /**
-   * The view the URL asked for, resolved server-side, which the directory opens on. @see resolveMemberDirectoryQuery
-   * and its committee counterpart.
+   * The view the URL asked for, resolved server-side, which the directory opens on.
+   *
+   * @see resolveMemberDirectoryQuery and its committee counterpart.
    */
   initialQuery: FacetedDirectoryQuery<Filters, Sort>;
   /** No narrowing at all — what {@link FacetedDirectoryState.clear} restores. */
   noFilters: Filters;
   /** Whether any filter is actually narrowing the list, which decides whether "Clear Filters" is offered at all. */
   hasActiveFilters: (filters: Filters) => boolean;
-  /** This directory's spelling of a view as a query string. @see memberDirectoryQueryString */
+  /**
+   * This directory's spelling of a view as a query string.
+   *
+   * @see memberDirectoryQueryString
+   */
   serialize: (query: FacetedDirectoryQuery<Filters, Sort>) => string;
   /**
    * Reads a view back out of a query string, through the *same* parser the route uses, so the browser and the server
@@ -53,17 +58,24 @@ type FacetedDirectoryState<Filters, Sort> = {
   update: (patch: Partial<Filters>) => void;
   /** Returns the directory to showing everything. */
   clear: () => void;
-  /** Whether anything is narrowing the list. @see FacetedDirectoryOptions.hasActiveFilters */
+  /**
+   * Whether anything is narrowing the list.
+   *
+   * @see FacetedDirectoryOptions.hasActiveFilters
+   */
   isFiltered: boolean;
 };
 
 /**
  * Holds one faceted directory's view, and keeps the address bar and that view agreeing.
  *
- * @typeParam Filters - The directory's own narrowing state. @see MemberFilters, CommitteeFilters
- * @typeParam Sort - The directory's own set of orders. @see MemberSort, CommitteeSort
- * @param options - @see FacetedDirectoryOptions
- * @returns The current view and the four ways a directory's controls change it. @see FacetedDirectoryState
+ * @typeParam Filters - The directory's own narrowing state.
+ * @typeParam Sort - The directory's own set of orders.
+ * @param options - {@link FacetedDirectoryOptions}.
+ * @returns The current view and the four ways a directory's controls change it.
+ * @see MemberFilters, CommitteeFilters
+ * @see MemberSort, CommitteeSort
+ * @see FacetedDirectoryState
  */
 export function useFacetedDirectory<Filters, Sort>({
   initialQuery,

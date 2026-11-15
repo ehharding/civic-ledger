@@ -10,9 +10,17 @@ import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
  * @typeParam Item - The record type the section lists.
  */
 export type BillSectionProps<Item> = {
-  /** The collection, carrying whether its own request was answered. @see BillSubResource */
+  /**
+   * The collection, carrying whether its own request was answered.
+   *
+   * @see BillSubResource
+   */
   resource: BillSubResource<Item>;
-  /** Congress.gov's own count for the whole collection, when it published one. @see describeBillCollection */
+  /**
+   * Congress.gov's own count for the whole collection, when it published one.
+   *
+   * @see describeBillCollection
+   */
   published?: number;
   /** Whether this record is live Congress.gov data or a labeled preview fixture. */
   source: CongressSnapshot["source"];
@@ -39,7 +47,7 @@ type DisclosedListProps<Item> = {
  * list that silently stopped would read as complete.
  *
  * @typeParam Item - The record type being listed.
- * @param props - @see DisclosedListProps
+ * @param props - {@link DisclosedListProps}.
  * @returns The visible list, followed by the disclosure when anything is behind it.
  */
 export function DisclosedList<Item>({

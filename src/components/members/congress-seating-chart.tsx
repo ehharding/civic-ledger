@@ -56,7 +56,10 @@ const SEAT_KEY_STEPS: Readonly<Record<string, number>> = {
   PageUp: -PAGE_STEP,
 };
 
+/** The tab panel's `id`, which every chamber tab controls. */
 const PANEL_ID: string = "seating-panel";
+
+/** The `id` of the visually hidden keyboard instructions the chart is described by. */
 const CHART_HELP_ID: string = "seating-chart-help";
 
 /**
@@ -101,7 +104,7 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
 /**
  * One drawn seat. With a Bioguide ID it's a real SVG `<a>` to the member's page (not `next/link`, which can't work in
  * the SVG namespace); without one, as in preview mode, it's a `<circle>` that only locks the read-out.
- * `data-seat-index` is on the outer element either way, for the chart's delegated handlers. @see seatIndexFromEvent
+ * `data-seat-index` is on the outer element either way, for the chart's delegated handlers.
  *
  * Memoized because every hover or keypress changes the parent's state and the House draws 441 seats. Props are
  * primitives plus `seat`, whose identity is stable (`buildChamberSeating` is memoized on the roster).
@@ -112,6 +115,7 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
  * @param isShown - Whether this seat is the one currently read out, which draws the active ring.
  * @param isActive - Whether this seat holds the chart's single tab stop.
  * @returns The seat element.
+ * @see seatIndexFromEvent
  */
 const Seat = memo(function Seat({
   seat,
@@ -173,7 +177,7 @@ const Seat = memo(function Seat({
 function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: CongressMember }): JSX.Element {
   const seat: string = formatMemberSeat(member, chamber);
   const nonVoting: boolean = chamber === "house" && isNonVotingJurisdiction(member.state);
-  // `undefined` for a placeholder seat, whose ID cannot resolve to a real person's biography. @see bioguideUrl
+  // `undefined` for a placeholder seat, whose ID cannot resolve to a real person's biography. See bioguideUrl.
   const biographyUrl: string | undefined = member.bioguideId ? bioguideUrl(member.bioguideId) : undefined;
 
   return (
@@ -206,17 +210,14 @@ function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: Con
  * party and arranged in the conventional half-disc, with the party balance summarized alongside it.
  *
  * Pointing at (or focusing) a seat reads out that member's name, party, and the state or district they represent, with
- * a link to their entry in the Biographical Directory. Because a chart driven only by hover is unusable without a
- * mouse, every seat is also reachable from the keyboard: the chart takes a single tab stop and the arrow keys move
- * between seats from there (a roving tabindex, so nobody is forced through 441 tab stops to get past the chart). Each
- * seat additionally carries its full description as its accessible name, so the diagram reads as a list of members to a
- * screen reader rather than as an unlabeled picture.
+ * a link to their entry in the Biographical Directory. The chart takes a single tab stop and the arrow keys move
+ * between seats from there (a roving tabindex, so nobody tabs through 441 seats to get past it). Each seat's accessible
+ * name is its full description, so a screen reader hears a list of members rather than an unlabeled picture.
  *
- * A seat whose member has a Bioguide ID is an SVG `<a>` linking to that member's own page, so opening it behaves like
- * any other link — new tab, middle click, copy address. A seat without one (every seat in preview mode, where the
- * roster is deliberately unattributed) has nowhere to go, so it stays a `<circle role="button">` whose activation just
- * locks the read-out. The role is declared explicitly in that case because an HTML `<button>` cannot be a child of
- * `<svg>`; either way the roving tabindex supplies the keyboard behavior a real control would have brought with it.
+ * A seat whose member has a Bioguide ID is an SVG `<a>` to that member's page, so it behaves like any other link. A
+ * seat without one (every seat in preview mode, where the roster is deliberately unattributed) is a
+ * `<circle role="button">` whose activation locks the read-out — the role declared explicitly because an HTML
+ * `<button>` cannot be a child of `<svg>`.
  *
  * @param composition - Both chambers' membership plus its live/preview provenance, resolved server-side.
  * @returns The chamber tabs, the SVG diagram, the seat read-out panel, the party legend, and the provenance line.
@@ -242,7 +243,11 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
   const shownIndex: number | null = hoveredIndex ?? focusedIndex ?? selectedIndex;
   const shownSeat: ChamberSeat | undefined = shownIndex === null ? undefined : seating.seats[shownIndex];
 
-  /** Switches chambers, clearing every seat-scoped piece of state so no read-out survives into a different chamber. */
+  /**
+   * Switches chambers, clearing every seat-scoped piece of state so no read-out survives into a different chamber.
+   *
+   * @param next - The chamber to show.
+   */
   function selectChamber(next: CongressChamber): void {
     setChamber(next);
     setHoveredIndex(null);
@@ -256,6 +261,8 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
    *
    * Typed as `SVGElement` rather than `SVGCircleElement` because a seat is an `<a>` when its member has a page and a
    * bare `<circle>` when they don't — the focusable element differs, the lookup doesn't.
+   *
+   * @param index - The seat to move to, clamped to the chamber.
    */
   function moveActiveSeat(index: number): void {
     const clamped: number = Math.max(0, Math.min(seating.seats.length - 1, index));
@@ -264,6 +271,12 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     chartRef.current?.querySelector<SVGElement>(`[data-seat-index="${clamped}"]`)?.focus();
   }
 
+  /**
+   * Keyboard navigation within the chart: arrows, Page Up/Down, Home, and End move between seats; Enter and Space lock
+   * the read-out on a seat with no page; Escape clears it.
+   *
+   * @param event - The chart's key event.
+   */
   function handleChartKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
     /* v8 ignore start -- the `<svg>` this is attached to only renders when there is at least one seat. */
     if (seating.seats.length === 0) return;
@@ -302,7 +315,11 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     }
   }
 
-  /** Left/right arrows move between chamber tabs, per the ARIA tabs pattern. */
+  /**
+   * Left/right arrows move between chamber tabs, per the ARIA tabs pattern.
+   *
+   * @param event - The tab list's key event.
+   */
   function handleTabsKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
     const step: number = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
     if (step === 0) return;
@@ -324,6 +341,8 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
    * React's `onBlur` is delegated, so moving between seats fires blur-then-focus; clearing unconditionally made the
    * detail panel flicker back to its placeholder on every arrow keypress. `relatedTarget` is where focus is *going*, so
    * a move to another seat inside the chart is recognized and left alone.
+   *
+   * @param event - The chart's blur event.
    */
   function handleChartBlur(event: FocusEvent<SVGSVGElement>): void {
     const nextTarget: EventTarget | null = event.relatedTarget;
@@ -332,6 +351,11 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     setFocusedIndex(null);
   }
 
+  /**
+   * Shows the focused seat's read-out and makes it the roving tab stop.
+   *
+   * @param event - A focus event delegated from a seat.
+   */
   function handleSeatFocus(event: FocusEvent<SVGSVGElement>): void {
     const index: number | null = seatIndexFromEvent(event.target);
     if (index === null) return;
@@ -340,14 +364,23 @@ export function CongressSeatingChart({ composition }: { composition: CongressCom
     setActiveIndex(index);
   }
 
+  /**
+   * Toggles the locked selection: clicking the selected seat clears it, clicking another selects that one.
+   *
+   * @param event - A click delegated from a seat.
+   */
   function handleSeatClick(event: MouseEvent<SVGSVGElement>): void {
     const index: number | null = seatIndexFromEvent(event.target);
     if (index !== null) {
-      // Toggle the selection: clicking the same seat deselects it, clicking a new seat selects it
       setSelectedIndex((prev: number | null): number | null => (prev === index ? null : index));
     }
   }
 
+  /**
+   * Shows the hovered seat's read-out, or clears it when the pointer is between seats.
+   *
+   * @param event - A pointer event delegated from the chart.
+   */
   function handleSeatHover(event: MouseEvent<SVGSVGElement>): void {
     setHoveredIndex(seatIndexFromEvent(event.target));
   }

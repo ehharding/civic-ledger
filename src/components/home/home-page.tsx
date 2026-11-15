@@ -30,10 +30,10 @@ import { billHref } from "@/lib/routes";
  * the featured bill so it isn't shown twice above the fold.
  *
  * @param composition - Both chambers' membership, for the seating chart.
- * @param snapshot - The current Congress's bills. Ordered here by latest action rather than taken as it arrives — @see
- *   compareBillsByActivity for why the fetch order is a near miss for what this page claims.
+ * @param snapshot - The current Congress's bills. Ordered here by latest action rather than taken as it arrives.
  * @returns The hero and featured bill journey, the chamber diagram, the next three bills by activity, and the static
  *   learn/trust sections.
+ * @see compareBillsByActivity for why the fetch order is a near miss for what this page claims.
  */
 export function HomePage({
   composition,
@@ -45,7 +45,7 @@ export function HomePage({
   // Both the featured card and the activity grid below read off this rather than off `snapshot.bills` directly. The
   // snapshot arrives ordered by Congress.gov's `updateDate`, which is when a row was last touched and not when anything
   // happened — near enough to pick a recent slice out of eighteen thousand records, not near enough to put an April
-  // action above an August one under a heading that says "Latest Activity". @see compareBillsByActivity.
+  // action above an August one under a heading that says "Latest Activity". See compareBillsByActivity.
   const byActivity: LegislativeBill[] = [...snapshot.bills].sort(compareBillsByActivity);
   const featuredBill: LegislativeBill | undefined = byActivity[0];
   const currentCongress: number = getCurrentCongress();

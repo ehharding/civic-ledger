@@ -17,6 +17,7 @@ type NavLink = {
  *
  * Below 640px this is a drawer, which takes any number of destinations; above it, a sixth label would crowd the search
  * box.
+ *
  * @see the derivation above the 860px breakpoint in src/styles/responsive.css.
  */
 const NAV_LINKS: readonly NavLink[] = [
@@ -66,17 +67,18 @@ export function navCurrent(pathname: string | null, href: string): "page" | true
  * - **CSS decides the layout.** This component only knows open/closed; the closed drawer is `visibility: hidden` inside
  *   its media query, so the links leave the tab order only where the drawer exists.
  * - **No JavaScript, no drawer.** The toggle and drawer are scoped to `@media (scripting: enabled)`, leaving a plain
- *   wrapped row otherwise. @see the drawer block in src/styles/responsive.css.
+ *   wrapped row otherwise.
  * - **A disclosure, not a modal.** `aria-expanded`/`aria-controls` on the toggle; focus isn't moved on open (the panel
  *   follows the toggle in the DOM). Tab loops within the open drawer because a scrim covers the page; Escape closes it
  *   and returns focus to the toggle if focus was inside.
  *
- * The current section is marked by `aria-current` alone, which the stylesheet selects on by presence
- * (@see `.primary-nav a[aria-current]` in layout.css). A client component for the drawer state and {@link usePathname};
- * split from {@link SiteHeader} so the rest of the header stays server-rendered.
+ * The current section is marked by `aria-current` alone, which the stylesheet selects on by presence (see
+ * `.primary-nav a[aria-current]` in layout.css). A client component for the drawer state and {@link usePathname}; split
+ * from {@link SiteHeader} so the rest of the header stays server-rendered.
  *
  * @returns The drawer toggle, its scrim, and the primary navigation landmark — three siblings of the header's grid, so
  *   the header can lay them out without a wrapper that would have to be undone at every breakpoint.
+ * @see the drawer block in src/styles/responsive.css.
  */
 export function PrimaryNav(): JSX.Element {
   const pathname: string | null = usePathname();
@@ -125,7 +127,7 @@ export function PrimaryNav(): JSX.Element {
    *
    * Marked on `<body>` rather than acted on here, so the rule can be scoped to the media query the drawer actually
    * exists in — a reader who opens the drawer and then rotates a tablet into the row layout gets their scrolling back
-   * from the stylesheet, without this component having to hold an opinion about the viewport. @see responsive.css.
+   * from the stylesheet, without this component having to hold an opinion about the viewport. See responsive.css.
    */
   useEffect((): (() => void) => {
     document.body.toggleAttribute("data-nav-open", isOpen);

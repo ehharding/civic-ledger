@@ -37,16 +37,19 @@ export async function committeeMetadata(params: CommitteeParams): Promise<Metada
 }
 
 /**
- * Renders one committee's page. Chamber and system code together identify it, as on Congress.gov. @see committeeHref
+ * Renders one committee's page. Chamber and system code together identify it, as on Congress.gov.
  *
  * The records are fetched *after* the committee's record, because its counts clamp `?page=` before an offset goes
- * upstream. @see clampCommitteeRecordsPage
+ * upstream.
  *
- * Shared by the cached route (no query) and its on-demand `/query` twin. @see src/lib/query-routes.ts
+ * Shared by the cached route (no query) and its on-demand `/query` twin.
  *
  * @param params - The committee's route params, straight from the URL and therefore untrusted.
  * @param searchParams - The record view's query params, equally untrusted and equally parsed rather than read.
  * @returns The committee page, or the 404 page when the identifiers resolve to nothing.
+ * @see committeeHref
+ * @see clampCommitteeRecordsPage
+ * @see src/lib/query-routes.ts
  */
 export async function renderCommitteeRoute(
   params: CommitteeParams,

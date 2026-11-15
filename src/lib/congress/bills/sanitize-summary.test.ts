@@ -77,11 +77,10 @@ describe("HTML comments", (): void => {
   });
 });
 
-/**
+/*
  * Overlapping-tag payloads, which defeat a sanitizer that patches its input: stripping an inner tag splices the
  * surrounding fragments into a new live tag. Each asserts no raw `<` followed by a letter survives, not an exact
  * output.
- * @see sanitizeSummaryHtml
  */
 describe("overlapping and malformed tags", (): void => {
   /** Whether a fragment contains anything a browser would parse as an element. */

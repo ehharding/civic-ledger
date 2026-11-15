@@ -7,7 +7,11 @@ import { describe, expect, it } from "vitest";
 import { billStageLabels, billStages } from "@/lib/congress/bills/model";
 import { findLesson, type Lesson, type LessonSource, type LessonStep, lessonNumber, lessons } from "@/lib/lessons";
 
-/** The publishers a citation may come from. @see the "primary sources only" rule in lessons.ts. */
+/**
+ * The publishers a citation may come from.
+ *
+ * @see the "primary sources only" rule in lessons.ts.
+ */
 const ALLOWED_SOURCE_HOSTS: readonly string[] = [
   "www.house.gov",
   "clerk.house.gov",
@@ -97,7 +101,7 @@ describe("the bill-lifecycle module", (): void => {
 
 describe("the three modules that are not the lifecycle", (): void => {
   it("pin the stepper only where a step really is a stage", (): void => {
-    // A "you are here" cue, not a second diagram of the process — one step each. @see LessonStep.
+    // A "you are here" cue, not a second diagram of the process — one step each. See LessonStep.
     for (const lesson of lessons.slice(1)) {
       const pinned: LessonStep[] = lesson.steps.filter((step: LessonStep): boolean => step.stage !== undefined);
       expect(pinned.length, lesson.slug).toBeGreaterThan(0);

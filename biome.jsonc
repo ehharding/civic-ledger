@@ -27,7 +27,7 @@
       "preset": "recommended",
       "complexity": {
         // Off: tsconfig's `noPropertyAccessFromIndexSignature` requires bracket access on index signatures (that's
-        // what makes a misspelled env var fail to compile — @see env.d.ts), and this rule would "fix" those back into
+        // what makes a misspelled env var fail to compile — see env.d.ts), and this rule would "fix" those back into
         // type errors.
         "useLiteralKeys": "off",
         // `.test()` over `.exec()`/`.match()` when only the boolean is used.

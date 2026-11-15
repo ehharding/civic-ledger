@@ -1,7 +1,8 @@
 /**
  * Holds the CDN window to the app's one shared cache window, so changing `REVALIDATE_SECONDS` moves the API routes with
- * the pages rather than leaving them on the old value. @see src/app/revalidate.test.ts for the same rule, applied to
- * the route segments.
+ * the pages rather than leaving them on the old value.
+ *
+ * @see src/app/revalidate.test.ts for the same rule, applied to the route segments.
  */
 import { describe, expect, it } from "vitest";
 

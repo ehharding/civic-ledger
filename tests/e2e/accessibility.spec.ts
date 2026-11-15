@@ -44,7 +44,7 @@ async function expectNoViolations(page: Page, testInfo: TestInfo): Promise<void>
   // its findings. A record page reached by clicking a card is a soft navigation: the URL changes first and the title
   // arrives with the streamed metadata, so a scan fired the moment the URL matched would report `document-title` — a
   // real rule, failing on a page that does declare metadata, purely because it was read too early. Every route's title
-  // carries the site name (@see metadata.ts), which makes this one condition for all of them.
+  // carries the site name (see metadata.ts), which makes this one condition for all of them.
   await expect(page).toHaveTitle(/Civic Ledger/);
 
   const results: AxeResults = await new AxeBuilder({ page }).withTags([...WCAG_TAGS]).analyze();

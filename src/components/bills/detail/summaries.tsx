@@ -9,11 +9,11 @@ import { formatDate, pluralize } from "@/lib/format";
 /**
  * The caption above a summary: who wrote it and which bill version it describes. Preview summaries are captioned as
  * illustrative, never credited to CRS.
- * @see docs/data-policy.md
  *
  * @param summary - The summary being captioned.
  * @param source - Whether this record is live or preview data.
  * @returns The caption line.
+ * @see docs/data-policy.md
  */
 function SummaryCaption({
   summary,
@@ -49,7 +49,7 @@ function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
  * The CRS summaries: the most recent in full, earlier ones (accurate descriptions of earlier versions, useful for
  * seeing what changed) behind a disclosure.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The summary panel.
  */
 export function SummariesPanel({ resource, published, source }: BillSectionProps<BillSummary>): JSX.Element {

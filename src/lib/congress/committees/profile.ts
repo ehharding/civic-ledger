@@ -53,7 +53,13 @@ export function getCommitteeProfile(rawChamber: string, rawSystemCode: string): 
  */
 const lookUpCommitteeOnce = cache(lookUpCommittee);
 
-/** The uncached body of {@link getCommitteeProfile}. */
+/**
+ * The uncached body of {@link getCommitteeProfile}.
+ *
+ * @param rawChamber - The `chamber` route param, untrusted.
+ * @param rawSystemCode - The `systemCode` route param, untrusted.
+ * @returns The profile (`undefined` when there is no such committee) and its provenance.
+ */
 async function lookUpCommittee(rawChamber: string, rawSystemCode: string): Promise<CommitteeProfileResult> {
   const retrievedAt: string = new Date().toISOString();
   const apiKey: string | undefined = getCongressApiKey();

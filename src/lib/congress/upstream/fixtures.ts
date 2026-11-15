@@ -177,6 +177,7 @@ export const firstPreviewBill: LegislativeBill = previewBills[0] as LegislativeB
  * Fictional cosponsors for the preview fixtures, keyed by `billIdentityKey`, so the static demo shows the section
  * working. Drawn only from the seven placeholder sponsors, whose `PREVIEW-n` IDs fail `isBioguideId` and so never reach
  * upstream. `isOriginal` is mixed to exercise both row branches.
+ *
  * @see docs/data-policy.md
  */
 export const previewCosponsors: Record<string, BillCosponsor[]> = {

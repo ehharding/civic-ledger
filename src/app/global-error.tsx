@@ -12,15 +12,15 @@ import "./globals.css";
  * The last-resort boundary, for a failure in the root layout itself, which `error.tsx` can't catch. It replaces the
  * whole document — hence its own `<html>` and `<body>`, and no `SiteShell`, which might be what failed.
  *
- * Reporting here is the only signal such a failure has. As in `error.tsx`, the error is reported, never rendered
- * (@see src/lib/observability/redact.ts). Minimal styling that depends on nothing that could have broken.
+ * Reporting here is the only signal such a failure has. As in `error.tsx`, the error is reported, never rendered (see
+ * `src/lib/observability/redact.ts`). Minimal styling that depends on nothing that could have broken.
  *
  * @param error - The caught error, including Next's `digest`.
  * @returns A complete, self-contained HTML document.
  */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }): JSX.Element {
   useEffect((): void => {
-    // @see error.tsx for why both. The `boundary` attribute is what separates the two in a query — reaching this one
+    // See error.tsx for why both. The `boundary` attribute is what separates the two in a query — reaching this one
     // means the root layout itself failed, which is a categorically worse fact than a failed segment.
     logError("Global error boundary caught a root-layout failure", {
       attributes: { event: "error-boundary.caught", boundary: "global", digest: error.digest ?? "none" },

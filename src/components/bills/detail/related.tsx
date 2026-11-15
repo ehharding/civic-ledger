@@ -86,7 +86,7 @@ function RelatedBillList({ related }: { related: RelatedBill[] }): JSX.Element {
 /**
  * The measures Congress.gov records as related to this one.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The related-measures panel.
  */
 export function RelatedPanel({ resource, published, source }: BillSectionProps<RelatedBill>): JSX.Element {

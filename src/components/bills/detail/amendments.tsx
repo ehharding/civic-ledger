@@ -69,7 +69,7 @@ function AmendmentList({ amendments }: { amendments: BillAmendment[] }): JSX.Ele
 /**
  * Every amendment offered to the bill.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The amendments panel.
  */
 export function AmendmentsPanel({ resource, published, source }: BillSectionProps<BillAmendment>): JSX.Element {

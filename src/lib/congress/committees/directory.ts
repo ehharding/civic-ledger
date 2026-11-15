@@ -22,6 +22,7 @@ import { formatOrdinal } from "@/lib/format";
 /**
  * The committees of one Congress, as `/committees` reads them: a paginated list flattened into one alphabetical roster.
  * Like every adapter read, nothing throws and provenance travels with the data.
+ *
  * @see profile.ts for the item-level read.
  */
 
@@ -35,7 +36,11 @@ const MAX_COMMITTEE_PAGES: number = 3;
 export type CommitteeDirectoryResult = {
   /** The Congress this list describes, echoed back so the page can name it without recomputing it. */
   congress: number;
-  /** Every listable parent committee, alphabetically. @see buildCommitteeDirectory for what "parent" excludes. */
+  /**
+   * Every listable parent committee, alphabetically.
+   *
+   * @see buildCommitteeDirectory for what "parent" excludes.
+   */
   committees: CommitteeSummary[];
   /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];
@@ -94,7 +99,8 @@ async function fetchCommitteePage(input: {
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose committees to read.
  * @returns Every committee record found, or `null` only when the *first* page fails. A directory missing its tail is
- *   still a usable directory, and it is labeled live either way. @see fetchAllPages
+ *   still a usable directory, and it is labeled live either way.
+ * @see fetchAllPages
  */
 function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressApiCommittee[] | null> {
   return fetchAllPages(

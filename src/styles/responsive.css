@@ -4,19 +4,18 @@
 
    This file is the whole of the `overrides` cascade layer, which is what makes the arrangement safe: every rule here
    beats every component rule regardless of specificity or of which file loaded first. That matters because several
-   rules below are the same specificity as the ones they override, and the layer is the only thing deciding them.
-   @see the layer contract at the top of globals.css.
+   rules below are the same specificity as the ones they override, and the layer is the only thing deciding them. See
+   the layer contract at the top of globals.css.
 
    It also means a rule here does not need to be more specific than its target, and shouldn't be — if you find yourself
    reaching for an extra class to win, the layer already won and something else is wrong. */
 
 @media (max-width: 900px) {
   /* The header tightens before it drops anything. Closing the columns up here buys the three-part layout another ~36px
-     of life, which is why the search doesn't go until 860px rather than at this breakpoint. @see the header block
-     below.
+     of life, which is why the search doesn't go until 860px rather than at this breakpoint. See the header block below.
 
      Off the spacing grid on purpose, like the rest of the header's measurements: this gap is a term in the arithmetic
-     that produces the 860px breakpoint below, so it is measured rather than rounded. @see layout.css. */
+     that produces the 860px breakpoint below, so it is measured rather than rounded. See layout.css. */
   .site-header__inner {
     gap: 18px;
   }
@@ -27,7 +26,7 @@
      five-step journey stepper, whose labels floor it at 314px. Below a 340px viewport that is wider than the page's own
      gutter allows, so the hero alone would push the front page into horizontal scrolling at the 320px width WCAG
      1.4.10 (Reflow) names. Stating the minimum as 0 lets the track do what a single-column layout is supposed to do and
-     take the width it is given. @see the journey stepper's own override below, which is what then lets its contents fit
+     take the width it is given. See the journey stepper's own override below, which is what then lets its contents fit
      inside that width rather than overflow the card. */
   .hero-grid,
   .detail-grid {
@@ -154,7 +153,7 @@
    * This is the arrangement the drawer replaces, and it is still the one a browser with scripting off gets — the drawer
    * block further down is conditioned on `(scripting: enabled)`, so everything here has to keep standing on its own.
    * Read the two together: this is the header when the five destinations have to be reachable without a control to open
-   * them. @see the drawer block below.
+   * them. See the drawer block below.
    *
    * Above this width, the header is wordmark-then-nav on one line and the nav is pinned right. That arrangement holds
    * at four destinations and fails at five, which is what this app has: squeezed into the column beside the wordmark,
@@ -187,7 +186,7 @@
      pinned right even though it has a line to itself here.
    *
    * The row gap is zero because the separation it would provide is carried inside the links instead: each has 3px of
-   * block padding for the target-size floor (@see layout.css), so two wrapped rows still sit 6px apart visually, with
+   * block padding for the target-size floor (see layout.css), so two wrapped rows still sit 6px apart visually, with
    * that space counting toward the hit area rather than sitting between two things a thumb can miss. Adjacent rows meet
    * exactly, without overlapping, so no link can swallow a tap meant for its neighbor. The trade is 6px of sticky
    * header on the smallest screens, taken deliberately for the same reason as the 12px above. */
@@ -321,7 +320,7 @@
   }
 }
 
-/* The mobile navigation drawer. @see PrimaryNav.
+/* The mobile navigation drawer. See PrimaryNav.
  *
  * **Gated on scripting as well as width.** Without JavaScript the toggle can't open anything, so this block doesn't
  * apply and the 640px block above stands: a wrapped row of links rather than a menu button with nothing behind it.
@@ -339,8 +338,8 @@
   /* Back to one line: wordmark, then toggle — undoing the 640px block's two-row grid.
 
      `--drawer-top` is the header's height plus its 1px bottom border, where the fixed panel and scrim start. Fixed
-     positioning resolves against the viewport only because the header's blur lives on a pseudo-element.
-     @see `.site-header::before` in layout.css */
+     positioning resolves against the viewport only because the header's blur lives on a pseudo-element. See
+     `.site-header::before` in layout.css. */
   .site-header__inner {
     --drawer-top: calc(var(--space-16) + 1px);
 
@@ -476,7 +475,7 @@
   /* The page behind the scrim holds still. Scoped in here rather than applied from the component, so a reader who opens
      the drawer and then turns a tablet into the row layout gets their scrolling back from the stylesheet — the
      attribute on <body> says the drawer is open, and this block is the only thing that decides whether "open" means
-     anything. @see PrimaryNav.
+     anything. See PrimaryNav.
 
      Keyed to the attribute's presence rather than to a value, which is the same rule `.primary-nav a[aria-current]`
      follows: the attribute is the state, so there is nothing for a value to add and nothing for the two to disagree
@@ -488,7 +487,7 @@
   /* Reduced motion keeps every state and drops every movement: the panel and the scrim appear and disappear, the
      destinations arrive with them, and nothing slides or staggers. Nested inside this block rather than sitting beside
      the toggle's own reduced-motion rule in layout.css, because it is overriding declarations made *here* — a
-     `components` rule cannot take back an `overrides` one whatever its specificity. @see the layer contract in
+     `components` rule cannot take back an `overrides` one whatever its specificity. See the layer contract in
      globals.css. */
   @media (prefers-reduced-motion: reduce) {
     .nav-scrim,
@@ -522,7 +521,7 @@
  * derived one and the four pixels between them cost nothing. Stepping to --text-4xs takes the longest word to 51px,
  * which clears the column down to ~335px and keeps the labels legible rather than exact below that; it is the bottom of
  * the type scale, so there is no smaller step to take. The detail panel's copy of this stepper makes the same move at
- * 640px, for the same reason and to the same size. @see the 640px block above. */
+ * 640px, for the same reason and to the same size. See the 640px block above. */
 @media (max-width: 400px) {
   .journey-card .bill-journey li {
     font-size: var(--text-4xs);

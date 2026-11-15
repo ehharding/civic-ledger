@@ -41,13 +41,14 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
  * everything the two must agree on: the endpoint's path spelling, its schema, and the cache tags that let a title
  * lookup and the bill's own page share one cached response instead of paying for it twice.
  *
- * @param route - The bill's identifier, already proven safe to interpolate. @see normalizeBillRouteParams
+ * @param route - The bill's identifier, already proven safe to interpolate.
  * @param apiKey - The server-only Congress.gov key.
  * @param context - Short label for the server-side log line, naming which of the two reads this was.
  * @param revalidate - The cache window. Defaults to the Congress-scoped one, which the committee page's title lookup
  *   wants: it reads many bills it never renders a page for. The bill page passes {@link billPageCacheWindow}, since its
  *   own ISR entry already holds the response.
  * @returns The request's outcome, unmapped. Never throws.
+ * @see normalizeBillRouteParams
  */
 export function requestBillDetail(
   route: NormalizedBillRoute,
@@ -72,7 +73,7 @@ export function requestBillDetail(
  * happens.
  *
  * This is the same distinction `committees/activity.ts` keeps for a committee's record collections, spelled the same
- * way — @see FetchedRecords — and for the same reason its `emptyCopy` gives failure its own sentence.
+ * way ({@link FetchedRecords}) — and for the same reason its `emptyCopy` gives failure its own sentence.
  *
  * @typeParam Entry - The app's mapped entry type for this collection.
  */
@@ -94,6 +95,9 @@ export type BillSubResource<Entry> = {
  *
  * A function rather than a shared constant because the value is generic in `Entry` and holds a mutable array; one
  * frozen instance would either have to be cast at each use or be handed out for a caller to append to.
+ *
+ * @typeParam Entry - The collection's entry type.
+ * @returns An empty, answered collection.
  */
 function answeredEmpty<Entry>(): BillSubResource<Entry> {
   return { entries: [], unavailable: false };
@@ -140,7 +144,7 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
     billCacheTags(route),
     config.schema,
     `bill ${config.path} for ${route.type.toUpperCase()} ${route.number}`,
-    // Every collection here is read only by the bill's own page, whose ISR entry is the cache. @see billPageCacheWindow
+    // Every collection here is read only by the bill's own page, whose ISR entry is the cache. See billPageCacheWindow
     billPageCacheWindow(route.congress),
   );
 

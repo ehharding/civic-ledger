@@ -26,7 +26,7 @@ type LessonSourcesProps = {
  * goes through {@link OutboundLink}, so a citation inherits the same new-tab, no-referrer, announced-to-a-screen-reader
  * contract every other primary-source link in this app has, rather than re-deriving it.
  *
- * @param props - @see LessonSourcesProps
+ * @param props - {@link LessonSourcesProps}.
  * @returns The sources section: its heading, a note on what these are, and one linked citation per source.
  */
 export function LessonSources({ sources, headingId }: LessonSourcesProps): JSX.Element {

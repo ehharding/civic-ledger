@@ -13,20 +13,17 @@ import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
  * The body of one learning module, in the shape every module shares: header, numbered steps, an honest-limits panel,
  * the citation list, and a "read this next" callout.
  *
- * One component for every module, on the same reasoning that produced `CalloutCard`: a lesson spelling out its own
- * forty lines of markup would be one more place to keep an `aria-labelledby` correct and one more to update when the
- * shape changes. The lesson *content* lives in `src/lib/lessons.ts` and this renders it, which is what makes adding a
- * module an edit to one data file rather than a new page.
+ * One component for every module, so the markup (and its `aria-labelledby` wiring) is kept correct in one place. The
+ * lesson *content* lives in `src/lib/lessons.ts`, which makes adding a module an edit to one data file rather than a
+ * new page.
  *
- * The limits panel is not optional and takes the accent treatment deliberately. Every one of these lessons is a
- * simplification — that is the point of a lesson — and the panel is where each one says which simplification it made. A
- * reader who skims the steps and stops still passes it on the way to the sources.
+ * The limits panel is not optional and takes the accent treatment deliberately: every lesson is a simplification, and
+ * the panel is where each says which one it made. A reader who skims the steps still passes it on the way to the
+ * sources.
  *
- * Both the steps and the limits run through {@link GlossaryProse}, so a word the glossary defines carries its own
- * definition where it is used. That matters most here of anywhere in the app: these lessons are read *because* the
- * vocabulary is unfamiliar, and a definition a reader has to leave the page to find is one most of them won't.
- * Deliberately not applied to the headings or the intro — a dotted underline in display type reads as damage, and the
- * step that a term belongs to says it again in its own copy a sentence later anyway.
+ * The steps and the limits run through {@link GlossaryProse}, so a glossary term carries its definition where it is
+ * used — these lessons are read *because* the vocabulary is unfamiliar. The headings and intro are left alone: a dotted
+ * underline in display type reads as damage, and the step a term belongs to repeats it in its own copy anyway.
  *
  * @param lesson - The module to render.
  * @returns The full lesson body, ready to drop inside a `SiteShell`.

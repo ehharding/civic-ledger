@@ -58,7 +58,7 @@ describe("billSearchRequestUrl", (): void => {
 
   it("survives a blank query rather than producing a malformed URL", (): void => {
     // The directory doesn't search on an empty box, but the hook's guard is the only thing stopping it — so the route
-    // stays well-defined if that ever changes. @see the search handler, which treats a blank query as matching all.
+    // stays well-defined if that ever changes. See the search handler, which treats a blank query as matching all.
     expect(parseQueryParam(paramsOf(billSearchRequestUrl("")).get(BILL_API_PARAMS.query))).toBe("");
   });
 });

@@ -84,7 +84,7 @@ describe("useFacetedDirectory", (): void => {
     act((): void => result.current.clear());
 
     // `color` goes back to the wildcard sentinel, not to an empty string — clearing a facet means "don't narrow on
-    // this", which is a value rather than the absence of one. @see ANY_FACET.
+    // this", which is a value rather than the absence of one. See ANY_FACET.
     expect(result.current.filters).toEqual(NO_FILTERS);
     expect(result.current.isFiltered).toBe(false);
     // Clearing the filters leaves the chosen order alone: a reader who cleared a search did not ask to be re-sorted.
@@ -135,7 +135,7 @@ describe("useFacetedDirectory", (): void => {
     const { result }: Rendered = renderDirectory({ filters: NO_FILTERS, sort: "name" });
 
     // A soft navigation to another view of the same route: the URL moves without this component remounting, so the
-    // state is what has to catch up. @see useDirectoryUrlSync, which decides that.
+    // state is what has to catch up. See useDirectoryUrlSync, which decides that.
     act((): void => {
       nativeReplaceState(null, "", "/things?color=teal&sort=age");
       window.dispatchEvent(new PopStateEvent("popstate"));

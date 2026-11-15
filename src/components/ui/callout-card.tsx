@@ -12,6 +12,7 @@ import type { JSX, ReactNode } from "react";
  */
 export type CalloutSpacing = "default" | "spacious";
 
+/** The class list each {@link CalloutSpacing} resolves to. */
 const SPACING_CLASSES: Readonly<Record<CalloutSpacing, string>> = {
   default: "reading-card",
   spacious: "reading-card reading-card--spacious",
@@ -38,7 +39,7 @@ type CalloutCardProps = {
   linkLabel: string;
   /** The call to action's trailing icon — an outward arrow for a new topic, a rightward one for the next step. */
   linkIcon: LucideIcon;
-  /** @see CalloutSpacing. Defaults to `"default"`. */
+  /** How much room the callout leaves above itself. Defaults to `"default"`. */
   spacing?: CalloutSpacing;
 };
 
@@ -46,7 +47,7 @@ type CalloutCardProps = {
  * The "read this next" panel that closes six pages. Not a link itself: a link wrapping a heading gets an unwieldy
  * accessible name, so the call to action is its own link.
  *
- * @param props - @see CalloutCardProps
+ * @param props - {@link CalloutCardProps}.
  * @returns The callout section: badge icon, kicker, heading, body, and the call to action.
  */
 export function CalloutCard({

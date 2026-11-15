@@ -17,15 +17,14 @@
  *   components — every component file below, sharing one layer; a rule here never needs to out-specify a base one
  *   overrides  — breakpoints, and only breakpoints
  *
- * What layers fix is ordering *between* those four, which is where the fragile case was: a breakpoint rule now beats a
- * component rule whatever their specificities and whatever order the two files loaded in. Within `components` the files
- * still share one layer, so among equally specific selectors source order still decides — which the next paragraph
- * relies on rather than works around, and which is the reason the import list below is grouped rather than
- * alphabetical.
+ * What layers fix is ordering *between* those four: a breakpoint rule beats a component rule whatever their
+ * specificities and whatever order the two files loaded in. Within `components` the files still share one layer, so
+ * among equally specific selectors source order still decides — which the next paragraph relies on rather than works
+ * around, and which is the reason the import list below is grouped rather than alphabetical.
  *
  * The shared card surface is a `components` rule, in surfaces.css, and is imported ahead of the six files whose
- * components wear it so each can still specialize. It is a selector list rather than a class the markup opts
- * into — @see that file's header for why, since the choice is the reason `base` holds no component recipe of any kind.
+ * components wear it so each can still specialize. It is a selector list rather than a class the markup opts into — see
+ * that file's header for why, since the choice is the reason `base` holds no component recipe of any kind.
  *
  * A practical consequence worth knowing before you debug something here: an unlayered rule beats *every* layer. If a
  * stray rule lands outside these files (a <style> tag, a third-party stylesheet) it will win against all of the below

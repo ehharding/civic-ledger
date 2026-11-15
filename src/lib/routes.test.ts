@@ -51,7 +51,7 @@ describe("congressBillsHref", (): void => {
 
   it("resolves back to a Congress the app supports browsing", (): void => {
     // A route this builds and a route `/bills/[congress]` accepts have to be the same set: the sitemap advertises
-    // these, so one the route rejected would be a listed page that 404s. @see parseCongressParam.
+    // these, so one the route rejected would be a listed page that 404s. See parseCongressParam.
     for (const entry of listCongresses()) {
       expect(parseCongressParam(congressBillsHref(entry.number).replace("/bills/", ""))).toBe(entry.number);
     }
@@ -89,7 +89,7 @@ describe("committeeHref", (): void => {
 
   it("keeps the chamber in the path, since the upstream lookup is keyed on both", (): void => {
     // The same system code under a different chamber is a different page — which is the whole reason the chamber is a
-    // path segment rather than something the route has to guess back. @see committeeHref.
+    // path segment rather than something the route has to guess back. See committeeHref.
     expect(committeeHref("house", "hsag00")).not.toBe(committeeHref("senate", "hsag00"));
   });
 });
@@ -133,7 +133,7 @@ describe("lessonHref", (): void => {
   });
 
   it("takes only a slug the registry declares, so an inline one is checked rather than trusted", (): void => {
-    // The guarantee is the parameter's type (@see LessonSlug); this only pins the output.
+    // The guarantee is the parameter's type (see LessonSlug); this only pins the output.
     expect(lessonHref("what-committees-do")).toBe("/learn/what-committees-do");
   });
 

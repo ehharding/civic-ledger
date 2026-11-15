@@ -96,7 +96,7 @@
   font-size: var(--text-lg);
 }
 
-/* Tinted by the .committee-type--* class this element also carries. @see the mapping at the top of this file. */
+/* Tinted by the .committee-type--* class this element also carries. See the mapping at the top of this file. */
 .committee-hero__type {
   color: var(--committee-color, var(--ink-faint));
   font-weight: 700;

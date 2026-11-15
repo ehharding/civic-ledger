@@ -3,6 +3,7 @@ import { getCongressYearRange, getCurrentCongress } from "@/lib/congress/current
 /**
  * The earliest Congress this app offers for browsing. Congress.gov's bill records begin with the 93rd (1973); earlier
  * material is partial and outside the bill list endpoint.
+ *
  * @see https://www.congress.gov/help/legislation
  */
 export const EARLIEST_COVERED_CONGRESS: number = 93;

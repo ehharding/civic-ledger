@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-/** The only route prefixes allowed to render per request. @see the module header. */
+/** The only route prefixes allowed to render per request, for the reasons the module header gives. */
 const ON_DEMAND_PREFIXES: readonly string[] = ["/api/", "/query/"];
 
 /** The slice of `prerender-manifest.json` this check reads. */
@@ -20,6 +20,8 @@ type PrerenderManifest = {
 };
 
 /**
+ * Reads one of `next build`'s manifests.
+ *
  * @param file - A manifest's path relative to the build directory.
  * @returns The manifest, parsed.
  */
@@ -27,9 +29,12 @@ function readManifest<T>(file: string): T {
   return JSON.parse(readFileSync(path.join(process.cwd(), ".next", file), "utf8")) as T;
 }
 
+/** Every App Router route the build produced. */
 const routes: string[] = Object.values(readManifest<Record<string, string>>("app-path-routes-manifest.json"));
+/** The build's record of what it prerendered. */
 const prerender: PrerenderManifest = readManifest<PrerenderManifest>("prerender-manifest.json");
 
+/** Every route the build prerendered or will cache on first request, by its source pattern. */
 const cached: Set<string> = new Set([
   ...Object.keys(prerender.dynamicRoutes),
   ...Object.entries(prerender.routes).map(
@@ -37,6 +42,7 @@ const cached: Set<string> = new Set([
   ),
 ]);
 
+/** Routes that render per request without the prefix that permits it. */
 const unexpected: string[] = routes
   .filter((route: string): boolean => !cached.has(route))
   .filter((route: string): boolean => !ON_DEMAND_PREFIXES.some((prefix: string): boolean => route.startsWith(prefix)))
@@ -49,7 +55,7 @@ if (unexpected.length > 0) {
       ...unexpected.map((route: string): string => `  ƒ ${route}`),
       "",
       "A per-visit render is metered server work. If the route reads its query, give it a /query twin; otherwise find",
-      "what made it dynamic. @see 'Keeping Server Work Bounded' in docs/deployment.md.",
+      "what made it dynamic. See 'Keeping Server Work Bounded' in docs/deployment.md.",
     ].join("\n"),
   );
   process.exit(1);

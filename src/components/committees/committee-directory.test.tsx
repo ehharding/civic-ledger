@@ -64,8 +64,8 @@ describe("CommitteeDirectory", (): void => {
   });
 
   /*
-   * The directory holds parent committees only, and this sentence is what keeps that from reading as an omission.
-   * @see buildCommitteeDirectory.
+   * The directory holds parent committees only, and this sentence is what keeps that from reading as an omission. See
+   * buildCommitteeDirectory.
    */
   it("names the Congress and says where subcommittees went", (): void => {
     renderDirectory();

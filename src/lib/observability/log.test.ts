@@ -87,7 +87,7 @@ describe("describeCause", (): void => {
 
   it("strips a credential out of the description, in both of the shapes one arrives in", (): void => {
     // The pattern pass covers the key still attached to its parameter name, which is how it reaches an exception
-    // message. The literal pass covers the bare value, which is how it reaches a captured local. @see redactSecrets.
+    // message. The literal pass covers the bare value, which is how it reaches a captured local. See redactSecrets.
     const described: string =
       describeCause(new Error(`Request failed: https://api.congress.gov/v3/bill/119?api_key=${FAKE_API_KEY}`), [
         FAKE_API_KEY,

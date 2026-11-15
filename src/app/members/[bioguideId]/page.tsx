@@ -57,8 +57,9 @@ export async function generateMetadata({ params }: MemberPageProps): Promise<Met
 /**
  * Individual member route, keyed on Bioguide ID.
  *
- * @param params - The member's route params, untrusted. @see normalizeBioguideId
+ * @param params - The member's route params, untrusted.
  * @returns The member page, or the 404 page when the ID resolves to nobody.
+ * @see normalizeBioguideId
  */
 export default async function MemberPage({ params }: MemberPageProps): Promise<JSX.Element> {
   const { bioguideId } = await params;

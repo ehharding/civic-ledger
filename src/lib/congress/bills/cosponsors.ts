@@ -13,10 +13,12 @@ import { mapBillCosponsor } from "@/lib/congress/upstream/mappers";
  * Who put their name to a bill they did not introduce, each linkable by Bioguide ID.
  *
  * The publisher's chronological order (originals first, then joiners in sequence) is kept — `dateKey` is omitted so
- * nothing re-sorts it. Cosponsorship is never ranked or scored. @see docs/data-policy.md
+ * nothing re-sorts it. Cosponsorship is never ranked or scored.
  *
- * Never throws, and a failed request is reported as unanswered rather than as "no cosponsors". @see BillSubResource,
- * BillCosponsorTally, and sub-resource.ts for the shared transport and caching.
+ * Never throws, and a failed request is reported as unanswered rather than as "no cosponsors".
+ *
+ * @see docs/data-policy.md
+ * @see BillSubResource, BillCosponsorTally, and sub-resource.ts for the shared transport and caching.
  */
 
 /**
@@ -30,8 +32,8 @@ import { mapBillCosponsor } from "@/lib/congress/upstream/mappers";
 export async function getBillCosponsors(input: BillRouteParams): Promise<BillSubResource<BillCosponsor>> {
   // Mirrors `getBillSummaries`: the no-key path serves the labeled fixture rather than nothing, so the static demo
   // shows this section working instead of showing its empty state. What it must not do is let the *count* sentence
-  // credit Congress.gov for a fictional bill — the section drops the published figure in preview mode instead.
-  // @see previewCosponsors, and CosponsorList.
+  // credit Congress.gov for a fictional bill — the section drops the published figure in preview mode instead. See
+  // previewCosponsors, and CosponsorList.
   if (!getCongressApiKey()) {
     return { entries: previewCosponsors[billIdentityKey(input)] ?? [], unavailable: false };
   }

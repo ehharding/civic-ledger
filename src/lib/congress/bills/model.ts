@@ -6,13 +6,14 @@ import { compareIsoDatesDesc, formatOrdinal, pluralize } from "@/lib/format";
  */
 export const billStages = ["introduced", "committee", "chamber", "president", "law"] as const;
 
+/** One of the {@link billStages}. */
 export type BillStage = (typeof billStages)[number];
 
 /**
  * Page size for the bill list endpoint. Here rather than in the server-only adapter so `BillDirectory` can recognize a
  * short final page. Congress.gov allows 250; this is sized for how many cards a reader takes in at once.
  */
-export const DEFAULT_PAGE_SIZE = 12;
+export const DEFAULT_PAGE_SIZE: number = 12;
 
 /** A bill's natural identifier as route params (e.g., `/bills/119/hr/284`), shared by every per-bill lookup. */
 export type BillRouteParams = {
@@ -114,13 +115,17 @@ export function congressGovAmendmentUrl(amendment: {
 /**
  * One amendment offered to a bill, as the bill's `/amendments` collection records it.
  *
- * Only the identity fields are required: the endpoint sends anything more for roughly one entry in fifteen
- * (@see congressApiBillAmendmentSchema), so an amendment row is usually just a citation and a link.
+ * Only the identity fields are required: the endpoint sends anything more for roughly one entry in fifteen (see
+ * {@link congressApiBillAmendmentSchema}), so an amendment row is usually just a citation and a link.
  */
 export type BillAmendment = {
   /** The Congress the amendment was offered in. */
   congress: number;
-  /** The upper-cased type code, `"HAMDT"` or `"SAMDT"`. @see CONGRESS_GOV_AMENDMENT_PATHS */
+  /**
+   * The upper-cased type code, `"HAMDT"` or `"SAMDT"`.
+   *
+   * @see CONGRESS_GOV_AMENDMENT_PATHS
+   */
   type: string;
   /** The amendment number. */
   number: string;
@@ -131,7 +136,11 @@ export type BillAmendment = {
     date?: string;
     text: string;
   };
-  /** The amendment's public Congress.gov page. @see congressGovAmendmentUrl */
+  /**
+   * The amendment's public Congress.gov page.
+   *
+   * @see congressGovAmendmentUrl
+   */
   officialUrl: string;
 };
 
@@ -153,7 +162,9 @@ export function formatAmendmentCitation(amendment: Pick<BillAmendment, "type" | 
 
 /**
  * A reference to one recorded (roll-call) vote on a bill — enough to find it, never a tally. This app holds no vote
- * counts or member positions. @see docs/data-policy.md.
+ * counts or member positions.
+ *
+ * @see docs/data-policy.md
  */
 export type RecordedVote = {
   /** The chamber that took the vote. */
@@ -183,7 +194,11 @@ export type BillAction = {
   text: string;
   /** Congress.gov's classification — `"IntroReferral"`, `"Committee"`, `"Floor"`, `"BecameLaw"`, … */
   type?: string;
-  /** The Library of Congress action code, when this row came from that system. @see inferStageFromActions */
+  /**
+   * The Library of Congress action code, when this row came from that system.
+   *
+   * @see inferStageFromActions
+   */
   actionCode?: string;
   /** Roll-call votes this action records. Usually empty. */
   recordedVotes: RecordedVote[];
@@ -234,7 +249,8 @@ export function describeAmendmentDetail(described: number, total: number): strin
  * mapper drops an unusable row or a collection exceeds the single 250-record page this app requests.
  *
  * Detail endpoint only.
- * @see describeBillCollection.
+ *
+ * @see describeBillCollection
  */
 export type BillCollectionCounts = {
   /** Entries in the action history. */
@@ -253,7 +269,9 @@ export type BillCollectionCounts = {
 
 /**
  * The two cosponsor figures Congress.gov publishes. The list holds who is signed on now; `includingWithdrawn` counts
- * everyone who ever was — the only trace a withdrawal leaves. @see describeWithdrawnCosponsors
+ * everyone who ever was — the only trace a withdrawal leaves.
+ *
+ * @see describeWithdrawnCosponsors
  */
 export type BillCosponsorTally = {
   /** How many are signed on now. */
@@ -334,6 +352,7 @@ export type RelatedBillRelationship = {
 /**
  * Another measure this bill is recorded as related to — a reference carrying what a link and label need. Identity
  * fields are required because a related bill that can't be opened isn't listed.
+ *
  * @see mapRelatedBill
  */
 export type RelatedBill = {
@@ -426,6 +445,7 @@ export type LegislativeBill = {
   policyArea?: string;
   /**
    * Where the bill has got to: from {@link enactedLaw} when published, otherwise inferred from the latest action.
+   *
    * @see inferBillStage, and `resolveBillStage` for the bill page's reading from the full action history.
    */
   stage: BillStage;
@@ -433,13 +453,23 @@ export type LegislativeBill = {
   officialUrl: string;
   /** The primary sponsor. Detail endpoint only. */
   sponsor?: BillSponsor;
-  /** Detail endpoint only. @see BillCosponsorTally */
+  /**
+   * Detail endpoint only.
+   *
+   * @see BillCosponsorTally
+   */
   cosponsorTally?: BillCosponsorTally;
-  /** Set only for an enacted measure, from the detail endpoint. @see EnactedLaw */
+  /**
+   * Set only for an enacted measure, from the detail endpoint.
+   *
+   * @see EnactedLaw
+   */
   enactedLaw?: EnactedLaw;
   /**
    * Congress.gov's sizes for the collections the bill page fetches separately. Absent for list-endpoint records,
-   * preview fixtures, and detail responses without counts. @see BillCollectionCounts
+   * preview fixtures, and detail responses without counts.
+   *
+   * @see BillCollectionCounts
    */
   collectionCounts?: BillCollectionCounts;
 };
@@ -464,11 +494,12 @@ export function compareBillsByRecency(a: LegislativeBill, b: LegislativeBill): n
  * wants. Falls back to the introduction date; undated bills sort last.
  *
  * Sorted here because the list endpoint only sorts by `updateDate`, a maintenance timestamp that merely correlates with
- * legislative activity. @see docs/architecture.md, "compareIsoDatesDesc — one date order".
+ * legislative activity.
  *
  * @param a - One bill to compare.
  * @param b - The other bill to compare.
  * @returns A standard comparator result.
+ * @see docs/architecture.md, "compareIsoDatesDesc — one date order".
  */
 export function compareBillsByActivity(a: LegislativeBill, b: LegislativeBill): number {
   const dateA: string = a.latestAction.date ?? a.introducedDate ?? "";

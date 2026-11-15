@@ -26,6 +26,7 @@ import { mapCongressBill, mapMemberProfile, mapUsable } from "@/lib/congress/ups
 /**
  * Everything the member page reads: one member's record plus the legislation they sponsored and cosponsored. Nothing
  * throws, and provenance travels with the data.
+ *
  * @see composition.ts for the chamber-wide list.
  */
 
@@ -103,7 +104,12 @@ export function getMemberProfile(rawBioguideId: string): Promise<MemberProfileRe
  */
 const lookUpMemberOnce = cache(lookUpMemberProfile);
 
-/** The uncached body of {@link getMemberProfile}. */
+/**
+ * The uncached body of {@link getMemberProfile}.
+ *
+ * @param rawBioguideId - The `bioguideId` route param, untrusted.
+ * @returns The member's profile, their legislation, and its provenance.
+ */
 async function lookUpMemberProfile(rawBioguideId: string): Promise<MemberProfileResult> {
   const retrievedAt: string = new Date().toISOString();
   const apiKey: string | undefined = getCongressApiKey();

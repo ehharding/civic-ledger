@@ -18,19 +18,19 @@ import { EDGE_CACHE_CONTROL, NO_STORE_CACHE_CONTROL } from "@/lib/edge-cache";
  * This exists as a server-side proxy specifically so the browser never needs, and never receives, `CONGRESS_API_KEY`.
  * The client only ever talks to this same-origin route, never to api.congress.gov directly.
  *
+ * A page with bills in it is shared through the CDN for the app's cache window (see {@link EDGE_CACHE_CONTROL}), so a
+ * second reader pressing "Load More" at the same offset costs no function invocation. An empty page is not, because it
+ * cannot say whether the list ran out or the fetch failed — and caching a failure would leave the button dead for every
+ * reader for the whole window rather than for the one request that failed.
+ *
  * @param request - Expects an `offset` query param (e.g., `/api/bills?offset=12`) and an optional `congress` param
  *   (e.g., `&congress=118`). Both are parsed permissively rather than strictly: anything missing, malformed, or out of
  *   range resolves to a sensible default instead of a 400.
- *   @see parseOffsetParam
- *   @see parseCongressQueryParam
  * @returns A {@link BillPageResponse} — the next page, or an empty array when no API key is configured or the upstream
  *   fetch fails. Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same
  *   empty page, which is exactly how the button behaves in both cases.
- *
- * A page with bills in it is shared through the CDN for the app's cache window (@see EDGE_CACHE_CONTROL), so a second
- * reader pressing "Load More" at the same offset costs no function invocation. An empty page is not, because it cannot
- * say which of those two things it means — and caching a failure would leave the button dead for every reader for the
- * whole window rather than for the one request that failed.
+ * @see parseOffsetParam
+ * @see parseCongressQueryParam
  */
 export async function GET(request: Request): Promise<NextResponse<BillPageResponse>> {
   const { searchParams } = new URL(request.url);

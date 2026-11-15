@@ -6,7 +6,7 @@
    three-part layout stops fitting, which is what sets the 860px breakpoint in responsive.css. They are measurements
    rather than choices, so rounding them to the grid means rewriting a derivation to suit a tidier input, and the
    breakpoint the derivation produces is worth more than the tidiness. Each is marked below. Everything else here is on
-   the grid. @see the block comment above the 860px breakpoint in responsive.css for the derivation itself. */
+   the grid. See the block comment above the 860px breakpoint in responsive.css for the derivation itself. */
 
 /* A column, so the footer can be pushed to the bottom of a short page rather than left floating in the middle of one.
    `min-height` alone reserves the viewport's height but hands it to nobody: on a page whose content does not fill the
@@ -41,7 +41,7 @@
  * bar instead, which broke it in three ways at once — a scrim with no height, a panel that shrank to the height of its
  * own links, and, because a fixed box whose containing block is not the viewport *is* part of that container's
  * scrollable overflow, 262px of horizontal scrolling on every page at the 320px reflow width. One level down, the
- * header is drawn exactly as it was and the drawer has the viewport back. @see the drawer block in responsive.css, and
+ * header is drawn exactly as it was and the drawer has the viewport back. See the drawer block in responsive.css, and
  * the reflow sweep in tests/e2e/layout.spec.ts that fails if this moves back up.
  *
  * `z-index: -1` because an absolutely positioned pseudo-element is a *positioned* descendant, which would otherwise
@@ -69,16 +69,16 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   min-height: var(--space-18);
-  gap: 36px; /* off-grid by design — measured. @see the file header. */
+  gap: 36px; /* off-grid by design — measured. See the file header. */
 }
 
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 10px; /* off-grid by design — part of the measured 156px wordmark. @see the file header. */
+  gap: 10px; /* off-grid by design — part of the measured 156px wordmark. See the file header. */
   color: var(--navy-deep);
   font-family: var(--serif), serif;
-  font-size: 1.22rem; /* off-grid by design — sets the wordmark's measured width. @see the file header. */
+  font-size: 1.22rem; /* off-grid by design — sets the wordmark's measured width. See the file header. */
   font-weight: 600;
   white-space: nowrap;
 }
@@ -101,9 +101,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 25px; /* off-grid by design — sets the measured 402px nav. @see the file header. */
+  gap: 25px; /* off-grid by design — sets the measured 402px nav. See the file header. */
   color: var(--ink-soft);
-  font-size: 0.88rem; /* off-grid by design — sets the measured 402px nav. @see the file header. */
+  font-size: 0.88rem; /* off-grid by design — sets the measured 402px nav. See the file header. */
   font-weight: 600;
 }
 
@@ -113,17 +113,17 @@
    are also the ones stacked into a wrapped row, where a near miss lands on a different section entirely.
 
    Off the spacing grid because it is a derivation rather than a choice: 3px is what the shorter of the two line boxes
-   needs to clear 24px, and the value has to move with the type size rather than with the page's rhythm. @see the file
+   needs to clear 24px, and the value has to move with the type size rather than with the page's rhythm. See the file
    header for the rule that requires this note.
 
    Padding rather than a min-height, because the row that matters is the wrapped one, and only padding grows the box
    symmetrically around the text — a min-height would center the label in a taller box on one row and leave the rows
    themselves further apart. It costs nothing on wide screens, where the header's own min-height is what sets its
-   height; the row-gap that pays for it below 640px is handled at that breakpoint. @see responsive.css.
+   height; the row-gap that pays for it below 640px is handled at that breakpoint. See responsive.css.
 
    Below 640px with scripting on, the drawer answers this more generously — a 44px row per destination rather than a
    24px label — and this rule is what the wrapped row falls back to when there is no drawer to open. Both are held to
-   the floor by the same e2e sweep. @see tests/e2e/layout.spec.ts. */
+   the floor by the same e2e sweep. See tests/e2e/layout.spec.ts. */
 .primary-nav a {
   padding-block: 3px;
   /* Every destination carries the current section's underline, transparent until it is wanted, so hovering one fades
@@ -150,7 +150,7 @@
  * question and a second thing to keep in step. Matching on the attribute's *presence* also styles both values it
  * takes — `page` on the section's own front page, `true` anywhere below it — identically, which is intended. That
  * distinction exists for a screen reader announcing where you are; on screen the answer to "which section is this?" is
- * the same either way. @see navCurrent.
+ * the same either way. See navCurrent.
  *
  * Two channels, not one, for the same reason every other state in this app avoids hue alone: the ink darkens from
  * --ink-soft to --navy-deep *and* the label takes a burgundy rule. Either read on its own says "this one is
@@ -158,7 +158,7 @@
  * to answer "where am I?" and a single quiet channel is easy to miss at 0.88rem.
  *
  * A text decoration rather than a border or a pseudo-element, because it costs no layout. The nav is a flex row whose
- * gaps are load-bearing arithmetic (@see the file header) and which wraps to its own line below 640px; an underline
+ * gaps are load-bearing arithmetic (see the file header) and which wraps to its own line below 640px; an underline
  * drawn by a border would add height to exactly one item and push that row around, while this draws inside the line box
  * and moves nothing. The offset clears the descenders on "Bills" and "Committees". */
 .primary-nav a[aria-current] {
@@ -166,7 +166,7 @@
   text-decoration-color: var(--burgundy);
 }
 
-/* The drawer toggle, and the scrim behind the drawer it opens. @see PrimaryNav.
+/* The drawer toggle, and the scrim behind the drawer it opens. See PrimaryNav.
  *
  * Both are `display: none` here and turned on in exactly one place — the drawer block in responsive.css, which is gated
  * on `(max-width: 640px) and (scripting: enabled)`. Stating the off state here rather than a `display: none` inside a
@@ -181,14 +181,14 @@
   display: none;
   align-items: center;
   justify-content: center;
-  /* 44px, the touch-target floor `.button` is already pinned to — @see buttons.css. The bars inside are 20px wide, so
+  /* 44px, the touch-target floor `.button` is already pinned to — see buttons.css. The bars inside are 20px wide, so
      the box is mostly padding, and deliberately: this is the only control in the header on a phone. */
   width: var(--space-11);
   height: var(--space-11);
   padding: 0;
   /* The same user-agent chrome reset `.button` carries, and for the same contrast reason rather than a cosmetic one:
      `color-scheme: light dark` resolves an untouched `ButtonFace` to a mid grey, which a --navy-deep glyph sits on
-     below threshold in dark mode. @see the reset note in buttons.css. */
+     below threshold in dark mode. See the reset note in buttons.css. */
   border: 0;
   border-radius: var(--radius-md);
   color: var(--navy-deep);
@@ -268,7 +268,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: 190px; /* off-grid by design — the third measured term. @see the file header. */
+  width: 190px; /* off-grid by design — the third measured term. See the file header. */
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   color: var(--ink-soft);
@@ -307,7 +307,7 @@
   color: var(--ink-faint);
 }
 
-/* Takes whatever height the header and footer don't, which is what actually pushes the footer down. @see .site-frame.
+/* Takes whatever height the header and footer don't, which is what actually pushes the footer down. See .site-frame.
    `flex-basis: auto` rather than the `flex: 1` shorthand's `0`, so a page taller than the viewport still sizes to its
    content instead of being asked to start from nothing and grow. */
 .page-shell {
@@ -325,7 +325,7 @@
   font-size: var(--text-sm);
 }
 
-/* The link back up to a directory, which all three detail pages open with. @see DetailBackLink.
+/* The link back up to a directory, which all three detail pages open with. See DetailBackLink.
 
    Here rather than in bill-detail.css, where it lived while it was called `.bill-backlink` and the member and committee
    pages wore it anyway. It is chrome around a page's content in exactly the sense the rules above it are — the same
@@ -382,7 +382,7 @@
   }
 
   /* The bars still become an ✕ — the state has to be readable — they just arrive there. The drawer and its scrim are
-     held to the same promise one layer up, in the block that gives them their transitions. @see responsive.css. */
+     held to the same promise one layer up, in the block that gives them their transitions. See responsive.css. */
   .nav-toggle__bars span {
     transition: none;
   }

@@ -5,13 +5,17 @@ import { type Lesson, lessons } from "@/lib/lessons";
 import { congressBillsHref, lessonHref } from "@/lib/routes";
 import { getSiteUrl } from "@/lib/site";
 
-// Reads no request data, so it's safe to include in a STATIC_EXPORT=true build (see robots.ts for the same reasoning) —
-// required explicitly because `output: "export"` won't infer it.
+/**
+ * Reads no request data, so it's safe to include in a STATIC_EXPORT=true build — required explicitly because
+ * `output: "export"` won't infer it.
+ */
 export const dynamic = "force-static";
 
 /**
  * Static top-level routes. Individual records stay out, since listing them would need a live API call at build time;
- * each directory leads a crawler to them. @see docs/architecture.md, "Crawlability"
+ * each directory leads a crawler to them.
+ *
+ * @see docs/architecture.md, "Crawlability"
  */
 const STATIC_ROUTES: readonly string[] = [
   "",

@@ -1,6 +1,8 @@
 /**
  * Tags CRS bill summaries actually use: paragraphs, emphasis, lists, line breaks, and the occasional cross-reference
- * link. Anything else is stripped. @see sanitizeSummaryHtml
+ * link. Anything else is stripped.
+ *
+ * @see sanitizeSummaryHtml
  */
 const ALLOWED_TAGS: Set<string> = new Set(["p", "strong", "b", "em", "i", "ul", "ol", "li", "br", "a", "span"]);
 

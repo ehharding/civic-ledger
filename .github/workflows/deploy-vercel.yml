@@ -6,8 +6,8 @@ name: Deploy (Vercel)
 #
 # Setup (one time):
 #   1. `pnpm dlx --allow-build=esbuild vercel link` locally to create/link the Vercel project. (Unpinned on purpose:
-#      this is a one-time interactive setup run on a person's own machine, not the pinned CLI the jobs below use.
-#      @see VERCEL_CLI.)
+#      this is a one-time interactive setup run on a person's own machine, not the pinned CLI the jobs below use. See
+#      VERCEL_CLI.)
 #   2. Add repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
 #   3. Set CONGRESS_API_KEY (and DATABASE_URL, once persistence lands) as encrypted environment variables in the Vercel
 #      project settings — not as GitHub secrets — so the key never appears in Action logs.
@@ -15,7 +15,7 @@ name: Deploy (Vercel)
 # Documentation-only changes skip this workflow, as they already skip the GitHub Pages one. Nothing under `docs/` or in
 # a Markdown file reaches the build, so deploying one would ship the same bundle under a new deployment — and a new
 # deployment is not free on a metered plan: every member, committee, and bill page that was not prerendered at build
-# time starts uncached and renders again on its next visit. @see "Keeping Server Work Bounded" in docs/deployment.md. A
+# time starts uncached and renders again on its next visit. See "Keeping Server Work Bounded" in docs/deployment.md. A
 # change that mixes docs with code still deploys, since a path filter only skips when *every* changed file matches.
 on:
   push:
@@ -96,7 +96,7 @@ jobs:
       # while `withSentryConfig` uploads source maps during this step, and nothing reads them at runtime. That is why
       # they sit here rather than in the Vercel project settings — `vercel build` runs the build in this runner, so this
       # step's environment is what the config sees. Their absence is not an error: the build succeeds and the app still
-      # reports, it just reports against minified frames. @see "Error Reporting" in docs/deployment.md.
+      # reports, it just reports against minified frames. See "Error Reporting" in docs/deployment.md.
       #
       # Only the token is a `secret`. The org and project slugs are `vars` because they are not credentials — they are
       # already visible in any Sentry URL — and because GitHub masks a secret's value everywhere it appears in a log. A

@@ -75,8 +75,7 @@ type FetchedRecords = {
  * Fetches one page of one of a committee's record collections.
  *
  * Both route params are untrusted — they arrive from the URL bar — so both are narrowed before either reaches an
- * outbound path, exactly as `getCommitteeProfile` narrows them. @see normalizeCommitteeChamberSegment and
- * normalizeSystemCode.
+ * outbound path, exactly as `getCommitteeProfile` narrows them.
  *
  * @param rawChamber - The raw `chamber` route param.
  * @param rawSystemCode - The raw `systemCode` route param.
@@ -86,6 +85,7 @@ type FetchedRecords = {
  *   the response can say a page overshot, but only after the round trip that proved it.
  * @returns The page, never throwing. A missing key or a malformed param resolves against the preview fixtures; a failed
  *   request resolves to an empty page flagged `unavailable`.
+ * @see normalizeCommitteeChamberSegment and normalizeSystemCode.
  */
 export async function getCommitteeRecords(
   rawChamber: string,

@@ -77,7 +77,7 @@ What keeps that bounded now:
 - **Only a URL carrying a view renders on demand.** `next.config.ts` rewrites a URL holding one of a route's own params
   to its twin under `src/app/query/`, which renders the narrowed view server-side. The rewrite is a routing rule rather
   than a Proxy, so the static half costs no function invocation at all. A query the route ignores (`?utm_source=`) is
-  served the static page. @see `src/lib/query-routes.ts`.
+  served the static page. See `src/lib/query-routes.ts`.
 - **AI training crawlers are refused the whole site.** The Bot Name breakdown on the dashboard's CDN Requests page
   showed GPTBot at 43K of 44K requests in six hours: one training crawler, on course to cross the Hobby limits by
   itself. `robots.txt` now disallows `/` for GPTBot and the other documented training-only crawlers

@@ -4,6 +4,7 @@
  * The assertions worth having here are the negative ones. Sentry's documented default is to send the full query string
  * of every incoming and outgoing request, which in this app means both the reader's search terms and the Congress.gov
  * key — so "`urlQueryParams` is `false`" is a security and privacy property, not a preference, and it is pinned as one.
+ *
  * @see redact.test.ts for the backstop that still holds if a future SDK version adds a field this block does not name.
  */
 import { describe, expect, it, vi } from "vitest";

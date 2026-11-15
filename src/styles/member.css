@@ -3,7 +3,7 @@
 
    Portrait dimensions stay literals: they are a fixed box the grid reserves so lazy-loaded images can't reflow the
    list under a reader, so they answer to the aspect ratio of the source photographs rather than to the spacing grid.
-   @see the note on .member-card__portrait below. */
+   See the note on .member-card__portrait below. */
 
 .member-hero {
   display: grid;
@@ -62,7 +62,7 @@
   font-size: var(--text-lg);
 }
 
-/* Tinted by the .party-tint--* class this element also carries. @see src/styles/party.css */
+/* Tinted by the .party-tint--* class this element also carries. See src/styles/party.css. */
 .member-party {
   color: var(--party-color, var(--party-other));
   font-weight: 700;
@@ -154,8 +154,8 @@
   gap: var(--space-4);
 }
 
-/* Surface, stacking and padding all come from the shared card recipe — this card adds nothing to them.
-   @see src/styles/surfaces.css. */
+/* Surface, stacking and padding all come from the shared card recipe — this card adds nothing to them. See
+   src/styles/surfaces.css. */
 
 /* A fixed box rather than an intrinsic one, and that is the whole reason the portrait can be lazy-loaded without the
    grid jumping: every card reserves the same space whether its image has arrived, is still loading, or was never
@@ -195,7 +195,7 @@
   text-decoration: underline;
 }
 
-/* Tinted by the .party-tint--* class this element also carries. @see src/styles/party.css. Smaller and tighter-tracked
+/* Tinted by the .party-tint--* class this element also carries. See src/styles/party.css. Smaller and tighter-tracked
    than .member-party — a card packs this in beside the name, where the profile page gives it a line of its own. */
 .member-card__party {
   color: var(--party-color, var(--party-other));
@@ -210,7 +210,7 @@
   line-height: 1.3;
 }
 
-/* The name is the card's link, and the whole card is its click target (@see the stretched link in surfaces.css), so
+/* The name is the card's link, and the whole card is its click target (see the stretched link in surfaces.css), so
    hovering anywhere on the card lights the name the way every other card title in the app does — `.bill-card h3 a` and
    `.journey-card__title a` both go burgundy. Same hover, same meaning. */
 .member-card:hover .member-card__name a {

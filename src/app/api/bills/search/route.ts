@@ -15,6 +15,12 @@ import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
  * Serves a cross-Congress bill search for the bill directory's search box and the site header's search form, which
  * deep-links here via `/bills?q=…`.
  *
+ * Every response is shared through the CDN for the app's cache window, keyed by the query (see
+ * {@link EDGE_CACHE_CONTROL}): this is the most expensive call the app answers, and a popular query is asked by many
+ * readers. Unlike `/api/bills`, an empty result is cached too — "no bill matches this" is the common answer to a typo,
+ * not a sign of failure, and a sweep that lost some Congresses to an outage is held for no longer than an ISR page that
+ * fell back to preview data.
+ *
  * @param request - Expects a `q` query param (e.g., `/api/bills/search?q=broadband`), trimmed and length-capped by
  *   {@link parseQueryParam}. A missing or blank `q` returns every swept Congress's most recently active bills, since
  *   `matchesQuery` treats an empty query as matching everything — the client doesn't normally call this with a blank
@@ -22,11 +28,6 @@ import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
  * @returns A {@link BillSearchResponse}, including how many Congresses were swept and whether results were truncated,
  *   so the UI can describe the scope of what it just searched. Never an error status: a search that can't reach live
  *   data returns the small, labeled preview matches instead, same as every other data path in this app.
- *
- * Every response is shared through the CDN for the app's cache window, keyed by the query (@see EDGE_CACHE_CONTROL):
- * this is the most expensive call the app answers, and a popular query is asked by many readers. Unlike `/api/bills`,
- * an empty result is cached too — "no bill matches this" is the common answer to a typo, not a sign of failure, and a
- * sweep that lost some Congresses to an outage is held for no longer than an ISR page that fell back to preview data.
  */
 export async function GET(request: Request): Promise<NextResponse<BillSearchResponse>> {
   const { searchParams } = new URL(request.url);

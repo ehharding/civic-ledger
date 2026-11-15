@@ -48,8 +48,8 @@ function renderDirectory(props: Partial<ComponentProps<typeof MemberDirectory>> 
 }
 
 /**
- * The address bar is shared state across a file's tests, and this directory now reads it as well as writing it — so a
- * view one test narrows to would otherwise be the view the next one starts from.
+ * The address bar is shared state across a file's tests, and this directory reads it as well as writing it — so a view
+ * one test narrows to would otherwise be the view the next one starts from.
  */
 beforeEach((): void => {
   window.history.replaceState(null, "", "/members");
@@ -406,7 +406,7 @@ describe("MemberDirectory URL syncing", (): void => {
   });
 });
 
-/**
+/*
  * The URL under this directory is shared: the reader narrows it, and the router rewrites it on a navigation. These
  * cover the second half of that — what happens when the URL moves and this component didn't move it — which is the half
  * a write-only mirror silently overwrites with whatever the reader last narrowed to.

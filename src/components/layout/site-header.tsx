@@ -9,6 +9,7 @@ import { SITE_NAME } from "@/lib/metadata";
 /**
  * Where the header's search form submits. A raw `action` doesn't get `basePath`, so it's prefixed by hand for the
  * GitHub Pages demo.
+ *
  * @see next.config.ts
  */
 const SEARCH_ACTION: string = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/bills`;

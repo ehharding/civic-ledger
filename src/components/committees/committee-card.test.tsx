@@ -9,7 +9,7 @@ import { CommitteeCard } from "@/components/committees/committee-card";
 import { committee } from "@/test/directory-entries";
 
 describe("CommitteeCard", (): void => {
-  /* Displayed verbatim: rewriting the word order is confined to search. @see committeeSearchTerms. */
+  /* Displayed verbatim: rewriting the word order is confined to search. See committeeSearchTerms. */
   it("links the committee's name, exactly as published, to its page", (): void => {
     render(<CommitteeCard committee={committee()} />);
 

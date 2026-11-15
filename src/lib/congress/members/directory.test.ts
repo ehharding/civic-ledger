@@ -151,8 +151,8 @@ describe("getMemberDirectory without an API key", (): void => {
   it("gives no placeholder a portrait, so a fiction never wears a real person's face", async (): Promise<void> => {
     // The sharpest form of the preview-data rule: a placeholder with a photograph is the single most convincing way
     // this app's fiction could be taken for the record, far more so than a plausible name or a fabricated deep link.
-    // Held here rather than only in the fixtures, so adding a portrait to one would fail a test that says why.
-    // @see docs/data-policy.md, "Preview Data Is Labeled Fiction".
+    // Held here rather than only in the fixtures, so adding a portrait to one would fail a test that says why. See
+    // docs/data-policy.md, "Preview Data Is Labeled Fiction".
     const result: MemberDirectoryResult = await getMemberDirectory();
 
     expect(result.members.every((entry: MemberDirectoryEntry): boolean => entry.depiction === undefined)).toBe(true);

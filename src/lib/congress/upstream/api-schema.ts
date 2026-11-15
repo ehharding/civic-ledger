@@ -8,7 +8,9 @@ import { type ZodCatch, type ZodNumber, type ZodOptional, type ZodString, z } fr
  * - **Fields are optional and `.catch(undefined)`**, so one mistyped field degrades to `undefined` rather than
  *   rejecting the record. Only a non-object payload fails outright.
  *
- * What counts as a *usable* record is decided by the mappers. @see mapCongressBill
+ * What counts as a *usable* record is decided by the mappers.
+ *
+ * @see mapCongressBill
  */
 
 /** An optional string that degrades to `undefined` rather than failing validation. */
@@ -30,7 +32,9 @@ export const congressApiSponsorSchema = z.looseObject({
  *
  * The API's own statement that a measure was enacted, and the only place the public law number appears at all. Read
  * rather than inferred: every other route to "this became law" in this app is a classifier over prose or action codes,
- * and a classifier can be wrong in a way a published field cannot. @see mapCongressBill, which prefers it.
+ * and a classifier can be wrong in a way a published field cannot.
+ *
+ * @see mapCongressBill, which prefers it.
  */
 export const congressApiLawSchema = z.looseObject({
   number: optionalString,
@@ -58,7 +62,11 @@ export const congressApiBillSchema = z.looseObject({
   latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
   // Only populated on the detail endpoint — the list endpoint doesn't return any of these.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
-  /** The cosponsor count, and the count including withdrawals. @see BillCosponsorTally */
+  /**
+   * The cosponsor count, and the count including withdrawals.
+   *
+   * @see BillCosponsorTally
+   */
   cosponsors: z
     .looseObject({ count: optionalNumber, countIncludingWithdrawnCosponsors: optionalNumber })
     .optional()
@@ -66,7 +74,9 @@ export const congressApiBillSchema = z.looseObject({
   laws: z.array(congressApiLawSchema).optional().catch(undefined),
   /**
    * The collections fetched separately, each `{ count, url }`. Only the published counts are read; the `url` is an API
-   * link, and the app builds its own path from the validated identity. @see BillCollectionCounts
+   * link, and the app builds its own path from the validated identity.
+   *
+   * @see BillCollectionCounts
    */
   actions: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
   committees: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
@@ -79,7 +89,9 @@ export const congressApiBillSchema = z.looseObject({
    *
    * Added to the item-level endpoint in August 2025, which is after `congressGovBillUrl` was written to derive the same
    * string from the bill's identity. The derivation is still needed — the list endpoint does not send this — so the two
-   * coexist, with the published value preferred wherever it arrives. @see mapCongressBill
+   * coexist, with the published value preferred wherever it arrives.
+   *
+   * @see mapCongressBill
    */
   legislationUrl: optionalString,
 });
@@ -164,7 +176,9 @@ export const congressApiActionsResponseSchema = z.looseObject({
  *
  * `name` is the committee's own vocabulary — `"Referred To"`, `"Reported By"`, `"Markup By"`, `"Hearings By"` — and is
  * the reason this endpoint is worth reading rather than parsing the same fact back out of the action prose. It is also,
- * on a large share of rows, the literal string `"Unknown"`; @see mapBillCommitteeActivity for what becomes of those.
+ * on a large share of rows, the literal string `"Unknown"`.
+ *
+ * @see mapBillCommitteeActivity for what becomes of those.
  */
 export const congressApiBillCommitteeActivitySchema = z.looseObject({
   name: optionalString,
@@ -216,7 +230,11 @@ export const congressApiCosponsorsResponseSchema = z.looseObject({
   cosponsors: z.array(congressApiCosponsorSchema).optional().catch(undefined),
 });
 
-/** One statement of how two measures are related, and who said so (`identifiedBy`). @see RelatedBillRelationship */
+/**
+ * One statement of how two measures are related, and who said so (`identifiedBy`).
+ *
+ * @see RelatedBillRelationship
+ */
 export const congressApiRelationshipDetailSchema = z.looseObject({
   type: optionalString,
   identifiedBy: optionalString,
@@ -246,6 +264,7 @@ export const congressApiRelatedBillsResponseSchema = z.looseObject({
  * Mostly references: on heavily amended bills only about one entry in fifteen has a `purpose` or `latestAction`, and
  * fewer than one in fifty a `description`; every entry has `congress`, `type`, and `number`. `purpose` is the
  * amendment's own statement; `description` is the House's longer note, and the mapper prefers `purpose`.
+ *
  * @see mapBillAmendment
  */
 export const congressApiBillAmendmentSchema = z.looseObject({
@@ -265,7 +284,9 @@ export const congressApiBillAmendmentsResponseSchema = z.looseObject({
 
 /**
  * One term entry inside a *list*-level member record: chamber and years only, with no `memberType` or `congress`. Hence
- * chamber comes from the last term and non-voting seats from the jurisdiction. @see isNonVotingJurisdiction
+ * chamber comes from the last term and non-voting seats from the jurisdiction.
+ *
+ * @see isNonVotingJurisdiction
  */
 export const congressApiMemberTermSchema = z.looseObject({
   chamber: optionalString,
@@ -412,7 +433,11 @@ export const congressApiCommitteeListResponseSchema = z.looseObject({
   pagination: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
 });
 
-/** One recorded name-and-span in a committee's history. @see CommitteeHistoryEntry for why this is worth rendering. */
+/**
+ * One recorded name-and-span in a committee's history.
+ *
+ * @see CommitteeHistoryEntry for why this is worth rendering.
+ */
 export const congressApiCommitteeHistorySchema = z.looseObject({
   officialName: optionalString,
   libraryOfCongressName: optionalString,
@@ -432,7 +457,9 @@ const congressApiCommitteeCollectionSchema = z.looseObject({
  *
  * Note what this record does *not* carry: a `chamber`, and — unlike every list entry — a `name`. The chamber is known
  * from the path that was requested, and the name has to be read out of `history`, whose most recent entry is the
- * committee's current formal name. @see mapCommitteeProfile, which is where both of those are resolved.
+ * committee's current formal name.
+ *
+ * @see mapCommitteeProfile, which is where both of those are resolved.
  */
 export const congressApiCommitteeDetailSchema = z.looseObject({
   systemCode: optionalString,
@@ -443,6 +470,7 @@ export const congressApiCommitteeDetailSchema = z.looseObject({
    *
    * Read rather than derived, which is the whole reason it can be linked at all: congress.gov's own committee URLs
    * embed a name slug this API has never published, and guessing one produces an authoritative-looking 404.
+   *
    * @see docs/data-policy.md, "The Committee Page Has No Roster".
    */
   committeeWebsiteUrl: optionalString,
@@ -545,49 +573,140 @@ export const congressApiCommitteeNominationsResponseSchema = z.looseObject({
   pagination: congressApiPaginationSchema.optional().catch(undefined),
 });
 
+/** The parsed shape of {@link congressApiSponsorSchema}. */
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;
+
+/** The parsed shape of {@link congressApiLawSchema}. */
 export type CongressApiLaw = z.infer<typeof congressApiLawSchema>;
+
+/** The parsed shape of {@link congressApiBillSchema}. */
 export type CongressApiBill = z.infer<typeof congressApiBillSchema>;
+
+/** The parsed shape of {@link congressApiListResponseSchema}. */
 export type CongressApiListResponse = z.infer<typeof congressApiListResponseSchema>;
+
+/** The parsed shape of {@link congressApiDetailResponseSchema}. */
 export type CongressApiDetailResponse = z.infer<typeof congressApiDetailResponseSchema>;
+
+/** The parsed shape of {@link congressApiSummarySchema}. */
 export type CongressApiSummary = z.infer<typeof congressApiSummarySchema>;
+
+/** The parsed shape of {@link congressApiSummariesResponseSchema}. */
 export type CongressApiSummariesResponse = z.infer<typeof congressApiSummariesResponseSchema>;
+
+/** The parsed shape of {@link congressApiTextFormatSchema}. */
 export type CongressApiTextFormat = z.infer<typeof congressApiTextFormatSchema>;
+
+/** The parsed shape of {@link congressApiTextVersionSchema}. */
 export type CongressApiTextVersion = z.infer<typeof congressApiTextVersionSchema>;
+
+/** The parsed shape of {@link congressApiTextResponseSchema}. */
 export type CongressApiTextResponse = z.infer<typeof congressApiTextResponseSchema>;
+
+/** The parsed shape of {@link congressApiRecordedVoteSchema}. */
 export type CongressApiRecordedVote = z.infer<typeof congressApiRecordedVoteSchema>;
+
+/** The parsed shape of {@link congressApiActionSchema}. */
 export type CongressApiAction = z.infer<typeof congressApiActionSchema>;
+
+/** The parsed shape of {@link congressApiActionsResponseSchema}. */
 export type CongressApiActionsResponse = z.infer<typeof congressApiActionsResponseSchema>;
+
+/** The parsed shape of {@link congressApiBillCommitteeActivitySchema}. */
 export type CongressApiBillCommitteeActivity = z.infer<typeof congressApiBillCommitteeActivitySchema>;
+
+/** The parsed shape of {@link congressApiBillSubcommitteeSchema}. */
 export type CongressApiBillSubcommittee = z.infer<typeof congressApiBillSubcommitteeSchema>;
+
+/** The parsed shape of {@link congressApiBillCommitteeSchema}. */
 export type CongressApiBillCommittee = z.infer<typeof congressApiBillCommitteeSchema>;
+
+/** The parsed shape of {@link congressApiBillCommitteesResponseSchema}. */
 export type CongressApiBillCommitteesResponse = z.infer<typeof congressApiBillCommitteesResponseSchema>;
+
+/** The parsed shape of {@link congressApiCosponsorSchema}. */
 export type CongressApiCosponsor = z.infer<typeof congressApiCosponsorSchema>;
+
+/** The parsed shape of {@link congressApiCosponsorsResponseSchema}. */
 export type CongressApiCosponsorsResponse = z.infer<typeof congressApiCosponsorsResponseSchema>;
+
+/** The parsed shape of {@link congressApiRelationshipDetailSchema}. */
 export type CongressApiRelationshipDetail = z.infer<typeof congressApiRelationshipDetailSchema>;
+
+/** The parsed shape of {@link congressApiRelatedBillSchema}. */
 export type CongressApiRelatedBill = z.infer<typeof congressApiRelatedBillSchema>;
+
+/** The parsed shape of {@link congressApiRelatedBillsResponseSchema}. */
 export type CongressApiRelatedBillsResponse = z.infer<typeof congressApiRelatedBillsResponseSchema>;
+
+/** The parsed shape of {@link congressApiBillAmendmentSchema}. */
 export type CongressApiBillAmendment = z.infer<typeof congressApiBillAmendmentSchema>;
+
+/** The parsed shape of {@link congressApiBillAmendmentsResponseSchema}. */
 export type CongressApiBillAmendmentsResponse = z.infer<typeof congressApiBillAmendmentsResponseSchema>;
+
+/** The parsed shape of {@link congressApiDepictionSchema}. */
 export type CongressApiDepiction = z.infer<typeof congressApiDepictionSchema>;
+
+/** The parsed shape of {@link congressApiMemberTermSchema}. */
 export type CongressApiMemberTerm = z.infer<typeof congressApiMemberTermSchema>;
+
+/** The parsed shape of {@link congressApiMemberSchema}. */
 export type CongressApiMember = z.infer<typeof congressApiMemberSchema>;
+
+/** The parsed shape of {@link congressApiMemberListResponseSchema}. */
 export type CongressApiMemberListResponse = z.infer<typeof congressApiMemberListResponseSchema>;
+
+/** The parsed shape of {@link congressApiMemberDetailTermSchema}. */
 export type CongressApiMemberDetailTerm = z.infer<typeof congressApiMemberDetailTermSchema>;
+
+/** The parsed shape of {@link congressApiLeadershipSchema}. */
 export type CongressApiLeadership = z.infer<typeof congressApiLeadershipSchema>;
+
+/** The parsed shape of {@link congressApiMemberDetailSchema}. */
 export type CongressApiMemberDetail = z.infer<typeof congressApiMemberDetailSchema>;
+
+/** The parsed shape of {@link congressApiMemberDetailResponseSchema}. */
 export type CongressApiMemberDetailResponse = z.infer<typeof congressApiMemberDetailResponseSchema>;
+
+/** The parsed shape of {@link congressApiSponsoredLegislationResponseSchema}. */
 export type CongressApiSponsoredLegislationResponse = z.infer<typeof congressApiSponsoredLegislationResponseSchema>;
+
+/** The parsed shape of {@link congressApiCosponsoredLegislationResponseSchema}. */
 export type CongressApiCosponsoredLegislationResponse = z.infer<typeof congressApiCosponsoredLegislationResponseSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeRefSchema}. */
 export type CongressApiCommitteeRef = z.infer<typeof congressApiCommitteeRefSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeSchema}. */
 export type CongressApiCommittee = z.infer<typeof congressApiCommitteeSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeListResponseSchema}. */
 export type CongressApiCommitteeListResponse = z.infer<typeof congressApiCommitteeListResponseSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeHistorySchema}. */
 export type CongressApiCommitteeHistory = z.infer<typeof congressApiCommitteeHistorySchema>;
+
+/** The parsed shape of {@link congressApiCommitteeDetailSchema}. */
 export type CongressApiCommitteeDetail = z.infer<typeof congressApiCommitteeDetailSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeDetailResponseSchema}. */
 export type CongressApiCommitteeDetailResponse = z.infer<typeof congressApiCommitteeDetailResponseSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeBillSchema}. */
 export type CongressApiCommitteeBill = z.infer<typeof congressApiCommitteeBillSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeBillsResponseSchema}. */
 export type CongressApiCommitteeBillsResponse = z.infer<typeof congressApiCommitteeBillsResponseSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeReportSchema}. */
 export type CongressApiCommitteeReport = z.infer<typeof congressApiCommitteeReportSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeReportsResponseSchema}. */
 export type CongressApiCommitteeReportsResponse = z.infer<typeof congressApiCommitteeReportsResponseSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeNominationSchema}. */
 export type CongressApiCommitteeNomination = z.infer<typeof congressApiCommitteeNominationSchema>;
+
+/** The parsed shape of {@link congressApiCommitteeNominationsResponseSchema}. */
 export type CongressApiCommitteeNominationsResponse = z.infer<typeof congressApiCommitteeNominationsResponseSchema>;

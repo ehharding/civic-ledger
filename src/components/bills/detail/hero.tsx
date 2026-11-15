@@ -19,8 +19,8 @@ import { memberHref } from "@/lib/routes";
  *
  * @param bill - The record being shown.
  * @param stage - The stage resolved from the action history, which the label reads from rather than from `bill.stage`.
- *   @see resolveBillStage
  * @returns The hero section.
+ * @see resolveBillStage
  */
 export function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillStage }): JSX.Element {
   return (
@@ -64,8 +64,9 @@ export function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillSt
 /**
  * The stepper, with the standing caveat that it is an orientation aid rather than a legal status.
  *
- * @param stage - The stage resolved from the action history. @see resolveBillStage
+ * @param stage - The stage resolved from the action history.
  * @returns The journey panel.
+ * @see resolveBillStage
  */
 export function JourneyPanel({ stage }: { stage: BillStage }): JSX.Element {
   return (
@@ -96,7 +97,7 @@ export function LatestActionPanel({ bill }: { bill: LegislativeBill }): JSX.Elem
     >
       {/* The one line on this page written in Congress's own voice rather than this app's — "Referred to the Committee
           on…", "Passed Senate without amendment" — which makes it the place a reader is most likely to hit a word they
-          don't have. @see GlossaryProse. */}
+          don't have. See GlossaryProse. */}
       <p className="latest-action-copy">
         <GlossaryProse text={bill.latestAction.text} />
       </p>

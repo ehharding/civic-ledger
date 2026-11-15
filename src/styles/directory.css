@@ -118,8 +118,8 @@
    the facets beside it and shouldn't be padded out to match them. Deliberately a class rather than
    `select#member-sort`, which would be wrong twice over: the committee directory's sort control carries a different
    id, and an id selector would outrank the `min-width: 0` responsive.css sets on `.directory-facet select` at narrow
-   widths. Cascade layers protect that override from *source order* (@see globals.css) but not from specificity, so an
-   id here would still win and break the narrow layout. */
+   widths. Cascade layers protect that override from *source order* (see globals.css) but not from specificity, so an id
+   here would still win and break the narrow layout. */
 .directory-facet--sort select {
   min-width: 176px;
 }
@@ -205,7 +205,7 @@
 }
 
 /* The same focus treatment as the header's field, for the same reason: the input inside sets `outline: 0`, so the box
-   has to say it holds focus. @see `.header-search:focus-within` in layout.css. */
+   has to say it holds focus. See `.header-search:focus-within` in layout.css. */
 .directory-search:focus-within {
   border-color: color-mix(in srgb, var(--navy) 60%, var(--line));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 45%, transparent);
@@ -325,7 +325,7 @@
   gap: var(--space-2);
 }
 
-/* The chevron says "more of this list, below", so it leans down rather than right. @see the icon nudge in
+/* The chevron says "more of this list, below", so it leans down rather than right. See the icon nudge in
    buttons.css. */
 .directory-load-more .button:hover:not(:disabled) svg {
   transform: translateY(2px);

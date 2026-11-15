@@ -6,6 +6,7 @@
  * 3. **It streams the same loading skeleton.**
  *
  * Lives inside `src/app/query` so the static demo build, which deletes that directory, drops these tests too.
+ *
  * @see src/lib/query-routes.ts
  */
 import { render, screen } from "@testing-library/react";

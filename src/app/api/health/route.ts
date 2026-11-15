@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 
 import { getCongressApiKey } from "@/lib/congress/upstream/http";
 
-// Forced dynamic so `timestamp` reflects the actual request time on the real (Vercel/Node) deployment — useful as a
-// liveness signal. This can't be statically exported (see next.config.ts): the GitHub Pages static-demo workflow
-// removes this route before building, the same way it already removes /api/bills.
+/**
+ * Forced dynamic so `timestamp` reflects the actual request time on the real (Vercel/Node) deployment — useful as a
+ * liveness signal. This can't be statically exported (see next.config.ts): the GitHub Pages static-demo workflow
+ * removes this route before building, the same way it removes `/api/bills`.
+ */
 export const dynamic = "force-dynamic";
 
 /** The health check's response body. */
@@ -12,7 +14,9 @@ type HealthResponse = {
   status: "ok";
   service: string;
   /**
-   * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise. @see getCongressApiKey
+   * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise.
+   *
+   * @see getCongressApiKey
    */
   records: "live" | "preview";
   /** When this response was generated, so a cached or stale reply is recognizable as one. */

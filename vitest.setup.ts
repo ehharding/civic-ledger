@@ -48,9 +48,13 @@ const APP_LOG_PREFIX: string = "[civic-ledger]";
 /** The console methods React and jsdom warn on. */
 const GUARDED_LEVELS = ["error", "warn"] as const;
 
+/** One console call made during a test, at a guarded level. */
 type CapturedLine = { level: (typeof GUARDED_LEVELS)[number]; message: string };
 
+/** The real console methods, restored after each test. */
 const originals: Map<string, typeof console.error> = new Map();
+
+/** The current test's console calls, checked when it ends. */
 let captured: CapturedLine[] = [];
 
 /**

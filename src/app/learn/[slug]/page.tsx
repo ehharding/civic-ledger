@@ -31,8 +31,9 @@ export function generateStaticParams(): LessonRouteParams[] {
 /**
  * Names the lesson to crawlers and to the link previews a shared lesson URL renders as.
  *
- * @param params - The lesson's route params. @see LessonPageProps
+ * @param params - The lesson's route params.
  * @returns The lesson's own metadata, or a `noindex` "not found" card for a slug naming nothing.
+ * @see LessonPageProps
  */
 export async function generateMetadata({ params }: LessonPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -46,8 +47,9 @@ export async function generateMetadata({ params }: LessonPageProps): Promise<Met
 /**
  * One learning module.
  *
- * @param params - The lesson's route params. @see LessonPageProps
+ * @param params - The lesson's route params.
  * @returns The lesson body inside the site chrome.
+ * @see LessonPageProps
  */
 export default async function LessonPage({ params }: LessonPageProps): Promise<JSX.Element> {
   const { slug } = await params;

@@ -116,12 +116,12 @@ function RecordsTab({
  * One referred measure.
  *
  * The identifier and the relationship both come from the committee's own record; the title arrives only when the
- * measure's own record could be looked up. @see withBillTitles, and note what this row does when it couldn't: it still
- * names the measure, still says what the committee did with it, and still links to its page, because the link is built
- * from the identifier rather than from the title.
+ * measure's own record could be looked up. When it couldn't, the row still names the measure, says what the committee
+ * did with it, and links to its page, because the link is built from the identifier rather than from the title.
  *
  * @param referral - The referral to render.
  * @returns The row.
+ * @see withBillTitles
  */
 function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Element {
   const href: Route = billHref(referral);
@@ -152,11 +152,11 @@ function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Ele
  * which *looks* derivable from what this record carries — and this project cannot verify that it is, because
  * congress.gov sits behind bot protection that answers every automated check with a challenge page. A deep link that
  * looks authoritative and lands on a 404 is a worse outcome for a product whose whole claim is that you can check it
- * than printing the citation and letting a reader search the identifier they were given. @see CONGRESS_GOV_COMMITTEES,
- * where the same reasoning is applied to committee pages for a slightly different cause.
+ * than printing the citation and letting a reader search the identifier they were given.
  *
  * @param report - The report to render.
  * @returns The row.
+ * @see CONGRESS_GOV_COMMITTEES, where the same reasoning is applied to committee pages for a slightly different cause.
  */
 function ReportRow({ report }: { report: CommitteeReport }): JSX.Element {
   const parts: string[] = [];
@@ -209,10 +209,11 @@ function NominationRow({ nomination }: { nomination: CommitteeNomination }): JSX
  * The page's records, whichever collection they are.
  *
  * The one place the {@link CommitteeRecords} union is switched on, so each row component receives the record type it
- * was written for and nothing else. @see CommitteeRecords for why the union exists rather than three parallel arrays.
+ * was written for and nothing else.
  *
  * @param records - The page's records.
  * @returns The list.
+ * @see CommitteeRecords for why the union exists rather than three parallel arrays.
  */
 function RecordList({ records }: { records: CommitteeRecords }): JSX.Element {
   if (records.kind === "reports") {
@@ -250,14 +251,15 @@ function RecordList({ records }: { records: CommitteeRecords }): JSX.Element {
   );
 }
 
-/**
- * The `id`s the page field and the total beside it are wired together with.
- *
- * Module constants rather than generated, because `useId` is a hook and this whole section is a server component — and
- * because a committee page renders exactly one pager, so there is nothing for a generated id to disambiguate.
- */
-const PAGE_INPUT_ID = "committee-records-page";
-const PAGE_TOTAL_ID = "committee-records-page-total";
+// The `id`s the page field and the total beside it are wired together with. Module constants rather than generated,
+// because `useId` is a hook and this whole section is a server component — and because a committee page renders exactly
+// one pager, so there is nothing for a generated id to disambiguate.
+
+/** The page-number field's `id`, which its label points at. */
+const PAGE_INPUT_ID: string = "committee-records-page";
+
+/** The "of N" total's `id`, which describes the page-number field. */
+const PAGE_TOTAL_ID: string = "committee-records-page-total";
 
 /**
  * One of the pager's four steps: first, previous, next, last.
@@ -438,7 +440,7 @@ function emptyCopy(options: { kind: CommitteeRecordKind; unavailable: boolean; i
 /**
  * The committee page's records section.
  *
- * @param props - @see CommitteeRecordsSectionProps
+ * @param props - {@link CommitteeRecordsSectionProps}.
  * @returns The heading, the three collection tabs, the current collection's rows, and the pager.
  */
 export function CommitteeRecordsSection({ profile, result }: CommitteeRecordsSectionProps): JSX.Element {

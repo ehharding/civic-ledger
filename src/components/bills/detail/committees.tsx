@@ -63,7 +63,7 @@ function CommitteeReferrals({ committees }: { committees: BillCommittee[] }): JS
 /**
  * Every committee the bill was referred to, in Congress.gov's own order.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The committees panel.
  */
 export function CommitteesPanel({ resource, published, source }: BillSectionProps<BillCommittee>): JSX.Element {

@@ -20,14 +20,14 @@ type FacetedDirectorySkeletonProps = {
  * Loading skeleton shared by the two faceted directory routes, `/members` and `/committees`.
  *
  * Both mirror the same shape — header copy, the search-and-chamber row, the facet row, then the card grid — because
- * both real pages are assembled from the same controls (@see directory-controls.tsx). They differ only in how many
+ * both real pages are assembled from the same controls (see `directory-controls.tsx`). They differ only in how many
  * facets sit in that second row, which grid the cards land in, and what the page is called, so that is all this takes.
  *
  * Neither route can know its heading before the data lands, so the header is drawn as blank blocks. Those, and every
  * other placeholder here, are `aria-hidden` and paired with one live status message, so assistive technology hears
  * "Loading Members…" once rather than being read a wall of empty boxes.
  *
- * @param props - @see FacetedDirectorySkeletonProps
+ * @param props - {@link FacetedDirectorySkeletonProps}.
  * @returns The directory skeleton and its screen-reader status message.
  */
 export function FacetedDirectorySkeleton({

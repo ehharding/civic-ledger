@@ -90,7 +90,8 @@ export function toQueryString(params: URLSearchParams): string {
  * @param items - Every record in the directory. Callers pass the whole list, so picking one facet never empties
  *   another.
  * @param facetOf - Reads the facet value off a record, or `undefined` when it has none (counted toward nothing).
- * @returns One entry per value present, in first-seen order. @see buildFacetOptions
+ * @returns One entry per value present, in first-seen order.
+ * @see buildFacetOptions
  */
 export function countFacetValues<Item, Value>(
   items: readonly Item[],
@@ -113,10 +114,11 @@ export function countFacetValues<Item, Value>(
  * @typeParam Item - The kind of record being counted.
  * @typeParam Value - The facet value each record carries.
  * @param items - Every record in the directory.
- * @param facetOf - Reads the facet value off a record. @see countFacetValues
+ * @param facetOf - Reads the facet value off a record.
  * @param order - Every value the facet can take, in the order the control should read.
  * @param labelOf - How a value reads on screen.
  * @returns One option per value actually present, in `order`, each carrying its count.
+ * @see countFacetValues
  */
 export function buildFacetOptions<Item, Value>(
   items: readonly Item[],

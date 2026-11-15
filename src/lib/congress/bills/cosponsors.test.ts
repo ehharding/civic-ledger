@@ -132,7 +132,7 @@ describe("getBillCosponsors", (): void => {
     const fetchMock = stubPreviewApi();
 
     // The static demo is the only build a UI reviewer can see, so the no-key path shows this section working rather
-    // than showing its empty state. @see previewCosponsors.
+    // than showing its empty state. See previewCosponsors.
     expect(await getBillCosponsors({ congress: "119", type: "hr", number: "284" })).toEqual({
       entries: previewCosponsors["119-HR-284"],
       unavailable: false,
@@ -149,7 +149,7 @@ describe("getBillCosponsors", (): void => {
 
   it("draws every preview cosponsor from a member the fixtures already name", async (): Promise<void> => {
     // The rule that keeps this from widening the fiction: no preview cosponsor may be a person who does not already
-    // have a placeholder page. @see docs/data-policy.md.
+    // have a placeholder page. See docs/data-policy.md.
     const ids: string[] = Object.values(previewCosponsors)
       .flat()
       .map((cosponsor: BillCosponsor): string => cosponsor.bioguideId ?? "");
@@ -174,7 +174,7 @@ describe("getBillCosponsors", (): void => {
     // answer, is logged, and licenses nothing. Asserting that here also keeps the server log out of this suite's
     // output, where it reads like a failure in a passing run. Transport failures log at `warn`, not `error`: a dropped
     // connection is weather, and `error` is reserved for the payload-shape mismatch that means someone has to change
-    // code. @see src/lib/observability/log.ts.
+    // code. See src/lib/observability/log.ts.
     const logged = vi.spyOn(console, "warn").mockImplementation((): void => {});
 
     stubLiveApi(vi.fn().mockResolvedValue(jsonResponse({}, 404)));

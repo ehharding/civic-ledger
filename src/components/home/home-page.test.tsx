@@ -49,7 +49,7 @@ describe("HomePage", (): void => {
     expect(within(activityGrid).queryByText(firstPreviewBill.title)).not.toBeInTheDocument();
   });
 
-  /**
+  /*
    * Fixtures already arrive sorted, so this hands the component an out-of-order snapshot; live data, sorted upstream by
    * `updateDate`, often is.
    */

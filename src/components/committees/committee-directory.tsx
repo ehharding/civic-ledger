@@ -70,6 +70,7 @@ type CommitteeDirectoryProps = {
   /**
    * The view the URL asked for, resolved server-side so a shared link renders narrowed on its very first paint rather
    * than flashing the whole list and then filtering it. Defaults to the unfiltered directory.
+   *
    * @see resolveCommitteeDirectoryQuery
    */
   initialQuery?: CommitteeDirectoryQuery;
@@ -77,11 +78,11 @@ type CommitteeDirectoryProps = {
 
 /**
  * Browsable directory of every committee of a Congress, narrowed in the browser exactly as `MemberDirectory` is.
- * @see useFacetedDirectory
  *
- * @param props - @see CommitteeDirectoryProps
+ * @param props - {@link CommitteeDirectoryProps}.
  * @returns The search, facet, and sort controls, the result count and scope note, and the committee grid or an empty
  *   state.
+ * @see useFacetedDirectory
  */
 export function CommitteeDirectory({
   committees,

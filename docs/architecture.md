@@ -140,7 +140,7 @@ page. Only a payload that isn't an object at all is rejected outright.
    rather than in sequence; the two datasets carry independent provenance and fall back independently.
 2. If a server-only key exists, the adapter requests `https://api.congress.gov/v3/bill/{congress}?format=json` and lets
    Next cache the result for five minutes, or for a day when the Congress has already ended (its record is closed, so
-   re-reading it every five minutes buys nothing; @see `revalidateSecondsForCongress`). Every request is bounded by
+   re-reading it every five minutes buys nothing; see `revalidateSecondsForCongress`). Every request is bounded by
    `REQUEST_TIMEOUT_MS`, so a stalled connection becomes an ordinary `failed` outcome — and therefore a labeled
    fallback — instead of a page that never finishes rendering. That bound matters most in the search sweep, which awaits
    one request per supported Congress at once.
@@ -400,7 +400,7 @@ nearly all of them, crawlers included — costs no render at all. A URL that doe
 rewritten (not redirected, so the address bar keeps it) to the route's twin under `src/app/query/`, which reads it and
 renders on demand. The rewrites are generated from one table, `src/lib/query-routes.ts`, whose keys a test holds to each
 parser's `*_PARAMS` constant; a param added to a parser and forgotten there would otherwise quietly serve its links the
-unfiltered static page. @see docs/deployment.md, "Keeping Server Work Bounded".
+unfiltered static page. See docs/deployment.md, "Keeping Server Work Bounded".
 
 **Two windows, six literals, one test.** The windows are `REVALIDATE_SECONDS` (five minutes) and
 `CONCLUDED_CONGRESS_REVALIDATE_SECONDS` (one day, for a Congress that has ended) in `congress/upstream/http.ts`. The
@@ -425,8 +425,8 @@ Four decisions are worth knowing before changing it.
 
 **The scan is pure, and its output reproduces its input.** It performs no I/O, imports no React, and concatenating every
 returned segment gives back the original string character for character — pinned as a test, because the alternative is a
-feature that quietly edits the congressional record in order to decorate it. @see
-[A Definition Is Attached to the Record](data-policy.md#a-definition-is-attached-to-the-record-never-merged-into-it).
+feature that quietly edits the congressional record in order to decorate it. See [A Definition Is Attached to the 
+Record](data-policy.md#a-definition-is-attached-to-the-record-never-merged-into-it).
 
 **Matching tolerates inflection but not derivation.** Terms are stored in title case and met lower-cased, pluralized,
 and possessive, so the pattern accepts those and renders whatever the source wrote. It deliberately stops there:
@@ -529,7 +529,7 @@ history, notification delivery, or more than a few API-facing features.
   any telemetry that records a URL records the credential. `src/lib/observability/redact.ts` cuts the query string off
   every URL bound for Sentry, strips `api_key=…` from free text such as an exception message, and strips the key's
   literal value in case it was captured from a local variable rather than a URL. Local-variable capture is switched off
-  besides. @see the [Data Policy](data-policy.md#an-error-report-names-a-page-never-a-query).
+  besides. See the [Data Policy](data-policy.md#an-error-report-names-a-page-never-a-query).
 - Upstream payloads are validated at runtime, not cast.
 - Every upstream request carries a timeout, so a third party that accepts a connection and then stops responding cannot
   hold a server render open indefinitely.
@@ -549,9 +549,9 @@ history, notification delivery, or more than a few API-facing features.
   cross-origin subresource the page loads — the Congress.gov member portraits on `/members`, most concretely — sends
   `Referer`. Browsers default to this value today, so stating it changes nothing and removes a promise's dependence on a
   default this project does not control. Outbound _links_ are covered separately, by `rel="noreferrer"` in
-  `OutboundLink` and in the summary sanitizer. There is no CSP; @see [the roadmap](roadmap.md#deferred-tooling) for
-  what would have to be measured first. The static export sends none of these — `headers()` is a server feature, and
-  the demo build has no server — which is why the config gates it rather than declaring it and letting Next warn.
+  `OutboundLink` and in the summary sanitizer. There is no CSP; see [the roadmap](roadmap.md#deferred-tooling) for what
+  would have to be measured first. The static export sends none of these — `headers()` is a server feature, and the demo
+  build has no server — which is why the config gates it rather than declaring it and letting Next warn.
 - No political-affiliation targeting or persuasion logic belongs in the product, and the measurement layer is held to
   the same rule rather than exempted from it — see
   [Analytics Records the Page, Not the Reader](data-policy.md#analytics-records-the-page-not-the-reader) and

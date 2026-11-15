@@ -34,7 +34,9 @@ import { billHref } from "@/lib/routes";
 
 /**
  * The *longest* a bill page is cached: one day. Its fetches shorten that to five minutes for the current Congress; the
- * ceiling bounds a page whose fetches all failed. @see revalidateSecondsForCongress
+ * ceiling bounds a page whose fetches all failed.
+ *
+ * @see revalidateSecondsForCongress
  */
 export const revalidate: number = 86_400;
 
@@ -86,10 +88,11 @@ export async function generateMetadata({ params }: BillPageProps): Promise<Metad
 /**
  * Individual bill record route. Looks the bill up directly (so any real bill number works) and fetches its seven
  * collections in parallel. Each arrives as a {@link BillSubResource} saying whether it was answered, since they can
- * fail independently of the bill. @see EmptySectionNote
+ * fail independently of the bill.
  *
  * @param params - The bill's route params, straight from the URL.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
+ * @see EmptySectionNote
  */
 export default async function BillPage({ params }: BillPageProps): Promise<JSX.Element> {
   const route: BillRouteParams = await params;

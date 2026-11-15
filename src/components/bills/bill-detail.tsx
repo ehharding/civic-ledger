@@ -52,6 +52,7 @@ type BillDetailProps = {
   /**
    * Everyone currently signed on, in the publisher's chronological order. Empty on failure, and in preview mode holds
    * the labeled fixture cosponsors rather than nothing.
+   *
    * @see previewCosponsors
    */
   cosponsors: BillSubResource<BillCosponsor>;
@@ -68,7 +69,7 @@ type BillDetailProps = {
  * Order: cosponsors follow committees (answering the hero's sponsor line), amendments sit under the action history
  * (where a reader first meets one), and related measures come last (the only section pointing off this bill).
  *
- * @param props - @see BillDetailProps
+ * @param props - {@link BillDetailProps}.
  * @returns The bill record page.
  */
 export function BillDetail({
@@ -84,7 +85,7 @@ export function BillDetail({
   related,
   amendments,
 }: BillDetailProps): JSX.Element {
-  // The action history is a better authority than `bill.stage`, read off one line of prose. @see resolveBillStage.
+  // The action history is a better authority than `bill.stage`, read off one line of prose. See resolveBillStage.
   const stage: BillStage = resolveBillStage(bill.stage, actions.entries);
   const counts: LegislativeBill["collectionCounts"] = bill.collectionCounts;
 

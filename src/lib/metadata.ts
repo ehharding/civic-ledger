@@ -30,7 +30,11 @@ export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 /** The card's alternative text, for readers whose client announces a link preview rather than rendering it. */
 export const OG_IMAGE_ALT: string = `${SITE_NAME} — ${SITE_DESCRIPTION}`;
 
-/** The route Next serves the generated card from. @see src/app/opengraph-image.tsx */
+/**
+ * The route Next serves the generated card from.
+ *
+ * @see src/app/opengraph-image.tsx
+ */
 const OG_IMAGE_PATH: string = "/opengraph-image";
 
 /** What {@link pageMetadata} needs to describe one page. */
@@ -47,7 +51,7 @@ type PageMetadataInput = {
  * Builds one page's full metadata: title, description, canonical URL, and Open Graph and Twitter card tags. `og:type`
  * is always `"website"`: these pages are views onto a public record, not authored articles.
  *
- * @param input - @see PageMetadataInput
+ * @param input - {@link PageMetadataInput}.
  * @returns Metadata ready to return from a `generateMetadata` or assign to a page's `metadata` export.
  */
 export function pageMetadata({ title, description, path }: PageMetadataInput): Metadata {

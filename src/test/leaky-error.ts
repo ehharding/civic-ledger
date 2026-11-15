@@ -14,6 +14,8 @@ export const LEAKY_DIGEST: string = "1234567890";
 /**
  * An error carrying exactly the kind of detail that must never be rendered: an upstream URL with the key still on it,
  * and a digest.
+ *
+ * @returns A fresh error, so no test can mutate another's.
  */
 export function leakyError(): Error & { digest?: string } {
   const error: Error & { digest?: string } = new Error(

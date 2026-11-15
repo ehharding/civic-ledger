@@ -689,8 +689,8 @@ describe("mapBillCommitteeActivity", (): void => {
   });
 
   it("drops the endpoint's own non-answer rather than printing it", (): void => {
-    // Congress.gov publishes a literal "Unknown" on a large share of these rows. Printing it reads as a gap in this
-    // app rather than in the record. @see UNNAMED_COMMITTEE_ACTIVITY.
+    // Congress.gov publishes a literal "Unknown" on a large share of these rows. Printing it reads as a gap in this app
+    // rather than in the record. See UNNAMED_COMMITTEE_ACTIVITY.
     expect(mapBillCommitteeActivity({ name: "Unknown" })).toBeNull();
     expect(mapBillCommitteeActivity({ name: "unknown", date: "2025-05-22T10:48:46Z" })).toBeNull();
     expect(mapBillCommitteeActivity({ name: "   " })).toBeNull();

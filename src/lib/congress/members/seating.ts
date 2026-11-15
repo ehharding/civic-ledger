@@ -17,16 +17,22 @@ const INNER_RADIUS_RATIO: number = 0.42;
 /** Breathing room between the outermost seats and the edge of the viewBox, so focus rings aren't clipped. */
 const EDGE_PADDING: number = 7;
 
-/** A seat's radius as a fraction of the gap between arcs, and of its own arc's per-seat spacing. */
+/** A seat's largest radius as a fraction of the gap between arcs. */
 const ROW_FILL_RATIO: number = 0.4;
+
+/** A seat's largest radius as a fraction of its own arc's per-seat spacing. */
 const ARC_FILL_RATIO: number = 0.42;
 
-/** Bounds on seat size, so a 100-seat chamber doesn't render absurdly large dots and a huge one stays visible. */
+/** The largest seat radius, so a 100-seat chamber doesn't render absurdly large dots. */
 const MAX_SEAT_RADIUS: number = 13;
+
+/** The smallest seat radius, so a huge chamber's seats stay visible. */
 const MIN_SEAT_RADIUS: number = 1.5;
 
-/** Bounds on the number of arcs, independent of seat count. */
+/** The fewest arcs a chamber is drawn on, whatever its seat count. */
 const MIN_ROWS: number = 3;
+
+/** The most arcs a chamber is drawn on, whatever its seat count. */
 const MAX_ROWS: number = 16;
 
 /** One seat's placement: which arc it sits on, its polar coordinates, and the resolved center point to draw at. */
@@ -271,9 +277,10 @@ export function compareMembersForSeating(a: CongressMember, b: CongressMember): 
  * not a floor plan — Congress.gov publishes no desk assignments, and the chart's caption says so.
  *
  * @param members - The chamber's members, in any order. Not mutated.
- * @param rowOverride - Force a specific arc count. @see computeSeatingGeometry
+ * @param rowOverride - Force a specific arc count.
  * @returns The geometry plus one seat per member. A member with no position available (only possible if a caller forces
  *   an arc count too small to hold everyone) is omitted rather than drawn on top of someone else.
+ * @see computeSeatingGeometry
  */
 export function buildChamberSeating(members: readonly CongressMember[], rowOverride?: number): ChamberSeating {
   const ordered: CongressMember[] = members.toSorted(compareMembersForSeating);

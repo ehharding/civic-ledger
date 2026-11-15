@@ -1,6 +1,6 @@
 /* Page-level entrance motion: the route's top-level sections rise into place as the page arrives.
  *
- * Every route renders its content as direct children of `<main class="page-shell">` (@see SiteShell), and a client
+ * Every route renders its content as direct children of `<main class="page-shell">` (see SiteShell), and a client
  * navigation mounts a fresh set of them, so this one rule gives a hard load, a soft navigation and a loading skeleton
  * giving way to its content the same short arrival — without a component having to opt in. The first few sections are
  * staggered so the page reads top to bottom; anything further down has already finished by the time it is scrolled to.
@@ -13,10 +13,10 @@
  * - The resting state is the element's own style, not a keyframe. `backwards` fill holds the first frame through each
  *   delay and then lets go, so a finished section carries no `transform` at all. A lingering `translateY(0)` would make
  *   every section the containing block for any `position: fixed` descendant — the same trap the header's backdrop blur
- *   fell into. @see `.site-header::before` in layout.css.
+ *   fell into. See `.site-header::before` in layout.css.
  * - Gated on `no-preference` rather than switched off under `reduce`, so a reader who asked for less motion never sees
  *   a first frame of it. The e2e suite runs with reduced motion for the same reason from the other side: the contrast
- *   sweep should read settled colors, not a section caught mid-fade. @see playwright.config.ts.
+ *   sweep should read settled colors, not a section caught mid-fade. See playwright.config.ts.
  */
 
 @media (prefers-reduced-motion: no-preference) {

@@ -50,7 +50,7 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Border, radius and ground come from the shared card recipe. @see src/styles/surfaces.css. */
+/* Border, radius and ground come from the shared card recipe. See src/styles/surfaces.css. */
 .detail-panel {
   /* As with .bill-card, the page's radial wash reads through rather than being flattened by a solid fill. */
   --surface-card-bg: color-mix(in srgb, var(--paper) 75%, transparent);
@@ -110,9 +110,8 @@
 }
 
 /* The one block in this app whose element order isn't authored here — CRS writes it, so a paragraph may follow a list
-   as readily as a list follows a paragraph. Spacing every adjacent pair the same way covers all four combinations,
-   where the previous `p + p` rule covered one and leaned on the browser's own list margin for the rest. That margin is
-   zeroed sitewide now (@see base.css), so this states the gap rather than inheriting it. */
+   as readily as a list follows a paragraph, so every adjacent pair gets the same gap. It is stated here because the
+   browser's own list margin is zeroed sitewide (see base.css). */
 .summary-body :is(p, ul, ol) + :is(p, ul, ol) {
   margin-top: var(--space-4);
 }
@@ -274,7 +273,7 @@
   list-style: none;
 }
 
-/* The party tint arrives as --party-color from .party-tint--* (@see src/styles/party.css), read here into a leading
+/* The party tint arrives as --party-color from .party-tint--* (see src/styles/party.css), read here into a leading
    rule. A bar rather than a filled chip: it identifies the caucus at a glance without coloring the name itself, which
    on a page about a bill would read as this app taking a position on the person. Color is not the only carrier — the
    party letter is in the name Congress.gov publishes ("Rep. Issa, Darrell [R-CA-48]"), so a reader who cannot

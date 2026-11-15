@@ -28,13 +28,17 @@ import { compareText } from "@/lib/format";
  * The member directory's rules: free-text matching, facet filters, ordering, facet options derived from the roster in
  * hand, and the URL spelling of a view. Pure and isomorphic so it's testable without rendering and the browser can
  * import it. The roster (~540 people) is already on the page, so filtering happens in the browser with no request.
- * @see docs/architecture.md, "Bills Search on the Server; Members and Committees Filter in the Browser".
  *
  * The vocabulary shared by every directory (`ANY_FACET`, facet options, query caps, counting) lives in
  * `directory-filter.ts`; this file holds what's specific to members.
+ *
+ * @see docs/architecture.md, "Bills Search on the Server; Members and Committees Filter in the Browser".
  */
 
+/** The chamber facet's selection: one chamber, or any. */
 export type ChamberFilter = FacetFilter<CongressChamber>;
+
+/** The party facet's selection: one party group, or any. */
 export type PartyFilter = FacetFilter<PartyGroup>;
 /** A represented jurisdiction by full name (e.g., `"Vermont"`), or {@link ANY_FACET}. */
 export type StateFilter = string;
@@ -118,6 +122,7 @@ export function filterMembers(entries: MemberDirectoryEntry[], filters: MemberFi
  */
 export const memberSorts = ["name", "name-desc", "state", "party", "chamber"] as const;
 
+/** One of the {@link memberSorts}. */
 export type MemberSort = (typeof memberSorts)[number];
 
 /** The order the roster arrives in from the server, and what the sort control resets to. */
@@ -187,9 +192,9 @@ export type MemberFacetOption<Value> = FacetOption<Value>;
 /**
  * Which group a jurisdiction belongs to in the state control.
  *
- * The split is exactly the six House seats that carry no floor vote (@see isNonVotingJurisdiction), which is what makes
- * it a fact about the chamber rather than an editorial grouping: the five territorial Delegates and Puerto Rico's
- * Resident Commissioner represent the jurisdictions in `"territory"`, and everything else is a state.
+ * The split is exactly the six House seats that carry no floor vote (see {@link isNonVotingJurisdiction}), which is
+ * what makes it a fact about the chamber rather than an editorial grouping: the five territorial Delegates and Puerto
+ * Rico's Resident Commissioner represent the jurisdictions in `"territory"`, and everything else is a state.
  */
 export type JurisdictionGroup = "state" | "territory";
 
@@ -211,7 +216,7 @@ export const jurisdictionGroupLabels: Record<JurisdictionGroup, string> = {
  */
 export function listMemberJurisdictions(entries: MemberDirectoryEntry[]): JurisdictionOption[] {
   // The one facet in the app whose values are not a union the model declares, so it counts and then orders the values
-  // it found rather than filtering a declared order down. @see buildFacetOptions, which the other two facets use.
+  // it found rather than filtering a declared order down. See buildFacetOptions, which the other two facets use.
   const counts: Map<string, number> = countFacetValues(entries, (entry: MemberDirectoryEntry): string | undefined => {
     const state: string = (entry.state ?? "").trim();
     return state.length > 0 ? state : undefined;
@@ -309,8 +314,9 @@ export function parseMemberSort(raw: string | null | undefined): MemberSort {
  * select and the grid can't disagree.
  *
  * @param raw - The raw param value, or `null`/`undefined` when absent.
- * @param known - The jurisdictions present in the roster. @see listMemberJurisdictions
+ * @param known - The jurisdictions present in the roster.
  * @returns The roster's spelling, or {@link ANY_FACET} when the roster doesn't contain it.
+ * @see listMemberJurisdictions
  */
 export function parseJurisdictionFilter(raw: string | null | undefined, known: Iterable<string>): StateFilter {
   const wanted: string = (raw ?? "").trim().toLowerCase();
@@ -329,8 +335,9 @@ export function parseJurisdictionFilter(raw: string | null | undefined, known: I
  *
  * @param params - The query string to read, already parsed.
  * @param knownJurisdictions - The jurisdictions present in the roster being rendered, so `?state=` can only resolve to
- *   one the control will actually offer. @see parseJurisdictionFilter
+ *   one the control will actually offer.
  * @returns The view the URL asks for.
+ * @see parseJurisdictionFilter
  */
 export function parseMemberDirectoryQuery(
   params: URLSearchParams,

@@ -5,10 +5,12 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
 /**
  * The sentence every record section prints when it has nothing to list — one of three, decided here for all of them:
  *
- * - **Request failed:** say so and claim nothing else (checked first). @see BillSubResource
+ * - **Request failed:** say so and claim nothing else (checked first).
  * - **Preview data:** say it's waiting for live records, never making a claim about the real record.
- *   @see docs/data-policy.md
  * - **Live data:** explain why the absence is ordinary (most bills have no companion; most votes are voice votes).
+ *
+ * @see BillSubResource
+ * @see docs/data-policy.md
  */
 
 /**
@@ -49,11 +51,17 @@ export function unavailableCopy(lead: string, subject: string): string {
 type EmptySectionNoteProps = {
   /** Whether the surrounding record is live Congress.gov data or a labeled preview fixture. */
   source: CongressSnapshot["source"];
-  /** The preview sentence's subject and verb. @see previewPendingCopy */
+  /**
+   * The preview sentence's subject and verb.
+   *
+   * @see previewPendingCopy
+   */
   previewLead: string;
   /**
    * What to say when the record is live and the collection is genuinely empty. Says why the absence is ordinary rather
-   * than only that it exists — @see EmptySectionNote for why that is the standard here rather than a nicety.
+   * than only that it exists.
+   *
+   * @see EmptySectionNote for why that is the standard here rather than a nicety.
    */
   absence: string;
   /**
@@ -64,16 +72,24 @@ type EmptySectionNoteProps = {
    * distinguish.
    */
   unavailable?: boolean;
-  /** The unavailable sentence's subject and verb. Required with `unavailable`. @see unavailableCopy */
+  /**
+   * The unavailable sentence's subject and verb. Required with `unavailable`.
+   *
+   * @see unavailableCopy
+   */
   unavailableLead?: string;
-  /** What the page cannot vouch for. Required with `unavailable`. @see unavailableCopy */
+  /**
+   * What the page cannot vouch for. Required with `unavailable`.
+   *
+   * @see unavailableCopy
+   */
   unavailableSubject?: string;
 };
 
 /**
  * The line a record section prints in place of a list it has no rows for.
  *
- * @param props - @see EmptySectionNoteProps
+ * @param props - {@link EmptySectionNoteProps}.
  * @returns The note, styled as the same muted copy that introduces a populated section.
  */
 export function EmptySectionNote({

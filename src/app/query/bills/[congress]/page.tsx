@@ -16,7 +16,8 @@ type QueryCongressBillsPageProps = {
 
 /**
  * @param params - The route's `congress` param.
- * @returns The same metadata as `/bills/[congress]`, canonical path included. @see congressBillsMetadata
+ * @returns The same metadata as `/bills/[congress]`, canonical path included.
+ * @see congressBillsMetadata
  */
 export function generateMetadata({ params }: QueryCongressBillsPageProps): Promise<Metadata> {
   return congressBillsMetadata(params);
@@ -24,11 +25,11 @@ export function generateMetadata({ params }: QueryCongressBillsPageProps): Promi
 
 /**
  * `/bills/[congress]` with a `?q=` or `?stage=` deep link, reached only through a rewrite.
- * @see src/lib/query-routes.ts.
  *
  * @param params - The route's `congress` param.
  * @param searchParams - The deep link. Reading it is what makes this render on demand.
  * @returns The directory page for that Congress, narrowed to whatever the URL asked for.
+ * @see src/lib/query-routes.ts
  */
 export default function QueryCongressBillsPage({
   params,

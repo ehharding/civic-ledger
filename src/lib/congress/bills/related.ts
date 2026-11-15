@@ -13,8 +13,9 @@ import { mapRelatedBill } from "@/lib/congress/upstream/mappers";
  * Every relationship is attributed (`identifiedBy`: CRS, the House, or the Senate), since relatedness is an editorial
  * judgment. The publisher's order is kept and not claimed to mean anything: it's undocumented and `sort` is ignored.
  *
- * Never throws, and a failed request is reported as unanswered rather than as "nothing related". @see BillSubResource,
- * BillCollectionCounts, and sub-resource.ts for the shared transport and caching.
+ * Never throws, and a failed request is reported as unanswered rather than as "nothing related".
+ *
+ * @see BillSubResource, BillCollectionCounts, and sub-resource.ts for the shared transport and caching.
  */
 
 /**

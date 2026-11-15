@@ -22,7 +22,7 @@ import { formatDate } from "@/lib/format";
  * `mapCongressTextVersion` drops a version carrying no linkable rendering, since a heading with nothing behind it is
  * not a row. Naming both figures is what keeps that drop from reading as the record being shorter than it is.
  *
- * @param props - @see BillSectionProps
+ * @param props - {@link BillSectionProps}.
  * @returns The full-text panel.
  */
 export function TextVersionsPanel({ resource, published, source }: BillSectionProps<BillTextVersion>): JSX.Element {

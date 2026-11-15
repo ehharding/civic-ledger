@@ -23,15 +23,17 @@ export const MEMBERS_METADATA: Metadata = pageMetadata({
 
 /**
  * Renders the member directory, from the same cached roster as the home page's chamber diagram, so the two can't
- * disagree. @see getMemberDirectory
+ * disagree.
  *
  * The URL's filters resolve *after* the roster, since `?state=` is validated against the jurisdictions it contains.
- * @see resolveMemberDirectoryQuery
  *
- * Shared by the static `/members` (no query) and the on-demand `/query/members`. @see src/lib/query-routes.ts
+ * Shared by the static `/members` (no query) and the on-demand `/query/members`.
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
+ * @see getMemberDirectory
+ * @see resolveMemberDirectoryQuery
+ * @see src/lib/query-routes.ts
  */
 export async function renderMembersRoute(searchParams: Promise<RouteSearchParams>): Promise<JSX.Element> {
   const { members, congress, source, notice, retrievedAt }: MemberDirectoryResult = await getMemberDirectory();

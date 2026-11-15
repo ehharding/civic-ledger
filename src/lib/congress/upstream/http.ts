@@ -25,8 +25,10 @@ export const REVALIDATE_SECONDS: number = 300;
  * How long Next caches a response scoped to a Congress that has ended: one day. Its record is closed, so five-minute
  * refreshes would only cost renders — but not frozen, since corrections and public-law numbers arrive for weeks after.
  *
- * Two routes restate this as their segment `revalidate` (as a literal — @see src/app/revalidate.test.ts) so a page
- * rendered during an outage still refreshes within a day. @see revalidateSecondsForCongress
+ * Two routes restate this as their segment `revalidate` (as a literal, pinned by `src/app/revalidate.test.ts`) so a
+ * page rendered during an outage still refreshes within a day.
+ *
+ * @see revalidateSecondsForCongress
  */
 export const CONCLUDED_CONGRESS_REVALIDATE_SECONDS: number = 86_400;
 
@@ -139,7 +141,7 @@ export function fetchCongressGov(
 ): Promise<Response> {
   return fetch(url, {
     // Omitted entirely rather than spelled `cache: "no-store"`: an explicit no-store would make the rendering route
-    // dynamic, which is the opposite of the point. @see UNCACHED.
+    // dynamic, which is the opposite of the point. See UNCACHED.
     ...(revalidate === UNCACHED ? {} : { next: { revalidate, tags } }),
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -161,16 +163,17 @@ export type CongressRequestResult<Payload> =
  * Requests a Congress.gov endpoint and validates the response against `schema`. Every upstream read goes through here,
  * collapsing status, network, parse, and shape failures into one three-outcome union. Never throws.
  *
+ * Every `failed` outcome is logged at a level matching its kind — the only report it produces, since nothing throws.
+ *
  * @param url - A URL built by {@link buildCongressUrl}.
  * @param tags - Next cache tags for the request.
  * @param schema - The Zod schema for this endpoint (see `api-schema.ts`).
  * @param context - Short label identifying the caller in a log line (e.g., `"bill summaries"`), recorded as a
  *   structured attribute rather than interpolated into the message, so an incident can be filtered to one endpoint.
- * @param revalidate - The cache window in seconds. @see fetchCongressGov
+ * @param revalidate - The cache window in seconds.
  * @returns `{ outcome: "ok", data }` with the validated payload, `{ outcome: "not-found" }` for a 404, or
  *   `{ outcome: "failed" }` for anything else.
- *
- * Every `failed` outcome is logged at a level matching its kind — the only report it produces, since nothing throws.
+ * @see fetchCongressGov
  * @see src/lib/observability/log.ts
  */
 export async function requestCongressJson<Payload>(
@@ -181,7 +184,7 @@ export async function requestCongressJson<Payload>(
   revalidate: CacheWindow = REVALIDATE_SECONDS,
 ): Promise<CongressRequestResult<Payload>> {
   // The one place in this app that holds the key *and* reports a failure, so the one place that has to declare it. The
-  // same arrangement `sentry.server.config.ts` makes with `sentryInitOptions`. @see LogDetails.secrets.
+  // same arrangement `sentry.server.config.ts` makes with `sentryInitOptions`. See LogDetails.secrets.
   const secrets: readonly string[] = [getCongressApiKey() ?? ""];
 
   try {
@@ -314,17 +317,22 @@ export const MEMBER_LIST_CACHE_TAG: string = "congress-members";
 /**
  * The two cache tags shared by every request scoped to one member (the profile itself and their legislation lists), so
  * one member's records can be revalidated without dropping the whole roster.
+ *
+ * @param bioguideId - The member's Bioguide ID.
+ * @returns The roster-wide tag and the member's own.
  */
 export function memberCacheTags(bioguideId: string): string[] {
   return [MEMBER_LIST_CACHE_TAG, `member-${bioguideId}`];
 }
 
 /**
- * Validates a route's Bioguide ID before it goes into an outbound URL. @see normalizeBillRouteParams
+ * Validates a route's Bioguide ID before it goes into an outbound URL.
  *
  * @param raw - The raw `bioguideId` route param.
  * @returns The upper-cased ID, or `null` when malformed. Preview fixture IDs fail this deliberately and resolve
- *   locally. @see isBioguideId
+ *   locally.
+ * @see normalizeBillRouteParams
+ * @see isBioguideId
  */
 export function normalizeBioguideId(raw: string): string | null {
   const value: string = raw.trim().toUpperCase();
@@ -337,17 +345,22 @@ export const COMMITTEE_LIST_CACHE_TAG: string = "congress-committees";
 /**
  * The two cache tags shared by every request scoped to one committee, so one committee's record can be revalidated
  * without dropping the whole list.
+ *
+ * @param systemCode - The committee's system code.
+ * @returns The list-wide tag and the committee's own.
  */
 export function committeeCacheTags(systemCode: string): string[] {
   return [COMMITTEE_LIST_CACHE_TAG, `committee-${systemCode}`];
 }
 
 /**
- * Validates a route's committee system code before it goes into an outbound URL. @see normalizeBillRouteParams
+ * Validates a route's committee system code before it goes into an outbound URL.
  *
  * @param raw - The raw `systemCode` route param.
  * @returns The lower-cased code, or `null` when malformed. Preview fixture codes fail this deliberately and resolve
- *   locally. @see isCommitteeSystemCode
+ *   locally.
+ * @see normalizeBillRouteParams
+ * @see isCommitteeSystemCode
  */
 export function normalizeSystemCode(raw: string): string | null {
   const value: string = raw.trim().toLowerCase();
@@ -365,13 +378,24 @@ export function normalizeCommitteeChamberSegment(raw: string): CommitteeChamber 
   return committeeChambers.find((chamber: CommitteeChamber): boolean => chamber === value) ?? null;
 }
 
-/** The bill type path segments Congress.gov's bill endpoint accepts. @see BILL_TYPE_PATH_SEGMENTS */
+/**
+ * The bill type path segments Congress.gov's bill endpoint accepts.
+ *
+ * @see BILL_TYPE_PATH_SEGMENTS
+ */
 export const BILL_PATH_TYPES: ReadonlySet<string> = BILL_TYPE_PATH_SEGMENTS;
 
+/** A `congress` route segment: one to three digits. */
 const CONGRESS_SEGMENT_PATTERN: RegExp = /^\d{1,3}$/;
+
+/** A bill `number` route segment: one to six digits. */
 const BILL_NUMBER_SEGMENT_PATTERN: RegExp = /^\d{1,6}$/;
 
-/** Bill route params proven safe to interpolate into an outbound URL path. @see normalizeBillRouteParams */
+/**
+ * Bill route params proven safe to interpolate into an outbound URL path.
+ *
+ * @see normalizeBillRouteParams
+ */
 export type NormalizedBillRoute = {
   /** The Congress number, digits only. */
   congress: string;

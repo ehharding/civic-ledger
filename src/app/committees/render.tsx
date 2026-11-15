@@ -27,10 +27,11 @@ export const COMMITTEES_METADATA: Metadata = pageMetadata({
  *
  * Shared by `/committees`, which passes no query and is therefore static, and `/query/committees`, which passes the
  * request's own and renders on demand. Same trade as `/members`: a shared link arrives already narrowed on its first
- * paint rather than flashing the full list. @see src/lib/query-routes.ts.
+ * paint rather than flashing the full list.
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?type=`/`?sort=`.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
+ * @see src/lib/query-routes.ts
  */
 export async function renderCommitteesRoute(searchParams: Promise<RouteSearchParams>): Promise<JSX.Element> {
   const { committees, congress, source, notice, retrievedAt }: CommitteeDirectoryResult = await getCommitteeDirectory();

@@ -31,8 +31,9 @@ const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
  *
  * @param actionText - The bill's latest action text, verbatim from Congress.gov.
  * @param originChamber - The chamber the bill was introduced in. When known, an action naming the other chamber lifts
- *   the reading to at least `"chamber"` — @see OTHER_CHAMBER. `"Unknown"`, the default, disables that inference.
+ *   the reading to at least `"chamber"`. `"Unknown"`, the default, disables that inference.
  * @returns The most advanced stage the text confidently indicates, defaulting to `"introduced"`.
+ * @see OTHER_CHAMBER
  */
 export function inferBillStage(
   actionText: string,

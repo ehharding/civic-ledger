@@ -24,7 +24,10 @@ import {
  * Pure and isomorphic, and the same design as `members/filter.ts`, with the shared vocabulary in `directory-filter.ts`.
  */
 
+/** The chamber facet's selection: one chamber, or any. */
 export type CommitteeChamberFilter = FacetFilter<CommitteeChamber>;
+
+/** The type facet's selection: one committee type, or any. */
 export type CommitteeTypeFilter = FacetFilter<CommitteeType>;
 
 /** The directory's complete narrowing state — everything the controls can express, in one value. */
@@ -56,8 +59,8 @@ export function hasActiveCommitteeFilters(filters: CommitteeFilters): boolean {
 }
 
 /**
- * Whether `committee` matches free-text `query`, against both name forms (@see committeeSearchTerms). Chamber and type
- * aren't searched — they have their own controls, and "s" would match every Senate and Standing committee.
+ * Whether `committee` matches free-text `query`, against both name forms (see {@link committeeSearchTerms}). Chamber
+ * and type aren't searched — they have their own controls, and "s" would match every Senate and Standing committee.
  *
  * @param committee - The row to test.
  * @param query - The raw search text, case-insensitive; blank matches everything.
@@ -94,6 +97,7 @@ export function filterCommittees(committees: CommitteeSummary[], filters: Commit
  */
 export const committeeSorts = ["name", "name-desc", "chamber", "type"] as const;
 
+/** One of the {@link committeeSorts}. */
 export type CommitteeSort = (typeof committeeSorts)[number];
 
 /** The order the list arrives in from the server, and what the sort control resets to. */

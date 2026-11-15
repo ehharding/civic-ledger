@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SiteShell } from "@/components/layout/site-shell";
 import { pageMetadata } from "@/lib/metadata";
 
+/** The route's title, description, and canonical path. */
 export const metadata: Metadata = pageMetadata({
   title: "About",
   description: "How Civic Ledger sources its records, labels its data, and links back to the official register.",
@@ -44,7 +45,11 @@ const principles: Principle[] = [
   },
 ];
 
-/** Static "Methodology" route explaining the product's editorial principles. */
+/**
+ * Static "Methodology" route explaining the product's editorial principles.
+ *
+ * @returns The about page.
+ */
 export default function AboutPage(): JSX.Element {
   return (
     <SiteShell>

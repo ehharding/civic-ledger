@@ -12,8 +12,9 @@ import { mapBillCommittee } from "@/lib/congress/upstream/mappers";
  * Which committees held a bill, and what each did with it — one request, arriving with the names, chambers, and system
  * codes an inward link needs (rather than parsing committee names out of action prose).
  *
- * Never throws, and a failed request is reported as unanswered rather than as "no referrals". @see BillSubResource and
- * sub-resource.ts for the shared transport and caching.
+ * Never throws, and a failed request is reported as unanswered rather than as "no referrals".
+ *
+ * @see BillSubResource and sub-resource.ts for the shared transport and caching.
  */
 
 /**

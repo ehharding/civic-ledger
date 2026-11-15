@@ -77,10 +77,10 @@
    * measuring the neighbors — which is the question that otherwise goes unanswered, because each component is written
    * beside a different neighbor and nothing pulls their numbers back toward each other. The failure that prevents is
    * quiet rather than loud: two cards in one grid a couple of pixels apart in padding is not a thing anyone decides,
-   * and not a thing anyone sees until the two files are read side by side. @see surfaces.css.
+   * and not a thing anyone sees until the two files are read side by side. See surfaces.css.
    *
    * Values off the grid are allowed, but they have to say why in a comment — that requirement is the actual mechanism
-   * here. @see the header-gap chain in layout.css and responsive.css for the worked example.
+   * here. See the header-gap chain in layout.css and responsive.css for the worked example.
    *
    * Two kinds of value are outside this and don't need the note. A `clamp()` states its own range and is a fluid rule
    * rather than a step — snapping its ends to the grid would say something the grid doesn't mean. And a measurement of

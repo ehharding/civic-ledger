@@ -27,7 +27,7 @@ jobs:
       # A route that stops being static still builds clean — it just renders on every visit, which is metered server
       # work on Vercel and what got this project's team paused once already. This reads the build's own manifests and
       # fails on any per-request route outside `/api/*` and the `/query/*` twins.
-      # @see scripts/check-route-rendering.mts.
+      # See scripts/check-route-rendering.mts.
       - name: Check Route Rendering
         run: pnpm check:routes
 
@@ -39,16 +39,16 @@ jobs:
       # Gated at `high` rather than at everything. The bar is what should *stop a merge*, and this project's
       # dependencies are almost entirely build and test tooling: a moderate advisory in a dev-only transitive is worth
       # seeing and is not worth blocking a documentation fix over. `pnpm audit` with no threshold reports the full list
-      # either way — see the `overrides` block in pnpm-workspace.yaml, which closed the one finding that existed when
-      # this step was added. Lower the bar here the moment a runtime dependency makes it the wrong one.
+      # either way — see the `overrides` block in pnpm-workspace.yaml for how a finding is closed. Lower the bar here
+      # the moment a runtime dependency makes it the wrong one.
       - name: Audit Dependencies
         run: pnpm audit --audit-level high
 
   # The static export is the one build a change can break while passing everything above: `pnpm build` is the *server*
   # build, so a new route handler or a fresh `request.url` read compiles, type-checks, and tests clean and then fails
-  # only under `output: "export"`. deploy-gh-pages.yml runs on pushes to `main`, which meant that failure used to
-  # surface after the change had landed. This job moves it onto the pull request, using the same composite action the
-  # deploy workflow builds with so the two cannot diverge.
+  # only under `output: "export"`. deploy-gh-pages.yml runs only on pushes to `main`, after the change has landed; this
+  # job surfaces the failure on the pull request instead, using the same composite action the deploy workflow builds
+  # with so the two cannot diverge.
   #
   # The base path and site URL are the values the real demo is published under, so `basePath`-sensitive output — the
   # header's plain `<form action>`, the sitemap, robots.txt — is exercised the way it actually ships rather than at a

@@ -27,10 +27,12 @@ export const BILLS_METADATA: Metadata = pageMetadata({
  * deep-link query and the snapshot — are awaited together, since neither depends on the other.
  *
  * Shared by `/bills`, which passes no query and is therefore static, and `/query/bills`, which passes the request's own
- * and renders on demand. @see src/lib/query-routes.ts.
+ * and renders on demand.
  *
- * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link. @see resolveBillDirectoryQuery
+ * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
  * @returns The directory page for the current Congress.
+ * @see src/lib/query-routes.ts
+ * @see resolveBillDirectoryQuery
  */
 export async function renderBillsRoute(searchParams: Promise<RouteSearchParams>): Promise<JSX.Element> {
   const [initialView, snapshot] = await Promise.all([resolveBillDirectoryQuery(searchParams), getCongressSnapshot()]);

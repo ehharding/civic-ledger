@@ -9,12 +9,13 @@ import { mapBillAmendment } from "@/lib/congress/upstream/mappers";
 
 /**
  * The amendments offered to a bill, as openable records. Mostly citations: roughly one in fifteen carries a purpose
- * (@see congressApiBillAmendmentSchema, mapBillAmendment), and the section says so.
+ * (see {@link congressApiBillAmendmentSchema} and {@link mapBillAmendment}), and the section says so.
  *
  * The publisher's order is kept — the only date is `updateDate`, a maintenance timestamp, so `dateKey` is omitted.
  *
- * Never throws, and a failed request is reported as unanswered rather than as "no amendments". @see BillSubResource and
- * sub-resource.ts for the shared transport and caching.
+ * Never throws, and a failed request is reported as unanswered rather than as "no amendments".
+ *
+ * @see BillSubResource and sub-resource.ts for the shared transport and caching.
  */
 
 /**
