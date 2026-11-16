@@ -16,19 +16,11 @@ type OutboundLinkProps = {
 };
 
 /**
- * A link that leaves this app for a primary source.
+ * A link that leaves this app for a primary source. In-app navigation uses `next/link` instead.
  *
- * Every outbound link in Civic Ledger owes a reader four things at once: `target="_blank"` to preserve their place in
- * the record they were reading, `rel="noreferrer"` so the destination learns nothing about where they came from, a
- * visible glyph marking the link as leaving, and — because that glyph is `aria-hidden` and conveys nothing to a screen
- * reader — the audible {@link ExternalLinkHint} warning that focus is about to move to a new tab.
- *
- * All four are composed here rather than spelled out per call site, so the accessibility half of the contract is a
- * thing a new link inherits rather than a thing it has to *remember*: a link that opens a tab cannot ship without
- * announcing that it does.
- *
- * Used only for links that genuinely leave the app. In-app navigation uses `next/link`, which neither opens a tab nor
- * needs any of this — see `MemberCard` and `BillCard`.
+ * Composes the four things every outbound link owes a reader, so none can be forgotten at a call site:
+ * `target="_blank"` to keep their place, `rel="noreferrer"` so the destination learns nothing, a visible leaving glyph,
+ * and — since that glyph is `aria-hidden` — the audible {@link ExternalLinkHint} that a new tab is opening.
  *
  * @param props - {@link OutboundLinkProps}.
  * @returns The anchor, with the glyph and the hidden hint already in place after the link text.

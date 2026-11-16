@@ -7,7 +7,9 @@ import { type JSX, type RefObject, useCallback, useEffect, useRef, useState } fr
 
 /** One primary navigation destination. */
 type NavLink = {
+  /** The visible link text. */
   label: string;
+  /** Where it goes; also what marks it current. */
   href: Route;
 };
 
@@ -34,23 +36,18 @@ const PRIMARY_NAV_ID: string = "primary-nav";
 /**
  * What `aria-current` a destination should carry, given the path currently open.
  *
- * Two values rather than one, because this nav names *sections* and a reader is usually somewhere inside one rather
- * than on its front page. `"page"` is the literal claim that this link points at the document you are reading, and it
- * is only true on `/bills` itself; on `/bills/119/hr/134` the current page is the bill, not the directory. Saying
- * `"page"` there would have a screen reader announce "Bills, current page" while the reader is two levels below it.
- * `true` is ARIA's answer for exactly that case — the current item of a set, without the claim about which
- * document — so a section link wears it whenever the open path sits underneath it.
+ * `"page"` claims the link points at the document being read, which on `/bills/119/hr/134` would announce "Bills,
+ * current page" two levels below it. So a section link wears `true` — ARIA's "current item of a set" — anywhere beneath
+ * it, and `"page"` only on itself.
  *
- * Descendants are matched on `${href}/` rather than on `href` alone so a future `/billing` route could never light up
- * "Bills". The home route is deliberately not a destination here (the wordmark is its link), which is also what keeps a
- * bare `"/"` out of this comparison, where it would prefix-match every path on the site.
+ * Descendants match on `${href}/` so a future `/billing` can't light up "Bills". Home isn't a destination (the wordmark
+ * links it), which keeps a bare `"/"` from prefix-matching every path.
  *
- * @param pathname - The open path, from {@link usePathname}. Nullable because that hook reads a router context and
- *   returns `null` when there isn't one — which is every unit test that renders the header directly. A nav with no
- *   router should simply mark nothing current rather than take the header down with it.
+ * @param pathname - The open path, from {@link usePathname}. `null` with no router context (as in unit tests that
+ *   render the header directly), which marks nothing current.
  * @param href - The destination to judge.
- * @returns `"page"` on the destination itself, `true` anywhere beneath it, and `undefined` otherwise — the last so the
- *   attribute is omitted entirely rather than rendered as `aria-current="false"`.
+ * @returns `"page"` on the destination, `true` beneath it, and `undefined` otherwise, so the attribute is omitted
+ *   rather than rendered as `aria-current="false"`.
  */
 export function navCurrent(pathname: string | null, href: string): "page" | true | undefined {
   if (pathname === null) return undefined;

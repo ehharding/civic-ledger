@@ -8,14 +8,6 @@ import { type BillTextFormat, type BillTextVersion, describeBillCollection } fro
 import { formatDate } from "@/lib/format";
 
 /**
- * Every official rendering of a bill's text, linked to Congress.gov rather than re-hosted here.
- *
- * The collection where a gap between the published figure and the shown one is most expected, since a version carrying
- * no linkable rendering is dropped upstream in `mapCongressTextVersion` — a heading with nothing behind it is not a
- * row. Naming both figures is what keeps that drop from reading as the record being shorter than it is.
- */
-
-/**
  * Every official rendering of the bill's text, linked to Congress.gov rather than re-hosted.
  *
  * The collection where a gap between the published figure and the shown one is most expected:

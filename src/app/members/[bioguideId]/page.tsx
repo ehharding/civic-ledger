@@ -21,6 +21,7 @@ const MEMBER_ROUTE: string = "/members/[bioguideId]";
 
 /** Params for the individual member route (`/members/[bioguideId]`). */
 type MemberPageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: Promise<{ bioguideId: string }>;
 };
 

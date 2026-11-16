@@ -15,7 +15,9 @@ const ON_DEMAND_PREFIXES: readonly string[] = ["/api/", "/query/"];
 
 /** The slice of `prerender-manifest.json` this check reads. */
 type PrerenderManifest = {
+  /** Every prerendered path, keyed by its concrete URL; `srcRoute` names the dynamic pattern it came from, if any. */
   routes: Record<string, { srcRoute: string | null }>;
+  /** Every dynamic route pattern that prerenders on demand (ISR), keyed by pattern. */
   dynamicRoutes: Record<string, unknown>;
 };
 

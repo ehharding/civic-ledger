@@ -107,7 +107,8 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
  * @param props - {@link MemberDirectoryProps}.
  * @returns The search, facet, and sort controls, the result count and scope note, and the member grid or an empty
  *   state.
- * @see filterMembers and sortMembers.
+ * @see filterMembers
+ * @see sortMembers
  */
 export function MemberDirectory({
   members,

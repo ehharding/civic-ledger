@@ -6,30 +6,25 @@ import { useEffect } from "react";
 
 import { logError } from "@/lib/observability/log";
 
+/** Props for {@link AppError}. */
+type AppErrorProps = {
+  /** The caught error, including Next's `digest` for correlating it with a server log entry. */
+  error: Error & { digest?: string };
+  /** Re-renders the failed segment. Worth offering because most failures here are transient upstream ones. */
+  reset: () => void;
+};
+
 /**
  * The app's error boundary.
  *
- * Renders a generic message and nothing else. The underlying error — which can carry request details, upstream response
- * bodies, or fragments of a URL containing the API key — is never put in the DOM. It is logged instead, so it stays
- * fully available in server and function logs where only operators can read it.
+ * Renders a generic message and nothing else. The error itself — which can carry upstream bodies or a URL containing
+ * the API key — never reaches the DOM. It goes to the log and to Sentry instead, both operator-only channels, and
+ * `src/lib/observability/redact.ts` strips the key and the reader's query string from every event before it leaves.
  *
- * It is also reported to Sentry, which is the same decision as the log line above rather than a different one: an
- * operator-only channel, chosen because the alternative is a failure nobody hears about until a reader reports it. What
- * that channel is allowed to carry is not left to the SDK's defaults — see `src/lib/observability/redact.ts`, which
- * strips the API key and the reader's query string from every event before it leaves.
- *
- * @param error - The caught error, including Next's `digest` for correlating it with a server log entry.
- * @param reset - Re-renders the failed segment. Worth offering because most failures here are transient upstream ones,
- *   where simply trying again genuinely works.
+ * @param props - {@link AppErrorProps}.
  * @returns The error page.
  */
-export default function AppError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}): JSX.Element {
+export default function AppError({ error, reset }: AppErrorProps): JSX.Element {
   useEffect((): void => {
     // Both, and in this order. `logError` records the fact with a `digest` an operator can match against the server log
     // line for the same failure; `captureException` files the stack that makes it fixable. A render crash is exactly

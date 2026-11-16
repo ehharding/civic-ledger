@@ -14,14 +14,11 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
  */
 
 /**
- * Words the wait for live data.
+ * The sentence for a section still waiting on live data. Exported for `CommitteeRecordsSection`, which picks its empty
+ * copy in a pure function and needs the sentence rather than the element.
  *
- * Exported on its own for the one caller that needs the sentence rather than the element: `CommitteeRecordsSection`
- * resolves three-way (unavailable / preview / genuinely empty) in a pure function and prints the result itself.
- *
- * @param lead - The subject and its verb, e.g., `"Cosponsors appear"` or `"The action history appears"`. The verb
- *   belongs to the caller because the subjects disagree about number: a shared sentence that fixed the verb would be
- *   choosing each section's wording for it, which is more than this is for.
+ * @param lead - The subject and its verb, e.g., `"Cosponsors appear"` or `"The action history appears"`. The caller
+ *   supplies the verb because subjects differ in number.
  * @returns The full sentence.
  */
 export function previewPendingCopy(lead: string): string {

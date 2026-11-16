@@ -16,19 +16,12 @@ type DetailBackLinkProps = {
 };
 
 /**
- * The link out of a single record and back up to the directory it came from.
+ * The link out of a single record and back up to the directory it came from, shared by all three detail pages so the
+ * chevron's size and `aria-hidden` can't drift between them.
  *
- * All three detail pages open with one, and they opened with three copies of the same five lines until this
- * existed — identical down to the glyph's `aria-hidden` and its 16px size, and sharing a `.bill-backlink` class that
- * two of the three pages had no business wearing. That is the shape a drift arrives in: the next page to grow one of
- * these gets a 15px chevron, or forgets the `aria-hidden` and has a screen reader announce "chevron left All Members",
- * and nothing about either is visible in the diff that causes it.
- *
- * **The label names the destination rather than saying "Back", and that is the accessibility half of this.** A screen
- * reader can list a page's links out of context, where three pages' worth of "Back" is three links to nowhere in
- * particular; "All Committees" says where it goes on its own. It is also more honest than "Back": this is a link to the
- * directory, not a history step, and on a record reached from a bill's sponsor line or a search result those are
- * different places.
+ * The label names the destination ("All Committees") rather than saying "Back": it reads on its own in a screen
+ * reader's links list, and it's honest — this goes to the directory, not a history step, and a record reached from a
+ * sponsor line or a search result came from somewhere else.
  *
  * @param props - {@link DetailBackLinkProps}.
  * @returns The back link, with its leading chevron.

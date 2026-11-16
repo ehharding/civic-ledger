@@ -6,29 +6,21 @@ import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getMoreBills } from "@/lib/congress/client";
 import { EDGE_CACHE_CONTROL, NO_STORE_CACHE_CONTROL } from "@/lib/edge-cache";
 
-// NOTE: this route reads the request URL (the `offset` and `congress` query params), which a static export can't do —
-// there's no server left at request time. The GitHub Pages static-demo workflow deletes this route before building
-// (STATIC_EXPORT=true); it's harmless there anyway, since that build never has a CONGRESS_API_KEY and getMoreBills()
-// already no-ops without one.
+// Reads the request URL, which a static export can't. The GitHub Pages static-demo workflow (STATIC_EXPORT=true)
+// deletes this route before building; that build has no CONGRESS_API_KEY, so getMoreBills() would no-op anyway.
 
 /**
- * Serves one additional page of live Congress.gov bills for the bill directory's "Load More" button, for the current
- * Congress or — from the `/bills/[congress]` route — any other one this app supports browsing.
+ * Serves one more page of live bills for the bill directory's "Load More" button, for the current Congress or — from
+ * `/bills/[congress]` — any other browsable one. A same-origin proxy, so the browser never receives `CONGRESS_API_KEY`.
  *
- * This exists as a server-side proxy specifically so the browser never needs, and never receives, `CONGRESS_API_KEY`.
- * The client only ever talks to this same-origin route, never to api.congress.gov directly.
+ * A non-empty page is CDN-cached for the app's window (see {@link EDGE_CACHE_CONTROL}), so a second reader at the same
+ * offset costs no invocation. An empty page is not: it can't say whether the list ran out or the fetch failed, and
+ * caching a failure would leave the button dead for every reader for the whole window.
  *
- * A page with bills in it is shared through the CDN for the app's cache window (see {@link EDGE_CACHE_CONTROL}), so a
- * second reader pressing "Load More" at the same offset costs no function invocation. An empty page is not, because it
- * cannot say whether the list ran out or the fetch failed — and caching a failure would leave the button dead for every
- * reader for the whole window rather than for the one request that failed.
- *
- * @param request - Expects an `offset` query param (e.g., `/api/bills?offset=12`) and an optional `congress` param
- *   (e.g., `&congress=118`). Both are parsed permissively rather than strictly: anything missing, malformed, or out of
- *   range resolves to a sensible default instead of a 400.
- * @returns A {@link BillPageResponse} — the next page, or an empty array when no API key is configured or the upstream
- *   fetch fails. Never an error status, so the client can treat "no more bills" and "couldn't load more" as the same
- *   empty page, which is exactly how the button behaves in both cases.
+ * @param request - Carries `offset` (e.g., `?offset=12`) and an optional `congress` (e.g., `&congress=118`), both
+ *   parsed permissively: anything missing, malformed, or out of range falls back to a default rather than a 400.
+ * @returns A {@link BillPageResponse}: the next page, or an empty one when no key is configured or the fetch fails.
+ *   Never an error status — the button treats "no more bills" and "couldn't load more" alike.
  * @see parseOffsetParam
  * @see parseCongressQueryParam
  */

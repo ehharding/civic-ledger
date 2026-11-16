@@ -13,7 +13,9 @@ import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
 
 /** Everything a faceted directory's URL can express: what to show, and in what order. */
 type FacetedDirectoryQuery<Filters, Sort> = {
+  /** Which entries to show. */
   filters: Filters;
+  /** The order to show them in. */
   sort: Sort;
 };
 
@@ -22,7 +24,8 @@ type FacetedDirectoryOptions<Filters, Sort> = {
   /**
    * The view the URL asked for, resolved server-side, which the directory opens on.
    *
-   * @see resolveMemberDirectoryQuery and its committee counterpart.
+   * @see resolveMemberDirectoryQuery
+   * @see resolveCommitteeDirectoryQuery
    */
   initialQuery: FacetedDirectoryQuery<Filters, Sort>;
   /** No narrowing at all — what {@link FacetedDirectoryState.clear} restores. */

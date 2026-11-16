@@ -20,6 +20,14 @@ import { type CongressComposition, compositionForSeating } from "@/lib/congress/
 import { formatOrdinal } from "@/lib/format";
 import { billHref } from "@/lib/routes";
 
+/** Props for {@link HomePage}. */
+type HomePageProps = {
+  /** Both chambers' membership, for the seating chart. */
+  composition: CongressComposition;
+  /** The current Congress's bills. Ordered here by latest action rather than taken as it arrives. */
+  snapshot: CongressSnapshot;
+};
+
 /**
  * Home route content.
  *
@@ -29,19 +37,12 @@ import { billHref } from "@/lib/routes";
  * The featured card and the activity grid draw from one list ordered by legislative activity, and the grid starts after
  * the featured bill so it isn't shown twice above the fold.
  *
- * @param composition - Both chambers' membership, for the seating chart.
- * @param snapshot - The current Congress's bills. Ordered here by latest action rather than taken as it arrives.
+ * @param props - {@link HomePageProps}.
  * @returns The hero and featured bill journey, the chamber diagram, the next three bills by activity, and the static
  *   learn/trust sections.
  * @see compareBillsByActivity for why the fetch order is a near miss for what this page claims.
  */
-export function HomePage({
-  composition,
-  snapshot,
-}: {
-  composition: CongressComposition;
-  snapshot: CongressSnapshot;
-}): JSX.Element {
+export function HomePage({ composition, snapshot }: HomePageProps): JSX.Element {
   // Both the featured card and the activity grid below read off this rather than off `snapshot.bills` directly. The
   // snapshot arrives ordered by Congress.gov's `updateDate`, which is when a row was last touched and not when anything
   // happened — near enough to pick a recent slice out of eighteen thousand records, not near enough to put an April

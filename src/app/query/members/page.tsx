@@ -9,6 +9,7 @@ export const metadata: Metadata = MEMBERS_METADATA;
 
 /** Params for the query-carrying twin of `/members`. */
 type QueryMembersPageProps = {
+  /** The query string, read only by this on-demand twin. */
   searchParams: Promise<RouteSearchParams>;
 };
 

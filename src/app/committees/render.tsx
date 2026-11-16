@@ -20,15 +20,11 @@ export const COMMITTEES_METADATA: Metadata = pageMetadata({
 });
 
 /**
- * Renders the browsable committee directory.
+ * Renders the browsable committee directory — where the subject of "Referred to the House Committee on…", the latest
+ * action on much of what Congress introduces, becomes a page.
  *
- * The third way into the record, beside `/bills` and `/members`. A bill's most consequential moment is usually its
- * referral to a committee — "Referred to the House Committee on Transportation and Infrastructure" is the latest action
- * on a large share of everything Congress introduces — and this is where that sentence's subject becomes a page.
- *
- * Shared by `/committees`, which passes no query and is therefore static, and `/query/committees`, which passes the
- * request's own and renders on demand. Same trade as `/members`: a shared link arrives already narrowed on its first
- * paint rather than flashing the full list.
+ * Shared by the static `/committees` (no query) and the on-demand `/query/committees`, so a shared link arrives already
+ * narrowed on first paint.
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?type=`/`?sort=`.
  * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never

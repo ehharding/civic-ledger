@@ -15,15 +15,11 @@ import { memberHref } from "@/lib/routes";
 /**
  * Compact member summary card, used in the `/members` directory grid.
  *
- * Unlike {@link BillCard}, this carries a single link rather than a title link plus a corner arrow. That arrow exists
- * on a bill card because a bill's only target is a long, wrapping headline that is awkward to hit; a person's name is
- * short and reliably clickable, so a second link to the same place would only give assistive technology a duplicate to
- * announce for no gain.
+ * One link, on the name. {@link BillCard} adds a corner arrow because a long wrapping headline is hard to hit; a name
+ * isn't, so a second link would only be a duplicate for assistive technology to announce.
  *
- * The portrait is decorative in the accessibility sense and carries an empty `alt` deliberately: the member's name is
- * the very next thing in the card and is the link, so describing the image would make a screen reader announce the same
- * person twice — once as "Official portrait of Leahy, Patrick J." and again as the link. That is the opposite of the
- * member's own page, where the portrait is the only place the person is depicted and its `alt` does real work.
+ * The portrait's `alt` is empty: the linked name follows immediately, so describing the image would announce the same
+ * person twice. On the member's own page, where the portrait stands alone, its `alt` does real work.
  *
  * @param entry - The member to summarize.
  * @returns The card: portrait where one exists, party, linked name, and the seat they hold.

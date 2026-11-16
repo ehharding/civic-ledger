@@ -16,6 +16,7 @@ type LessonRouteParams = { slug: string };
 
 /** Params for the individual lesson route (`/learn/[slug]`). */
 type LessonPageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: Promise<LessonRouteParams>;
 };
 

@@ -46,6 +46,7 @@ const BILL_ROUTE: string = "/bills/[congress]/[type]/[number]";
 
 /** Params for the individual bill record route (`/bills/[congress]/[type]/[number]`). */
 type BillPageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: Promise<BillRouteParams>;
 };
 

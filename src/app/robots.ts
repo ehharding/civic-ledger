@@ -77,18 +77,11 @@ export const AI_TRAINING_CRAWLERS: readonly string[] = [
 /**
  * Generates `robots.txt`.
  *
- * `/api/` is disallowed because those routes are this app's own internal proxies — they return the same records the
- * HTML pages do, with none of the context that makes them meaningful, so indexing them would only split crawl budget
- * and surface bare JSON in search results.
- *
- * Every query-carrying variant of a route with a `/query` twin is disallowed too, along with the twins themselves. A
- * narrowed directory is a real page for a reader holding its link, but to a crawler it is a duplicate — its canonical
- * tag already names the plain route — and, unlike that route, it is rendered on demand. A crawler walking every
- * combination of facets is exactly the traffic that is pure server cost and no search value. The paths are built from
- * the rewrite table, so a route that gains a twin is covered here without a second list.
- *
- * AI training crawlers are refused the whole site, and every other crawler is refused a concluded Congress's bill
- * records.
+ * - `/api/` is disallowed: those internal proxies return the pages' records as bare JSON, with none of their context.
+ * - Every query-carrying variant of a route with a `/query` twin is disallowed, along with the twins. To a crawler a
+ *   narrowed directory duplicates its canonical route but renders on demand, so walking every facet combination is pure
+ *   server cost. The paths come from the rewrite table, so a route that gains a twin is covered automatically.
+ * - AI training crawlers are refused the whole site, and every other crawler a concluded Congress's bill records.
  *
  * @returns The robots rules and a pointer to the generated sitemap.
  * @see src/lib/query-routes.ts

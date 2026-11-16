@@ -26,6 +26,7 @@ import { committeeHref, lessonHref } from "@/lib/routes";
 
 /** Props for {@link CommitteeDetail} — everything the committee route resolves server-side. */
 type CommitteeDetailProps = {
+  /** The committee being shown. */
   profile: CommitteeProfile;
   /** Whether this record is live Congress.gov data or a labeled placeholder. Changes wording throughout. */
   source: CongressSnapshot["source"];

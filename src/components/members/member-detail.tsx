@@ -29,6 +29,7 @@ import { formatOrdinal } from "@/lib/format";
 
 /** Props for {@link MemberDetail} — everything the member route resolves server-side. */
 type MemberDetailProps = {
+  /** The member being shown. */
   profile: MemberProfile;
   /** Whether this record is live Congress.gov data or a labeled placeholder. Changes wording throughout. */
   source: CongressSnapshot["source"];
@@ -65,16 +66,28 @@ function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: s
   );
 }
 
+/** Props for {@link LegislationSection}. */
+type LegislationSectionProps = {
+  /** The bills to show — already a capped slice, not the full history. */
+  bills: LegislativeBill[];
+  /** The id this section's `aria-labelledby` points at, so each list is its own labeled region. */
+  headingId: string;
+  /** The small label above the heading. */
+  kicker: string;
+  /** The section heading. */
+  heading: string;
+  /** What to say when the list is empty (ordinary for a newly seated member). */
+  emptyNote: JSX.Element;
+  /** The member's complete count for this list, when Congress.gov reports one. */
+  total?: number;
+  /** The cap the list was sliced to, so the copy can distinguish "all of them" from "the most recent few". */
+  limit: number;
+};
+
 /**
  * One of the member's legislation lists, rendered as the same `BillCard` grid used everywhere else bills appear.
  *
- * @param bills - The bills to show — already a capped slice, not the full history.
- * @param headingId - The id this section's `aria-labelledby` points at, so each list is its own labeled region.
- * @param kicker - The small label above the heading.
- * @param heading - The section heading.
- * @param emptyNote - What to say when the list is empty (ordinary for a newly seated member).
- * @param total - The member's complete count for this list, when Congress.gov reports one.
- * @param limit - The cap the list was sliced to, so the copy can distinguish "all of them" from "the most recent few".
+ * @param props - {@link LegislationSectionProps}.
  * @returns The labeled section.
  * @see EmptySectionNote
  */
@@ -86,15 +99,7 @@ function LegislationSection({
   emptyNote,
   total,
   limit,
-}: {
-  bills: LegislativeBill[];
-  headingId: string;
-  kicker: string;
-  heading: string;
-  emptyNote: JSX.Element;
-  total?: number;
-  limit: number;
-}): JSX.Element {
+}: LegislationSectionProps): JSX.Element {
   const isTruncated: boolean = total !== undefined && total > limit;
 
   return (

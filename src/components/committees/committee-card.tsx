@@ -10,15 +10,11 @@ import { pluralize } from "@/lib/format";
 import { committeeHref } from "@/lib/routes";
 
 /**
- * Compact committee summary card, used in the `/committees` directory grid.
+ * Compact committee summary card, used in the `/committees` directory grid. One link, on the name, as on
+ * {@link MemberCard}.
  *
- * Built on the same rules as {@link MemberCard}: one link, on the name, rather than a title link plus a corner arrow. A
- * committee's name is the only thing here worth opening, and a second link to the same place would only give assistive
- * technology a duplicate to announce.
- *
- * The subcommittee count is on the card rather than only on the committee's own page because it is the one fact that
- * explains why the directory is shorter than a reader might expect — the list holds parent committees, and this is what
- * says how much sits one level below each of them.
+ * The subcommittee count is here because the directory lists only parent committees, and this is what explains why it's
+ * shorter than a reader might expect.
  *
  * @param committee - The committee to summarize.
  * @returns The card: type chip, linked name, and the chamber and subcommittee count.

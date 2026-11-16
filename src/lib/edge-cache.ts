@@ -1,28 +1,23 @@
 import { REVALIDATE_SECONDS } from "@/lib/congress/upstream/http";
 
 /**
- * How long the CDN may keep serving a cached API response after it expires, while it fetches a fresh one in the
- * background, in seconds.
+ * How long, in seconds, the CDN may keep serving an expired API response while it refreshes it in the background.
  *
- * An hour, because the alternative is worse in both directions: the reader would otherwise wait on a function
- * invocation for a response the CDN already holds, and the records behind it rarely change faster than this anyway.
- * Only the first request after expiry pays for the refresh, and it does not wait for it.
+ * An hour: the records rarely change faster, and only the first request after expiry triggers the refresh, without
+ * waiting on it.
  */
 export const EDGE_STALE_SECONDS: number = 3_600;
 
 /**
  * The `Cache-Control` value for a same-origin API response the CDN may share between readers.
  *
- * **Why the API routes need this and the pages do not.** Next sets `s-maxage` on every static and ISR page itself, so
- * the CDN already serves `/bills` without invoking a function. Route handlers that read their request URL get no such
- * header — they are dynamic, and every call was a function invocation, even for a query the CDN had answered a moment
- * earlier for someone else. `/api/bills/search` is the expensive case: each call reads and validates a page of up to
- * 250 bills from every supported Congress before it filters anything, so one popular query searched a hundred times was
- * a hundred full sweeps. With this, it is one sweep per query per window.
+ * Next sets `s-maxage` on static and ISR pages itself, but not on route handlers that read their URL, so without this
+ * every call is a function invocation. `/api/bills/search` is the costly case: each call sweeps up to 250 bills from
+ * every supported Congress, and this makes it one sweep per query per window.
  *
- * Keyed by the full URL, query included, so `?q=broadband` and `?q=farm` are cached apart. The window is the app's one
- * shared five-minute window, so a cached response is never older than the data behind a page rendered beside it.
- * Nothing here is per-reader: these responses carry public records and read no cookie or header, so `public` is safe.
+ * Keyed by the full URL, so `?q=broadband` and `?q=farm` cache apart, on the app's shared window so a response is never
+ * older than a page rendered beside it. `public` is safe: these are public records, and nothing reads a cookie or
+ * header.
  *
  * @see REVALIDATE_SECONDS
  */

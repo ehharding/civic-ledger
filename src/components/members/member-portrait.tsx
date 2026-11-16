@@ -20,6 +20,16 @@ const VARIANTS = {
   },
 } as const;
 
+/** Props for {@link MemberPortrait}. */
+type MemberPortraitProps = {
+  /** The portrait and its credit, as the adapter mapped them. */
+  depiction: MemberDepiction | undefined;
+  /** Alternative text: empty on a card (the name follows), descriptive on the member page. */
+  alt: string;
+  /** Which surface is drawing it, which decides its class names and size. */
+  variant: keyof typeof VARIANTS;
+};
+
 /**
  * A member's official portrait with the credit line Congress.gov's terms require — always rendered (small, not hidden),
  * since it's the condition for showing the image. Shared by the directory card and the member page.
@@ -27,20 +37,10 @@ const VARIANTS = {
  * A plain lazy `<img>` rather than `next/image`, which would hard-error on any un-allow-listed portrait host, and the
  * static export disables optimization anyway.
  *
- * @param depiction - The portrait and its credit, as the adapter mapped them.
- * @param alt - Alternative text: empty on a card (the name follows), descriptive on the member page.
- * @param variant - Which surface is drawing it, which decides its class names and size.
+ * @param props - {@link MemberPortraitProps}.
  * @returns The portrait and its credit, or `null` when there's no image (every preview placeholder, and some records).
  */
-export function MemberPortrait({
-  depiction,
-  alt,
-  variant,
-}: {
-  depiction: MemberDepiction | undefined;
-  alt: string;
-  variant: keyof typeof VARIANTS;
-}): JSX.Element | null {
+export function MemberPortrait({ depiction, alt, variant }: MemberPortraitProps): JSX.Element | null {
   if (!depiction) return null;
 
   const classes: (typeof VARIANTS)[keyof typeof VARIANTS] = VARIANTS[variant];

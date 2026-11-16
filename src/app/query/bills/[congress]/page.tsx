@@ -10,7 +10,9 @@ import type { RouteSearchParams } from "@/lib/search-params";
 
 /** Params for the query-carrying twin of `/bills/[congress]`. */
 type QueryCongressBillsPageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: CongressBillsParams;
+  /** The query string, read only by this on-demand twin. */
   searchParams: Promise<RouteSearchParams>;
 };
 

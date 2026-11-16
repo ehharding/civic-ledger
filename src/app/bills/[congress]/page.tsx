@@ -23,6 +23,7 @@ export const revalidate: number = 86_400;
 
 /** Params for the per-Congress bill directory route (`/bills/[congress]`). */
 type CongressBillsPageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: CongressBillsParams;
 };
 

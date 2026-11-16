@@ -9,6 +9,7 @@ export const metadata: Metadata = COMMITTEES_METADATA;
 
 /** Params for the query-carrying twin of `/committees`. */
 type QueryCommitteesPageProps = {
+  /** The query string, read only by this on-demand twin. */
   searchParams: Promise<RouteSearchParams>;
 };
 

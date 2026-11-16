@@ -132,10 +132,7 @@ export type BillAmendment = {
   /** What the amendment says it does. The record's `purpose`, falling back to its `description`. Usually absent. */
   purpose?: string;
   /** The amendment's own latest action, when the entry carried one with text. */
-  latestAction?: {
-    date?: string;
-    text: string;
-  };
+  latestAction?: Pick<BillAction, "date" | "text">;
   /**
    * The amendment's public Congress.gov page.
    *
@@ -365,10 +362,7 @@ export type RelatedBill = {
   /** Its title. */
   title: string;
   /** Its own latest action, when the record carried one. */
-  latestAction?: {
-    date?: string;
-    text: string;
-  };
+  latestAction?: Pick<BillAction, "date" | "text">;
   /** Every recorded statement of how the two measures relate. Can be empty. */
   relationships: RelatedBillRelationship[];
 };
@@ -437,10 +431,7 @@ export type LegislativeBill = {
   /** When the bill was introduced, as an ISO date. Detail endpoint only. */
   introducedDate?: string;
   /** The most recent action; `text` is {@link NO_LATEST_ACTION_TEXT} when none was published. */
-  latestAction: {
-    date?: string;
-    text: string;
-  };
+  latestAction: Pick<BillAction, "date" | "text">;
   /** The CRS policy area. Detail endpoint only. */
   policyArea?: string;
   /**

@@ -769,8 +769,11 @@ const PREVIEW_COMMITTEE_RECORDS: Record<string, CommitteeRecordSets> = {
 
 /** One placeholder committee's three collections. */
 type CommitteeRecordSets = {
+  /** Bills referred to the committee. */
   bills: CommitteeBillReferral[];
+  /** Reports the committee filed. */
   reports: CommitteeReport[];
+  /** Nominations referred to it. Empty for House committees. */
   nominations: CommitteeNomination[];
 };
 

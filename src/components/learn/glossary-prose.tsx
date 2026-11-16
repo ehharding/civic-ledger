@@ -4,19 +4,15 @@ import { GlossaryTermTip } from "@/components/learn/glossary-term-tip";
 import { annotateGlossaryTerms, type GlossarySegment, glossaryHref } from "@/lib/glossary";
 
 /**
- * Renders a run of prose with every glossary term in it carrying its own definition.
+ * Renders a run of prose with every glossary term in it carrying its own definition. A drop-in for the bare string:
+ * `<p>{step.copy}</p>` becomes `<p><GlossaryProse text={step.copy} /></p>`. The scan is {@link annotateGlossaryTerms};
+ * this only decides how a match renders.
  *
- * A drop-in replacement for printing the string directly: `<p>{step.copy}</p>` becomes
- * `<p><GlossaryProse text={step.copy} /></p>`, and nothing else about the surrounding markup changes. The scan itself
- * is {@link annotateGlossaryTerms}, which is pure and tested on its own; this only decides what a matched run looks
- * like.
+ * A server component wrapping a client one, so a page ships only the entries its text uses, and prose with no defined
+ * term crosses no client boundary at all.
  *
- * Deliberately a *server* component wrapping a client one. The definitions are chosen here, on the server, so a page
- * ships only the entries its own text actually uses rather than the whole glossary — and prose containing no defined
- * term crosses no client boundary at all, since no `GlossaryTermTip` is rendered to cross it.
- *
- * @param text - The prose to render. Passed as a string rather than as children, because the annotation works on text
- *   and accepting arbitrary nodes would promise a traversal this deliberately does not do.
+ * @param text - The prose to render. A string rather than children, since the annotation works on text and doesn't
+ *   traverse nodes.
  * @returns The same text, with its first mention of each defined term linked to the glossary and carrying a hover and
  *   focus definition.
  */

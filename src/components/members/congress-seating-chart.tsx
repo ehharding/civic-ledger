@@ -101,6 +101,20 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
   /* v8 ignore stop */
 }
 
+/** Props for {@link Seat}. */
+type SeatProps = {
+  /** The seat to draw, carrying its member and resolved position. */
+  seat: ChamberSeat;
+  /** The chamber it belongs to, which decides how the accessible name describes it. */
+  chamber: CongressChamber;
+  /** The chart's shared seat radius. */
+  radius: number;
+  /** Whether this seat is the one currently read out, which draws the active ring. */
+  isShown: boolean;
+  /** Whether this seat holds the chart's single tab stop. */
+  isActive: boolean;
+};
+
 /**
  * One drawn seat. With a Bioguide ID it's a real SVG `<a>` to the member's page (not `next/link`, which can't work in
  * the SVG namespace); without one, as in preview mode, it's a `<circle>` that only locks the read-out.
@@ -109,27 +123,11 @@ function seatIndexFromEvent(target: EventTarget | null): number | null {
  * Memoized because every hover or keypress changes the parent's state and the House draws 441 seats. Props are
  * primitives plus `seat`, whose identity is stable (`buildChamberSeating` is memoized on the roster).
  *
- * @param seat - The seat to draw, carrying its member and resolved position.
- * @param chamber - The chamber it belongs to, which decides how the accessible name describes it.
- * @param radius - The chart's shared seat radius.
- * @param isShown - Whether this seat is the one currently read out, which draws the active ring.
- * @param isActive - Whether this seat holds the chart's single tab stop.
+ * @param props - {@link SeatProps}.
  * @returns The seat element.
  * @see seatIndexFromEvent
  */
-const Seat = memo(function Seat({
-  seat,
-  chamber,
-  radius,
-  isShown,
-  isActive,
-}: {
-  seat: ChamberSeat;
-  chamber: CongressChamber;
-  radius: number;
-  isShown: boolean;
-  isActive: boolean;
-}): JSX.Element {
+const Seat = memo(function Seat({ seat, chamber, radius, isShown, isActive }: SeatProps): JSX.Element {
   const label: string = formatMemberSummary(seat.member, chamber);
   const className: string = `seating__seat ${partyTintClass(seat.member.party)}${isShown ? " is-active" : ""}`;
   // Rounded to a fixed precision so the server's and the client's rendering of the same float agree exactly — an

@@ -6,22 +6,23 @@ import { EmptySectionNote } from "@/components/ui/empty-section-note";
 import { type BillSummary, type CongressSnapshot, describeBillCollection } from "@/lib/congress/bills/model";
 import { formatDate, pluralize } from "@/lib/format";
 
+/** Props for {@link SummaryCaption}. */
+type SummaryCaptionProps = {
+  /** The summary being captioned. */
+  summary: BillSummary;
+  /** Whether this record is live or preview data. */
+  source: CongressSnapshot["source"];
+};
+
 /**
  * The caption above a summary: who wrote it and which bill version it describes. Preview summaries are captioned as
  * illustrative, never credited to CRS.
  *
- * @param summary - The summary being captioned.
- * @param source - Whether this record is live or preview data.
+ * @param props - {@link SummaryCaptionProps}.
  * @returns The caption line.
  * @see docs/data-policy.md
  */
-function SummaryCaption({
-  summary,
-  source,
-}: {
-  summary: BillSummary;
-  source: CongressSnapshot["source"];
-}): JSX.Element {
+function SummaryCaption({ summary, source }: SummaryCaptionProps): JSX.Element {
   if (source === "preview") return <p className="date-label">Illustrative preview summary — not a real CRS summary.</p>;
 
   return (

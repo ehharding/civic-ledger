@@ -58,27 +58,27 @@ function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element 
   );
 }
 
+/** Props for {@link CosponsorList}. */
+type CosponsorListProps = {
+  /** Everyone currently signed on, in the publisher's order. */
+  cosponsors: BillCosponsor[];
+  /** Congress.gov's own figures, including anyone who later withdrew. */
+  tally: BillCosponsorTally | undefined;
+  /** Whether this record is live or preview data. */
+  source: CongressSnapshot["source"];
+};
+
 /**
  * The members who signed on to a bill, in Congress.gov's oldest-first order (the bill gathering support over time).
  *
  * The published tally is dropped on a preview record: fixture bills carry one for the hero, and printing "Congress.gov
  * records 12 cosponsors" over invented names would credit a real institution with fiction.
  *
- * @param cosponsors - Everyone currently signed on, in the publisher's order.
- * @param tally - Congress.gov's own figures, including anyone who later withdrew.
- * @param source - Whether this record is live or preview data.
+ * @param props - {@link CosponsorListProps}.
  * @returns The count lines and the list, the tail of it behind a disclosure.
  * @see docs/data-policy.md
  */
-function CosponsorList({
-  cosponsors,
-  tally,
-  source,
-}: {
-  cosponsors: BillCosponsor[];
-  tally: BillCosponsorTally | undefined;
-  source: CongressSnapshot["source"];
-}): JSX.Element {
+function CosponsorList({ cosponsors, tally, source }: CosponsorListProps): JSX.Element {
   const published: BillCosponsorTally | undefined = source === "preview" ? undefined : tally;
   const originals: number = cosponsors.filter((cosponsor: BillCosponsor): boolean => cosponsor.isOriginal).length;
   const withdrawn: string = describeWithdrawnCosponsors(published);

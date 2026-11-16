@@ -10,7 +10,9 @@ import type { RouteSearchParams } from "@/lib/search-params";
 
 /** Params for the query-carrying twin of `/committees/[chamber]/[systemCode]`. */
 type QueryCommitteePageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: CommitteeParams;
+  /** The query string, read only by this on-demand twin. */
   searchParams: Promise<RouteSearchParams>;
 };
 

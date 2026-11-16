@@ -18,9 +18,13 @@ import { redactEvent } from "@/lib/observability/redact";
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
 
 // The four redaction callbacks, each recovered from the options bag for the same reason as `SentryInitOptions`.
+/** Sentry's error-event hook. */
 type BeforeSend = NonNullable<SentryInitOptions["beforeSend"]>;
+/** Sentry's tracing-span hook. */
 type BeforeSendSpan = NonNullable<SentryInitOptions["beforeSendSpan"]>;
+/** Sentry's breadcrumb hook. */
 type BeforeBreadcrumb = NonNullable<SentryInitOptions["beforeBreadcrumb"]>;
+/** Sentry's structured-log hook. */
 type BeforeSendLog = NonNullable<SentryInitOptions["beforeSendLog"]>;
 
 /** The environment name reported with every event, when nothing more specific is configured. */

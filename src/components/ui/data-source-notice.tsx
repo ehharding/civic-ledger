@@ -4,6 +4,19 @@ import type { JSX } from "react";
 
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 
+/** Props for {@link DataSourceNotice}. */
+type DataSourceNoticeProps = {
+  /** Whether the surrounding data is live or preview. */
+  source: CongressSnapshot["source"];
+  /** Why preview data is being shown, when it is. Ignored for live data. */
+  notice?: string;
+  /**
+   * When the data was fetched, rendered as "Updated 5 minutes ago" — `docs/data-policy.md` requires freshness to be
+   * visible, not merely computed. Optional for callers without a timestamp.
+   */
+  retrievedAt?: string;
+};
+
 /**
  * Banner that discloses whether the surrounding data is live Congress.gov data or preview fixtures.
  *
@@ -12,25 +25,10 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
  * holding only a single bill lookup result can render an accurate banner without fetching a snapshot purely to satisfy
  * a type, which is what makes "always disclose" cheap enough to actually do everywhere.
  *
- * @param source - Whether the surrounding data is live or preview.
- * @param notice - Why preview data is being shown, when it is. Ignored for live data.
- * @param retrievedAt - When the data was fetched, if the caller has it.
+ * @param props - {@link DataSourceNoticeProps}.
  * @returns The disclosure banner, with a relative "Updated …" timestamp when one is available.
  */
-export function DataSourceNotice({
-  source,
-  notice,
-  retrievedAt,
-}: {
-  source: CongressSnapshot["source"];
-  notice?: string;
-  /**
-   * Rendered as "Updated 5 minutes ago" — `docs/data-policy.md` requires source freshness to be visible in the
-   * interface rather than merely computed, and this is the field that keeps that promise. Optional so callers without a
-   * timestamp handy still render correctly.
-   */
-  retrievedAt?: string;
-}): JSX.Element {
+export function DataSourceNotice({ source, notice, retrievedAt }: DataSourceNoticeProps): JSX.Element {
   const isLive: boolean = source === "live";
   const updated: string | undefined = retrievedAt
     ? formatDistanceToNow(new Date(retrievedAt), { addSuffix: true })

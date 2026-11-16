@@ -135,7 +135,9 @@ export type CommitteeNomination = {
   receivedDate?: string;
   /** The nomination's most recent action, verbatim. */
   latestAction?: {
+    /** When it happened, as an ISO date. */
     date?: string;
+    /** The action, verbatim. */
     text?: string;
   };
 };
@@ -150,8 +152,11 @@ export type CommitteeRecords = {
 
 /** Which record shape each collection holds, so {@link pageOfCommitteeRecords} can keep kind and items correlated. */
 type CommitteeRecordItem = {
+  /** A referral, as the bills collection holds it. */
   bills: CommitteeBillReferral;
+  /** A filed report. */
   reports: CommitteeReport;
+  /** A referred nomination. */
   nominations: CommitteeNomination;
 };
 

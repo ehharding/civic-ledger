@@ -9,6 +9,7 @@ export const metadata: Metadata = BILLS_METADATA;
 
 /** Params for the query-carrying twin of `/bills`. */
 type QueryBillsPageProps = {
+  /** The query string, read only by this on-demand twin. */
   searchParams: Promise<RouteSearchParams>;
 };
 

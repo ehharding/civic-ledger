@@ -56,16 +56,14 @@ import {
  * arithmetic, the "a 404 is an empty collection and a failure is not" policy, and the cache tags.
  */
 
-/**
- * What one collection's request produced, before the paging arithmetic is applied to it.
- *
- * `records` is populated on every outcome, including failure — which is what lets {@link getCommitteeRecords} stay free
- * of a "build an empty page of the right kind" helper. Constructing that outside the branch where `kind` has been
- * narrowed to a literal costs either a cast or a three-way switch with three identical bodies, and both are worse than
- * simply letting each branch return the empty page it already knows the shape of.
- */
+/** What one collection's request produced, before the paging arithmetic is applied to it. */
 type FetchedRecords = {
+  /**
+   * The page, populated on every outcome — failure included. Each branch returns the empty page it already knows the
+   * kind of, so {@link getCommitteeRecords} needs no cast to build one.
+   */
   records: CommitteeRecords;
+  /** The collection's full size, when Congress.gov reported one. */
   total: number | undefined;
   /** The request failed outright — distinct from a 404, which is an empty collection honestly reported. */
   failed: boolean;
@@ -80,12 +78,12 @@ type FetchedRecords = {
  * @param rawChamber - The raw `chamber` route param.
  * @param rawSystemCode - The raw `systemCode` route param.
  * @param query - Which collection to read and how far into it, already parsed from the query string.
- * @param total - The committee's own count for this collection, from its profile. Used to hold a requested page inside
- *   the collection that exists *before* an offset is sent upstream, which is the only point at which that is knowable —
- *   the response can say a page overshot, but only after the round trip that proved it.
+ * @param total - The committee's own count for this collection, from its profile. Clamps the requested page before an
+ *   offset goes upstream, rather than learning from the response that it overshot.
  * @returns The page, never throwing. A missing key or a malformed param resolves against the preview fixtures; a failed
  *   request resolves to an empty page flagged `unavailable`.
- * @see normalizeCommitteeChamberSegment and normalizeSystemCode.
+ * @see normalizeCommitteeChamberSegment
+ * @see normalizeSystemCode
  */
 export async function getCommitteeRecords(
   rawChamber: string,

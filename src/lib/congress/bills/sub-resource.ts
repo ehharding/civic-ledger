@@ -27,9 +27,7 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
  * key check, the route-param guard, the page-size ceiling, the cache tags, and the rule that an absent record is an
  * empty list rather than an error.
  *
- * It lives in its own module rather than inside `reads.ts` because `committees.ts`, `cosponsors.ts`, `related.ts`, and
- * `committees/activity.ts` need it too, and a module whose exports are otherwise all public reads is the wrong place to
- * keep an internal helper five modules share.
+ * Its own module, not part of `reads.ts`, because four other modules share it and `reads.ts` exports only public reads.
  */
 
 /**

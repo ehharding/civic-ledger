@@ -10,20 +10,15 @@ import { DetailPanel } from "@/components/ui/detail-panel";
 import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
 
 /**
- * The body of one learning module, in the shape every module shares: header, numbered steps, an honest-limits panel,
- * the citation list, and a "read this next" callout.
+ * The body of one learning module: header, numbered steps, an honest-limits panel, the citation list, and a "read this
+ * next" callout. The content lives in `src/lib/lessons.ts`, so adding a module is a data edit, not a new page.
  *
- * One component for every module, so the markup (and its `aria-labelledby` wiring) is kept correct in one place. The
- * lesson *content* lives in `src/lib/lessons.ts`, which makes adding a module an edit to one data file rather than a
- * new page.
+ * The limits panel is mandatory and accented: every lesson is a simplification, and this is where it says which one. A
+ * reader skimming the steps still passes it on the way to the sources.
  *
- * The limits panel is not optional and takes the accent treatment deliberately: every lesson is a simplification, and
- * the panel is where each says which one it made. A reader who skims the steps still passes it on the way to the
- * sources.
- *
- * The steps and the limits run through {@link GlossaryProse}, so a glossary term carries its definition where it is
- * used — these lessons are read *because* the vocabulary is unfamiliar. The headings and intro are left alone: a dotted
- * underline in display type reads as damage, and the step a term belongs to repeats it in its own copy anyway.
+ * Steps and limits run through {@link GlossaryProse}, since these lessons are read *because* the vocabulary is
+ * unfamiliar. Headings and intro don't: a dotted underline in display type reads as damage, and the step repeats the
+ * term anyway.
  *
  * @param lesson - The module to render.
  * @returns The full lesson body, ready to drop inside a `SiteShell`.

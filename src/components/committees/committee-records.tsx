@@ -71,6 +71,20 @@ function countFor(
   return committeeReportedCount(profile, kind);
 }
 
+/** Props for {@link RecordsTab}. */
+type RecordsTabProps = {
+  /** The committee's chamber; with `systemCode`, what identifies it. */
+  chamber: CommitteeChamber;
+  /** The committee's system code. */
+  systemCode: string;
+  /** Which collection this tab opens. */
+  kind: CommitteeRecordKind;
+  /** How many records the collection holds, or `undefined` when Congress.gov reported none. */
+  count: number | undefined;
+  /** Whether this tab's collection is the one showing. */
+  isCurrent: boolean;
+};
+
 /**
  * One collection tab.
  *
@@ -80,22 +94,10 @@ function countFor(
  * screen-reader user to expect arrow-key switching that does not happen. `aria-current="page"` states which view is
  * showing, which is the honest version of the same information.
  *
- * @param props - The committee, which collection this tab opens, its count, and whether it is the current view.
+ * @param props - {@link RecordsTabProps}.
  * @returns The tab.
  */
-function RecordsTab({
-  chamber,
-  systemCode,
-  kind,
-  count,
-  isCurrent,
-}: {
-  chamber: CommitteeChamber;
-  systemCode: string;
-  kind: CommitteeRecordKind;
-  count: number | undefined;
-  isCurrent: boolean;
-}): JSX.Element {
+function RecordsTab({ chamber, systemCode, kind, count, isCurrent }: RecordsTabProps): JSX.Element {
   // Always page 1: switching collections from deep inside one of them and landing on page 9 of the next would be a
   // pager position carried somewhere it means nothing.
   const href: Route = committeeRecordsHref(chamber, systemCode, { kind, page: 1 });
@@ -261,30 +263,30 @@ const PAGE_INPUT_ID: string = "committee-records-page";
 /** The "of N" total's `id`, which describes the page-number field. */
 const PAGE_TOTAL_ID: string = "committee-records-page-total";
 
+/** Props for {@link PagerStep}. */
+type PagerStepProps = {
+  /** Where the step lands, or `undefined` at the end of the range, which renders it as text. */
+  href: Route | undefined;
+  /** What the step says. */
+  label: string;
+  /** The step's glyph. */
+  icon: LucideIcon;
+  /** Leading for the two backward steps, trailing for the two forward ones — the glyph points the way it travels. */
+  side: "leading" | "trailing";
+  /** The link's `rel`, on the previous and next steps. */
+  rel?: "prev" | "next";
+};
+
 /**
  * One of the pager's four steps: first, previous, next, last.
  *
  * A link when there is somewhere to go and plain text when there isn't: an end of the range is rendered as text rather
  * than as a disabled link, so there is no focusable control that does nothing.
  *
- * @param props - Where the step lands (or `undefined` at the end of the range), what it says, its glyph, and which side
- *   that glyph sits on.
+ * @param props - {@link PagerStepProps}.
  * @returns The step.
  */
-function PagerStep({
-  href,
-  label,
-  icon: Icon,
-  side,
-  rel,
-}: {
-  href: Route | undefined;
-  label: string;
-  icon: LucideIcon;
-  /** Leading for the two backward steps, trailing for the two forward ones — the glyph points the way it travels. */
-  side: "leading" | "trailing";
-  rel?: "prev" | "next";
-}): JSX.Element {
+function PagerStep({ href, label, icon: Icon, side, rel }: PagerStepProps): JSX.Element {
   const glyph: JSX.Element = <Icon aria-hidden="true" size={16} />;
   const content: JSX.Element =
     side === "leading" ? (
@@ -310,6 +312,20 @@ function PagerStep({
   );
 }
 
+/** Props for {@link RecordsPager}. */
+type RecordsPagerProps = {
+  /** The committee's chamber; with `systemCode`, what identifies it. */
+  chamber: CommitteeChamber;
+  /** The committee's system code. */
+  systemCode: string;
+  /** The collection being paged. */
+  kind: CommitteeRecordKind;
+  /** The current page, 1-based. */
+  page: number;
+  /** How many pages the collection fills. */
+  pageCount: number;
+};
+
 /**
  * The pager: two steps back, a page-number field, two steps forward. No numbered run, since collections reach hundreds
  * of pages; the field jumps anywhere.
@@ -317,22 +333,10 @@ function PagerStep({
  * The field is a native GET `<form>`, so it works without JavaScript and yields a shareable URL. The costs: a full
  * document navigation, and `?page=1` where the link builders would write a bare URL.
  *
- * @param props - The committee, the current view, and how many pages the collection fills.
+ * @param props - {@link RecordsPagerProps}.
  * @returns The pager, or `null` when the collection fits on one page and there is nowhere to go.
  */
-function RecordsPager({
-  chamber,
-  systemCode,
-  kind,
-  page,
-  pageCount,
-}: {
-  chamber: CommitteeChamber;
-  systemCode: string;
-  kind: CommitteeRecordKind;
-  page: number;
-  pageCount: number;
-}): JSX.Element | null {
+function RecordsPager({ chamber, systemCode, kind, page, pageCount }: RecordsPagerProps): JSX.Element | null {
   if (pageCount <= 1) return null;
 
   const label: string = committeeRecordKindLabels[kind].toLowerCase();

@@ -15,8 +15,11 @@ export const metadata: Metadata = pageMetadata({
 
 /** One product principle shown on the /about (Methodology) page: its icon, title, and one-line explanation. */
 type Principle = {
+  /** The Lucide icon drawn beside the title. */
   icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+  /** The principle, as a short heading. */
   title: string;
+  /** One sentence on what the principle means in practice. */
   copy: string;
 };
 

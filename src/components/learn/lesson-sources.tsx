@@ -5,6 +5,7 @@ import type { LessonSource } from "@/lib/lessons";
 
 /** Props for {@link LessonSources}. */
 type LessonSourcesProps = {
+  /** The lesson's primary sources, in display order. */
   sources: LessonSource[];
   /**
    * Ties the `<section>` to its own heading via `aria-labelledby`. Passed in rather than fixed, so a page rendering

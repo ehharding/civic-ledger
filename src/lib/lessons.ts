@@ -190,19 +190,12 @@ const billLifecycleSteps: LessonStep[] = billStages.map(
 );
 
 /**
- * Every learning module, in reading order.
+ * Every learning module, in reading order. A module's position here *is* its number ("Lesson 2"), so the two can't
+ * disagree.
  *
- * The order is the lesson numbering: a module's position here is what the hub prints as "Lesson 2" and what its own
- * page prints in its eyebrow, so the number is never written down anywhere it can disagree with the sequence.
- *
- * The sequence itself is an argument. The lifecycle comes first because it is the frame the other three sit inside.
- * Committees come second because that is where the large majority of bills actually end, which the first lesson states
- * and does not explain. Voting comes third because it is the one most likely to be read for a specific bill, and it is
- * the most honest to read *after* knowing how little of the process is settled by a vote at all.
- *
- * Amendments come last because they presume all three. The first lesson's own limits list names them as the thing it
- * folded away — everything the two chambers traded to reach identical text happens inside its single "Passed a Chamber"
- * step — so this module is that admission paid off, and it cannot be read before the step it is unpacking.
+ * The lifecycle comes first, as the frame for the rest. Committees next, since most bills end there. Voting third, read
+ * best after knowing how little a vote settles. Amendments last: they unpack the first lesson's single "Passed a
+ * Chamber" step, and presume all three before them.
  */
 export const lessons: readonly Lesson[] = [
   {

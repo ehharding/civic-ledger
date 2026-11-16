@@ -13,6 +13,7 @@ import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
 /** Params for the individual committee route (`/committees/[chamber]/[systemCode]`). */
 type CommitteePageProps = {
+  /** The dynamic segments, as Next hands them over. */
   params: CommitteeParams;
 };
 

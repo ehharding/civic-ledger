@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
 
 /** The health check's response body. */
 type HealthResponse = {
+  /** Always `"ok"`: a response at all is the liveness signal. */
   status: "ok";
+  /** Always `"civic-ledger"`. */
   service: string;
   /**
    * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise.

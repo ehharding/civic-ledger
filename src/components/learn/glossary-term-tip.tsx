@@ -36,15 +36,12 @@ export const DEFAULT_TIP_PLACEMENT: TipPlacement = { left: "50%", side: "above" 
 /**
  * Holds a measured bubble inside the viewport.
  *
- * Centering a bubble on the word it defines is right until the word is near an edge, and in this app it very often is:
- * a lesson's text column is narrower than the window, so the *first* word of a line sits far enough left that a 23rem
- * bubble centered on it starts off-screen. Pure CSS cannot express "centered, but not past the edge" — `position:
- * absolute` resolves against an ancestor, and the ancestor is the word — so the correction is measured once per
- * opening and applied as an offset.
+ * A 23rem bubble centered on the first word of a line in a lesson's narrow column starts off-screen, and CSS can't say
+ * "centered, but not past the edge" — `position: absolute` resolves against the word itself. So the correction is
+ * measured once per opening and applied as an offset.
  *
- * Kept as a pure function of two rectangles, with no DOM access of its own, so every case it has to get right — off the
- * left, off the right, off the top, and the ordinary centered one — is directly testable rather than reachable only by
- * rendering a page at a particular width. Same reasoning as `congress/members/seating.ts`, one layer down.
+ * Pure, with no DOM access, so each case — off the left, the right, the top, or none — is testable without rendering a
+ * page at a particular width.
  *
  * @param box - Where the bubble landed when centered and placed above, in viewport coordinates.
  * @param viewport - The visible area's width. Only the width is consulted: the vertical decision is whether the bubble
@@ -68,8 +65,10 @@ export function fitTipToViewport(box: DOMRect, viewport: { width: number }): Tip
 
 /** Props for {@link GlossaryTermTip}. */
 type GlossaryTermTipProps = {
-  /** The entry to define. Passed in whole rather than looked up here, so the browser bundle carries only the terms a
-   *  page actually uses instead of the entire glossary. */
+  /**
+   * The entry to define. Passed in whole rather than looked up here, so the browser bundle carries only the terms a
+   * page uses instead of the entire glossary.
+   */
   entry: GlossaryTerm;
   /**
    * Where the term links, which is always its own entry on `/learn`.
