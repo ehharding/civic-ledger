@@ -33,13 +33,11 @@ import { billHref, committeeHref, committeeRecordsHref } from "@/lib/routes";
  *
  * **Every control here navigates.** The collection tabs and the pager's four steps are `next/link`s to this same
  * committee carrying different query params, not buttons over local state, and the pager's page field is a plain GET
- * `<form>` to the same place. That is what makes each view shareable, openable in a new tab, followable by a crawler,
- * and reachable with JavaScript disabled — and it is what lets this whole section stay a server component, which
- * matters because the alternative would have meant shipping a page's worth of records to the browser to filter records
- * the browser already can't fetch more of.
+ * `<form>` to the same place. That makes each view shareable, openable in a new tab, followable by a crawler, and
+ * reachable with JavaScript disabled, and it keeps this whole section a server component.
  *
- * @see congress/committees/records.ts for what these collections are and, more importantly, what this page does *not*
- *   claim about the order Congress.gov publishes them in.
+ * @see congress/committees/records.ts for what these collections are, and what this page does *not* claim about the
+ *   order Congress.gov publishes them in.
  */
 
 /** Props for {@link CommitteeRecordsSection} — everything the committee route resolves server-side. */
@@ -415,6 +413,16 @@ function RecordsPager({ chamber, systemCode, kind, page, pageCount }: RecordsPag
   );
 }
 
+/** What {@link emptyCopy} needs to know about an empty collection. */
+type EmptyCollection = {
+  /** Which collection is empty. */
+  kind: CommitteeRecordKind;
+  /** Whether its request failed. */
+  unavailable: boolean;
+  /** Whether the page is showing placeholder records. */
+  isPreview: boolean;
+};
+
 /**
  * What to say when a collection has no rows on screen.
  *
@@ -422,10 +430,10 @@ function RecordsPager({ chamber, systemCode, kind, page, pageCount }: RecordsPag
  * `getCommitteeProfile` words its three preview notices apart: a reader who is told "this committee has published no
  * reports" when the truth is "the request failed" has been told something false about the congressional record.
  *
- * @param options - Which collection, whether the request failed, and whether these are placeholder records.
+ * @param options - {@link EmptyCollection}.
  * @returns The sentence to print in place of the list.
  */
-function emptyCopy(options: { kind: CommitteeRecordKind; unavailable: boolean; isPreview: boolean }): string {
+function emptyCopy(options: EmptyCollection): string {
   if (options.unavailable) {
     return unavailableCopy("These records are", "the committee has any");
   }

@@ -31,8 +31,8 @@ export const BILLS_METADATA: Metadata = pageMetadata({
  * and renders on demand.
  *
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
- * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
- *   cached; see {@link refuseDegradedRender}.
+ * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
+ *   {@link refuseDegradedRender}.
  * @returns The directory page for the current Congress.
  * @see src/lib/query-routes.ts
  * @see resolveBillDirectoryQuery

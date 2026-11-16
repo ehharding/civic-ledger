@@ -45,14 +45,21 @@ type MemberDetailProps = {
   legislationLimit: number;
 };
 
+/** Props for {@link ServiceTerm}. */
+type ServiceTermProps = {
+  /** The term to describe. */
+  term: MemberTerm;
+  /** The chamber's full name, for a term whose record names no member type. */
+  chamberLabel: string;
+};
+
 /**
  * One row of the service history.
  *
- * @param term - The term to describe.
- * @param chamberLabel - The chamber's full name.
+ * @param props - {@link ServiceTermProps}.
  * @returns The term's chamber, congress, and calendar span.
  */
-function ServiceTerm({ term, chamberLabel }: { term: MemberTerm; chamberLabel: string }): JSX.Element {
+function ServiceTerm({ term, chamberLabel }: ServiceTermProps): JSX.Element {
   const years: string = formatTermYears(term);
 
   return (

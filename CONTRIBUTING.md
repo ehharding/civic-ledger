@@ -90,18 +90,10 @@ and `requestedUrl` from `src/test/congress-api.ts` instead of declaring its own.
 
 ## Where Documentation Goes
 
-Documentation scales here by having **one home per fact**, chosen by audience rather than topic. The routing table and
-the style rules live in [docs/README.md](docs/README.md); anything a contributor does or must not do belongs in this
-file.
-
-**The default is the code comment.** The four documents under `docs/` exist for reasoning that spans files, constrains
-the product, or has to be found by someone who is not already reading the relevant module. Reasoning about one function,
-one component, or one CSS rule belongs beside it — read at the moment it is needed, and going stale visibly rather than
-quietly.
-
-A comment states why the code is the way it is now, not how it got there — Git holds the history, and a note about a
-previous shape has to be checked against the code before it can be trusted. Keep comments as short as the reason allows.
-If a decision is worth recording and fits none of the rows in that table, it is probably a code comment.
+Documentation has **one home per fact**, chosen by audience rather than topic. The routing table and the style rules
+live in [docs/README.md](docs/README.md); anything a contributor does or must not do belongs in this file. The default
+home is a code comment beside the code it explains, saying why that code is the way it is now, as briefly as the reason
+allows.
 
 ## Tooling Stays Small
 
@@ -143,6 +135,13 @@ default — a few current positions, so they don't have to be relitigated per pu
   everything `pnpm lint` can fail on rather than only the whitespace half of it.
 - Prefer a doc comment that explains _why_ over one that restates the signature. The comment density in
   `src/lib/congress/` is the house style.
+- Each comment takes the form its context calls for. JSDoc (`/** */`) documents one declaration; a note covering a group
+  of declarations is a `//` line above them, and test blocks, hooks, and `useEffect` calls take `/* */`. `@see` is a
+  block tag on its own line after every other tag. Mid-sentence, write `(see {@link X})`, and outside JSDoc write plain
+  "see".
+- Outside tests, name an object shape that's used more than once or has more than one field. A component with two or
+  more props gets a `type XProps` with a doc comment on each field, and its JSDoc says `@param props - {@link XProps}.`
+  rather than documenting the destructured fields, which TypeScript hovers don't show.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
   point is a wish.
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import

@@ -84,6 +84,14 @@ export function defaultRowCount(seatCount: number): number {
   return Math.min(seatCount, Math.max(MIN_ROWS, Math.min(MAX_ROWS, scaled)));
 }
 
+/** One arc's fractional share lost to flooring, kept with the arc's position so arcs can be ranked by it. */
+type ArcRemainder = {
+  /** The arc's position, innermost first. */
+  index: number;
+  /** The fraction of a seat its exact share lost when floored. */
+  remainder: number;
+};
+
 /**
  * Splits seats across arcs in proportion to each arc's radius, so density is even across the half-disc. Uses the
  * largest-remainder method so the counts sum to *exactly* `seatCount` — rounding would leave an empty chair or an
@@ -103,15 +111,9 @@ export function distributeSeatsAcrossRows(seatCount: number, radii: number[]): n
 
   const assigned: number = counts.reduce((sum: number, count: number): number => sum + count, 0);
   const byLargestRemainder: number[] = exactShares
-    .map((share: number, index: number): { index: number; remainder: number } => ({
-      index,
-      remainder: share - Math.floor(share),
-    }))
-    .sort(
-      (a: { index: number; remainder: number }, b: { index: number; remainder: number }): number =>
-        b.remainder - a.remainder,
-    )
-    .map((entry: { index: number; remainder: number }): number => entry.index);
+    .map((share: number, index: number): ArcRemainder => ({ index, remainder: share - Math.floor(share) }))
+    .sort((a: ArcRemainder, b: ArcRemainder): number => b.remainder - a.remainder)
+    .map((entry: ArcRemainder): number => entry.index);
 
   // Flooring each share loses less than one seat per arc, so there are always fewer leftovers than arcs to hand them
   // to; the modulo is belt-and-braces against a caller passing pathological radii. Every `?? 0` below indexes at a

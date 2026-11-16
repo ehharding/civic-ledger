@@ -23,6 +23,14 @@ export function getCurrentCongress(referenceDate: Date = new Date()): number {
   return Math.max(1, Math.floor((effectiveYear - FIRST_CONGRESS_YEAR) / 2) + 1);
 }
 
+/** The calendar span of one Congress's two-year term. */
+export type CongressYearRange = {
+  /** The year it convenes. */
+  startYear: number;
+  /** The year the next Congress convenes, ending this one. */
+  endYear: number;
+};
+
 /**
  * The two-year term a Congress covers, derived from the same fixed constitutional cadence {@link getCurrentCongress}
  * uses: each Congress begins January 3rd of an odd-numbered year, two years after the previous one, counting back to
@@ -31,7 +39,7 @@ export function getCurrentCongress(referenceDate: Date = new Date()): number {
  * @param congress - The Congress number (e.g., `119`).
  * @returns Its calendar span — `{ startYear: 2025, endYear: 2027 }` for the 119th.
  */
-export function getCongressYearRange(congress: number): { startYear: number; endYear: number } {
+export function getCongressYearRange(congress: number): CongressYearRange {
   const startYear: number = FIRST_CONGRESS_YEAR + (congress - 1) * 2;
   return { startYear, endYear: startYear + 2 };
 }

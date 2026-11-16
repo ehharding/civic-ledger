@@ -2,7 +2,7 @@
  * Covers search-params.ts, where a shared link becomes a starting view: malformed params resolve to defaults, the
  * static-export guard (invisible outside that build) holds, and repeated params (`?state=Ohio&state=Iowa`) are decided.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_BILL_DIRECTORY_QUERY } from "@/lib/congress/bills/search";
 import { DEFAULT_COMMITTEE_DIRECTORY_QUERY } from "@/lib/congress/committees/filter";
@@ -23,10 +23,6 @@ function route(params: RouteSearchParams): Promise<RouteSearchParams> {
 }
 
 const JURISDICTIONS: string[] = ["Ohio", "Iowa", "Vermont"];
-
-afterEach((): void => {
-  delete process.env.STATIC_EXPORT;
-});
 
 describe("resolveBillDirectoryQuery", (): void => {
   it("reads a search and a stage out of the URL", async (): Promise<void> => {
@@ -165,7 +161,7 @@ describe("in a static export", (): void => {
   // default view — the page still works, it just cannot be pre-filled from the URL, and the directory adopts the
   // address bar in the browser instead. See the mount case in useDirectoryUrlSync.
   it("hands over each directory's default view rather than reading the request", async (): Promise<void> => {
-    process.env.STATIC_EXPORT = "true";
+    vi.stubEnv("STATIC_EXPORT", "true");
 
     await expect(resolveBillDirectoryQuery(route({ q: "broadband", stage: "law" }))).resolves.toEqual(
       DEFAULT_BILL_DIRECTORY_QUERY,
@@ -184,7 +180,7 @@ describe("in a static export", (): void => {
   it("reads the request normally for any other value of the flag", async (): Promise<void> => {
     // Only the exact string "true" switches the static build on, matching next.config.ts — so a stray "1" or "false"
     // must not silently disable deep links on the real server deployment.
-    process.env.STATIC_EXPORT = "false";
+    vi.stubEnv("STATIC_EXPORT", "false");
 
     await expect(resolveBillDirectoryQuery(route({ stage: "law" }))).resolves.toEqual({ query: "", stage: "law" });
   });

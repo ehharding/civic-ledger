@@ -18,8 +18,16 @@ import { type RouteSearchParams, resolveCommitteeRecordsQuery } from "@/lib/sear
 /** The cached committee route's pattern, as a refused render names it. */
 export const COMMITTEE_ROUTE: string = "/committees/[chamber]/[systemCode]";
 
-/** The route params `/committees/[chamber]/[systemCode]` and its `/query` twin share. */
-export type CommitteeParams = Promise<{ chamber: string; systemCode: string }>;
+/** The dynamic segments `/committees/[chamber]/[systemCode]` and its `/query` twin share. */
+export type CommitteeRouteParams = {
+  /** The chamber segment, e.g., `"house"`. */
+  chamber: string;
+  /** The committee's or subcommittee's system code, e.g., `"hsag00"`. */
+  systemCode: string;
+};
+
+/** {@link CommitteeRouteParams} as Next hands them to the page. */
+export type CommitteeParams = Promise<CommitteeRouteParams>;
 
 /**
  * Builds the per-committee title and description. Shares the page's read: `getCommitteeProfile` is memoized per render.
@@ -53,8 +61,8 @@ export async function committeeMetadata(params: CommitteeParams, cachedAs?: stri
  *
  * @param params - The committee's route params, straight from the URL and therefore untrusted.
  * @param searchParams - The record view's query params, equally untrusted and equally parsed rather than read.
- * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
- *   cached; see {@link refuseDegradedRender}.
+ * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
+ *   {@link refuseDegradedRender}.
  * @returns The committee page, or the 404 page when the identifiers resolve to nothing.
  * @see committeeHref
  * @see clampCommitteeRecordsPage

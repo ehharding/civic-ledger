@@ -22,12 +22,11 @@ import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
  * fell back to preview data.
  *
  * @param request - Expects a `q` query param (e.g., `/api/bills/search?q=broadband`), trimmed and length-capped by
- *   {@link parseQueryParam}. A missing or blank `q` returns every swept Congress's most recently active bills, since
- *   `matchesQuery` treats an empty query as matching everything — the client doesn't normally call this with a blank
- *   query, but the route stays well-defined if it does.
+ *   {@link parseQueryParam}. A blank `q` matches everything, returning every swept Congress's most recently active
+ *   bills.
  * @returns A {@link BillSearchResponse}, including how many Congresses were swept and whether results were truncated,
  *   so the UI can describe the scope of what it just searched. Never an error status: a search that can't reach live
- *   data returns the small, labeled preview matches instead, same as every other data path in this app.
+ *   data returns the labeled preview matches instead.
  */
 export async function GET(request: Request): Promise<NextResponse<BillSearchResponse>> {
   const { searchParams } = new URL(request.url);

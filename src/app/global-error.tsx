@@ -8,6 +8,12 @@ import { logError } from "@/lib/observability/log";
 
 import "./globals.css";
 
+/** Props for {@link GlobalError}. */
+type GlobalErrorProps = {
+  /** The caught error, including Next's `digest` for correlating it with a server log entry. */
+  error: Error & { digest?: string };
+};
+
 /**
  * The last-resort boundary, for a failure in the root layout itself, which `error.tsx` can't catch. It replaces the
  * whole document — hence its own `<html>` and `<body>`, and no `SiteShell`, which might be what failed.
@@ -15,10 +21,10 @@ import "./globals.css";
  * Reporting here is the only signal such a failure has. As in `error.tsx`, the error is reported, never rendered (see
  * `src/lib/observability/redact.ts`). Minimal styling that depends on nothing that could have broken.
  *
- * @param error - The caught error, including Next's `digest`.
+ * @param props - {@link GlobalErrorProps}.
  * @returns A complete, self-contained HTML document.
  */
-export default function GlobalError({ error }: { error: Error & { digest?: string } }): JSX.Element {
+export default function GlobalError({ error }: GlobalErrorProps): JSX.Element {
   useEffect((): void => {
     // See error.tsx for why both. The `boundary` attribute is what separates the two in a query — reaching this one
     // means the root layout itself failed, which is a categorically worse fact than a failed segment.

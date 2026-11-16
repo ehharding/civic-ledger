@@ -26,14 +26,27 @@ export type BillRouteParams = {
 };
 
 /**
+ * A bill's natural identifier in either form it arrives in: a record's numeric `congress` or a route param's string
+ * one. Every helper that derives something from a bill's identity takes this, so both forms name the same bill.
+ */
+export type BillIdentity = {
+  /** The Congress number, numeric or as it appears in a URL. */
+  congress: number | string;
+  /** The bill type code, in any case (e.g., `"hr"` or `"HR"`). */
+  type: string;
+  /** The bill number. */
+  number: string;
+};
+
+/**
  * Builds the `"{congress}-{TYPE}-{number}"` key that is the single definition of bill identity — used as a React key,
  * for fixture lookups, and anywhere the adapter asks "is this the same bill?".
  *
- * @param input - A bill's natural identifier. `congress` may be numeric or a string and `type` is upper-cased, so a
- *   live record and a route param naming the same bill produce the same key.
+ * @param input - The bill's identifier. `type` is upper-cased, so a live record and a route param naming the same bill
+ *   produce the same key.
  * @returns The identity key, e.g., `"119-HR-284"`.
  */
-export function billIdentityKey(input: { congress: number | string; type: string; number: string }): string {
+export function billIdentityKey(input: BillIdentity): string {
   return `${input.congress}-${String(input.type).toUpperCase()}-${input.number}`;
 }
 
@@ -68,10 +81,10 @@ export const CONGRESS_GOV_HOME: string = "https://www.congress.gov/";
  *
  * Derived rather than taken from the upstream `url`, which is an API link that serves JSON (or a 403 without a key).
  *
- * @param bill - A bill's natural identifier, with a numeric or string `congress`.
+ * @param bill - The bill's identifier.
  * @returns The record's public URL, or {@link CONGRESS_GOV_HOME} for an unrecognized type or Congress.
  */
-export function congressGovBillUrl(bill: { congress: number | string; type: string; number: string }): string {
+export function congressGovBillUrl(bill: BillIdentity): string {
   const typePath: string | undefined = CONGRESS_GOV_BILL_PATHS[String(bill.type).toUpperCase()];
   const congress: number = Number(bill.congress);
 

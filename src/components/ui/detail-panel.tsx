@@ -13,16 +13,16 @@ type DetailPanelElement = "section" | "aside" | "article";
 
 /** Props for {@link DetailPanel}. */
 type DetailPanelProps = {
-  /** The small label above the heading, e.g., `"Primary Source"`. A node rather than a string so a lesson step can
-   *  count itself ("Step 2 of 5") without assembling the sentence first. */
+  /**
+   * The small label above the heading, e.g., `"Primary Source"`. A node rather than a string so a lesson step can count
+   * itself ("Step 2 of 5") without assembling the sentence first.
+   */
   kicker: ReactNode;
   /** The panel's heading. */
   heading: string;
   /**
    * The heading's `id`, which is also what this panel's `aria-labelledby` points at. One value for both, which is the
    * whole point. Must be unique within the page.
-   *
-   * @see DetailPanel
    */
   headingId: string;
   /** The element the panel renders as, as a {@link DetailPanelElement}. Defaults to `"section"`. */
@@ -31,8 +31,10 @@ type DetailPanelProps = {
   accent?: boolean;
   /** Extra classes, for the handful of panels that tune their own layout (`lesson-step`, `lesson-limits`). */
   className?: string;
-  /** The panel's contents, rendered directly under the heading — `.detail-panel > .text-link` in the stylesheet
-   *  depends on there being no wrapper here. */
+  /**
+   * The panel's contents, rendered directly under the heading — `.detail-panel > .text-link` in the stylesheet depends
+   * on there being no wrapper here.
+   */
   children: ReactNode;
 };
 

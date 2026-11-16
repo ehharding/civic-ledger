@@ -3,21 +3,14 @@
  * ones), `/api/` stays disallowed, and the query-variant rules keep crawlers off on-demand renders.
  */
 import type { MetadataRoute } from "next";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import robots, { AI_TRAINING_CRAWLERS, billRecordRules } from "@/app/robots";
+import robots, { AI_TRAINING_CRAWLERS, billRecordRules, type RobotsPathRules } from "@/app/robots";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { getSiteUrl } from "@/lib/site";
 
-const originalSiteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL;
-
 beforeEach((): void => {
-  process.env.NEXT_PUBLIC_SITE_URL = "https://civic-ledger.test";
-});
-
-afterEach((): void => {
-  if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
-  else process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://civic-ledger.test");
 });
 
 describe("robots", (): void => {
@@ -75,7 +68,7 @@ describe("robots", (): void => {
   });
 
   it("builds that URL from the shared site resolver rather than a literal of its own", (): void => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://elsewhere.test";
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://elsewhere.test");
 
     expect(robots().sitemap).toBe(`${getSiteUrl()}/sitemap.xml`);
   });
@@ -87,22 +80,32 @@ describe("robots", (): void => {
   describe("bill records", (): void => {
     /**
      * Resolves a path against allow and disallow prefixes the way Google and Bing do: the longest matching rule wins,
-     * and `*` matches any run of characters.
+     * `*` matches any run of characters, and a trailing `$` anchors the end of the path.
      */
-    function isAllowed(path: string, rules: { allow: string[]; disallow: string[] }): boolean {
+    function isAllowed(path: string, rules: RobotsPathRules): boolean {
+      // Every other character is literal, so escape the full regex metacharacter set, backslash included.
+      const toRegExp = (pattern: string): RegExp => {
+        const anchored: boolean = pattern.endsWith("$");
+        const body: string = (anchored ? pattern.slice(0, -1) : pattern)
+          .split("*")
+          .map((literal: string): string => literal.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"))
+          .join(".*");
+        return new RegExp(`^${body}${anchored ? "$" : ""}`);
+      };
       const matchLength = (patterns: string[]): number =>
         Math.max(
           -1,
           ...patterns
-            .filter((pattern: string): boolean =>
-              new RegExp(`^${pattern.replace(/[.?+()]/g, "\\$&").replace(/\*/g, ".*")}`).test(path),
-            )
+            .filter((pattern: string): boolean => toRegExp(pattern).test(path))
             .map((pattern: string): number => pattern.length),
         );
       return matchLength(rules.allow) >= matchLength(rules.disallow);
     }
 
-    const rules = { allow: ["/", ...billRecordRules(119).allow], disallow: billRecordRules(119).disallow };
+    const rules: RobotsPathRules = {
+      allow: ["/", ...billRecordRules(119).allow],
+      disallow: billRecordRules(119).disallow,
+    };
 
     it("keeps crawlers off a concluded Congress's bill pages", (): void => {
       expect(isAllowed("/bills/100/hr/1005", rules)).toBe(false);

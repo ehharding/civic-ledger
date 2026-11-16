@@ -19,6 +19,15 @@ const optionalString: ZodCatch<ZodOptional<ZodString>> = z.string().optional().c
 /** An optional number that degrades to `undefined` rather than failing validation. */
 const optionalNumber: ZodCatch<ZodOptional<ZodNumber>> = z.number().optional().catch(undefined);
 
+/** A record's most recent action, as bill, amendment, and nomination entries all carry it. */
+const congressApiLatestActionSchema = z.looseObject({ actionDate: optionalString, text: optionalString });
+
+/**
+ * The record count every paginated Congress.gov collection reports. Read rather than inferred from the returned array's
+ * length, which only ever describes the page in hand.
+ */
+const congressApiPaginationSchema = z.looseObject({ count: optionalNumber });
+
 /** Shape of one entry in a detail-endpoint bill's `sponsors` array. */
 export const congressApiSponsorSchema = z.looseObject({
   bioguideId: optionalString,
@@ -59,7 +68,7 @@ export const congressApiBillSchema = z.looseObject({
   updateDate: optionalString,
   url: optionalString,
   policyArea: z.looseObject({ name: optionalString }).optional().catch(undefined),
-  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  latestAction: congressApiLatestActionSchema.optional().catch(undefined),
   // Only populated on the detail endpoint — the list endpoint doesn't return any of these.
   sponsors: z.array(congressApiSponsorSchema).optional().catch(undefined),
   /**
@@ -249,7 +258,7 @@ export const congressApiRelatedBillSchema = z.looseObject({
   type: optionalString,
   number: z.union([z.string(), z.number()]).optional().catch(undefined),
   title: optionalString,
-  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  latestAction: congressApiLatestActionSchema.optional().catch(undefined),
   relationshipDetails: z.array(congressApiRelationshipDetailSchema).optional().catch(undefined),
 });
 
@@ -274,7 +283,7 @@ export const congressApiBillAmendmentSchema = z.looseObject({
   purpose: optionalString,
   description: optionalString,
   updateDate: optionalString,
-  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  latestAction: congressApiLatestActionSchema.optional().catch(undefined),
 });
 
 /** Shape of `GET /v3/bill/{congress}/{type}/{number}/amendments`. */
@@ -325,7 +334,7 @@ export const congressApiMemberSchema = z.looseObject({
 /** Shape of `GET /v3/member/congress/{congress}`. */
 export const congressApiMemberListResponseSchema = z.looseObject({
   members: z.array(congressApiMemberSchema).optional().catch(undefined),
-  pagination: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  pagination: congressApiPaginationSchema.optional().catch(undefined),
 });
 
 /**
@@ -430,7 +439,7 @@ export const congressApiCommitteeSchema = z.looseObject({
 /** Shape of `GET /v3/committee/{congress}`. */
 export const congressApiCommitteeListResponseSchema = z.looseObject({
   committees: z.array(congressApiCommitteeSchema).optional().catch(undefined),
-  pagination: z.looseObject({ count: optionalNumber }).optional().catch(undefined),
+  pagination: congressApiPaginationSchema.optional().catch(undefined),
 });
 
 /**
@@ -486,15 +495,6 @@ export const congressApiCommitteeDetailSchema = z.looseObject({
 export const congressApiCommitteeDetailResponseSchema = z.looseObject({
   committee: congressApiCommitteeDetailSchema.optional().catch(undefined),
 });
-
-/**
- * The record count every paginated Congress.gov collection reports.
- *
- * Read rather than inferred from the returned array's length, which only ever describes the page in hand. The committee
- * sub-resource endpoints below are the first place this app pages *within* a record's own collection, so the total is
- * what tells the page how many pages there are.
- */
-const congressApiPaginationSchema = z.looseObject({ count: optionalNumber });
 
 /**
  * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/bills` — a bill–committee relationship with a
@@ -563,7 +563,7 @@ export const congressApiCommitteeNominationSchema = z.looseObject({
   number: optionalNumber,
   partNumber: optionalString,
   receivedDate: optionalString,
-  latestAction: z.looseObject({ actionDate: optionalString, text: optionalString }).optional().catch(undefined),
+  latestAction: congressApiLatestActionSchema.optional().catch(undefined),
   updateDate: optionalString,
 });
 
@@ -572,6 +572,9 @@ export const congressApiCommitteeNominationsResponseSchema = z.looseObject({
   nominations: z.array(congressApiCommitteeNominationSchema).optional().catch(undefined),
   pagination: congressApiPaginationSchema.optional().catch(undefined),
 });
+
+/** The parsed shape of {@link congressApiPaginationSchema}. */
+export type CongressApiPagination = z.infer<typeof congressApiPaginationSchema>;
 
 /** The parsed shape of {@link congressApiSponsorSchema}. */
 export type CongressApiSponsor = z.infer<typeof congressApiSponsorSchema>;

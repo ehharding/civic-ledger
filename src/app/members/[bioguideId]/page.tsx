@@ -19,10 +19,16 @@ import { memberHref } from "@/lib/routes";
 /** This route's pattern, as a refused render names it. */
 const MEMBER_ROUTE: string = "/members/[bioguideId]";
 
-/** Params for the individual member route (`/members/[bioguideId]`). */
+/** The dynamic segment of `/members/[bioguideId]`. */
+type MemberRouteParams = {
+  /** The member's Bioguide ID, as it appears in the URL. */
+  bioguideId: string;
+};
+
+/** Props for the individual member route. */
 type MemberPageProps = {
-  /** The dynamic segments, as Next hands them over. */
-  params: Promise<{ bioguideId: string }>;
+  /** The dynamic segment, as Next hands it over. */
+  params: Promise<MemberRouteParams>;
 };
 
 /**
@@ -31,10 +37,12 @@ type MemberPageProps = {
  *
  * @returns One params object per preview member fixture.
  */
-export function generateStaticParams(): { bioguideId: string }[] {
-  return previewMemberProfiles.map((profile: MemberProfile): { bioguideId: string } => ({
-    bioguideId: profile.bioguideId,
-  }));
+export function generateStaticParams(): MemberRouteParams[] {
+  return previewMemberProfiles.map(
+    (profile: MemberProfile): MemberRouteParams => ({
+      bioguideId: profile.bioguideId,
+    }),
+  );
 }
 
 /**

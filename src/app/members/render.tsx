@@ -31,8 +31,8 @@ export const MEMBERS_METADATA: Metadata = pageMetadata({
  * Shared by the static `/members` (no query) and the on-demand `/query/members`.
  *
  * @param searchParams - The requested view: `?q=`/`?chamber=`/`?party=`/`?state=`/`?sort=`.
- * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
- *   cached; see {@link refuseDegradedRender}.
+ * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
+ *   {@link refuseDegradedRender}.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
  * @see getMemberDirectory
  * @see resolveMemberDirectoryQuery

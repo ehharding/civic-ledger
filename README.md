@@ -88,101 +88,33 @@ pnpm exec playwright install chromium
 | `/about`                                         | Methodology: how records are sourced, labeled, and linked back                       |
 | `/api/bills`, `/api/bills/search`, `/api/health` | Server proxies — the API key never touches the browser                               |
 
-Behind those routes:
+Behind those routes (the reasoning behind each lives in [docs/data-policy.md](docs/data-policy.md)):
 
-- **A chamber diagram that is honest about being a schematic.** One seat per sitting member, colored by party, with
-  hover and keyboard read-out of who holds each seat and a link to their page. Congress.gov publishes no desk
-  assignments, and the chart says so.
-- **A member directory with faces on it, at no upstream cost.** The member list endpoint publishes each member's
-  official portrait — unusually, since nearly everything else the individual member page shows is item-level only — so
-  every card carries one, alongside the credit line the API's terms require wherever the image appears. Preview
-  placeholders deliberately have none: a fabricated deep link is the easiest way for fiction to be taken for the record,
-  and a photograph is easier still.
-- **Shareable views on all three directories.** `/members?chamber=senate&party=republican&sort=state`,
-  `/bills?q=broadband&stage=law`, and `/committees?type=standing&sort=chamber` render already narrowed, and each page
-  writes its own current view back to the address bar as you narrow it.
-- **A committee's actual records, not just its counts.** "Bills Referred: 10,205" is a heading over the referrals
-  themselves — each naming the measure, what the committee did with it ("Referred To", "Reported By"), when, and linking
-  to that bill's own page — alongside the reports it published and the nominations sent to it. Each collection and page
-  is its own link (`/committees/house/hsag00?records=reports&page=3`), and the copy says these are paged in
-  Congress.gov's own order rather than claiming either end is the most recent, because the API publishes them in no
-  documented order and ignores its own `sort` parameter.
-- **A search that states its own limits.** Congress.gov's bill endpoint has no keyword parameter, so search sweeps every
-  supported Congress's most recently active bills — and the result copy says so rather than implying an exhaustive
-  query.
-- **A bill's votes, named but not tallied.** Each roll call taken on a bill is listed with its chamber, number, and date,
-  linking the chamber's own record — and no counts, margins, or member positions, because Congress.gov's bill record
-  doesn't carry them and the chambers publish them themselves. Both chambers appear on the same footing: the votes are
-  read from the bill's own actions, which is also the only route the Senate's have, since Congress.gov publishes a House
-  vote endpoint and no Senate counterpart.
-- **A bill's committees, read from the record and linked, not parsed out of a sentence.** Every committee that held the
-  bill, in Congress.gov's own order — primary jurisdiction first — each with the relationship it recorded ("Referred
-  To", "Reported By") and each linking to that committee's page here, subcommittees included. The referral is also
-  visible in the latest action's prose; what the committee sub-resource adds is the system code, which is the difference
-  between naming a committee and being able to open it.
-- **A bill's cosponsors, named rather than counted — and never scored.** The page lists everyone signed on, each linking
-  to their own page here, so the relationship a member's page states in one direction — the bills they cosponsored — is
-  navigable in both. They appear in Congress.gov's own chronological order, so the list reads as the bill gathering
-  support rather than as an alphabet;
-  the members who were on it at introduction are marked from the record's own flag rather than by comparing dates; and
-  where the two published figures disagree, the page says how many members signed on and later withdrew instead of
-  leaving the gap unexplained. No count is ranked, compared, or turned into a score, and the copy says outright that
-  cosponsoring is not a vote, not a prediction, and not a ranking.
-- **A bill's amendments, named and linked — and honest that naming is nearly all the record does.** Every amendment
-  Congress.gov holds against a bill is listed, cited the way Congress cites it ("S.Amdt. 2849") and linked to its own
-  record. The collection publishes a purpose for roughly one entry in fifteen, so the section counts how many came with
-  any prose and says so, rather than leaving a screen of bare citations to read as a page that failed to load. It is the
-  one collection here that links outward instead of inward, because an amendment has no page in this app to link
-  to — and the URL is derived from the pattern Congress.gov publishes on the amendment's own record, not guessed. What
-  the page will not say: whether an amendment was adopted, what it says, or who offered it. The bill-level collection
-  publishes none of the three, and a sponsor inferred from action prose would be exactly the fabrication this project
-  refuses elsewhere.
-- **The other measures a bill is related to, each with the body that said so.** "Is there a Senate version of this?" is
-  the question a reader most often arrives with, and every related measure links inward to its own page here, carrying
-  its title, its latest action, and the relationship as recorded — with the attribution attached ("Identical bill
-  (CRS)"), because relating two bills is a judgment someone made rather than something either bill records.
-- **Long collections capped visibly, never silently.** A bill with four hundred cosponsors shows twelve and puts the
-  rest behind a disclosure that names how many are there. Nothing is dropped, and the number in the label is what keeps
-  the cap from reading as a complete short list.
-- **A stage cue that reads the record rather than one sentence of it.** Where a bill became law, the page says so from
-  the record's own `laws` field and prints the citation it carries ("Public Law 119-21") — a published fact rather than
-  a classifier's reading, and one no classifier could have produced. Otherwise it classifies from the Library of
-  Congress's own action codes, not from the latest action's wording. That is the difference between correct and
-  plausible: a House bill referred onward to a Senate committee reports the referral as its latest action, and reading
-  only that walks the stepper backwards from "Passed a Chamber" to "In Committee". The four codes it trusts are the ones
-  that mean exactly one thing; floor activity is not treated as passage. The three readings settle in one
-  direction — the most advanced wins — so a page can never print a public law number beside a stepper that stopped short
-  of it.
-- **Counts that say whose count they are.** A bill's record publishes how many actions, committees, summaries, and text
-  versions Congress.gov holds for it, so the page prints that figure and credits it. Where this app shows fewer — a row
-  it could not render, or a collection past the one page it fetches — it names both numbers instead of presenting its
-  own shorter list as the whole record. Where nothing was published, it says what the page is showing and credits
-  nobody.
-- **Learning modules that cite their sources and state their limits.** Each of the four walks a process step by step,
-  ends with primary-source citations naming their publishers, and prints what it deliberately leaves out — including, in
-  the voting module, that a vote not taken on a bill is out of reach entirely, and in the amendment module, that the
-  record names what was offered without saying who offered it. The count in the hub's own heading is derived from the
-  registry rather than typed, so a fifth module cannot leave that line quietly wrong about how many there are.
-- **A glossary that comes to the reader.** Every word the glossary defines is annotated where it is actually used —
-  throughout the lessons, and in a bill's latest action, which is the one line on that page written in Congress's voice
-  rather than this app's. Hovering or focusing "cloture" or "markup" shows the definition in place; the word is also a
-  link to its full entry, so it works on a touch screen and with JavaScript off. The annotation never rewrites the text
-  it runs over, which is checked rather than intended.
-- **A header that changes shape rather than shrinking.** On a phone the five primary destinations become an animated
-  slide-out drawer instead of a row of ever-smaller labels — the same navigation landmark, restyled, so nothing is
-  duplicated and each destination gets a full-size row. It is a disclosure with a real button, a Tab loop while the
-  scrim is up, Escape to dismiss, and focus handed back to the control that opened it. With JavaScript off there is no
-  drawer and no toggle: the plain row it replaces is still there, which is checked in a browser with scripting disabled
-  rather than assumed.
-- **Loading skeletons on every route that fetches**, and a labeled preview fallback on every route that can fail.
-- **A server-only Congress.gov adapter** with boundary types, runtime validation, five-minute caching, request timeouts,
-  and a safe preview fallback.
-- **Cookieless analytics and error reporting with the query string stripped**, so a narrowed directory's
-  `?party=`/`?state=`/`?q=` never enters either feed, and the Congress.gov key — which travels in the request
-  URL — never leaves the machine in a crash report. One cut, applied in both places, with its own tests.
-- **Strict TypeScript, Biome, unit tests, Playwright smoke tests, GitHub Actions CI, Dependabot**, and a health
-  endpoint. CI also builds the static export on every pull request, since that is the one build a change can break while
-  passing the others, and refuses dependency versions published in the last 24 hours.
+- **A chamber diagram that admits it's a schematic.** One seat per sitting member, with a keyboard-reachable read-out of
+  who holds each one. Congress.gov publishes no desk assignments, and the chart says so.
+- **Member portraits from the list endpoint**, credited as the API's terms require. Preview placeholders have none.
+- **Shareable views on all three directories.** `/bills?q=broadband&stage=law` renders already narrowed, and each
+  directory writes its current view back to the address bar.
+- **A committee's actual records**: the bills referred to it, its reports, and its nominations, each collection and page
+  its own link, and labeled as Congress.gov's order rather than as newest-first.
+- **A search that states its own limits.** The bill endpoint has no keyword parameter, so search sweeps each supported
+  Congress's most recently active bills and says so.
+- **A bill's full record**: roll-call votes named and linked but not tallied, committees with their recorded
+  relationship, cosponsors in the publisher's order and never scored, amendments cited and linked, and related measures
+  with whoever related them.
+- **A stage cue that reads the record**, from the bill's own `laws` field and the Library of Congress's action codes
+  rather than the latest action's wording.
+- **Counts that say whose count they are**, and long collections capped behind a disclosure that names what's hidden.
+- **Four learning modules and a glossary**, each citing its sources. Defined terms are annotated where they're used, as
+  links that work on touch and without JavaScript.
+- **A header that becomes a drawer on a phone**: the same navigation landmark restyled, and a plain row with JavaScript
+  off.
+- **A server-only Congress.gov adapter** with runtime validation, caching, timeouts, and a labeled preview fallback on
+  every route that can fail, plus loading skeletons on every route that fetches.
+- **Cookieless analytics and error reporting with the query string stripped**, so neither a reader's filters nor the API
+  key ever reaches either feed.
+- **Strict TypeScript, Biome, 100% unit coverage, Playwright smoke and accessibility tests, CI, and Dependabot.** CI
+  also builds the static export and refuses dependency versions published in the last 24 hours.
 - An initial Drizzle/Postgres schema for future saved bills.
 
 ## Documentation

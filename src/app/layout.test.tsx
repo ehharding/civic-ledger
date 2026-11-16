@@ -8,11 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SITE_DEFAULT_TITLE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE_TEMPLATE } from "@/lib/metadata";
 
-const originalStaticExport: string | undefined = process.env.STATIC_EXPORT;
-
 afterEach((): void => {
-  if (originalStaticExport === undefined) delete process.env.STATIC_EXPORT;
-  else process.env.STATIC_EXPORT = originalStaticExport;
   vi.resetModules();
 });
 
@@ -24,7 +20,7 @@ async function loadLayout(): Promise<typeof import("@/app/layout")> {
 
 describe("RootLayout", (): void => {
   beforeEach((): void => {
-    delete process.env.STATIC_EXPORT;
+    vi.stubEnv("STATIC_EXPORT", undefined);
   });
 
   it("renders an html element declaring the document language", async (): Promise<void> => {
@@ -67,7 +63,7 @@ describe("RootLayout", (): void => {
   });
 
   it("omits the analytics collectors in a static-export build, whose host cannot serve them", async (): Promise<void> => {
-    process.env.STATIC_EXPORT = "true";
+    vi.stubEnv("STATIC_EXPORT", "true");
     const { default: RootLayout } = await loadLayout();
 
     const markup: string = renderToStaticMarkup(
@@ -84,7 +80,7 @@ describe("RootLayout", (): void => {
 
 describe("layout metadata", (): void => {
   beforeEach((): void => {
-    delete process.env.STATIC_EXPORT;
+    vi.stubEnv("STATIC_EXPORT", undefined);
   });
 
   it("uses the site's own title as the default and the suffix template for everything else", async (): Promise<void> => {

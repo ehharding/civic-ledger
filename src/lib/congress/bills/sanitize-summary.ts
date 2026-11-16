@@ -80,8 +80,8 @@ function renderTag(closingSlash: string, rawTag: string, attrs: string): string 
  * in `<i<img src=x onerror=alert(1)>mg src=x onerror=alert(1)>`, stripping the inner `<img>` splices a live one.
  *
  * Disallowed tags are dropped (their inner text kept). Every attribute is dropped except an absolute `http(s)` `href`
- * on `<a>`, which also gets `target="_blank" rel="noreferrer"`. Hand-written to stay dependency-free; revisit if it's
- * ever pointed at less predictable markup.
+ * on `<a>`, which also gets `target="_blank" rel="noreferrer"`. Why it's hand-written, and when that stops holding: see
+ * CONTRIBUTING.md, "Tooling Stays Small".
  *
  * @param html - The raw summary fragment as Congress.gov returned it.
  * @returns A fragment safe to render with `dangerouslySetInnerHTML`: allow-listed tags only, no attributes except a

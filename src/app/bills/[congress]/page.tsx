@@ -3,6 +3,7 @@ import type { JSX } from "react";
 
 import {
   type CongressBillsParams,
+  type CongressBillsRouteParams,
   congressBillsMetadata,
   renderCongressBillsRoute,
 } from "@/app/bills/[congress]/render";
@@ -33,9 +34,9 @@ type CongressBillsPageProps = {
  *
  * @returns One params object per Congress covered by the fixtures, de-duplicated.
  */
-export function generateStaticParams(): { congress: string }[] {
+export function generateStaticParams(): CongressBillsRouteParams[] {
   const congresses: number[] = Array.from(new Set(previewBills.map((bill: LegislativeBill): number => bill.congress)));
-  return congresses.map((congress: number): { congress: string } => ({ congress: String(congress) }));
+  return congresses.map((congress: number): CongressBillsRouteParams => ({ congress: String(congress) }));
 }
 
 /**

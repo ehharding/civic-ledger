@@ -7,7 +7,7 @@
  * be listed is, and the per-record pages that shouldn't be listed aren't.
  */
 import type { MetadataRoute } from "next";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import sitemap from "@/app/sitemap";
 import { listCongresses } from "@/lib/congress/congress-history";
@@ -16,15 +16,8 @@ import { lessons } from "@/lib/lessons";
 import { lessonHref } from "@/lib/routes";
 
 const SITE_URL: string = "https://civic-ledger.test";
-const originalSiteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL;
-
 beforeEach((): void => {
-  process.env.NEXT_PUBLIC_SITE_URL = SITE_URL;
-});
-
-afterEach((): void => {
-  if (originalSiteUrl === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
-  else process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+  vi.stubEnv("NEXT_PUBLIC_SITE_URL", SITE_URL);
 });
 
 /** Every URL the sitemap advertises, which is what most of these assertions are really about. */

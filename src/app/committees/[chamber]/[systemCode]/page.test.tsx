@@ -11,8 +11,8 @@ import type { Metadata } from "next";
 import { describe, expect, it } from "vitest";
 
 import CommitteePage, { generateMetadata, generateStaticParams } from "@/app/committees/[chamber]/[systemCode]/page";
-import { renderCommitteeRoute } from "@/app/committees/[chamber]/[systemCode]/render";
-import { type CommitteeProfile, describeCommittee } from "@/lib/congress/committees/model";
+import { type CommitteeRouteParams, renderCommitteeRoute } from "@/app/committees/[chamber]/[systemCode]/render";
+import { type CommitteeProfile, describeCommittee, type Subcommittee } from "@/lib/congress/committees/model";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { committeeHref } from "@/lib/routes";
 import { expectNotFound } from "@/test/next-not-found";
@@ -22,7 +22,7 @@ const firstCommittee: CommitteeProfile = previewCommitteeProfiles[0] as Committe
 
 describe("generateStaticParams", (): void => {
   it("emits an entry for every preview committee", (): void => {
-    const params: { chamber: string; systemCode: string }[] = generateStaticParams();
+    const params: CommitteeRouteParams[] = generateStaticParams();
 
     for (const profile of previewCommitteeProfiles) {
       expect(params, profile.systemCode).toContainEqual({ chamber: profile.chamber, systemCode: profile.systemCode });
@@ -30,7 +30,7 @@ describe("generateStaticParams", (): void => {
   });
 
   it("emits subcommittees alongside their parents, so a parent's links do not 404 in the static demo", (): void => {
-    const params: { chamber: string; systemCode: string }[] = generateStaticParams();
+    const params: CommitteeRouteParams[] = generateStaticParams();
 
     for (const profile of previewCommitteeProfiles) {
       for (const subcommittee of profile.subcommittees) {
@@ -77,7 +77,7 @@ describe("CommitteePage", (): void => {
 
   it("renders every preview committee and subcommittee", async (): Promise<void> => {
     for (const profile of previewCommitteeProfiles) {
-      const targets: { systemCode: string; name: string }[] = [
+      const targets: Subcommittee[] = [
         { systemCode: profile.systemCode, name: profile.name },
         ...profile.subcommittees,
       ];

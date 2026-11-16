@@ -10,16 +10,23 @@ import { collectRecordedVotes } from "@/lib/congress/upstream/mappers";
 import { formatDate, pluralize } from "@/lib/format";
 import { lessonHref } from "@/lib/routes";
 
+/** Props for {@link RecordedVotes}. */
+type RecordedVotesProps = {
+  /** Every distinct recorded vote on the bill, most recent first. */
+  votes: RecordedVote[];
+  /** Whether the action history failed to load, in which case "no recorded vote" can't be claimed. */
+  unavailable: boolean;
+};
+
 /**
  * The roll-call votes taken on a bill, each linking to the chamber's own tally. No counts or positions: the bill record
  * names votes but doesn't carry their arithmetic. Both chambers' votes are read from the bill's actions, so they appear
  * on the same footing.
  *
- * @param votes - Every distinct recorded vote on the bill, most recent first.
- * @param unavailable - Whether the action history failed to load, in which case "no recorded vote" can't be claimed.
+ * @param props - {@link RecordedVotesProps}.
  * @returns The vote list, a line saying the record could not be read, or a line saying none is on it.
  */
-function RecordedVotes({ votes, unavailable }: { votes: RecordedVote[]; unavailable: boolean }): JSX.Element {
+function RecordedVotes({ votes, unavailable }: RecordedVotesProps): JSX.Element {
   if (votes.length === 0 && unavailable) {
     return <p className="muted-copy">{unavailableCopy("Recorded votes are", "any vote was taken on this bill")}</p>;
   }

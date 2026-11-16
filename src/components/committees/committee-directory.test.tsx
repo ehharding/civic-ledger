@@ -30,7 +30,7 @@ function renderDirectory(props: Partial<ComponentProps<typeof CommitteeDirectory
   return render(<CommitteeDirectory committees={list} congress={119} source="live" {...props} />);
 }
 
-/**
+/*
  * The address bar is shared state across a file's tests, and this directory reads it as well as writing it — so a view
  * one test narrows to would otherwise be the view the next one starts from.
  */

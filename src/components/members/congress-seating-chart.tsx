@@ -164,15 +164,22 @@ const Seat = memo(function Seat({ seat, chamber, radius, isShown, isActive }: Se
   );
 });
 
+/** Props for {@link SeatDetail}. */
+type SeatDetailProps = {
+  /** The chamber the seat belongs to, which decides how the seat is described. */
+  chamber: CongressChamber;
+  /** The member holding it. */
+  member: CongressMember;
+};
+
 /**
  * The read-out shown when a seat is hovered, focused, or locked by a click.
  *
- * @param chamber - The chamber the seat belongs to, which decides how the seat is described.
- * @param member - The member holding it.
+ * @param props - {@link SeatDetailProps}.
  * @returns The detail panel's contents: name, party, seat, the non-voting caveat where it applies, a link to the
  *   member's own page, and a link to the official biography when the record carries a real Bioguide ID.
  */
-function SeatDetail({ chamber, member }: { chamber: CongressChamber; member: CongressMember }): JSX.Element {
+function SeatDetail({ chamber, member }: SeatDetailProps): JSX.Element {
   const seat: string = formatMemberSeat(member, chamber);
   const nonVoting: boolean = chamber === "house" && isNonVotingJurisdiction(member.state);
   // `undefined` for a placeholder seat, whose ID cannot resolve to a real person's biography. See bioguideUrl.

@@ -45,15 +45,7 @@ describe("formatOrdinal", (): void => {
 });
 
 describe("formatDate", (): void => {
-  const originalTz: string | undefined = process.env.TZ;
-
   afterEach((): void => {
-    if (originalTz === undefined) {
-      delete process.env.TZ;
-    } else {
-      process.env.TZ = originalTz;
-    }
-
     vi.resetModules();
   });
 
@@ -73,7 +65,7 @@ describe("formatDate", (): void => {
     // Without pinning the formatter to UTC, this renders a day off depending on the zone; both directions are checked.
     // The module is re-imported per zone because `Intl.DateTimeFormat` resolves its zone at construction.
     for (const timeZone of ["America/Chicago", "Pacific/Kiritimati"]) {
-      process.env.TZ = timeZone;
+      vi.stubEnv("TZ", timeZone);
       vi.resetModules();
 
       const { formatDate: underTimeZone } = await import("@/lib/format");

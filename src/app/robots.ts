@@ -18,6 +18,14 @@ function queryRouteDisallows(): string[] {
   return QUERY_ROUTES.map((route: QueryRoute): string => `${route.source.replace(/:\w+/g, "*")}?`);
 }
 
+/** One robots.txt group's path patterns, as {@link billRecordRules} returns them. */
+export type RobotsPathRules = {
+  /** Path patterns a crawler may fetch. */
+  allow: string[];
+  /** Path patterns a crawler may not fetch, unless a longer `allow` pattern also matches. */
+  disallow: string[];
+};
+
 /**
  * Keeps crawlers off bill pages from a concluded Congress while leaving the sitting Congress's open.
  *
@@ -35,10 +43,7 @@ function queryRouteDisallows(): string[] {
  * @returns The allow and disallow entries for bill records.
  * @see docs/deployment.md, "Keeping Server Work Bounded"
  */
-export function billRecordRules(currentCongress: number = getCurrentCongress()): {
-  allow: string[];
-  disallow: string[];
-} {
+export function billRecordRules(currentCongress: number = getCurrentCongress()): RobotsPathRules {
   return {
     allow: [`/bills/${currentCongress}/`, `/bills/${currentCongress + 1}/`],
     disallow: ["/bills/*/"],
@@ -90,7 +95,7 @@ export const AI_TRAINING_CRAWLERS: readonly string[] = [
  */
 export default function robots(): MetadataRoute.Robots {
   const siteUrl: string = getSiteUrl();
-  const bills: { allow: string[]; disallow: string[] } = billRecordRules();
+  const bills: RobotsPathRules = billRecordRules();
 
   return {
     rules: [

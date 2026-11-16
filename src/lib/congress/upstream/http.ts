@@ -4,6 +4,7 @@ import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/bi
 import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { isBioguideId } from "@/lib/congress/members/model";
+import type { CongressApiPagination } from "@/lib/congress/upstream/api-schema";
 import { logError, logWarning } from "@/lib/observability/log";
 
 /**
@@ -250,7 +251,7 @@ export async function requestCongressJson<Payload>(
  * @returns Every record found, or `null` only when the *first* page fails. A later page failing yields what did arrive:
  *   a list missing its tail is still worth rendering, and the callers would rather show most of a roster than none.
  */
-export async function fetchAllPages<Page extends { pagination?: { count?: number | undefined } | undefined }, Item>(
+export async function fetchAllPages<Page extends { pagination?: CongressApiPagination | undefined }, Item>(
   fetchPage: (offset: number) => Promise<Page | null>,
   itemsOf: (page: Page) => Item[] | undefined,
   maxPages: number,

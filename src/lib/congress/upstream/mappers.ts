@@ -762,7 +762,7 @@ export function mapCommitteeNomination(nomination: CongressApiCommitteeNominatio
   const citation: string = (nomination.citation ?? "").trim();
   if (citation.length === 0) return null;
 
-  const action: { actionDate?: string; text?: string } | undefined = nomination.latestAction;
+  const action: CongressApiCommitteeNomination["latestAction"] = nomination.latestAction;
 
   return {
     citation,

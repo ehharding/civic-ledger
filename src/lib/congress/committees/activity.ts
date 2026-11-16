@@ -13,7 +13,6 @@ import {
   committeeRecordsPageCount,
 } from "@/lib/congress/committees/records";
 import {
-  type CongressApiCommitteeBill,
   type CongressApiCommitteeBillsResponse,
   type CongressApiCommitteeNominationsResponse,
   type CongressApiCommitteeReportsResponse,
@@ -188,7 +187,7 @@ async function fetchRecords(
     return { records: { kind, items: [] }, total: undefined, failed: result.outcome === "failed" };
   }
 
-  const collection: { bills?: CongressApiCommitteeBill[]; count?: number } | undefined = result.data["committee-bills"];
+  const collection: CongressApiCommitteeBillsResponse["committee-bills"] = result.data["committee-bills"];
   const referrals: CommitteeBillReferral[] = mapUsable(collection?.bills, mapCommitteeBillReferral);
 
   return {

@@ -16,8 +16,14 @@ import { formatOrdinal } from "@/lib/format";
 import { notFoundMetadata, pageMetadata } from "@/lib/metadata";
 import { type RouteSearchParams, resolveBillDirectoryQuery } from "@/lib/search-params";
 
-/** The route params `/bills/[congress]` and its `/query/bills/[congress]` twin share. */
-export type CongressBillsParams = Promise<{ congress: string }>;
+/** The dynamic segment `/bills/[congress]` and its `/query/bills/[congress]` twin share. */
+export type CongressBillsRouteParams = {
+  /** The Congress number, as it appears in the URL. */
+  congress: string;
+};
+
+/** {@link CongressBillsRouteParams} as Next hands them to the page. */
+export type CongressBillsParams = Promise<CongressBillsRouteParams>;
 
 /**
  * Builds the per-Congress page title, description, and share tags, for both halves of the route.
@@ -55,8 +61,8 @@ export async function congressBillsMetadata(params: CongressBillsParams): Promis
  *
  * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
- * @param cachedAs - The cached route this render is stored as. The on-demand twin omits it, since its render is never
- *   cached; see {@link refuseDegradedRender}.
+ * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
+ *   {@link refuseDegradedRender}.
  * @returns The directory page for that Congress.
  * @see src/lib/query-routes.ts
  * @see parseCongressParam

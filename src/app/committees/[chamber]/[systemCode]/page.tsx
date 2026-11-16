@@ -4,10 +4,11 @@ import type { JSX } from "react";
 import {
   COMMITTEE_ROUTE,
   type CommitteeParams,
+  type CommitteeRouteParams,
   committeeMetadata,
   renderCommitteeRoute,
 } from "@/app/committees/[chamber]/[systemCode]/render";
-import type { CommitteeProfile } from "@/lib/congress/committees/model";
+import type { CommitteeProfile, Subcommittee } from "@/lib/congress/committees/model";
 import { previewCommitteeProfiles } from "@/lib/congress/upstream/fixtures";
 import { NO_SEARCH_PARAMS } from "@/lib/search-params";
 
@@ -23,13 +24,15 @@ type CommitteePageProps = {
  *
  * @returns One params object per preview committee and preview subcommittee.
  */
-export function generateStaticParams(): { chamber: string; systemCode: string }[] {
-  return previewCommitteeProfiles.flatMap((profile: CommitteeProfile): { chamber: string; systemCode: string }[] => [
+export function generateStaticParams(): CommitteeRouteParams[] {
+  return previewCommitteeProfiles.flatMap((profile: CommitteeProfile): CommitteeRouteParams[] => [
     { chamber: profile.chamber, systemCode: profile.systemCode },
-    ...profile.subcommittees.map((subcommittee: { systemCode: string }): { chamber: string; systemCode: string } => ({
-      chamber: profile.chamber,
-      systemCode: subcommittee.systemCode,
-    })),
+    ...profile.subcommittees.map(
+      (subcommittee: Subcommittee): CommitteeRouteParams => ({
+        chamber: profile.chamber,
+        systemCode: subcommittee.systemCode,
+      }),
+    ),
   ]);
 }
 

@@ -1,5 +1,6 @@
 import type { Route } from "next";
 
+import type { BillIdentity } from "@/lib/congress/bills/model";
 import type { CommitteeChamber } from "@/lib/congress/committees/model";
 import { type CommitteeRecordsQuery, committeeRecordsQueryString } from "@/lib/congress/committees/records";
 import type { LessonSlug } from "@/lib/lessons";
@@ -19,11 +20,10 @@ import type { LessonSlug } from "@/lib/lessons";
 /**
  * Builds the in-app route to a bill's detail page, e.g., `/bills/119/hr/284`.
  *
- * @param bill - Anything carrying a bill's natural identifier. Accepts a numeric `congress` (as `LegislativeBill` has)
- *   or a string one (as route params have) — the same flexibility `billIdentityKey` offers, for the same reason.
+ * @param bill - Anything carrying a bill's identifier: a `LegislativeBill` or a bill's route params alike.
  * @returns The typed in-app route, ready to hand to `next/link`.
  */
-export function billHref(bill: { congress: number | string; type: string; number: string }): Route {
+export function billHref(bill: BillIdentity): Route {
   return `/bills/${bill.congress}/${bill.type.toLowerCase()}/${bill.number}` as Route;
 }
 

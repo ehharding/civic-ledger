@@ -18,8 +18,7 @@ import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
 
 function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
-  const base: LegislativeBill = firstPreviewBill;
-  return { ...base, ...overrides };
+  return { ...firstPreviewBill, ...overrides };
 }
 
 /** A resolved /api/bills/search response for the given bills. */
@@ -30,10 +29,9 @@ function searchResponse(bills: LegislativeBill[], truncated = false): { ok: true
   };
 }
 
-/**
+/*
  * The address bar is shared state across a file's tests, and this directory reads it as well as writing it — so a view
- * one test narrows to would otherwise be the view the next one starts from. The member and committee directory test
- * files reset it the same way, for the same reason.
+ * one test narrows to would otherwise be the view the next one starts from.
  */
 beforeEach((): void => {
   window.history.replaceState(null, "", "/bills");

@@ -9,20 +9,25 @@ import { type BillStage, billStageLabels, formatEnactedLaw, type LegislativeBill
 import { formatDate, formatOrdinal, pluralize } from "@/lib/format";
 import { memberHref } from "@/lib/routes";
 
-/**
- * The three sections at the top of a bill's page, read from the bill record itself (so never empty): what the bill is,
- * where it has got to, and what happened to it last.
- */
+// The three sections at the top of a bill's page, read from the bill record itself (so never empty): what the bill is,
+// where it has got to, and what happened to it last.
+
+/** Props for {@link BillHero}. */
+type BillHeroProps = {
+  /** The record being shown. */
+  bill: LegislativeBill;
+  /** The stage resolved from the action history, which the label reads rather than `bill.stage`. */
+  stage: BillStage;
+};
 
 /**
  * The bill's identity: citation, title, and the facts that qualify it.
  *
- * @param bill - The record being shown.
- * @param stage - The stage resolved from the action history, which the label reads from rather than from `bill.stage`.
+ * @param props - {@link BillHeroProps}.
  * @returns The hero section.
  * @see resolveBillStage
  */
-export function BillHero({ bill, stage }: { bill: LegislativeBill; stage: BillStage }): JSX.Element {
+export function BillHero({ bill, stage }: BillHeroProps): JSX.Element {
   return (
     <section className="bill-detail-hero" aria-labelledby="bill-title">
       <p className="eyebrow">
