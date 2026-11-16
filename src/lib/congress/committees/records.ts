@@ -118,6 +118,14 @@ export type CommitteeReport = {
   updateDate?: string;
 };
 
+/** A nomination's most recent action, as the committee-nominations endpoint states it. */
+type NominationAction = {
+  /** When it happened, as an ISO date. */
+  date?: string;
+  /** The action, verbatim. */
+  text?: string;
+};
+
 /**
  * One nomination referred to the committee.
  *
@@ -134,21 +142,8 @@ export type CommitteeNomination = {
   /** ISO 8601 date the Senate received the nomination. */
   receivedDate?: string;
   /** The nomination's most recent action, verbatim. */
-  latestAction?: {
-    /** When it happened, as an ISO date. */
-    date?: string;
-    /** The action, verbatim. */
-    text?: string;
-  };
+  latestAction?: NominationAction;
 };
-
-/**
- * One page of one collection, discriminated on {@link CommitteeRecordKind} so a mismatched kind and list can't be
- * constructed.
- */
-export type CommitteeRecords = {
-  [Kind in CommitteeRecordKind]: { kind: Kind; items: CommitteeRecordItem[Kind][] };
-}[CommitteeRecordKind];
 
 /** Which record shape each collection holds, so {@link pageOfCommitteeRecords} can keep kind and items correlated. */
 type CommitteeRecordItem = {
@@ -159,6 +154,14 @@ type CommitteeRecordItem = {
   /** A referred nomination. */
   nominations: CommitteeNomination;
 };
+
+/**
+ * One page of one collection, discriminated on {@link CommitteeRecordKind} so a mismatched kind and list can't be
+ * constructed.
+ */
+export type CommitteeRecords = {
+  [Kind in CommitteeRecordKind]: { kind: Kind; items: CommitteeRecordItem[Kind][] };
+}[CommitteeRecordKind];
 
 /**
  * One resolved page of one collection: the records, and where they sit in the whole. Here rather than beside the
@@ -176,6 +179,22 @@ export type CommitteeRecordsResult = {
   /** The request failed — not the same as an empty collection, though both yield zero rows. */
   unavailable: boolean;
 };
+
+/**
+ * How many records one page of a committee's collection holds — also the number of title lookups a bills page issues,
+ * so it's a request budget too.
+ *
+ * @see withBillTitles
+ */
+export const COMMITTEE_RECORDS_PAGE_SIZE: number = 12;
+
+/**
+ * The furthest page this app requests — well past the largest real collection (~10,000 records), while bounding what a
+ * hand-edited `?page=` can cost.
+ *
+ * @see MAX_BILL_OFFSET
+ */
+export const MAX_COMMITTEE_RECORDS_PAGE: number = 1_000;
 
 /**
  * Slices a complete collection (the preview fixtures' case) down to one page, producing the same result shape as the
@@ -208,22 +227,6 @@ export function pageOfCommitteeRecords<Kind extends CommitteeRecordKind>(
     unavailable: false,
   };
 }
-
-/**
- * How many records one page of a committee's collection holds — also the number of title lookups a bills page issues,
- * so it's a request budget too.
- *
- * @see withBillTitles
- */
-export const COMMITTEE_RECORDS_PAGE_SIZE: number = 12;
-
-/**
- * The furthest page this app requests — well past the largest real collection (~10,000 records), while bounding what a
- * hand-edited `?page=` can cost.
- *
- * @see MAX_BILL_OFFSET
- */
-export const MAX_COMMITTEE_RECORDS_PAGE: number = 1_000;
 
 /**
  * How many pages a collection of `total` records fills.
@@ -340,19 +343,25 @@ export function committeeRecordsQueryString(query: CommitteeRecordsQuery): strin
   return toQueryString(params);
 }
 
+/** Where one page of a committee's records sits in its collection, as {@link describeCommitteeRecordsPage} reads it. */
+type CommitteeRecordsPageSlice = {
+  /** How many records this page shows. */
+  shown: number;
+  /** The page number, from 1. */
+  page: number;
+  /** How many records the collection holds, or `undefined` when nobody reported a count. */
+  total: number | undefined;
+};
+
 /**
  * How one page of a collection reads in the line above it — which slice of the published sequence is shown, never
  * "newest" or "oldest" (see this module's header).
  *
- * @param options - The record count, and where in it this page sits.
+ * @param options - {@link CommitteeRecordsPageSlice}.
  * @returns e.g., `"Showing 13–24 of 10,205, in the order Congress.gov publishes them."`; the ordering clause is dropped
  *   when everything fits on one page.
  */
-export function describeCommitteeRecordsPage(options: {
-  shown: number;
-  page: number;
-  total: number | undefined;
-}): string {
+export function describeCommitteeRecordsPage(options: CommitteeRecordsPageSlice): string {
   const { shown, page, total } = options;
 
   if (shown === 0) return "";

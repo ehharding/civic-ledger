@@ -68,7 +68,7 @@ export function generateStaticParams(): BillRouteParams[] {
 /**
  * Builds the per-bill title and description. Shares the page's read: `getBillById` is memoized per render.
  *
- * @param params - The bill's route params.
+ * @param props - {@link BillPageProps}.
  * @returns The bill's metadata, or a "Bill Not Found" title when it doesn't resolve.
  */
 export async function generateMetadata({ params }: BillPageProps): Promise<Metadata> {
@@ -128,7 +128,7 @@ function unlessPublishedEmpty<Entry>(
  * refuses the render after one request instead of nine, and a collection the record publishes as empty isn't requested.
  * A render with any unanswered read is refused rather than cached for the day. See refuseDegradedRender.
  *
- * @param params - The bill's route params, straight from the URL.
+ * @param props - {@link BillPageProps}.
  * @returns The bill record page, or the 404 page when the lookup resolves to nothing.
  * @see EmptySectionNote
  */

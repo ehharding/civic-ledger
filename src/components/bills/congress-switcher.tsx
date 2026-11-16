@@ -7,6 +7,14 @@ import type { CongressHistoryEntry } from "@/lib/congress/congress-history";
 import { formatOrdinal } from "@/lib/format";
 import { congressBillsHref } from "@/lib/routes";
 
+/** Props for {@link CongressSwitcher}. */
+type CongressSwitcherProps = {
+  /** Every Congress to offer, most recent first. */
+  congresses: CongressHistoryEntry[];
+  /** The Congress currently being viewed, so the control reflects it rather than resetting. */
+  selected: number;
+};
+
 /**
  * Lets a person jump directly to any Congress this app supports browsing.
  *
@@ -14,20 +22,11 @@ import { congressBillsHref } from "@/lib/routes";
  * to know which route rendered it: it always navigates to `/bills/[congress]`, including for the current Congress,
  * which that route serves just as well as `/bills` does.
  *
- * @param congresses - Every Congress to offer, most recent first.
- * @param selected - The Congress currently being viewed, so the control reflects it rather than resetting.
+ * @param props - {@link CongressSwitcherProps}.
  * @returns The labeled Congress picker.
  * @see listCongresses
  */
-export function CongressSwitcher({
-  congresses,
-  selected,
-}: {
-  /** Every Congress to offer, most recent first — see listCongresses. */
-  congresses: CongressHistoryEntry[];
-  /** The Congress currently being viewed, so the control reflects it correctly. */
-  selected: number;
-}): JSX.Element {
+export function CongressSwitcher({ congresses, selected }: CongressSwitcherProps): JSX.Element {
   const router = useRouter();
 
   /**

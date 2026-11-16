@@ -9,6 +9,12 @@ import { CalloutCard } from "@/components/ui/callout-card";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
 
+/** Props for {@link LessonArticle}. */
+type LessonArticleProps = {
+  /** The module to render. */
+  lesson: Lesson;
+};
+
 /**
  * The body of one learning module: header, numbered steps, an honest-limits panel, the citation list, and a "read this
  * next" callout. The content lives in `src/lib/lessons.ts`, so adding a module is a data edit, not a new page.
@@ -20,10 +26,10 @@ import { type Lesson, type LessonStep, lessonNumber } from "@/lib/lessons";
  * unfamiliar. Headings and intro don't: a dotted underline in display type reads as damage, and the step repeats the
  * term anyway.
  *
- * @param lesson - The module to render.
+ * @param props - {@link LessonArticleProps}.
  * @returns The full lesson body, ready to drop inside a `SiteShell`.
  */
-export function LessonArticle({ lesson }: { lesson: Lesson }): JSX.Element {
+export function LessonArticle({ lesson }: LessonArticleProps): JSX.Element {
   const stepCount: number = lesson.steps.length;
 
   return (

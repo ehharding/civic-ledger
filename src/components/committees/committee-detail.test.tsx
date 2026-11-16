@@ -15,6 +15,7 @@ import type { CommitteeRecordsResult } from "@/lib/congress/committees/records";
  * `total: undefined` rather than `0`, so the tabs fall back to the *committee's* own counts and these cases test what
  * they mean to: that this component passes the profile's figures through.
  *
+ * @returns An empty first page of referrals with no fetched total.
  * @see countFor, which prefers a fetched count over the profile's for whichever collection is on screen.
  */
 function noRecords(): CommitteeRecordsResult {

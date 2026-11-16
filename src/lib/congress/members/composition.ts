@@ -38,22 +38,30 @@ import { formatOrdinal } from "@/lib/format";
  */
 const MAX_MEMBER_PAGES: number = 4;
 
+/** One request for a page of the member list. */
+type MemberPageRequest = {
+  /** The server-only Congress.gov key. */
+  apiKey: string;
+  /** The Congress to read. */
+  congress: number;
+  /** The page offset. */
+  offset: number;
+  /**
+   * Whether to ask only for sitting members. `true` for the seated Congress (otherwise mid-term replacements
+   * double-count) and `false` for a past one (otherwise only members still serving today come back — 377 of the 117th's
+   * 557).
+   */
+  currentOnly: boolean;
+};
+
 /**
  * Fetches one page of the member list for a Congress.
  *
- * `currentOnly` must be `true` for the seated Congress (otherwise mid-term replacements double-count) and `false` for a
- * past one (otherwise only members still serving today come back — 377 of the 117th's 557).
- *
- * @param input - The API key, the Congress to read, the page offset, and whether to ask only for sitting members.
+ * @param input - {@link MemberPageRequest}.
  * @returns The validated page, or `null` on any failure — so the caller can decide whether a partial result is still
  *   worth rendering.
  */
-async function fetchMemberPage(input: {
-  apiKey: string;
-  congress: number;
-  offset: number;
-  currentOnly: boolean;
-}): Promise<CongressApiMemberListResponse | null> {
+async function fetchMemberPage(input: MemberPageRequest): Promise<CongressApiMemberListResponse | null> {
   const url: URL = buildCongressUrl(`/member/congress/${input.congress}`, input.apiKey, {
     limit: String(MAX_API_PAGE_SIZE),
     offset: String(input.offset),

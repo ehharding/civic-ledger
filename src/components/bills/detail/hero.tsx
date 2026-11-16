@@ -66,14 +66,20 @@ export function BillHero({ bill, stage }: BillHeroProps): JSX.Element {
   );
 }
 
+/** Props for {@link JourneyPanel}. */
+type JourneyPanelProps = {
+  /** The stage resolved from the action history. */
+  stage: BillStage;
+};
+
 /**
  * The stepper, with the standing caveat that it is an orientation aid rather than a legal status.
  *
- * @param stage - The stage resolved from the action history.
+ * @param props - {@link JourneyPanelProps}.
  * @returns The journey panel.
  * @see resolveBillStage
  */
-export function JourneyPanel({ stage }: { stage: BillStage }): JSX.Element {
+export function JourneyPanel({ stage }: JourneyPanelProps): JSX.Element {
   return (
     <DetailPanel headingId="journey-heading" kicker="How This Moves" heading="The Bill’s Journey">
       <p className="muted-copy">
@@ -85,13 +91,19 @@ export function JourneyPanel({ stage }: { stage: BillStage }): JSX.Element {
   );
 }
 
+/** Props for {@link LatestActionPanel}. */
+type LatestActionPanelProps = {
+  /** The record being shown. */
+  bill: LegislativeBill;
+};
+
 /**
  * The most recent line of Congress's own record, and the link out to it.
  *
- * @param bill - The record being shown.
+ * @param props - {@link LatestActionPanelProps}.
  * @returns The latest-action panel.
  */
-export function LatestActionPanel({ bill }: { bill: LegislativeBill }): JSX.Element {
+export function LatestActionPanel({ bill }: LatestActionPanelProps): JSX.Element {
   return (
     <DetailPanel
       accent

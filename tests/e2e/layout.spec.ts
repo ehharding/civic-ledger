@@ -144,7 +144,6 @@ test(`the drawer's toggle and destinations meet the ${MIN_TARGET}px target-size 
  * Measures every destination the primary nav currently offers, via `getByRole` — so a closed drawer fails on the count.
  *
  * @param page - The page to measure, with the nav in the state under test.
- * @returns Nothing; asserts.
  */
 async function expectDestinationsClearTheFloor(page: Page): Promise<void> {
   const links: Locator = page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link");

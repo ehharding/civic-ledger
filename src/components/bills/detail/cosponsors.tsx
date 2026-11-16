@@ -22,13 +22,19 @@ import { memberHref } from "@/lib/routes";
  */
 const COSPONSOR_PREVIEW_LIMIT: number = 12;
 
+/** Props for {@link CosponsorRow}. */
+type CosponsorRowProps = {
+  /** The cosponsor to render. */
+  cosponsor: BillCosponsor;
+};
+
 /**
  * One cosponsor: who, which party, and when they signed on. Links to the member's page when there's a Bioguide ID.
  *
- * @param cosponsor - The cosponsor to render.
+ * @param props - {@link CosponsorRowProps}.
  * @returns The row.
  */
-function CosponsorRow({ cosponsor }: { cosponsor: BillCosponsor }): JSX.Element {
+function CosponsorRow({ cosponsor }: CosponsorRowProps): JSX.Element {
   const party: PartyGroup = normalizePartyCode(cosponsor.party);
 
   return (

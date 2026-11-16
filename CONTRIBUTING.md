@@ -139,9 +139,12 @@ default — a few current positions, so they don't have to be relitigated per pu
   of declarations is a `//` line above them, and test blocks, hooks, and `useEffect` calls take `/* */`. `@see` is a
   block tag on its own line after every other tag. Mid-sentence, write `(see {@link X})`, and outside JSDoc write plain
   "see".
-- Outside tests, name an object shape that's used more than once or has more than one field. A component with two or
-  more props gets a `type XProps` with a doc comment on each field, and its JSDoc says `@param props - {@link XProps}.`
-  rather than documenting the destructured fields, which TypeScript hovers don't show.
+- Outside tests, name an object shape that's used more than once or has more than one field. Every component's props get
+  a `type XProps` directly above it, with a doc comment on each field, and its JSDoc says
+  `@param props - {@link XProps}.` rather than documenting the destructured fields, which TypeScript hovers don't show.
+  The same goes for a function taking one options object: link its named type rather than listing its fields.
+- A module that grows past a few concerns groups its declarations by subject under one-line `//` headings
+  (`bills/model.ts`, `members/model.ts`), with each type, constant, and helper declared before the code that uses it.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
   point is a wish.
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import

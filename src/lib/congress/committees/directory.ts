@@ -32,7 +32,9 @@ import { formatOrdinal } from "@/lib/format";
  */
 const MAX_COMMITTEE_PAGES: number = 3;
 
-/** What {@link getCommitteeDirectory} resolved: the committees, the Congress they belong to, and where they came from. */
+/**
+ * What {@link getCommitteeDirectory} resolved: the committees, the Congress they belong to, and where they came from.
+ */
 export type CommitteeDirectoryResult = {
   /** The Congress this list describes, echoed back so the page can name it without recomputing it. */
   congress: number;
@@ -66,18 +68,24 @@ export function buildCommitteeDirectory(committees: CongressApiCommittee[]): Com
     .sort(compareCommitteesByName);
 }
 
+/** One request for a page of the committee list. */
+type CommitteePageRequest = {
+  /** The server-only Congress.gov key. */
+  apiKey: string;
+  /** The Congress to read. */
+  congress: number;
+  /** The page offset. */
+  offset: number;
+};
+
 /**
  * Fetches one page of the committee list for a Congress.
  *
- * @param input - The API key, the Congress to read, and the page offset.
+ * @param input - {@link CommitteePageRequest}.
  * @returns The validated page, or `null` on any failure — so the caller can decide whether a partial result is still
  *   worth rendering.
  */
-async function fetchCommitteePage(input: {
-  apiKey: string;
-  congress: number;
-  offset: number;
-}): Promise<CongressApiCommitteeListResponse | null> {
+async function fetchCommitteePage(input: CommitteePageRequest): Promise<CongressApiCommitteeListResponse | null> {
   const url: URL = buildCongressUrl(`/committee/${input.congress}`, input.apiKey, {
     limit: String(MAX_API_PAGE_SIZE),
     offset: String(input.offset),

@@ -9,6 +9,12 @@ import {
 import { pluralize } from "@/lib/format";
 import { committeeHref } from "@/lib/routes";
 
+/** Props for {@link CommitteeCard}. */
+type CommitteeCardProps = {
+  /** The committee to summarize. */
+  committee: CommitteeSummary;
+};
+
 /**
  * Compact committee summary card, used in the `/committees` directory grid. One link, on the name, as on
  * {@link MemberCard}.
@@ -16,11 +22,11 @@ import { committeeHref } from "@/lib/routes";
  * The subcommittee count is here because the directory lists only parent committees, and this is what explains why it's
  * shorter than a reader might expect.
  *
- * @param committee - The committee to summarize.
+ * @param props - {@link CommitteeCardProps}.
  * @returns The card: type chip, linked name, and the chamber and subcommittee count.
  * @see buildCommitteeDirectory
  */
-export function CommitteeCard({ committee }: { committee: CommitteeSummary }): JSX.Element {
+export function CommitteeCard({ committee }: CommitteeCardProps): JSX.Element {
   const subcommittees: number = committee.subcommitteeCount;
 
   return (

@@ -33,13 +33,19 @@ function SummaryCaption({ summary, source }: SummaryCaptionProps): JSX.Element {
   );
 }
 
+/** Props for {@link SummaryBody}. */
+type SummaryBodyProps = {
+  /** The summary to render. Its `html` was sanitized by `sanitizeSummaryHtml` in the adapter. */
+  summary: BillSummary;
+};
+
 /**
  * Renders one summary's sanitized HTML.
  *
- * @param summary - The summary to render. Its `html` was sanitized by `sanitizeSummaryHtml` in the adapter.
+ * @param props - {@link SummaryBodyProps}.
  * @returns The summary body.
  */
-function SummaryBody({ summary }: { summary: BillSummary }): JSX.Element {
+function SummaryBody({ summary }: SummaryBodyProps): JSX.Element {
   return (
     // biome-ignore lint/security/noDangerouslySetInnerHtml: html is sanitized by sanitizeSummaryHtml in the adapter.
     <div className="summary-body" dangerouslySetInnerHTML={{ __html: summary.html }} />

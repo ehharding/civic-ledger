@@ -58,14 +58,20 @@ export const viewport: Viewport = {
  */
 const isAnalyticsSupported: boolean = process.env.STATIC_EXPORT !== "true";
 
+/** Props for {@link RootLayout}. */
+type RootLayoutProps = Readonly<{
+  /** The active route's rendered output. */
+  children: ReactNode;
+}>;
+
 /**
  * Root HTML shell shared by every route. Page chrome lives in `SiteShell`; {@link SiteAnalytics} sits here so routes
  * without the chrome are still counted.
  *
- * @param children - The active route's rendered output.
+ * @param props - {@link RootLayoutProps}.
  * @returns The document shell.
  */
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>): JSX.Element {
+export default function RootLayout({ children }: RootLayoutProps): JSX.Element {
   return (
     <html lang="en">
       <body>

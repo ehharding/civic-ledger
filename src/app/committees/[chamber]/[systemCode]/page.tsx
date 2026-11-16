@@ -37,7 +37,7 @@ export function generateStaticParams(): CommitteeRouteParams[] {
 }
 
 /**
- * @param params - The committee's route params.
+ * @param props - {@link CommitteePageProps}.
  * @returns The committee's metadata.
  * @see committeeMetadata
  */
@@ -51,7 +51,7 @@ export function generateMetadata({ params }: CommitteePageProps): Promise<Metada
  * A URL carrying `?records=` or `?page=` is rewritten to the `/query` twin instead, so this half never reads its query
  * and is cached per committee rather than rendered per visit.
  *
- * @param params - The committee's route params.
+ * @param props - {@link CommitteePageProps}.
  * @returns The committee page.
  * @see src/lib/query-routes.ts
  * @see renderCommitteeRoute

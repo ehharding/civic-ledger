@@ -31,6 +31,10 @@ function billsPayload(count: number, total: number = count): unknown {
  *
  * Routed on the URL rather than on call order, because the title lookups go out together and their order is not a
  * property this module promises.
+ *
+ * @param payload - The sub-resource response body.
+ * @param options - `billTitle` overrides the title every bill lookup returns; `null` makes every lookup 404.
+ * @returns The installed `fetch` mock.
  */
 function stubFetch(payload: unknown, options: { billTitle?: string | null } = {}): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockImplementation((url: URL): Promise<Response> => {

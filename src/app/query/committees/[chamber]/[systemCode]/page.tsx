@@ -17,7 +17,7 @@ type QueryCommitteePageProps = {
 };
 
 /**
- * @param params - The committee's route params.
+ * @param props - {@link QueryCommitteePageProps}.
  * @returns The same metadata as the committee's own page, canonical path included.
  * @see committeeMetadata
  */
@@ -28,8 +28,7 @@ export function generateMetadata({ params }: QueryCommitteePageProps): Promise<M
 /**
  * A committee page with a `?records=`/`?page=` view, reached only through a rewrite.
  *
- * @param params - The committee's route params.
- * @param searchParams - The record view. Reading it is what makes this render on demand.
+ * @param props - {@link QueryCommitteePageProps}.
  * @returns The committee page, showing the records the URL asked for.
  * @see src/lib/query-routes.ts
  */

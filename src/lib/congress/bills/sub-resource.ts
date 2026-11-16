@@ -102,15 +102,36 @@ function answeredEmpty<Entry>(): BillSubResource<Entry> {
 }
 
 /**
+ * How to fetch and map one of a bill's sub-resources.
+ *
+ * @typeParam Payload - The validated response shape for this sub-resource.
+ * @typeParam Raw - One unmapped entry from that payload.
+ * @typeParam Entry - The app's mapped entry type.
+ */
+type BillSubResourceConfig<Payload, Raw, Entry> = {
+  /** The sub-resource's path suffix. */
+  path: "summaries" | "text" | "actions" | "committees" | "cosponsors" | "relatedbills" | "amendments";
+  /** The Zod schema for its response. */
+  schema: ZodType<Payload>;
+  /** Reads the collection off the payload. */
+  select: (payload: Payload) => Raw[] | undefined;
+  /** Maps one entry, or returns `null` for an unusable one. */
+  map: (entry: Raw) => Entry | null;
+  /**
+   * The date field to order by, newest first. Omitting it keeps the publisher's own order, which is the right choice
+   * wherever that order carries meaning this app did not establish and could not restate.
+   */
+  dateKey?: keyof Entry;
+};
+
+/**
  * Fetches one of a bill's sub-resources and maps it into the app's model.
  *
  * @typeParam Payload - The validated response shape for this sub-resource.
  * @typeParam Raw - One unmapped entry from that payload.
  * @typeParam Entry - The app's mapped entry type.
  * @param input - The bill's route params.
- * @param config - The sub-resource's path suffix, schema, the collection to read off the payload, its entry mapper, and
- *   optionally the date field to order by. Omitting `dateKey` keeps the publisher's own order, which is the right
- *   choice wherever that order carries meaning this app did not establish and could not restate.
+ * @param config - {@link BillSubResourceConfig}.
  * @returns The mapped entries, and whether the request that should have produced them failed. Empty and *answered* when
  *   no key is configured, when the route params are malformed, and on a 404 — a caller renders those as "nothing
  *   published yet", which is a real and common state for a newly introduced bill. Empty and *unanswered* on failure,
@@ -118,13 +139,7 @@ function answeredEmpty<Entry>(): BillSubResource<Entry> {
  */
 export async function fetchBillSubResource<Payload, Raw, Entry>(
   input: BillRouteParams,
-  config: {
-    path: "summaries" | "text" | "actions" | "committees" | "cosponsors" | "relatedbills" | "amendments";
-    schema: ZodType<Payload>;
-    select: (payload: Payload) => Raw[] | undefined;
-    map: (entry: Raw) => Entry | null;
-    dateKey?: keyof Entry;
-  },
+  config: BillSubResourceConfig<Payload, Raw, Entry>,
 ): Promise<BillSubResource<Entry>> {
   const apiKey: string | undefined = getCongressApiKey();
   if (!apiKey) return answeredEmpty();

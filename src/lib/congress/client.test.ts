@@ -27,6 +27,9 @@ import { jsonResponse, requestedUrl, stubLiveApi } from "@/test/congress-api";
 
 /**
  * The `next.revalidate` window each Congress.gov request a mocked `fetch` received asked to be cached for, in order.
+ *
+ * @param fetchMock - The mocked `fetch` the adapter called.
+ * @returns Each call's `next.revalidate`, in call order.
  */
 function requestedCacheWindows(fetchMock: ReturnType<typeof vi.fn>): (number | undefined)[] {
   return fetchMock.mock.calls.map(

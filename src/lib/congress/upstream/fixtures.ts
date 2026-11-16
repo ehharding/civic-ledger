@@ -31,6 +31,7 @@ import {
   type MemberProfile,
   type PartyTally,
 } from "@/lib/congress/members/model";
+import type { MemberProfileResult } from "@/lib/congress/members/profile";
 
 /**
  * Clearly labeled fixture records, so the app renders without an API key. **Not real records; never present them as
@@ -433,10 +434,9 @@ export function previewMemberDirectory(): MemberDirectoryEntry[] {
  * @param bioguideId - The placeholder member's ID, or `undefined` when no member resolved.
  * @returns Their sponsored bills, and an always-empty cosponsored list (no history is invented).
  */
-export function previewMemberLegislation(bioguideId: string | undefined): {
-  sponsored: LegislativeBill[];
-  cosponsored: LegislativeBill[];
-} {
+export function previewMemberLegislation(
+  bioguideId: string | undefined,
+): Pick<MemberProfileResult, "sponsored" | "cosponsored"> {
   if (!bioguideId) return { sponsored: [], cosponsored: [] };
 
   return {
@@ -610,6 +610,16 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
   },
 ];
 
+/** One placeholder committee's three collections. */
+type CommitteeRecordSets = {
+  /** Bills referred to the committee. */
+  bills: CommitteeBillReferral[];
+  /** Reports the committee filed. */
+  reports: CommitteeReport[];
+  /** Nominations referred to it. Empty for House committees. */
+  nominations: CommitteeNomination[];
+};
+
 /**
  * Placeholder bills, reports, and nominations for the committee pages, keyed by {@link previewCommitteeProfiles}'
  * system codes and sized to match each profile's printed counts.
@@ -765,16 +775,6 @@ const PREVIEW_COMMITTEE_RECORDS: Record<string, CommitteeRecordSets> = {
     ],
     nominations: [],
   },
-};
-
-/** One placeholder committee's three collections. */
-type CommitteeRecordSets = {
-  /** Bills referred to the committee. */
-  bills: CommitteeBillReferral[];
-  /** Reports the committee filed. */
-  reports: CommitteeReport[];
-  /** Nominations referred to it. Empty for House committees. */
-  nominations: CommitteeNomination[];
 };
 
 /**

@@ -24,6 +24,32 @@ import {
 import type { CommitteeRecordsResult } from "@/lib/congress/committees/records";
 import { committeeHref, lessonHref } from "@/lib/routes";
 
+/** Props for {@link HistoryRow}. */
+type HistoryRowProps = {
+  /** The history entry to describe. */
+  entry: CommitteeHistoryEntry;
+};
+
+/**
+ * One row of the committee's recorded history.
+ *
+ * @param props - {@link HistoryRowProps}.
+ * @returns The name it went by, the span it went by it, and what established it when the record says.
+ */
+function HistoryRow({ entry }: HistoryRowProps): JSX.Element {
+  const years: string = formatCommitteeHistoryYears(entry);
+
+  return (
+    <li className="member-terms__item">
+      <span className="member-terms__chamber">{entry.name}</span>
+      <span className="member-terms__detail">
+        {years.length > 0 ? years : "Dates not recorded"}
+        {entry.establishingAuthority ? ` · ${entry.establishingAuthority}` : ""}
+      </span>
+    </li>
+  );
+}
+
 /** Props for {@link CommitteeDetail} — everything the committee route resolves server-side. */
 type CommitteeDetailProps = {
   /** The committee being shown. */
@@ -41,26 +67,6 @@ type CommitteeDetailProps = {
    */
   records: CommitteeRecordsResult;
 };
-
-/**
- * One row of the committee's recorded history.
- *
- * @param entry - The history entry to describe.
- * @returns The name it went by, the span it went by it, and what established it when the record says.
- */
-function HistoryRow({ entry }: { entry: CommitteeHistoryEntry }): JSX.Element {
-  const years: string = formatCommitteeHistoryYears(entry);
-
-  return (
-    <li className="member-terms__item">
-      <span className="member-terms__chamber">{entry.name}</span>
-      <span className="member-terms__detail">
-        {years.length > 0 ? years : "Dates not recorded"}
-        {entry.establishingAuthority ? ` · ${entry.establishingAuthority}` : ""}
-      </span>
-    </li>
-  );
-}
 
 /**
  * Individual committee page. Purely presentational: the route resolves every value. No membership roster — Congress.gov

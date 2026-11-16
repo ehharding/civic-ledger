@@ -1,5 +1,7 @@
 import { compareIsoDatesDesc, formatOrdinal, pluralize } from "@/lib/format";
 
+// Stages: the progress cue's vocabulary.
+
 /**
  * The five stages of `BillJourney`'s progress cue, in order — an orientation aid, never a legal status. Order matters:
  * `BillJourney` and `resolveBillStage` both compare stages by index.
@@ -9,11 +11,16 @@ export const billStages = ["introduced", "committee", "chamber", "president", "l
 /** One of the {@link billStages}. */
 export type BillStage = (typeof billStages)[number];
 
-/**
- * Page size for the bill list endpoint. Here rather than in the server-only adapter so `BillDirectory` can recognize a
- * short final page. Congress.gov allows 250; this is sized for how many cards a reader takes in at once.
- */
-export const DEFAULT_PAGE_SIZE: number = 12;
+/** Display labels for each BillStage. */
+export const billStageLabels: Record<BillStage, string> = {
+  introduced: "Introduced",
+  committee: "In Committee",
+  chamber: "Passed a Chamber",
+  president: "To the President",
+  law: "Became Law",
+};
+
+// Identity, and the Congress.gov URLs derived from it.
 
 /** A bill's natural identifier as route params (e.g., `/bills/119/hr/284`), shared by every per-bill lookup. */
 export type BillRouteParams = {
@@ -93,319 +100,7 @@ export function congressGovBillUrl(bill: BillIdentity): string {
   return `https://www.congress.gov/bill/${formatOrdinal(congress)}-congress/${typePath}/${bill.number}`;
 }
 
-/**
- * Congress.gov's public URL path segment for each amendment type. The API publishes only these two codes; anything else
- * falls back to {@link CONGRESS_GOV_HOME}.
- */
-const CONGRESS_GOV_AMENDMENT_PATHS: Readonly<Record<string, string>> = {
-  HAMDT: "house-amendment",
-  SAMDT: "senate-amendment",
-};
-
-/**
- * Builds the public Congress.gov page for an amendment, e.g.,
- * `https://www.congress.gov/amendment/119th-congress/senate-amendment/2849`.
- *
- * Derived for the same reason as {@link congressGovBillUrl}. The pattern matches the URL Congress.gov publishes on each
- * amendment's own record, which isn't fetched at runtime because that would cost a request per amendment.
- *
- * @param amendment - An amendment's natural identifier, with a numeric or string `congress`.
- * @returns The amendment's public URL, or {@link CONGRESS_GOV_HOME} for an unrecognized type or Congress.
- */
-export function congressGovAmendmentUrl(amendment: {
-  congress: number | string;
-  type: string;
-  number: string;
-}): string {
-  const typePath: string | undefined = CONGRESS_GOV_AMENDMENT_PATHS[String(amendment.type).toUpperCase()];
-  const congress: number = Number(amendment.congress);
-
-  if (!typePath || !Number.isInteger(congress) || congress <= 0) return CONGRESS_GOV_HOME;
-
-  return `https://www.congress.gov/amendment/${formatOrdinal(congress)}-congress/${typePath}/${amendment.number}`;
-}
-
-/**
- * One amendment offered to a bill, as the bill's `/amendments` collection records it.
- *
- * Only the identity fields are required: the endpoint sends anything more for roughly one entry in fifteen (see
- * {@link congressApiBillAmendmentSchema}), so an amendment row is usually just a citation and a link.
- */
-export type BillAmendment = {
-  /** The Congress the amendment was offered in. */
-  congress: number;
-  /**
-   * The upper-cased type code, `"HAMDT"` or `"SAMDT"`.
-   *
-   * @see CONGRESS_GOV_AMENDMENT_PATHS
-   */
-  type: string;
-  /** The amendment number. */
-  number: string;
-  /** What the amendment says it does. The record's `purpose`, falling back to its `description`. Usually absent. */
-  purpose?: string;
-  /** The amendment's own latest action, when the entry carried one with text. */
-  latestAction?: Pick<BillAction, "date" | "text">;
-  /**
-   * The amendment's public Congress.gov page.
-   *
-   * @see congressGovAmendmentUrl
-   */
-  officialUrl: string;
-};
-
-/** How amendment codes are cited in prose — the form a reader will find on Congress.gov ("S.Amdt. 2849"). */
-const AMENDMENT_TYPE_CITATIONS: Readonly<Record<string, string>> = {
-  HAMDT: "H.Amdt.",
-  SAMDT: "S.Amdt.",
-};
-
-/**
- * How an amendment is cited on screen, e.g., `"S.Amdt. 2849"`.
- *
- * @param amendment - The amendment to cite.
- * @returns The citation. An unrecognized type shows the code as published rather than a guessed abbreviation.
- */
-export function formatAmendmentCitation(amendment: Pick<BillAmendment, "type" | "number">): string {
-  return `${AMENDMENT_TYPE_CITATIONS[amendment.type] ?? amendment.type} ${amendment.number}`;
-}
-
-/**
- * A reference to one recorded (roll-call) vote on a bill — enough to find it, never a tally. This app holds no vote
- * counts or member positions.
- *
- * @see docs/data-policy.md
- */
-export type RecordedVote = {
-  /** The chamber that took the vote. */
-  chamber: "House" | "Senate";
-  /** The chamber's sequential number for the vote within a session, e.g., `190`. */
-  rollNumber: number;
-  /** The Congress the vote was taken in. */
-  congress: number;
-  /** 1 or 2 — which annual session the vote fell in. Absent on a few older records. */
-  sessionNumber?: number;
-  /** When the vote was taken, as an ISO date. */
-  date?: string;
-  /** The chamber's official tally (clerk.house.gov or senate.gov), verbatim from Congress.gov. */
-  url: string;
-};
-
-/**
- * One entry in a bill's action history.
- *
- * The endpoint reports each event from several source systems, which carry different fields: only Library of Congress
- * rows have the `actionCode` {@link inferStageFromActions} reads.
- */
-export type BillAction = {
-  /** When the action happened, as an ISO date. */
-  date?: string;
-  /** The action, verbatim from Congress.gov. */
-  text: string;
-  /** Congress.gov's classification — `"IntroReferral"`, `"Committee"`, `"Floor"`, `"BecameLaw"`, … */
-  type?: string;
-  /**
-   * The Library of Congress action code, when this row came from that system.
-   *
-   * @see inferStageFromActions
-   */
-  actionCode?: string;
-  /** Roll-call votes this action records. Usually empty. */
-  recordedVotes: RecordedVote[];
-};
-
-/**
- * The law a bill became, as Congress.gov states it. The one stage fact that needs no inference, and the only source of
- * the citation ("Public Law 119-21"). Detail endpoint only.
- */
-export type EnactedLaw = {
-  /** `"Public Law"` or `"Private Law"`, verbatim. */
-  type: string;
-  /** The citation number, e.g., `"119-21"` — the Congress, then the measure's sequence within it. */
-  number: string;
-};
-
-/**
- * How an enacted law reads on screen, e.g., `"Public Law 119-21"`.
- *
- * @param law - The law to name.
- * @returns The full citation.
- */
-export function formatEnactedLaw(law: EnactedLaw): string {
-  return `${law.type} ${law.number}`;
-}
-
-/**
- * Says how many listed amendments carry any purpose text. Congress.gov publishes one for roughly one in fifteen, so
- * this tells the reader the sparseness is the record's, not this page's.
- *
- * @param described - How many of the listed amendments carry a purpose.
- * @param total - How many are listed.
- * @returns The sentence, or an empty string when nothing is listed.
- */
-export function describeAmendmentDetail(described: number, total: number): string {
-  if (total === 0) return "";
-  if (described === 0) {
-    return "Congress.gov publishes no purpose text for any of them here, so each row is the amendment's citation and a link to its own record.";
-  }
-  if (described === total) return "Each carries the purpose the record states for it.";
-
-  return `${described} of them carry the purpose the record states; the rest are published here as citations only, with their text on the amendment's own record.`;
-}
-
-/**
- * Congress.gov's own counts for the collections hanging off a bill. Read rather than inferred from the fetched arrays,
- * because only a published figure can back a sentence beginning "Congress.gov records…". The two can differ when the
- * mapper drops an unusable row or a collection exceeds the single 250-record page this app requests.
- *
- * Detail endpoint only.
- *
- * @see describeBillCollection
- */
-export type BillCollectionCounts = {
-  /** Entries in the action history. */
-  actions?: number;
-  /** Committees the bill was referred to. */
-  committees?: number;
-  /** CRS summaries. */
-  summaries?: number;
-  /** Official text versions. */
-  textVersions?: number;
-  /** Measures recorded as related. */
-  relatedBills?: number;
-  /** Often larger than the 250 this app fetches on heavily amended bills. */
-  amendments?: number;
-};
-
-/**
- * The two cosponsor figures Congress.gov publishes. The list holds who is signed on now; `includingWithdrawn` counts
- * everyone who ever was — the only trace a withdrawal leaves.
- *
- * @see describeWithdrawnCosponsors
- */
-export type BillCosponsorTally = {
-  /** How many are signed on now. */
-  current?: number;
-  /** How many have been at any point, withdrawals included. */
-  includingWithdrawn?: number;
-};
-
-/**
- * States that cosponsors withdrew, when the two published figures say so.
- *
- * @param tally - The bill's two cosponsor figures.
- * @returns The sentence, or an empty string when the figures agree, either is missing, or the difference is negative.
- */
-export function describeWithdrawnCosponsors(tally: BillCosponsorTally | undefined): string {
-  const { current, includingWithdrawn } = tally ?? {};
-  if (current === undefined || includingWithdrawn === undefined) return "";
-
-  const withdrawn: number = includingWithdrawn - current;
-  if (withdrawn <= 0) return "";
-
-  return `${withdrawn} more ${pluralize(withdrawn, "member")} cosponsored this bill and later withdrew, so ${
-    withdrawn === 1 ? "that name is" : "those names are"
-  } counted by Congress.gov but absent from the list below.`;
-}
-
-/**
- * States how many listed cosponsors were on the bill at introduction. It counts a published per-row flag, and says "of
- * the names below" because it describes the list on screen, not necessarily the whole collection.
- *
- * @param originals - How many of the listed cosponsors the record marks as original.
- * @param total - How many are listed.
- * @returns The sentence, or an empty string when nothing is listed.
- */
-export function describeOriginalCosponsors(originals: number, total: number): string {
-  if (total === 0) return "";
-  if (originals === 0) return "None of the names below were on the bill when it was introduced.";
-
-  const wereOn: string = `${originals} of the names below ${pluralize(originals, "was", "were")} on the bill when it was introduced`;
-
-  // "the rest joined later" would be false when there is no rest.
-  if (originals === total) return `Every one of them — all ${total} — was on the bill when it was introduced.`;
-
-  const later: number = total - originals;
-
-  return `${wereOn}; the other ${later} joined later.`;
-}
-
-/** One member who put their name to a bill they did not introduce. Every field is published, none derived. */
-export type BillCosponsor = {
-  /** The name as Congress.gov spells it, e.g., `"Rep. Issa, Darrell [R-CA-48]"`. */
-  fullName: string;
-  /** Present on essentially every live record; without it the cosponsor can't be linked. */
-  bioguideId?: string;
-  /** The member's party code, e.g., `"D"`. */
-  party?: string;
-  /** The member's state code, e.g., `"CA"`. */
-  state?: string;
-  /** When they signed on. */
-  sponsorshipDate?: string;
-  /** Set only for a member who later took their name off. */
-  withdrawnDate?: string;
-  /** Whether they were on the bill at introduction, as the record states — never inferred from dates. */
-  isOriginal: boolean;
-};
-
-/**
- * How one measure relates to another, and who said so. A relationship is an editorial judgment (CRS, the House, and the
- * Senate each identify their own), so the page shows the attribution beside it.
- */
-export type RelatedBillRelationship = {
-  /** e.g., `"Related bill"`, `"Identical bill"`, `"Procedurally-related"`. */
-  type: string;
-  /** e.g., `"CRS"`, `"House"`, `"Senate"`. */
-  identifiedBy?: string;
-};
-
-/**
- * Another measure this bill is recorded as related to — a reference carrying what a link and label need. Identity
- * fields are required because a related bill that can't be opened isn't listed.
- *
- * @see mapRelatedBill
- */
-export type RelatedBill = {
-  /** The related measure's Congress. */
-  congress: number;
-  /** Its upper-cased type code. */
-  type: string;
-  /** Its number. */
-  number: string;
-  /** Its title. */
-  title: string;
-  /** Its own latest action, when the record carried one. */
-  latestAction?: Pick<BillAction, "date" | "text">;
-  /** Every recorded statement of how the two measures relate. Can be empty. */
-  relationships: RelatedBillRelationship[];
-};
-
-/**
- * States how many records a bill's collection holds, attributing the figure to whoever produced it: "Congress.gov
- * records…" only for a published count, "this page shows…" for this app's own.
- *
- * @param options - How many records are on screen, how many the publisher counted (absent on a preview or failed read),
- *   the singular noun, and its plural where an `s` won't do.
- * @returns The sentence: the published count alone when the two agree, both when they differ, only the shown count when
- *   nothing was published, or an empty string when there's nothing either way.
- */
-export function describeBillCollection(options: {
-  shown: number;
-  published?: number;
-  noun: string;
-  pluralNoun?: string;
-}): string {
-  const { shown, published, noun, pluralNoun } = options;
-
-  if (published === undefined) {
-    if (shown === 0) return "";
-    return `This page shows ${shown} ${pluralize(shown, noun, pluralNoun)} for this bill.`;
-  }
-
-  const recorded: string = `Congress.gov records ${published} ${pluralize(published, noun, pluralNoun)} on this bill`;
-
-  return shown === published ? `${recorded}.` : `${recorded}; this page shows ${shown}.`;
-}
+// The bill record, and the lists it appears in.
 
 /** A bill's primary sponsor. Detail endpoint only. */
 export type BillSponsor = {
@@ -513,6 +208,150 @@ export function compareBillsByActivity(a: LegislativeBill, b: LegislativeBill): 
 }
 
 /**
+ * Page size for the bill list endpoint. Here rather than in the server-only adapter so `BillDirectory` can recognize a
+ * short final page. Congress.gov allows 250; this is sized for how many cards a reader takes in at once.
+ */
+export const DEFAULT_PAGE_SIZE: number = 12;
+
+/** Result of a bill-list fetch: the bills, whether they're live or preview, and when they were retrieved. */
+export type CongressSnapshot = {
+  /** The bills fetched. */
+  bills: LegislativeBill[];
+  /** Whether these are live records or labeled placeholders. */
+  source: "live" | "preview";
+  /** When the read happened, as an ISO timestamp. */
+  retrievedAt: string;
+  /** User-facing explanation shown when `source` is "preview" (no API key, or an upstream failure). */
+  notice?: string;
+};
+
+// Actions, the votes they record, and the law a bill became.
+
+/**
+ * A reference to one recorded (roll-call) vote on a bill — enough to find it, never a tally. This app holds no vote
+ * counts or member positions.
+ *
+ * @see docs/data-policy.md
+ */
+export type RecordedVote = {
+  /** The chamber that took the vote. */
+  chamber: "House" | "Senate";
+  /** The chamber's sequential number for the vote within a session, e.g., `190`. */
+  rollNumber: number;
+  /** The Congress the vote was taken in. */
+  congress: number;
+  /** 1 or 2 — which annual session the vote fell in. Absent on a few older records. */
+  sessionNumber?: number;
+  /** When the vote was taken, as an ISO date. */
+  date?: string;
+  /** The chamber's official tally (clerk.house.gov or senate.gov), verbatim from Congress.gov. */
+  url: string;
+};
+
+/**
+ * One entry in a bill's action history.
+ *
+ * The endpoint reports each event from several source systems, which carry different fields: only Library of Congress
+ * rows have the `actionCode` {@link inferStageFromActions} reads.
+ */
+export type BillAction = {
+  /** When the action happened, as an ISO date. */
+  date?: string;
+  /** The action, verbatim from Congress.gov. */
+  text: string;
+  /** Congress.gov's classification — `"IntroReferral"`, `"Committee"`, `"Floor"`, `"BecameLaw"`, … */
+  type?: string;
+  /**
+   * The Library of Congress action code, when this row came from that system.
+   *
+   * @see inferStageFromActions
+   */
+  actionCode?: string;
+  /** Roll-call votes this action records. Usually empty. */
+  recordedVotes: RecordedVote[];
+};
+
+/**
+ * The law a bill became, as Congress.gov states it. The one stage fact that needs no inference, and the only source of
+ * the citation ("Public Law 119-21"). Detail endpoint only.
+ */
+export type EnactedLaw = {
+  /** `"Public Law"` or `"Private Law"`, verbatim. */
+  type: string;
+  /** The citation number, e.g., `"119-21"` — the Congress, then the measure's sequence within it. */
+  number: string;
+};
+
+/**
+ * How an enacted law reads on screen, e.g., `"Public Law 119-21"`.
+ *
+ * @param law - The law to name.
+ * @returns The full citation.
+ */
+export function formatEnactedLaw(law: EnactedLaw): string {
+  return `${law.type} ${law.number}`;
+}
+
+// Sub-resource collections, and how their counts are worded.
+
+/**
+ * Congress.gov's own counts for the collections hanging off a bill. Read rather than inferred from the fetched arrays,
+ * because only a published figure can back a sentence beginning "Congress.gov records…". The two can differ when the
+ * mapper drops an unusable row or a collection exceeds the single 250-record page this app requests.
+ *
+ * Detail endpoint only.
+ *
+ * @see describeBillCollection
+ */
+export type BillCollectionCounts = {
+  /** Entries in the action history. */
+  actions?: number;
+  /** Committees the bill was referred to. */
+  committees?: number;
+  /** CRS summaries. */
+  summaries?: number;
+  /** Official text versions. */
+  textVersions?: number;
+  /** Measures recorded as related. */
+  relatedBills?: number;
+  /** Often larger than the 250 this app fetches on heavily amended bills. */
+  amendments?: number;
+};
+
+/** One bill collection's counts and how to name its records, as {@link describeBillCollection} words them. */
+export type BillCollectionTally = {
+  /** How many records are on screen. */
+  shown: number;
+  /** How many the publisher counted. Absent on a preview or failed read. */
+  published?: number;
+  /** The singular noun for one record. */
+  noun: string;
+  /** The plural, where adding an `s` won't do. */
+  pluralNoun?: string;
+};
+
+/**
+ * States how many records a bill's collection holds, attributing the figure to whoever produced it: "Congress.gov
+ * records…" only for a published count, "this page shows…" for this app's own.
+ *
+ * @param options - {@link BillCollectionTally}.
+ * @returns The sentence: the published count alone when the two agree, both when they differ, only the shown count when
+ *   nothing was published, or an empty string when there's nothing either way.
+ */
+export function describeBillCollection(options: BillCollectionTally): string {
+  const { shown, published, noun, pluralNoun } = options;
+
+  if (published === undefined) {
+    if (shown === 0) return "";
+    return `This page shows ${shown} ${pluralize(shown, noun, pluralNoun)} for this bill.`;
+  }
+
+  const recorded: string = `Congress.gov records ${published} ${pluralize(published, noun, pluralNoun)} on this bill`;
+
+  return shown === published ? `${recorded}.` : `${recorded}; this page shows ${shown}.`;
+}
+
+/**
  * One CRS summary of a bill, tied to the stage it describes (`actionDesc`, e.g., "Introduced in House"). A bill can
  * have several; earlier ones describe earlier versions of the text.
  */
@@ -545,23 +384,212 @@ export type BillTextVersion = {
   formats: BillTextFormat[];
 };
 
-/** Result of a bill-list fetch: the bills, whether they're live or preview, and when they were retrieved. */
-export type CongressSnapshot = {
-  /** The bills fetched. */
-  bills: LegislativeBill[];
-  /** Whether these are live records or labeled placeholders. */
-  source: "live" | "preview";
-  /** When the read happened, as an ISO timestamp. */
-  retrievedAt: string;
-  /** User-facing explanation shown when `source` is "preview" (no API key, or an upstream failure). */
-  notice?: string;
+// Cosponsors.
+
+/** One member who put their name to a bill they did not introduce. Every field is published, none derived. */
+export type BillCosponsor = {
+  /** The name as Congress.gov spells it, e.g., `"Rep. Issa, Darrell [R-CA-48]"`. */
+  fullName: string;
+  /** Present on essentially every live record; without it the cosponsor can't be linked. */
+  bioguideId?: string;
+  /** The member's party code, e.g., `"D"`. */
+  party?: string;
+  /** The member's state code, e.g., `"CA"`. */
+  state?: string;
+  /** When they signed on. */
+  sponsorshipDate?: string;
+  /** Set only for a member who later took their name off. */
+  withdrawnDate?: string;
+  /** Whether they were on the bill at introduction, as the record states — never inferred from dates. */
+  isOriginal: boolean;
 };
 
-/** Display labels for each BillStage. */
-export const billStageLabels: Record<BillStage, string> = {
-  introduced: "Introduced",
-  committee: "In Committee",
-  chamber: "Passed a Chamber",
-  president: "To the President",
-  law: "Became Law",
+/**
+ * The two cosponsor figures Congress.gov publishes. The list holds who is signed on now; `includingWithdrawn` counts
+ * everyone who ever was — the only trace a withdrawal leaves.
+ *
+ * @see describeWithdrawnCosponsors
+ */
+export type BillCosponsorTally = {
+  /** How many are signed on now. */
+  current?: number;
+  /** How many have been at any point, withdrawals included. */
+  includingWithdrawn?: number;
+};
+
+/**
+ * States that cosponsors withdrew, when the two published figures say so.
+ *
+ * @param tally - The bill's two cosponsor figures.
+ * @returns The sentence, or an empty string when the figures agree, either is missing, or the difference is negative.
+ */
+export function describeWithdrawnCosponsors(tally: BillCosponsorTally | undefined): string {
+  const { current, includingWithdrawn } = tally ?? {};
+  if (current === undefined || includingWithdrawn === undefined) return "";
+
+  const withdrawn: number = includingWithdrawn - current;
+  if (withdrawn <= 0) return "";
+
+  return `${withdrawn} more ${pluralize(withdrawn, "member")} cosponsored this bill and later withdrew, so ${
+    withdrawn === 1 ? "that name is" : "those names are"
+  } counted by Congress.gov but absent from the list below.`;
+}
+
+/**
+ * States how many listed cosponsors were on the bill at introduction. It counts a published per-row flag, and says "of
+ * the names below" because it describes the list on screen, not necessarily the whole collection.
+ *
+ * @param originals - How many of the listed cosponsors the record marks as original.
+ * @param total - How many are listed.
+ * @returns The sentence, or an empty string when nothing is listed.
+ */
+export function describeOriginalCosponsors(originals: number, total: number): string {
+  if (total === 0) return "";
+  if (originals === 0) return "None of the names below were on the bill when it was introduced.";
+
+  const wereOn: string = `${originals} of the names below ${pluralize(originals, "was", "were")} on the bill when it was introduced`;
+
+  // "the rest joined later" would be false when there is no rest.
+  if (originals === total) return `Every one of them — all ${total} — was on the bill when it was introduced.`;
+
+  const later: number = total - originals;
+
+  return `${wereOn}; the other ${later} joined later.`;
+}
+
+// Amendments.
+
+/**
+ * One amendment offered to a bill, as the bill's `/amendments` collection records it.
+ *
+ * Only the identity fields are required: the endpoint sends anything more for roughly one entry in fifteen (see
+ * {@link congressApiBillAmendmentSchema}), so an amendment row is usually just a citation and a link.
+ */
+export type BillAmendment = {
+  /** The Congress the amendment was offered in. */
+  congress: number;
+  /**
+   * The upper-cased type code, `"HAMDT"` or `"SAMDT"`.
+   *
+   * @see CONGRESS_GOV_AMENDMENT_PATHS
+   */
+  type: string;
+  /** The amendment number. */
+  number: string;
+  /** What the amendment says it does. The record's `purpose`, falling back to its `description`. Usually absent. */
+  purpose?: string;
+  /** The amendment's own latest action, when the entry carried one with text. */
+  latestAction?: Pick<BillAction, "date" | "text">;
+  /**
+   * The amendment's public Congress.gov page.
+   *
+   * @see congressGovAmendmentUrl
+   */
+  officialUrl: string;
+};
+
+/** An amendment's natural identifier, with `congress` as either a record's number or a URL's string. */
+export type AmendmentIdentity = {
+  /** The Congress the amendment was offered in. */
+  congress: number | string;
+  /** The amendment type code, in any case (e.g., `"SAMDT"`). */
+  type: string;
+  /** The amendment number. */
+  number: string;
+};
+
+/**
+ * Congress.gov's public URL path segment for each amendment type. The API publishes only these two codes; anything else
+ * falls back to {@link CONGRESS_GOV_HOME}.
+ */
+const CONGRESS_GOV_AMENDMENT_PATHS: Readonly<Record<string, string>> = {
+  HAMDT: "house-amendment",
+  SAMDT: "senate-amendment",
+};
+
+/**
+ * Builds the public Congress.gov page for an amendment, e.g.,
+ * `https://www.congress.gov/amendment/119th-congress/senate-amendment/2849`.
+ *
+ * Derived for the same reason as {@link congressGovBillUrl}. The pattern matches the URL Congress.gov publishes on each
+ * amendment's own record, which isn't fetched at runtime because that would cost a request per amendment.
+ *
+ * @param amendment - The amendment's identifier.
+ * @returns The amendment's public URL, or {@link CONGRESS_GOV_HOME} for an unrecognized type or Congress.
+ */
+export function congressGovAmendmentUrl(amendment: AmendmentIdentity): string {
+  const typePath: string | undefined = CONGRESS_GOV_AMENDMENT_PATHS[String(amendment.type).toUpperCase()];
+  const congress: number = Number(amendment.congress);
+
+  if (!typePath || !Number.isInteger(congress) || congress <= 0) return CONGRESS_GOV_HOME;
+
+  return `https://www.congress.gov/amendment/${formatOrdinal(congress)}-congress/${typePath}/${amendment.number}`;
+}
+
+/** How amendment codes are cited in prose — the form a reader will find on Congress.gov ("S.Amdt. 2849"). */
+const AMENDMENT_TYPE_CITATIONS: Readonly<Record<string, string>> = {
+  HAMDT: "H.Amdt.",
+  SAMDT: "S.Amdt.",
+};
+
+/**
+ * How an amendment is cited on screen, e.g., `"S.Amdt. 2849"`.
+ *
+ * @param amendment - The amendment to cite.
+ * @returns The citation. An unrecognized type shows the code as published rather than a guessed abbreviation.
+ */
+export function formatAmendmentCitation(amendment: Pick<BillAmendment, "type" | "number">): string {
+  return `${AMENDMENT_TYPE_CITATIONS[amendment.type] ?? amendment.type} ${amendment.number}`;
+}
+
+/**
+ * Says how many listed amendments carry any purpose text. Congress.gov publishes one for roughly one in fifteen, so
+ * this tells the reader the sparseness is the record's, not this page's.
+ *
+ * @param described - How many of the listed amendments carry a purpose.
+ * @param total - How many are listed.
+ * @returns The sentence, or an empty string when nothing is listed.
+ */
+export function describeAmendmentDetail(described: number, total: number): string {
+  if (total === 0) return "";
+  if (described === 0) {
+    return "Congress.gov publishes no purpose text for any of them here, so each row is the amendment's citation and a link to its own record.";
+  }
+  if (described === total) return "Each carries the purpose the record states for it.";
+
+  return `${described} of them carry the purpose the record states; the rest are published here as citations only, with their text on the amendment's own record.`;
+}
+
+// Related measures.
+
+/**
+ * How one measure relates to another, and who said so. A relationship is an editorial judgment (CRS, the House, and the
+ * Senate each identify their own), so the page shows the attribution beside it.
+ */
+export type RelatedBillRelationship = {
+  /** e.g., `"Related bill"`, `"Identical bill"`, `"Procedurally-related"`. */
+  type: string;
+  /** e.g., `"CRS"`, `"House"`, `"Senate"`. */
+  identifiedBy?: string;
+};
+
+/**
+ * Another measure this bill is recorded as related to — a reference carrying what a link and label need. Identity
+ * fields are required because a related bill that can't be opened isn't listed.
+ *
+ * @see mapRelatedBill
+ */
+export type RelatedBill = {
+  /** The related measure's Congress. */
+  congress: number;
+  /** Its upper-cased type code. */
+  type: string;
+  /** Its number. */
+  number: string;
+  /** Its title. */
+  title: string;
+  /** Its own latest action, when the record carried one. */
+  latestAction?: Pick<BillAction, "date" | "text">;
+  /** Every recorded statement of how the two measures relate. Can be empty. */
+  relationships: RelatedBillRelationship[];
 };

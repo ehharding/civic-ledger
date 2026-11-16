@@ -423,6 +423,9 @@ describe("getCommitteeDirectory pagination", (): void => {
   /**
    * Stubs a paginated list endpoint. The first page reports `count` so the fetcher knows how many more to ask for;
    * every later page is answered by `laterPage`, which individual cases use to break one of them.
+   *
+   * @param first - The first page's response body.
+   * @param laterPage - Answers every later page, given its `offset`.
    */
   function stubPagedList(first: unknown, laterPage: (offset: string | null) => Promise<Response>): void {
     stubLiveApi(

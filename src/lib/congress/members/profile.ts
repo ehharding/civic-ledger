@@ -50,23 +50,33 @@ export type MemberProfileResult = {
 };
 
 /**
+ * How to fetch one of a member's legislation lists.
+ *
+ * @typeParam Payload - The validated response shape for this list.
+ */
+type MemberLegislationConfig<Payload> = {
+  /** The list's path suffix. */
+  path: "sponsored-legislation" | "cosponsored-legislation";
+  /** The Zod schema for its response. */
+  schema: ZodType<Payload>;
+  /** Reads the bills off the payload. */
+  select: (payload: Payload) => CongressApiBill[] | undefined;
+};
+
+/**
  * Fetches one of a member's legislation lists (`/sponsored-legislation` or `/cosponsored-legislation`).
  *
  * @typeParam Payload - The validated response shape for this list.
  * @param bioguideId - The member's validated Bioguide ID.
  * @param apiKey - The server-only Congress.gov key.
- * @param config - The list's path suffix, schema, and the collection to read off the payload.
+ * @param config - {@link MemberLegislationConfig}.
  * @returns The mapped bills, capped at {@link MEMBER_LEGISLATION_LIMIT}, or `[]` on a 404 or failure. Sorted newest
  *   first here rather than trusting upstream order (this only reorders the capped page, not the full set).
  */
 async function fetchMemberLegislation<Payload>(
   bioguideId: string,
   apiKey: string,
-  config: {
-    path: "sponsored-legislation" | "cosponsored-legislation";
-    schema: ZodType<Payload>;
-    select: (payload: Payload) => CongressApiBill[] | undefined;
-  },
+  config: MemberLegislationConfig<Payload>,
 ): Promise<LegislativeBill[]> {
   const url: URL = buildCongressUrl(`/member/${bioguideId}/${config.path}`, apiKey, {
     limit: String(MEMBER_LEGISLATION_LIMIT),

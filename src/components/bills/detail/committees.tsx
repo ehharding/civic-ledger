@@ -18,14 +18,20 @@ function describeCommitteeActivity(activities: BillCommitteeActivity[]): string 
   return activities.map((activity: BillCommitteeActivity): string => activity.name).join(" · ");
 }
 
+/** Props for {@link CommitteeReferrals}. */
+type CommitteeReferralsProps = {
+  /** The committees to list, in the publisher's order. Primary committee first, and not re-sorted. */
+  committees: BillCommittee[];
+};
+
 /**
  * The committees a bill passed through, each linking to its page here. The action history mentions referrals only as
  * prose; this sub-resource carries the system codes that make a committee linkable.
  *
- * @param committees - The committees to list, in the publisher's order. Primary committee first, and not re-sorted.
+ * @param props - {@link CommitteeReferralsProps}.
  * @returns The referral list.
  */
-function CommitteeReferrals({ committees }: { committees: BillCommittee[] }): JSX.Element {
+function CommitteeReferrals({ committees }: CommitteeReferralsProps): JSX.Element {
   return (
     <ul className="bill-committee-list">
       {committees.map((committee: BillCommittee): JSX.Element => {

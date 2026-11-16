@@ -32,6 +32,9 @@ import {
 
 /**
  * A minimal bill, overridable per test. Only the fields a given assertion actually reads are ever meaningful.
+ *
+ * @param overrides - The fields this test cares about.
+ * @returns A complete bill record.
  */
 function bill(overrides: Partial<LegislativeBill> = {}): LegislativeBill {
   return {

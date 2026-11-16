@@ -16,7 +16,7 @@ type QueryCommitteesPageProps = {
 /**
  * `/committees` with a directory view in its query, reached only through a rewrite.
  *
- * @param searchParams - The requested view. Reading it is what makes this render on demand.
+ * @param props - {@link QueryCommitteesPageProps}.
  * @returns The directory page, narrowed to whatever the URL asked for.
  * @see src/lib/query-routes.ts
  */

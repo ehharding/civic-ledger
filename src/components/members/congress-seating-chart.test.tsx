@@ -63,6 +63,8 @@ function composition(overrides: Partial<CongressComposition> = {}): CongressComp
  * Queried by `data-seat-index` rather than by role, because a seat's element depends on its member: one with a Bioguide
  * ID is a link to their page, one without (every placeholder seat) is a `role="button"` circle. The attribute is what
  * both forms share, and what the component's own delegated handlers key on.
+ *
+ * @returns The seat elements, in chart order.
  */
 function seats(): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>("[data-seat-index]"));

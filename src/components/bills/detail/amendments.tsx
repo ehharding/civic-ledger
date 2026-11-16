@@ -16,15 +16,21 @@ import { formatDate } from "@/lib/format";
 /** How many amendments show before a disclosure. The highest limit, since most rows are a single line. */
 const AMENDMENT_PREVIEW_LIMIT: number = 15;
 
+/** Props for {@link AmendmentRow}. */
+type AmendmentRowProps = {
+  /** The amendment to render. */
+  amendment: BillAmendment;
+};
+
 /**
  * One amendment offered to the bill: citation, purpose, and latest action. The only row on the page that links outward
  * (to Congress.gov), since amendments have no page here. Most rows carry no purpose — the endpoint rarely sends
  * one — so none is rendered rather than a placeholder.
  *
- * @param amendment - The amendment to render.
+ * @param props - {@link AmendmentRowProps}.
  * @returns The row.
  */
-function AmendmentRow({ amendment }: { amendment: BillAmendment }): JSX.Element {
+function AmendmentRow({ amendment }: AmendmentRowProps): JSX.Element {
   return (
     <li>
       <p className="amendment-list__identity">
@@ -47,13 +53,19 @@ function AmendmentRow({ amendment }: { amendment: BillAmendment }): JSX.Element 
   );
 }
 
+/** Props for {@link AmendmentList}. */
+type AmendmentListProps = {
+  /** The amendments, in the publisher's order. */
+  amendments: BillAmendment[];
+};
+
 /**
  * The amendments offered to a bill, in the publisher's order (entries carry no meaningful date to sort by).
  *
- * @param amendments - The amendments, in the publisher's order.
+ * @param props - {@link AmendmentListProps}.
  * @returns The list, its tail behind a disclosure.
  */
-function AmendmentList({ amendments }: { amendments: BillAmendment[] }): JSX.Element {
+function AmendmentList({ amendments }: AmendmentListProps): JSX.Element {
   return (
     <DisclosedList
       items={amendments}

@@ -33,6 +33,9 @@ const bill: LegislativeBill = firstPreviewBill;
  * render this. The cases that mean the other thing say so explicitly with {@link unanswered}, and the difference
  * between the two is the whole point of the type.
  *
+ * @typeParam Entry - One record in the collection.
+ * @param entries - The collection's records.
+ * @returns The collection, marked as successfully fetched.
  * @see BillSubResource
  */
 function sub<Entry>(entries: Entry[]): BillSubResource<Entry> {
@@ -583,6 +586,9 @@ describe("BillDetail committees of referral", (): void => {
 
 /**
  * A cosponsor, overridable per test. Only the fields a given assertion reads are ever meaningful.
+ *
+ * @param overrides - The fields this test cares about.
+ * @returns A complete cosponsor record.
  */
 function cosponsor(overrides: Partial<BillCosponsor> = {}): BillCosponsor {
   return {

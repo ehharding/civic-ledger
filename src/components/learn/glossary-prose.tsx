@@ -3,6 +3,14 @@ import type { JSX } from "react";
 import { GlossaryTermTip } from "@/components/learn/glossary-term-tip";
 import { annotateGlossaryTerms, type GlossarySegment, glossaryHref } from "@/lib/glossary";
 
+/** Props for {@link GlossaryProse}. */
+type GlossaryProseProps = {
+  /**
+   * The prose to render. A string rather than children, since the annotation works on text and doesn't traverse nodes.
+   */
+  text: string;
+};
+
 /**
  * Renders a run of prose with every glossary term in it carrying its own definition. A drop-in for the bare string:
  * `<p>{step.copy}</p>` becomes `<p><GlossaryProse text={step.copy} /></p>`. The scan is {@link annotateGlossaryTerms};
@@ -11,12 +19,11 @@ import { annotateGlossaryTerms, type GlossarySegment, glossaryHref } from "@/lib
  * A server component wrapping a client one, so a page ships only the entries its text uses, and prose with no defined
  * term crosses no client boundary at all.
  *
- * @param text - The prose to render. A string rather than children, since the annotation works on text and doesn't
- *   traverse nodes.
+ * @param props - {@link GlossaryProseProps}.
  * @returns The same text, with its first mention of each defined term linked to the glossary and carrying a hover and
  *   focus definition.
  */
-export function GlossaryProse({ text }: { text: string }): JSX.Element {
+export function GlossaryProse({ text }: GlossaryProseProps): JSX.Element {
   return (
     <>
       {annotateGlossaryTerms(text).map((segment: GlossarySegment, index: number): JSX.Element => {

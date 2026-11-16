@@ -18,6 +18,10 @@ import { jsonResponse, stubLiveApi } from "@/test/congress-api";
  * reads concurrently — so the first to read the body consumes it and the other two fail with "Body is unusable". The
  * profile assertions still pass, which is exactly what makes the mistake easy to keep: the legislation lists come back
  * silently empty and the failure only ever surfaces as console noise.
+ *
+ * @param body - The JSON body every response carries.
+ * @param status - The HTTP status every response carries.
+ * @returns A `fetch` implementation.
  */
 function alwaysRespond(body: unknown, status = 200): () => Promise<Response> {
   return (): Promise<Response> => Promise.resolve(jsonResponse(body, status));
@@ -49,6 +53,8 @@ function liveMemberPayload(overrides: Record<string, unknown> = {}): Record<stri
 /**
  * Puts the adapter on its live path with a member whose sponsored-legislation list is `sponsored`, and whose
  * cosponsored list is empty — the shape the legislation tests below vary.
+ *
+ * @param sponsored - The raw sponsored-legislation entries to serve.
  */
 function stubMemberWithSponsored(sponsored: Record<string, unknown>[]): void {
   stubLiveApi(

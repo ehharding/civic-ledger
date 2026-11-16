@@ -40,7 +40,7 @@ export function generateStaticParams(): CongressBillsRouteParams[] {
 }
 
 /**
- * @param params - The route's `congress` param.
+ * @param props - {@link CongressBillsPageProps}.
  * @returns The per-Congress metadata.
  * @see congressBillsMetadata
  */
@@ -51,7 +51,7 @@ export function generateMetadata({ params }: CongressBillsPageProps): Promise<Me
 /**
  * Bill directory for one specific Congress, in its default view.
  *
- * @param params - The route's `congress` param.
+ * @param props - {@link CongressBillsPageProps}.
  * @returns The unfiltered directory page for that Congress.
  * @see renderCongressBillsRoute
  */

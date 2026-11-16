@@ -12,6 +12,12 @@ import {
 } from "@/lib/congress/members/model";
 import { memberHref } from "@/lib/routes";
 
+/** Props for {@link MemberCard}. */
+type MemberCardProps = {
+  /** The member to summarize. */
+  entry: MemberDirectoryEntry;
+};
+
 /**
  * Compact member summary card, used in the `/members` directory grid.
  *
@@ -21,10 +27,10 @@ import { memberHref } from "@/lib/routes";
  * The portrait's `alt` is empty: the linked name follows immediately, so describing the image would announce the same
  * person twice. On the member's own page, where the portrait stands alone, its `alt` does real work.
  *
- * @param entry - The member to summarize.
+ * @param props - {@link MemberCardProps}.
  * @returns The card: portrait where one exists, party, linked name, and the seat they hold.
  */
-export function MemberCard({ entry }: { entry: MemberDirectoryEntry }): JSX.Element {
+export function MemberCard({ entry }: MemberCardProps): JSX.Element {
   const seat: string = formatMemberSeat(entry, entry.chamber);
 
   return (

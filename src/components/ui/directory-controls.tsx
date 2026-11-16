@@ -222,13 +222,19 @@ export function DirectorySort<Sort extends string>({
   );
 }
 
+/** Props for {@link ClearFiltersButton}. */
+type ClearFiltersButtonProps = {
+  /** Restores the directory's "no filters" state. */
+  onClear: () => void;
+};
+
 /**
  * Returns a narrowed directory to showing everything. Callers render it only while a filter is active.
  *
- * @param onClear - Restores that directory's "no filters" state.
+ * @param props - {@link ClearFiltersButtonProps}.
  * @returns The clear button.
  */
-export function ClearFiltersButton({ onClear }: { onClear: () => void }): JSX.Element {
+export function ClearFiltersButton({ onClear }: ClearFiltersButtonProps): JSX.Element {
   return (
     <button className="directory-facets__clear" onClick={onClear} type="button">
       <X aria-hidden="true" size={14} /> Clear Filters

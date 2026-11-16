@@ -17,7 +17,7 @@ afterEach((): void => {
  */
 const TEST_NOW: Date = new Date("2026-07-15T12:00:00Z");
 
-/**
+/*
  * Every test starts frozen at {@link TEST_NOW} and with no Congress.gov key, whatever the shell exports — so a
  * developer with a real key runs the same suite CI does, and a test that forgot to stub `fetch` can't spend that key. A
  * test that wants a key stubs one with `vi.stubEnv`.
@@ -27,7 +27,7 @@ beforeEach((): void => {
   vi.stubEnv("CONGRESS_API_KEY", undefined);
 });
 
-/**
+/*
  * Undoes every clock change, `vi.stubEnv`, and `vi.stubGlobal` after each test, so no suite has to. Done here rather
  * than with `unstubEnvs`/`unstubGlobals` in `vitest.config.mts`, which restore *before* each test and so leak a file's
  * last stubs into the next file sharing the worker.
@@ -57,7 +57,7 @@ const originals: Map<string, typeof console.error> = new Map();
 /** The current test's console calls, checked when it ends. */
 let captured: CapturedLine[] = [];
 
-/**
+/*
  * Fails any test that provokes an unexpected `console.error` or `console.warn`.
  *
  * Warnings such as a React duplicate-key collision don't throw, and Vitest only prints a passing test's output to a

@@ -48,7 +48,7 @@ export function generateStaticParams(): MemberRouteParams[] {
 /**
  * Builds the per-member title and description. Shares the page's read: `getMemberProfile` is memoized per render.
  *
- * @param params - The member's route params.
+ * @param props - {@link MemberPageProps}.
  * @returns The member's metadata, or a "Member Not Found" title when the ID doesn't resolve.
  */
 export async function generateMetadata({ params }: MemberPageProps): Promise<Metadata> {
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: MemberPageProps): Promise<Met
 /**
  * Individual member route, keyed on Bioguide ID.
  *
- * @param params - The member's route params, untrusted.
+ * @param props - {@link MemberPageProps}.
  * @returns The member page, or the 404 page when the ID resolves to nobody.
  * @see normalizeBioguideId
  */

@@ -81,6 +81,10 @@ describe("robots", (): void => {
     /**
      * Resolves a path against allow and disallow prefixes the way Google and Bing do: the longest matching rule wins,
      * `*` matches any run of characters, and a trailing `$` anchors the end of the path.
+     *
+     * @param path - The URL path a crawler would request.
+     * @param rules - The patterns to resolve it against.
+     * @returns Whether the longest matching rule is an `allow`.
      */
     function isAllowed(path: string, rules: RobotsPathRules): boolean {
       // Every other character is literal, so escape the full regex metacharacter set, backslash included.

@@ -104,25 +104,33 @@ function previewBillsForCongress(congress: number): LegislativeBill[] {
   return previewBills.filter((bill: LegislativeBill): boolean => bill.congress === congress);
 }
 
+/** One request for a page of a Congress's bill list. */
+type BillPageRequest = {
+  /** The server-only Congress.gov key. */
+  apiKey: string;
+  /** The page offset. */
+  offset: number;
+  /** The page size. */
+  limit: number;
+  /** The Congress to read. */
+  congress: number;
+  /**
+   * The Congress.gov sort to request. Required because `/v3/bill/{congress}` defaults to *ascending* latest-action
+   * order — a Congress's least active bills — and every surface in this app leads with what is current. Callers pass
+   * {@link RECENTLY_UPDATED_FIRST}.
+   */
+  sort: string;
+};
+
 /**
  * Fetches one page of the bill list for a specific Congress, filtered by path. The unfiltered `/v3/bill` list mixes
  * bills from every Congress.
  *
- * @param input - The API key, the Congress to read, the page window, and the Congress.gov sort to request.
- *
- *   `sort` is required because `/v3/bill/{congress}` defaults to *ascending* latest-action order — a Congress's least
- *   active bills — and every surface in this app leads with what is current. Callers pass
- *   {@link RECENTLY_UPDATED_FIRST}.
+ * @param input - {@link BillPageRequest}.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
  *   page render, an empty page for "Load More").
  */
-async function fetchBillsPage(input: {
-  apiKey: string;
-  offset: number;
-  limit: number;
-  congress: number;
-  sort: string;
-}): Promise<LegislativeBill[] | null> {
+async function fetchBillsPage(input: BillPageRequest): Promise<LegislativeBill[] | null> {
   const url: URL = buildCongressUrl(`/bill/${input.congress}`, input.apiKey, {
     limit: String(input.limit),
     offset: String(input.offset),

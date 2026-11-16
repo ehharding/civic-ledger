@@ -31,14 +31,20 @@ function describeRelationships(relationships: RelatedBillRelationship[]): string
     .join(" · ");
 }
 
+/** Props for {@link RelatedBillRow}. */
+type RelatedBillRowProps = {
+  /** The related measure to render. */
+  measure: RelatedBill;
+};
+
 /**
  * One related measure: identity, title, relationship, and latest action. Each relationship names who identified it
  * (CRS, House, or Senate), since relatedness is an editorial judgment rather than a legislative act.
  *
- * @param measure - The related measure to render.
+ * @param props - {@link RelatedBillRowProps}.
  * @returns The row.
  */
-function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
+function RelatedBillRow({ measure }: RelatedBillRowProps): JSX.Element {
   const relationships: string = describeRelationships(measure.relationships);
 
   return (
@@ -63,14 +69,20 @@ function RelatedBillRow({ measure }: { measure: RelatedBill }): JSX.Element {
   );
 }
 
+/** Props for {@link RelatedBillList}. */
+type RelatedBillListProps = {
+  /** The related measures, in the publisher's order. */
+  related: RelatedBill[];
+};
+
 /**
  * The other measures Congress.gov records as related to this bill (e.g., "is there a Senate version?"), each linking to
  * its page here, in the publisher's order.
  *
- * @param related - The related measures, in the publisher's order.
+ * @param props - {@link RelatedBillListProps}.
  * @returns The list, its tail behind a disclosure.
  */
-function RelatedBillList({ related }: { related: RelatedBill[] }): JSX.Element {
+function RelatedBillList({ related }: RelatedBillListProps): JSX.Element {
   return (
     <DisclosedList
       items={related}

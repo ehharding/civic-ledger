@@ -210,6 +210,12 @@ function SeatDetail({ chamber, member }: SeatDetailProps): JSX.Element {
   );
 }
 
+/** Props for {@link CongressSeatingChart}. */
+type CongressSeatingChartProps = {
+  /** Both chambers' membership plus its live/preview provenance, resolved server-side. */
+  composition: CongressComposition;
+};
+
 /**
  * An interactive diagram of who currently holds each seat in a chamber of Congress: one dot per member, colored by
  * party and arranged in the conventional half-disc, with the party balance summarized alongside it.
@@ -224,10 +230,10 @@ function SeatDetail({ chamber, member }: SeatDetailProps): JSX.Element {
  * `<circle role="button">` whose activation locks the read-out — the role declared explicitly because an HTML
  * `<button>` cannot be a child of `<svg>`.
  *
- * @param composition - Both chambers' membership plus its live/preview provenance, resolved server-side.
+ * @param props - {@link CongressSeatingChartProps}.
  * @returns The chamber tabs, the SVG diagram, the seat read-out panel, the party legend, and the provenance line.
  */
-export function CongressSeatingChart({ composition }: { composition: CongressComposition }): JSX.Element {
+export function CongressSeatingChart({ composition }: CongressSeatingChartProps): JSX.Element {
   const [chamber, setChamber] = useState<CongressChamber>("house");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);

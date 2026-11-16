@@ -56,32 +56,21 @@ const CHAMBER_OPTIONS: readonly ChamberFilter[] = [ANY_FACET, ...congressChamber
 /** The order jurisdiction groups appear in the state control. */
 const JURISDICTION_GROUPS: readonly JurisdictionGroup[] = ["state", "territory"];
 
-/** Props for {@link MemberDirectory}. */
-type MemberDirectoryProps = {
-  /** The complete roster, already ordered server-side. */
-  members: MemberDirectoryEntry[];
-  /** The Congress this roster describes, named in the scope note. */
-  congress: number;
-  /** Whether these are live Congress.gov records or labeled placeholders. Changes the scope note's claim. */
-  source: CongressSnapshot["source"];
-  /**
-   * The view the URL asked for, resolved server-side so a shared link renders narrowed on its very first paint rather
-   * than flashing the whole roster and then filtering it. Defaults to the unfiltered directory.
-   *
-   * @see resolveMemberDirectoryQuery
-   */
-  initialQuery?: MemberDirectoryQuery;
+/** Props for {@link JurisdictionOptions}. */
+type JurisdictionOptionsProps = {
+  /** Every jurisdiction in the roster, already ordered. */
+  options: JurisdictionOption[];
 };
 
 /**
  * Renders the jurisdiction control's options in state and territory `<optgroup>`s, delegating each option to
  * {@link FacetOptions}.
  *
- * @param options - Every jurisdiction in the roster, already ordered.
+ * @param props - {@link JurisdictionOptionsProps}.
  * @returns One `<optgroup>` per non-empty group.
  * @see listMemberJurisdictions
  */
-function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JSX.Element {
+function JurisdictionOptions({ options }: JurisdictionOptionsProps): JSX.Element {
   return (
     <>
       {JURISDICTION_GROUPS.map((group: JurisdictionGroup): JSX.Element | null => {
@@ -99,6 +88,23 @@ function JurisdictionOptions({ options }: { options: JurisdictionOption[] }): JS
     </>
   );
 }
+
+/** Props for {@link MemberDirectory}. */
+type MemberDirectoryProps = {
+  /** The complete roster, already ordered server-side. */
+  members: MemberDirectoryEntry[];
+  /** The Congress this roster describes, named in the scope note. */
+  congress: number;
+  /** Whether these are live Congress.gov records or labeled placeholders. Changes the scope note's claim. */
+  source: CongressSnapshot["source"];
+  /**
+   * The view the URL asked for, resolved server-side so a shared link renders narrowed on its very first paint rather
+   * than flashing the whole roster and then filtering it. Defaults to the unfiltered directory.
+   *
+   * @see resolveMemberDirectoryQuery
+   */
+  initialQuery?: MemberDirectoryQuery;
+};
 
 /**
  * Browsable directory of everyone serving in a Congress. A Congress is a bounded roster, so every narrowing happens in

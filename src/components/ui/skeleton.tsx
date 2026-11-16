@@ -5,15 +5,23 @@ import type { JSX, ReactNode } from "react";
  * patterns — especially the accessibility-bearing ones — are shared here.
  */
 
+/** Props for {@link SkeletonPageHeader}. */
+type SkeletonPageHeaderProps = {
+  /**
+   * Extra placeholder blocks that belong inside the same header group, e.g., the bill record's summary panel. Most
+   * callers pass none.
+   */
+  children?: ReactNode;
+};
+
 /**
  * The eyebrow / title / lead-paragraph trio every page opens with, drawn as blank blocks. Not a real `<h1>`: loading UI
  * doesn't know the title, so the group is `aria-hidden` and paired with a {@link LoadingStatus}.
  *
- * @param children - Extra placeholder blocks that belong inside the same header group, e.g., the bill record's summary
- *   panel. Most callers pass none.
+ * @param props - {@link SkeletonPageHeaderProps}.
  * @returns The header placeholder, hidden from assistive technology.
  */
-export function SkeletonPageHeader({ children }: { children?: ReactNode }): JSX.Element {
+export function SkeletonPageHeader({ children }: SkeletonPageHeaderProps): JSX.Element {
   return (
     <div className="skeleton-detail" aria-hidden="true">
       <div className="skeleton skeleton--eyebrow" />
@@ -68,13 +76,19 @@ export function SkeletonGrid({ count, className, blockClassName }: SkeletonGridP
   );
 }
 
+/** Props for {@link LoadingStatus}. */
+type LoadingStatusProps = {
+  /** The message, e.g., `"Loading Bills…"`. */
+  children: string;
+};
+
 /**
  * The one thing a skeleton says out loud: a visually hidden, polite `role="status"` message.
  *
- * @param children - The message, e.g., `"Loading Bills…"`.
+ * @param props - {@link LoadingStatusProps}.
  * @returns The screen-reader-only status message.
  */
-export function LoadingStatus({ children }: { children: string }): JSX.Element {
+export function LoadingStatus({ children }: LoadingStatusProps): JSX.Element {
   return (
     <span className="sr-only" role="status">
       {children}

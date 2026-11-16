@@ -27,24 +27,6 @@ import {
 } from "@/lib/congress/members/model";
 import { formatOrdinal } from "@/lib/format";
 
-/** Props for {@link MemberDetail} — everything the member route resolves server-side. */
-type MemberDetailProps = {
-  /** The member being shown. */
-  profile: MemberProfile;
-  /** Whether this record is live Congress.gov data or a labeled placeholder. Changes wording throughout. */
-  source: CongressSnapshot["source"];
-  /** User-facing explanation of *why* placeholder data is being shown, when it is. */
-  notice?: string;
-  /** When this member's data was actually fetched — passed straight through to `DataSourceNotice`. */
-  retrievedAt?: string;
-  /** Bills this member sponsored, most recent first. A slice, not the complete history. */
-  sponsored: LegislativeBill[];
-  /** Bills this member cosponsored, most recent first. A slice, not the complete history. */
-  cosponsored: LegislativeBill[];
-  /** How many bills each list was capped at, so the page can say what it's showing a slice *of*. */
-  legislationLimit: number;
-};
-
 /** Props for {@link ServiceTerm}. */
 type ServiceTermProps = {
   /** The term to describe. */
@@ -139,6 +121,24 @@ function LegislationSection({
     </section>
   );
 }
+
+/** Props for {@link MemberDetail} — everything the member route resolves server-side. */
+type MemberDetailProps = {
+  /** The member being shown. */
+  profile: MemberProfile;
+  /** Whether this record is live Congress.gov data or a labeled placeholder. Changes wording throughout. */
+  source: CongressSnapshot["source"];
+  /** User-facing explanation of *why* placeholder data is being shown, when it is. */
+  notice?: string;
+  /** When this member's data was actually fetched — passed straight through to `DataSourceNotice`. */
+  retrievedAt?: string;
+  /** Bills this member sponsored, most recent first. A slice, not the complete history. */
+  sponsored: LegislativeBill[];
+  /** Bills this member cosponsored, most recent first. A slice, not the complete history. */
+  cosponsored: LegislativeBill[];
+  /** How many bills each list was capped at, so the page can say what it's showing a slice *of*. */
+  legislationLimit: number;
+};
 
 /**
  * Individual member page. Purely presentational: the route resolves every value. Reports only what Congress.gov

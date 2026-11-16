@@ -8,17 +8,23 @@ import { billStageLabels, type LegislativeBill } from "@/lib/congress/bills/mode
 import { formatDate } from "@/lib/format";
 import { billHref } from "@/lib/routes";
 
+/** Props for {@link BillCard}. */
+type BillCardProps = {
+  /** The bill to summarize. */
+  bill: LegislativeBill;
+};
+
 /**
  * Compact bill summary card, for the directory, the home page's "Latest Activity", and member legislation lists.
  *
  * The title and the corner arrow (an easier target, with its own `aria-label`) both link to the record. The latest
  * action is dated "Recorded {date}", matching the bill page, since every surface orders by recency.
  *
- * @param bill - The bill to summarize.
+ * @param props - {@link BillCardProps}.
  * @returns The card: identifier and stage, linked title, latest action and its date, compact journey stepper, and
  *   policy area where the record carries one.
  */
-export function BillCard({ bill }: { bill: LegislativeBill }): JSX.Element {
+export function BillCard({ bill }: BillCardProps): JSX.Element {
   const href: Route = billHref(bill);
 
   return (

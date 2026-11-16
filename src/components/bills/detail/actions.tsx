@@ -7,14 +7,20 @@ import { EmptySectionNote } from "@/components/ui/empty-section-note";
 import { type BillAction, describeBillCollection } from "@/lib/congress/bills/model";
 import { formatDate, pluralize } from "@/lib/format";
 
+/** Props for {@link ActionHistory}. */
+type ActionHistoryProps = {
+  /** Every action on file, most recent first. */
+  actions: BillAction[];
+};
+
 /**
  * The bill's full action history, collapsed. Not deduplicated: Congress.gov logs one moment from several source
  * systems, and merging them would mean choosing which official log to believe.
  *
- * @param actions - Every action on file, most recent first.
+ * @param props - {@link ActionHistoryProps}.
  * @returns The collapsible history, or nothing at all when there is none to show.
  */
-function ActionHistory({ actions }: { actions: BillAction[] }): JSX.Element | null {
+function ActionHistory({ actions }: ActionHistoryProps): JSX.Element | null {
   if (actions.length === 0) return null;
 
   return (

@@ -40,14 +40,6 @@ import { billHref, committeeHref, committeeRecordsHref } from "@/lib/routes";
  *   order Congress.gov publishes them in.
  */
 
-/** Props for {@link CommitteeRecordsSection} — everything the committee route resolves server-side. */
-type CommitteeRecordsSectionProps = {
-  /** The committee whose records these are. Supplies the chamber and code every link here is built from. */
-  profile: CommitteeProfile;
-  /** The resolved page: its records, where it sits in the collection, and whether the request succeeded. */
-  result: CommitteeRecordsResult;
-};
-
 /**
  * How many records each collection holds. Congress.gov can disagree with itself — House Agriculture's record says
  * 17,795 bills, its bills endpoint 10,205 — so the fetched collection's own count wins on screen (it's what the pager
@@ -112,6 +104,12 @@ function RecordsTab({ chamber, systemCode, kind, count, isCurrent }: RecordsTabP
   );
 }
 
+/** Props for {@link ReferralRow}. */
+type ReferralRowProps = {
+  /** The referral to render. */
+  referral: CommitteeBillReferral;
+};
+
 /**
  * One referred measure.
  *
@@ -119,11 +117,11 @@ function RecordsTab({ chamber, systemCode, kind, count, isCurrent }: RecordsTabP
  * measure's own record could be looked up. When it couldn't, the row still names the measure, says what the committee
  * did with it, and links to its page, because the link is built from the identifier rather than from the title.
  *
- * @param referral - The referral to render.
+ * @param props - {@link ReferralRowProps}.
  * @returns The row.
  * @see withBillTitles
  */
-function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Element {
+function ReferralRow({ referral }: ReferralRowProps): JSX.Element {
   const href: Route = billHref(referral);
   const identifier: string = `${referral.type} ${referral.number}`;
 
@@ -144,6 +142,12 @@ function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Ele
   );
 }
 
+/** Props for {@link ReportRow}. */
+type ReportRowProps = {
+  /** The report to render. */
+  report: CommitteeReport;
+};
+
 /**
  * One published report.
  *
@@ -154,11 +158,11 @@ function ReferralRow({ referral }: { referral: CommitteeBillReferral }): JSX.Ele
  * looks authoritative and lands on a 404 is a worse outcome for a product whose whole claim is that you can check it
  * than printing the citation and letting a reader search the identifier they were given.
  *
- * @param report - The report to render.
+ * @param props - {@link ReportRowProps}.
  * @returns The row.
  * @see CONGRESS_GOV_COMMITTEES, where the same reasoning is applied to committee pages for a slightly different cause.
  */
-function ReportRow({ report }: { report: CommitteeReport }): JSX.Element {
+function ReportRow({ report }: ReportRowProps): JSX.Element {
   const parts: string[] = [];
   if (report.congress !== undefined) parts.push(`${formatOrdinal(report.congress)} Congress`);
   // Congress.gov spells the part into some citations and not others — `"H. Rept. 117-357,Part 1"` beside a bare
@@ -179,16 +183,22 @@ function ReportRow({ report }: { report: CommitteeReport }): JSX.Element {
   );
 }
 
+/** Props for {@link NominationRow}. */
+type NominationRowProps = {
+  /** The nomination to render. */
+  nomination: CommitteeNomination;
+};
+
 /**
  * One referred nomination.
  *
  * The only one of the three collections whose list endpoint publishes a description, so this row says who was nominated
  * to what without the second request a referral needs for its title.
  *
- * @param nomination - The nomination to render.
+ * @param props - {@link NominationRowProps}.
  * @returns The row.
  */
-function NominationRow({ nomination }: { nomination: CommitteeNomination }): JSX.Element {
+function NominationRow({ nomination }: NominationRowProps): JSX.Element {
   return (
     <li className="committee-record">
       <div className="committee-record__topline">
@@ -205,17 +215,23 @@ function NominationRow({ nomination }: { nomination: CommitteeNomination }): JSX
   );
 }
 
+/** Props for {@link RecordList}. */
+type RecordListProps = {
+  /** The page's records. */
+  records: CommitteeRecords;
+};
+
 /**
  * The page's records, whichever collection they are.
  *
  * The one place the {@link CommitteeRecords} union is switched on, so each row component receives the record type it
  * was written for and nothing else.
  *
- * @param records - The page's records.
+ * @param props - {@link RecordListProps}.
  * @returns The list.
  * @see CommitteeRecords for why the union exists rather than three parallel arrays.
  */
-function RecordList({ records }: { records: CommitteeRecords }): JSX.Element {
+function RecordList({ records }: RecordListProps): JSX.Element {
   if (records.kind === "reports") {
     return (
       <ul className="committee-records__list">
@@ -448,6 +464,14 @@ function emptyCopy(options: EmptyCollection): string {
   // receive a nomination, so leaving that unsaid would make a permanent fact read as missing data.
   return options.kind === "nominations" ? `${clause} Only Senate committees receive them.` : clause;
 }
+
+/** Props for {@link CommitteeRecordsSection} — everything the committee route resolves server-side. */
+type CommitteeRecordsSectionProps = {
+  /** The committee whose records these are. Supplies the chamber and code every link here is built from. */
+  profile: CommitteeProfile;
+  /** The resolved page: its records, where it sits in the collection, and whether the request succeeded. */
+  result: CommitteeRecordsResult;
+};
 
 /**
  * The committee page's records section.

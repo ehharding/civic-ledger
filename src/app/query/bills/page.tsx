@@ -16,7 +16,7 @@ type QueryBillsPageProps = {
 /**
  * `/bills` with a `?q=` or `?stage=` deep link, reached only through a rewrite.
  *
- * @param searchParams - The deep link. Reading it is what makes this render on demand.
+ * @param props - {@link QueryBillsPageProps}.
  * @returns The directory page, narrowed to whatever the URL asked for.
  * @see src/lib/query-routes.ts
  */

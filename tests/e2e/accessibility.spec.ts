@@ -37,7 +37,6 @@ type AxeViolation = AxeResults["violations"][number];
  *
  * @param page - The page to scan, already navigated.
  * @param testInfo - The running test, used to attach the full results.
- * @returns Nothing; asserts.
  */
 async function expectNoViolations(page: Page, testInfo: TestInfo): Promise<void> {
   // Waited for rather than asserted at the end of each test, because it is the scan's precondition rather than one of
