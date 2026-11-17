@@ -83,13 +83,7 @@ import { compareIsoDatesDesc } from "@/lib/format";
  * unit-testable without stubbing `fetch`.
  */
 
-/** A member paired with the chamber they sit in — the shape `mapCongressMember` returns before grouping. */
-export type SeatedMember = {
-  /** The chamber the member sits in. */
-  chamber: CongressChamber;
-  /** The mapped member. */
-  member: CongressMember;
-};
+// Bills, and the collections read from a bill's own record.
 
 /**
  * Narrows an arbitrary API string to the app's closed `originChamber` union.
@@ -193,6 +187,119 @@ function mapCosponsorTally(bill: CongressApiBill): BillCosponsorTally | undefine
 }
 
 /**
+ * Maps the law a bill became.
+ *
+ * @param law - A validated entry from a detail-endpoint bill's `laws` array.
+ * @returns The mapped law, or `null` unless it carries both the type and the number. The action codes can still
+ *   establish the stage without it.
+ */
+export function mapEnactedLaw(law: CongressApiLaw): EnactedLaw | null {
+  const type: string = (law.type ?? "").trim();
+  const number: string = (law.number ?? "").trim();
+
+  if (type.length === 0 || number.length === 0) return null;
+
+  return { type, number };
+}
+
+// Bill sub-resources.
+
+/**
+ * Maps a raw summaries-endpoint entry into the app's {@link BillSummary} shape, sanitizing its HTML on the way through
+ * so no unsanitized markup ever exists inside the app's own model.
+ *
+ * @param summary - A validated entry from the summaries endpoint.
+ * @returns The mapped summary, or `null` when it has no text or no action description.
+ */
+export function mapCongressSummary(summary: CongressApiSummary): BillSummary | null {
+  if (!summary.text || !summary.actionDesc) return null;
+
+  return {
+    versionCode: summary.versionCode ?? "00",
+    actionDesc: summary.actionDesc,
+    actionDate: summary.actionDate,
+    html: sanitizeSummaryHtml(summary.text),
+  };
+}
+
+/**
+ * Maps a raw text-endpoint entry into the app's {@link BillTextVersion} shape.
+ *
+ * @param version - A validated entry from the text endpoint.
+ * @returns The mapped version, or `null` when it has no type or no format that carries both a label and a URL — a
+ *   version with nothing to link to is a heading with no content behind it.
+ */
+export function mapCongressTextVersion(version: CongressApiTextVersion): BillTextVersion | null {
+  if (!version.type) return null;
+
+  const formats: BillTextFormat[] = (version.formats ?? []).filter(
+    (format: CongressApiTextFormat): format is BillTextFormat => Boolean(format.type && format.url),
+  );
+  if (formats.length === 0) return null;
+
+  return { type: version.type, date: version.date, formats };
+}
+
+/**
+ * Maps a raw actions-endpoint entry into the app's {@link BillAction} shape.
+ *
+ * @param action - A validated entry from the actions endpoint.
+ * @returns The mapped action, or `null` when it has no text — an undated, untitled row is a bullet with nothing in it.
+ */
+export function mapCongressAction(action: CongressApiAction): BillAction | null {
+  const text: string | undefined = action.text?.trim();
+  if (!text) return null;
+
+  return {
+    date: action.actionDate,
+    text,
+    type: action.type,
+    actionCode: action.actionCode,
+    recordedVotes: mapUsable(action.recordedVotes, mapRecordedVote),
+  };
+}
+
+/**
+ * Maps a raw recorded-vote reference from a bill action.
+ *
+ * @param vote - A validated `recordedVotes[]` entry.
+ * @returns The mapped reference, or `null` without a recognizable chamber, roll number, congress, and the chamber's
+ *   URL — everything needed to name and reach the vote.
+ */
+export function mapRecordedVote(vote: CongressApiRecordedVote): RecordedVote | null {
+  const chamber: CongressChamber | null = normalizeChamberName(vote.chamber);
+  if (!chamber || typeof vote.rollNumber !== "number" || typeof vote.congress !== "number" || !vote.url) return null;
+
+  return {
+    chamber: chamber === "house" ? "House" : "Senate",
+    rollNumber: vote.rollNumber,
+    congress: vote.congress,
+    sessionNumber: vote.sessionNumber,
+    date: vote.date,
+    url: vote.url,
+  };
+}
+
+/**
+ * Collects every distinct roll-call vote in a bill's action history. Congress.gov reports each event from several
+ * source systems, so one roll call can arrive on two or three actions; listing it twice would read as two votes.
+ *
+ * @param actions - The bill's actions, in any order.
+ * @returns One entry per distinct vote, most recent first.
+ */
+export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVote[] {
+  const byIdentity: Map<string, RecordedVote> = new Map<string, RecordedVote>();
+
+  for (const action of actions) {
+    for (const vote of action.recordedVotes) {
+      byIdentity.set(`${vote.congress}-${vote.chamber}-${vote.sessionNumber ?? ""}-${vote.rollNumber}`, vote);
+    }
+  }
+
+  return sortByDateDesc([...byIdentity.values()], "date");
+}
+
+/**
  * Maps one entry from a bill's `/cosponsors` collection.
  *
  * @param cosponsor - A validated cosponsor entry.
@@ -221,7 +328,7 @@ export function mapBillCosponsor(cosponsor: CongressApiCosponsor): BillCosponsor
  * @returns The mapped relationship, or `null` without a type. An attribution with nothing attributed to it — "CRS
  *   said…" and then nothing — is not a row.
  */
-export function mapRelatedBillRelationship(detail: CongressApiRelationshipDetail): RelatedBillRelationship | null {
+function mapRelatedBillRelationship(detail: CongressApiRelationshipDetail): RelatedBillRelationship | null {
   const type: string = (detail.type ?? "").trim();
   if (type.length === 0) return null;
 
@@ -284,115 +391,78 @@ export function mapBillAmendment(amendment: CongressApiBillAmendment): BillAmend
 }
 
 /**
- * Maps the law a bill became.
- *
- * @param law - A validated entry from a detail-endpoint bill's `laws` array.
- * @returns The mapped law, or `null` unless it carries both the type and the number. The action codes can still
- *   establish the stage without it.
+ * The activity name Congress.gov uses when it recorded that *something* happened but not what. Common, and useless to a
+ * reader, so those activity rows are dropped; the committee itself still appears.
  */
-export function mapEnactedLaw(law: CongressApiLaw): EnactedLaw | null {
-  const type: string = (law.type ?? "").trim();
-  const number: string = (law.number ?? "").trim();
+const UNNAMED_COMMITTEE_ACTIVITY: string = "unknown";
 
-  if (type.length === 0 || number.length === 0) return null;
+/**
+ * Maps one recorded committee activity.
+ *
+ * @param activity - A validated entry from a bill's committee record.
+ * @returns The mapped activity, or `null` when it names nothing — including the endpoint's literal `"Unknown"`.
+ * @see UNNAMED_COMMITTEE_ACTIVITY
+ */
+export function mapBillCommitteeActivity(activity: CongressApiBillCommitteeActivity): BillCommitteeActivity | null {
+  const name: string = (activity.name ?? "").trim();
 
-  return { type, number };
+  if (name.length === 0 || name.toLowerCase() === UNNAMED_COMMITTEE_ACTIVITY) return null;
+
+  return { name, date: activity.date };
 }
 
 /**
- * Maps a raw summaries-endpoint entry into the app's {@link BillSummary} shape, sanitizing its HTML on the way through
- * so no unsanitized markup ever exists inside the app's own model.
+ * Maps one subcommittee a bill reached.
  *
- * @param summary - A validated entry from the summaries endpoint.
- * @returns The mapped summary, or `null` when it has no text or no action description.
+ * @param subcommittee - A validated entry from a committee's `subcommittees` array on a bill record.
+ * @returns The mapped subcommittee, or `null` without a code and a name — the same bar {@link mapCommitteeRef} holds,
+ *   and for the same reason: one that cannot be opened or labeled is not a row.
  */
-export function mapCongressSummary(summary: CongressApiSummary): BillSummary | null {
-  if (!summary.text || !summary.actionDesc) return null;
+export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): BillSubcommittee | null {
+  const ref: CommitteeRef | null = mapCommitteeRef(subcommittee);
+  if (!ref) return null;
+
+  return { ...ref, activities: mapUsable(subcommittee.activities, mapBillCommitteeActivity) };
+}
+
+/**
+ * Maps one committee a bill was before.
+ *
+ * @param committee - A validated entry from `GET /v3/bill/{congress}/{type}/{number}/committees`.
+ * @returns The mapped committee, or `null` without a code, a name, or a recognizable chamber — the code and chamber
+ *   form the inward link.
+ */
+export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommittee | null {
+  const ref: CommitteeRef | null = mapCommitteeRef(committee);
+  const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
+
+  if (!ref || !chamber) return null;
+
+  const { systemCode, name } = ref;
 
   return {
-    versionCode: summary.versionCode ?? "00",
-    actionDesc: summary.actionDesc,
-    actionDate: summary.actionDate,
-    html: sanitizeSummaryHtml(summary.text),
+    systemCode,
+    name,
+    chamber,
+    type: normalizeCommitteeType(committee.type),
+    typeName: committee.type,
+    // Left in the publisher's order rather than sorted by date. The endpoint lists a committee's activities newest
+    // first, but its *committees* in referral order — primary committee first — and that ordering is meaningful, so
+    // neither level is re-sorted into an order this app would then be claiming to have established.
+    activities: mapUsable(committee.activities, mapBillCommitteeActivity),
+    subcommittees: mapUsable(committee.subcommittees, mapBillSubcommittee).sort(compareCommitteesByName),
   };
 }
 
-/**
- * Maps a raw text-endpoint entry into the app's {@link BillTextVersion} shape.
- *
- * @param version - A validated entry from the text endpoint.
- * @returns The mapped version, or `null` when it has no type or no format that carries both a label and a URL — a
- *   version with nothing to link to is a heading with no content behind it.
- */
-export function mapCongressTextVersion(version: CongressApiTextVersion): BillTextVersion | null {
-  if (!version.type) return null;
+// Members.
 
-  const formats: BillTextFormat[] = (version.formats ?? []).filter(
-    (format: CongressApiTextFormat): format is BillTextFormat => Boolean(format.type && format.url),
-  );
-  if (formats.length === 0) return null;
-
-  return { type: version.type, date: version.date, formats };
-}
-
-/**
- * Maps a raw recorded-vote reference from a bill action.
- *
- * @param vote - A validated `recordedVotes[]` entry.
- * @returns The mapped reference, or `null` without a recognizable chamber, roll number, congress, and the chamber's
- *   URL — everything needed to name and reach the vote.
- */
-export function mapRecordedVote(vote: CongressApiRecordedVote): RecordedVote | null {
-  const chamber: CongressChamber | null = normalizeChamberName(vote.chamber);
-  if (!chamber || typeof vote.rollNumber !== "number" || typeof vote.congress !== "number" || !vote.url) return null;
-
-  return {
-    chamber: chamber === "house" ? "House" : "Senate",
-    rollNumber: vote.rollNumber,
-    congress: vote.congress,
-    sessionNumber: vote.sessionNumber,
-    date: vote.date,
-    url: vote.url,
-  };
-}
-
-/**
- * Maps a raw actions-endpoint entry into the app's {@link BillAction} shape.
- *
- * @param action - A validated entry from the actions endpoint.
- * @returns The mapped action, or `null` when it has no text — an undated, untitled row is a bullet with nothing in it.
- */
-export function mapCongressAction(action: CongressApiAction): BillAction | null {
-  const text: string | undefined = action.text?.trim();
-  if (!text) return null;
-
-  return {
-    date: action.actionDate,
-    text,
-    type: action.type,
-    actionCode: action.actionCode,
-    recordedVotes: mapUsable(action.recordedVotes, mapRecordedVote),
-  };
-}
-
-/**
- * Collects every distinct roll-call vote in a bill's action history. Congress.gov reports each event from several
- * source systems, so one roll call can arrive on two or three actions; listing it twice would read as two votes.
- *
- * @param actions - The bill's actions, in any order.
- * @returns One entry per distinct vote, most recent first.
- */
-export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVote[] {
-  const byIdentity: Map<string, RecordedVote> = new Map<string, RecordedVote>();
-
-  for (const action of actions) {
-    for (const vote of action.recordedVotes) {
-      byIdentity.set(`${vote.congress}-${vote.chamber}-${vote.sessionNumber ?? ""}-${vote.rollNumber}`, vote);
-    }
-  }
-
-  return sortByDateDesc([...byIdentity.values()], "date");
-}
+/** A member paired with the chamber they sit in — the shape `mapCongressMember` returns before grouping. */
+export type SeatedMember = {
+  /** The chamber the member sits in. */
+  chamber: CongressChamber;
+  /** The mapped member. */
+  member: CongressMember;
+};
 
 /**
  * Maps a member-list entry into {@link CongressMember}, paired with their chamber — taken from the *last* recognizable
@@ -473,6 +543,19 @@ export function mapMemberTerm(term: CongressApiMemberDetailTerm): MemberTerm | n
 }
 
 /**
+ * Maps one leadership entry.
+ *
+ * @param role - A validated leadership entry from the member item endpoint.
+ * @returns The mapped role, or `null` when it names no office — a congress number on its own says nothing.
+ */
+export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadershipRole | null {
+  const type: string = (role.type ?? "").trim();
+  if (!type) return null;
+
+  return { type, congress: role.congress };
+}
+
+/**
  * Maps a member item-endpoint record into {@link MemberProfile}. Terms are sorted newest first and supply the chamber,
  * title, and (when the top-level fields are absent) the jurisdiction.
  *
@@ -516,18 +599,7 @@ export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: st
   };
 }
 
-/**
- * Maps one leadership entry.
- *
- * @param role - A validated leadership entry from the member item endpoint.
- * @returns The mapped role, or `null` when it names no office — a congress number on its own says nothing.
- */
-export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadershipRole | null {
-  const type: string = (role.type ?? "").trim();
-  if (!type) return null;
-
-  return { type, congress: role.congress };
-}
+// Committees.
 
 /**
  * Maps a committee reference (a `parent` or a `subcommittees` entry). Also the identity rule every other committee
@@ -645,69 +717,7 @@ export function mapCommitteeProfile(
   };
 }
 
-/**
- * The activity name Congress.gov uses when it recorded that *something* happened but not what. Common, and useless to a
- * reader, so those activity rows are dropped; the committee itself still appears.
- */
-const UNNAMED_COMMITTEE_ACTIVITY: string = "unknown";
-
-/**
- * Maps one recorded committee activity.
- *
- * @param activity - A validated entry from a bill's committee record.
- * @returns The mapped activity, or `null` when it names nothing — including the endpoint's literal `"Unknown"`.
- * @see UNNAMED_COMMITTEE_ACTIVITY
- */
-export function mapBillCommitteeActivity(activity: CongressApiBillCommitteeActivity): BillCommitteeActivity | null {
-  const name: string = (activity.name ?? "").trim();
-
-  if (name.length === 0 || name.toLowerCase() === UNNAMED_COMMITTEE_ACTIVITY) return null;
-
-  return { name, date: activity.date };
-}
-
-/**
- * Maps one subcommittee a bill reached.
- *
- * @param subcommittee - A validated entry from a committee's `subcommittees` array on a bill record.
- * @returns The mapped subcommittee, or `null` without a code and a name — the same bar {@link mapCommitteeRef} holds,
- *   and for the same reason: one that cannot be opened or labeled is not a row.
- */
-export function mapBillSubcommittee(subcommittee: CongressApiBillSubcommittee): BillSubcommittee | null {
-  const ref: CommitteeRef | null = mapCommitteeRef(subcommittee);
-  if (!ref) return null;
-
-  return { ...ref, activities: mapUsable(subcommittee.activities, mapBillCommitteeActivity) };
-}
-
-/**
- * Maps one committee a bill was before.
- *
- * @param committee - A validated entry from `GET /v3/bill/{congress}/{type}/{number}/committees`.
- * @returns The mapped committee, or `null` without a code, a name, or a recognizable chamber — the code and chamber
- *   form the inward link.
- */
-export function mapBillCommittee(committee: CongressApiBillCommittee): BillCommittee | null {
-  const ref: CommitteeRef | null = mapCommitteeRef(committee);
-  const chamber: CommitteeChamber | null = normalizeCommitteeChamber(committee.chamber);
-
-  if (!ref || !chamber) return null;
-
-  const { systemCode, name } = ref;
-
-  return {
-    systemCode,
-    name,
-    chamber,
-    type: normalizeCommitteeType(committee.type),
-    typeName: committee.type,
-    // Left in the publisher's order rather than sorted by date. The endpoint lists a committee's activities newest
-    // first, but its *committees* in referral order — primary committee first — and that ordering is meaningful, so
-    // neither level is re-sorted into an order this app would then be claiming to have established.
-    activities: mapUsable(committee.activities, mapBillCommitteeActivity),
-    subcommittees: mapUsable(committee.subcommittees, mapBillSubcommittee).sort(compareCommitteesByName),
-  };
-}
+// Committee records.
 
 /**
  * Maps one entry in a committee's bill list.
@@ -774,6 +784,8 @@ export function mapCommitteeNomination(nomination: CongressApiCommitteeNominatio
     latestAction: action?.text ? { date: action.actionDate, text: action.text } : undefined,
   };
 }
+
+// Shared helpers.
 
 /**
  * Normalizes a Congress.gov timestamp to ISO 8601. The committee-reports endpoint sends `"2015-03-20 00:05:31+00:00"`

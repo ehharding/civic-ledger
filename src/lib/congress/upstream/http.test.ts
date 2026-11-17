@@ -9,9 +9,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
+import { BILL_TYPE_PATH_SEGMENTS } from "@/lib/congress/bills/model";
 import {
   BILL_LIST_CACHE_TAG,
-  BILL_PATH_TYPES,
   billCacheTags,
   billPageCacheWindow,
   buildCongressUrl,
@@ -76,7 +76,7 @@ describe("normalizeBillRouteParams", (): void => {
   });
 
   it("accepts every bill and resolution type Congress.gov's bill endpoint serves", (): void => {
-    for (const type of BILL_PATH_TYPES) {
+    for (const type of BILL_TYPE_PATH_SEGMENTS) {
       expect(normalizeBillRouteParams({ congress: "119", type, number: "1" })).not.toBeNull();
     }
   });

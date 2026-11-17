@@ -7,6 +7,8 @@ import {
   toQueryString,
 } from "@/lib/congress/directory-filter";
 
+// The shareable URL.
+
 /** The stage control's selection: one of the five legislative stages, or {@link ANY_FACET}. */
 export type BillStageFilter = FacetFilter<BillStage>;
 
@@ -69,6 +71,8 @@ export function billDirectoryQueryString(query: string, stage: BillStageFilter):
   return toQueryString(params);
 }
 
+// Matching a search.
+
 /**
  * Whether `bill` matches free-text `query`. Congress.gov has no full-text search, so this filters fetched metadata;
  * shared by the server sweep (`getSearchResults`) and `BillDirectory`'s client-side fallback so both agree.
@@ -86,6 +90,8 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
     (value: string | undefined): boolean => value?.toLowerCase().includes(normalizedQuery) ?? false,
   );
 }
+
+// Reading a bill citation out of a search.
 
 /** A search query recognized as naming one specific bill, rather than a free-text keyword search. */
 export type ParsedBillCitation = {

@@ -57,7 +57,7 @@ export async function committeeMetadata(params: CommitteeParams, cachedAs?: stri
  * The records are fetched *after* the committee's record, because its counts clamp `?page=` before an offset goes
  * upstream.
  *
- * Shared by the cached route (no query) and its on-demand `/query` twin.
+ * Shared by the static `/committees/[chamber]/[systemCode]` (no query) and its on-demand `/query` twin.
  *
  * @param params - The committee's route params, straight from the URL and therefore untrusted.
  * @param searchParams - The record view's query params, equally untrusted and equally parsed rather than read.

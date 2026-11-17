@@ -11,16 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type BillSearchState, SEARCH_DEBOUNCE_MS, useBillSearch } from "@/hooks/use-bill-search";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { previewBills } from "@/lib/congress/upstream/fixtures";
+import { searchResponse } from "@/test/bills";
 
 const [firstBill, secondBill] = previewBills as [LegislativeBill, LegislativeBill];
-
-/** A resolved `/api/bills/search` response body, in the shape the route actually returns. */
-function searchResponse(bills: LegislativeBill[], congressesSearched = 27, truncated = false): Response {
-  return {
-    ok: true,
-    json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched, truncated }),
-  } as unknown as Response;
-}
 
 type HookProps = { query: string; fallback: LegislativeBill[] };
 

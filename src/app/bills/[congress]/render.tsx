@@ -56,17 +56,16 @@ export async function congressBillsMetadata(params: CongressBillsParams): Promis
  * The current Congress resolves here too rather than redirecting to `/bills`, so every Congress the switcher lists
  * behaves identically and no entry is a special case.
  *
- * Shared by `/bills/[congress]`, which passes no query and is therefore static, and `/query/bills/[congress]`, which
- * passes the request's own and renders on demand.
+ * Shared by the static `/bills/[congress]` (no query) and the on-demand `/query/bills/[congress]`.
  *
  * @param params - The route's `congress` param. Anything outside the supported range renders the 404 page.
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
  * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
  *   {@link refuseDegradedRender}.
  * @returns The directory page for that Congress.
- * @see src/lib/query-routes.ts
  * @see parseCongressParam
  * @see resolveBillDirectoryQuery
+ * @see src/lib/query-routes.ts
  */
 export async function renderCongressBillsRoute(
   params: CongressBillsParams,

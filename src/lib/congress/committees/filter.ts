@@ -24,6 +24,8 @@ import {
  * Pure and isomorphic, and the same design as `members/filter.ts`, with the shared vocabulary in `directory-filter.ts`.
  */
 
+// Filters.
+
 /** The chamber facet's selection: one chamber, or any. */
 export type CommitteeChamberFilter = FacetFilter<CommitteeChamber>;
 
@@ -89,6 +91,8 @@ export function filterCommittees(committees: CommitteeSummary[], filters: Commit
   });
 }
 
+// Sorts.
+
 /**
  * The orders the directory can be read in.
  *
@@ -132,6 +136,8 @@ export function sortCommittees(committees: CommitteeSummary[], sort: CommitteeSo
   return sortWithTiebreak(committees, COMMITTEE_SORT_COMPARATORS[sort], compareCommitteesByName);
 }
 
+// Facet options.
+
 /**
  * One selectable facet value with its committee count — {@link FacetOption} under a committee-scoped name.
  *
@@ -154,6 +160,8 @@ export function listCommitteeTypeOptions(committees: CommitteeSummary[]): Commit
     (type: CommitteeType): string => committeeTypeLabels[type],
   );
 }
+
+// The shareable URL.
 
 /**
  * The query-param names the directory reads and writes.

@@ -7,11 +7,7 @@ import {
   parseBillCitation,
   parseBillStageFilter,
 } from "@/lib/congress/bills/search";
-import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
-
-function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
-  return { ...firstPreviewBill, ...overrides };
-}
+import { makeBill } from "@/test/bills";
 
 describe("matchesQuery", (): void => {
   const bill: LegislativeBill = makeBill({

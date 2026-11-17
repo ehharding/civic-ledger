@@ -33,6 +33,8 @@ import {
 } from "@/lib/congress/members/model";
 import type { MemberProfileResult } from "@/lib/congress/members/profile";
 
+// Bills.
+
 /**
  * Clearly labeled fixture records, so the app renders without an API key. **Not real records; never present them as
  * live.** Every surface pairs them with a `DataSourceNotice`, and each links only to {@link CONGRESS_GOV_HOME} — a
@@ -274,6 +276,8 @@ export const previewSummaries: Record<string, string> = {
     "municipalities starting a composting program for the first time.",
 };
 
+// Members.
+
 /**
  * Placeholder members for the fictional sponsors {@link previewBills} already names — a smaller claim than a 535-name
  * roster, which the chamber diagram avoids. Their `PREVIEW-n` IDs fail {@link isBioguideId}, so they're never sent
@@ -449,6 +453,8 @@ export function previewMemberLegislation(
   };
 }
 
+// Chamber composition.
+
 /**
  * The preview chamber diagram's party split: plainly round placeholder counts, not an approximation of any real
  * Congress, which would be a claim this fixture can't keep true.
@@ -508,6 +514,8 @@ export function buildPreviewComposition(
     notice,
   };
 }
+
+// Committees and their records.
 
 /**
  * Placeholder committees, so `/committees` renders without an API key. Named for subjects no real committee covers, so
@@ -609,6 +617,68 @@ export const previewCommitteeProfiles: CommitteeProfile[] = [
     reportCount: 2,
   },
 ];
+
+/**
+ * The placeholder committees as directory rows, derived from {@link previewCommitteeProfiles}.
+ *
+ * @returns One row per placeholder committee, alphabetically.
+ */
+export function previewCommitteeDirectory(): CommitteeSummary[] {
+  return previewCommitteeProfiles
+    .map(
+      (profile: CommitteeProfile): CommitteeSummary => ({
+        systemCode: profile.systemCode,
+        name: profile.name,
+        chamber: profile.chamber,
+        type: profile.type,
+        typeName: profile.typeName,
+        subcommitteeCount: profile.subcommitteeCount,
+      }),
+    )
+    .sort(compareCommitteesByName);
+}
+
+/**
+ * Locates a preview committee by chamber and system code (chamber is part of its identity). Subcommittees resolve too,
+ * promoted to profiles, since parent pages link to them.
+ *
+ * @param chamber - The raw chamber route param, matched case-insensitively.
+ * @param systemCode - The raw system code route param, matched case-insensitively.
+ * @returns The matching placeholder committee, or `undefined` (a 404).
+ */
+export function findPreviewCommitteeProfile(chamber: string, systemCode: string): CommitteeProfile | undefined {
+  const wantedChamber: string = chamber.trim().toLowerCase();
+  const wantedCode: string = systemCode.trim().toLowerCase();
+
+  const parent: CommitteeProfile | undefined = previewCommitteeProfiles.find(
+    (profile: CommitteeProfile): boolean => profile.systemCode === wantedCode && profile.chamber === wantedChamber,
+  );
+  if (parent) return parent;
+
+  for (const profile of previewCommitteeProfiles) {
+    if (profile.chamber !== wantedChamber) continue;
+
+    const child: Subcommittee | undefined = profile.subcommittees.find(
+      (subcommittee: Subcommittee): boolean => subcommittee.systemCode === wantedCode,
+    );
+    if (!child) continue;
+
+    return {
+      systemCode: child.systemCode,
+      name: child.name,
+      chamber: profile.chamber,
+      type: profile.type,
+      typeName: profile.typeName,
+      parent: { systemCode: profile.systemCode, name: profile.name },
+      subcommitteeCount: 0,
+      isCurrent: profile.isCurrent,
+      history: [{ name: child.name, startDate: profile.history.at(-1)?.startDate }],
+      subcommittees: [],
+    };
+  }
+
+  return undefined;
+}
 
 /** One placeholder committee's three collections. */
 type CommitteeRecordSets = {
@@ -816,66 +886,4 @@ export function previewCommitteeRecords(systemCode: string, query: CommitteeReco
   if (query.kind === "nominations") return pageOfCommitteeRecords("nominations", sets.nominations, query.page);
 
   return pageOfCommitteeRecords("bills", sets.bills, query.page);
-}
-
-/**
- * The placeholder committees as directory rows, derived from {@link previewCommitteeProfiles}.
- *
- * @returns One row per placeholder committee, alphabetically.
- */
-export function previewCommitteeDirectory(): CommitteeSummary[] {
-  return previewCommitteeProfiles
-    .map(
-      (profile: CommitteeProfile): CommitteeSummary => ({
-        systemCode: profile.systemCode,
-        name: profile.name,
-        chamber: profile.chamber,
-        type: profile.type,
-        typeName: profile.typeName,
-        subcommitteeCount: profile.subcommitteeCount,
-      }),
-    )
-    .sort(compareCommitteesByName);
-}
-
-/**
- * Locates a preview committee by chamber and system code (chamber is part of its identity). Subcommittees resolve too,
- * promoted to profiles, since parent pages link to them.
- *
- * @param chamber - The raw chamber route param, matched case-insensitively.
- * @param systemCode - The raw system code route param, matched case-insensitively.
- * @returns The matching placeholder committee, or `undefined` (a 404).
- */
-export function findPreviewCommitteeProfile(chamber: string, systemCode: string): CommitteeProfile | undefined {
-  const wantedChamber: string = chamber.trim().toLowerCase();
-  const wantedCode: string = systemCode.trim().toLowerCase();
-
-  const parent: CommitteeProfile | undefined = previewCommitteeProfiles.find(
-    (profile: CommitteeProfile): boolean => profile.systemCode === wantedCode && profile.chamber === wantedChamber,
-  );
-  if (parent) return parent;
-
-  for (const profile of previewCommitteeProfiles) {
-    if (profile.chamber !== wantedChamber) continue;
-
-    const child: Subcommittee | undefined = profile.subcommittees.find(
-      (subcommittee: Subcommittee): boolean => subcommittee.systemCode === wantedCode,
-    );
-    if (!child) continue;
-
-    return {
-      systemCode: child.systemCode,
-      name: child.name,
-      chamber: profile.chamber,
-      type: profile.type,
-      typeName: profile.typeName,
-      parent: { systemCode: profile.systemCode, name: profile.name },
-      subcommitteeCount: 0,
-      isCurrent: profile.isCurrent,
-      history: [{ name: child.name, startDate: profile.history.at(-1)?.startDate }],
-      subcommittees: [],
-    };
-  }
-
-  return undefined;
 }

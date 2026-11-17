@@ -6,6 +6,8 @@ import { compareText } from "@/lib/format";
  * filter the directory).
  */
 
+// Chambers.
+
 /**
  * The chambers a committee can belong to — `CongressChamber` plus "joint", for bodies like the Joint Economic
  * Committee. Also the path segments Congress.gov's committee endpoint accepts, so they go into routes unchanged.
@@ -49,6 +51,8 @@ export function normalizeCommitteeChamber(chamber?: string): CommitteeChamber | 
 
   return null;
 }
+
+// Committee types.
 
 /**
  * The kinds of committee this app groups by. Congress.gov's eight `committeeTypeCode` values collapse to five:
@@ -110,6 +114,8 @@ export function normalizeCommitteeType(type?: string): CommitteeType {
 
   return "other";
 }
+
+// The committee record, identified by its system code.
 
 /**
  * The shape of a Congress.gov committee system code, e.g. `"hsag00"` (House Agriculture) or `"hsag14"` (a
@@ -219,48 +225,6 @@ export type CommitteeProfile = CommitteeSummary & {
 };
 
 /**
- * One thing a committee did with a bill, in Congress.gov's own words ("Referred To", "Reported By", "Markup By", …),
- * printed verbatim rather than paraphrased.
- */
-export type BillCommitteeActivity = {
-  /** The activity, verbatim (e.g., `"Referred To"`). */
-  name: string;
-  /** ISO 8601 timestamp, as the API publishes it. */
-  date?: string;
-};
-
-/** A subcommittee a bill reached, as its parent committee's entry on that bill lists it. */
-export type BillSubcommittee = {
-  /** Congress.gov's identifier, lower-cased. */
-  systemCode: string;
-  /** The subcommittee's name. */
-  name: string;
-  /** What the subcommittee did with the bill. */
-  activities: BillCommitteeActivity[];
-};
-
-/**
- * One committee a bill was before, and what it did with it — the mirror of {@link CommitteeBillReferral}. Carries both
- * chamber and system code, so the bill page can link inward without another request.
- */
-export type BillCommittee = {
-  /** Congress.gov's identifier, lower-cased. */
-  systemCode: string;
-  /** As this endpoint publishes it — usually the `"Committee on Agriculture"` word order rather than the list's. */
-  name: string;
-  /** The chamber the committee belongs to. */
-  chamber: CommitteeChamber;
-  /** The committee's type, grouped five ways. */
-  type: CommitteeType;
-  /** The verbatim upstream type label, kept for the same reason {@link CommitteeSummary} keeps one. */
-  typeName?: string;
-  /** What the committee did, in the order the record lists it. Empty when it recorded nothing this app can name. */
-  activities: BillCommitteeActivity[];
-  /** Subcommittees the bill reached beneath this committee, alphabetical. */
-  subcommittees: BillSubcommittee[];
-};
-
-/**
  * Congress.gov's committee index, where a reader verifies a committee. Not a deep link: committee URLs include a name
  * slug (`/committee/house-agriculture/hsag00`) the API doesn't publish, and a guessed slug risks an
  * authoritative-looking 404. The page prints the system code beside this link instead. The committee's own site is
@@ -344,3 +308,47 @@ function committeeHistoryYear(value?: string): string {
   const match: RegExpMatchArray | null = (value ?? "").trim().match(/^(\d{4})/);
   return match?.[1] ?? "";
 }
+
+// A bill's committees, as the bill's own record states them.
+
+/**
+ * One thing a committee did with a bill, in Congress.gov's own words ("Referred To", "Reported By", "Markup By", …),
+ * printed verbatim rather than paraphrased.
+ */
+export type BillCommitteeActivity = {
+  /** The activity, verbatim (e.g., `"Referred To"`). */
+  name: string;
+  /** ISO 8601 timestamp, as the API publishes it. */
+  date?: string;
+};
+
+/** A subcommittee a bill reached, as its parent committee's entry on that bill lists it. */
+export type BillSubcommittee = {
+  /** Congress.gov's identifier, lower-cased. */
+  systemCode: string;
+  /** The subcommittee's name. */
+  name: string;
+  /** What the subcommittee did with the bill. */
+  activities: BillCommitteeActivity[];
+};
+
+/**
+ * One committee a bill was before, and what it did with it — the mirror of {@link CommitteeBillReferral}. Carries both
+ * chamber and system code, so the bill page can link inward without another request.
+ */
+export type BillCommittee = {
+  /** Congress.gov's identifier, lower-cased. */
+  systemCode: string;
+  /** As this endpoint publishes it — usually the `"Committee on Agriculture"` word order rather than the list's. */
+  name: string;
+  /** The chamber the committee belongs to. */
+  chamber: CommitteeChamber;
+  /** The committee's type, grouped five ways. */
+  type: CommitteeType;
+  /** The verbatim upstream type label, kept for the same reason {@link CommitteeSummary} keeps one. */
+  typeName?: string;
+  /** What the committee did, in the order the record lists it. Empty when it recorded nothing this app can name. */
+  activities: BillCommitteeActivity[];
+  /** Subcommittees the bill reached beneath this committee, alphabetical. */
+  subcommittees: BillSubcommittee[];
+};

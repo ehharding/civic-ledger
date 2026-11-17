@@ -30,6 +30,8 @@ export const COMMITTEES_METADATA: Metadata = pageMetadata({
  * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
  *   {@link refuseDegradedRender}.
  * @returns The directory page, narrowed to whatever the URL asked for, with all further filtering done in the browser.
+ * @see getCommitteeDirectory
+ * @see resolveCommitteeDirectoryQuery
  * @see src/lib/query-routes.ts
  */
 export async function renderCommitteesRoute(

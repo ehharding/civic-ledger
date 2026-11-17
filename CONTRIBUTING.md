@@ -144,7 +144,8 @@ default — a few current positions, so they don't have to be relitigated per pu
   `@param props - {@link XProps}.` rather than documenting the destructured fields, which TypeScript hovers don't show.
   The same goes for a function taking one options object: link its named type rather than listing its fields.
 - A module that grows past a few concerns groups its declarations by subject under one-line `//` headings
-  (`bills/model.ts`, `members/model.ts`), with each type, constant, and helper declared before the code that uses it.
+  (`bills/model.ts`, `upstream/http.ts`, the `filter.ts` pair), with each section's main type or entry point first and
+  its helpers after it. Parallel modules use parallel headings, so the member and committee filters read the same way.
 - Name the enforcement point when you state a rule — the constant, the guard, the test. A rule with no named enforcement
   point is a wish.
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import

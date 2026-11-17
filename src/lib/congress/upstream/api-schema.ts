@@ -13,6 +13,8 @@ import { type ZodCatch, type ZodNumber, type ZodOptional, type ZodString, z } fr
  * @see mapCongressBill
  */
 
+// Shared field shapes.
+
 /** An optional string that degrades to `undefined` rather than failing validation. */
 const optionalString: ZodCatch<ZodOptional<ZodString>> = z.string().optional().catch(undefined);
 
@@ -28,8 +30,10 @@ const congressApiLatestActionSchema = z.looseObject({ actionDate: optionalString
  */
 const congressApiPaginationSchema = z.looseObject({ count: optionalNumber });
 
+// Bills.
+
 /** Shape of one entry in a detail-endpoint bill's `sponsors` array. */
-export const congressApiSponsorSchema = z.looseObject({
+const congressApiSponsorSchema = z.looseObject({
   bioguideId: optionalString,
   fullName: optionalString,
   party: optionalString,
@@ -45,7 +49,7 @@ export const congressApiSponsorSchema = z.looseObject({
  *
  * @see mapCongressBill, which prefers it.
  */
-export const congressApiLawSchema = z.looseObject({
+const congressApiLawSchema = z.looseObject({
   number: optionalString,
   type: optionalString,
 });
@@ -54,7 +58,7 @@ export const congressApiLawSchema = z.looseObject({
  * Subset of a Congress.gov API bill object actually used by this app — both the list and detail endpoint shapes, since
  * `mapCongressBill` handles either.
  */
-export const congressApiBillSchema = z.looseObject({
+const congressApiBillSchema = z.looseObject({
   congress: optionalNumber,
   // The list endpoint uses `type`/`number`; the single-bill detail endpoint uses `billType`/`billNumber`. Both are
   // accepted so one mapper covers both.
@@ -115,8 +119,10 @@ export const congressApiDetailResponseSchema = z.looseObject({
   bill: congressApiBillSchema.optional().catch(undefined),
 });
 
+// Bill sub-resources.
+
 /** Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/summaries`. */
-export const congressApiSummarySchema = z.looseObject({
+const congressApiSummarySchema = z.looseObject({
   versionCode: optionalString,
   actionDesc: optionalString,
   actionDate: optionalString,
@@ -129,13 +135,13 @@ export const congressApiSummariesResponseSchema = z.looseObject({
 });
 
 /** One downloadable rendering (Formatted Text, PDF, XML) of a bill text version. */
-export const congressApiTextFormatSchema = z.looseObject({
+const congressApiTextFormatSchema = z.looseObject({
   type: optionalString,
   url: optionalString,
 });
 
 /** One stage-specific version of a bill's text, with links to each of its renderings. */
-export const congressApiTextVersionSchema = z.looseObject({
+const congressApiTextVersionSchema = z.looseObject({
   type: optionalString,
   date: optionalString,
   formats: z.array(congressApiTextFormatSchema).optional().catch(undefined),
@@ -150,7 +156,7 @@ export const congressApiTextResponseSchema = z.looseObject({
  * One roll-call vote referenced by a bill action — a reference with a link to the chamber's tally, never the tally. The
  * only place recorded votes reach this app, since Congress.gov has no Senate vote resource.
  */
-export const congressApiRecordedVoteSchema = z.looseObject({
+const congressApiRecordedVoteSchema = z.looseObject({
   chamber: optionalString,
   congress: optionalNumber,
   date: optionalString,
@@ -165,7 +171,7 @@ export const congressApiRecordedVoteSchema = z.looseObject({
  * `actionCode` stays a string: it mixes `"8000"` with `"H37300"` and `"Intro-H"`. Each event is reported by several
  * source systems, so the list has near-duplicates; only Library of Congress rows carry the standardized codes.
  */
-export const congressApiActionSchema = z.looseObject({
+const congressApiActionSchema = z.looseObject({
   actionCode: optionalString,
   actionDate: optionalString,
   actionTime: optionalString,
@@ -189,13 +195,13 @@ export const congressApiActionsResponseSchema = z.looseObject({
  *
  * @see mapBillCommitteeActivity for what becomes of those.
  */
-export const congressApiBillCommitteeActivitySchema = z.looseObject({
+const congressApiBillCommitteeActivitySchema = z.looseObject({
   name: optionalString,
   date: optionalString,
 });
 
 /** One subcommittee a bill reached, nested inside its parent committee's entry. */
-export const congressApiBillSubcommitteeSchema = z.looseObject({
+const congressApiBillSubcommitteeSchema = z.looseObject({
   systemCode: optionalString,
   name: optionalString,
   activities: z.array(congressApiBillCommitteeActivitySchema).optional().catch(undefined),
@@ -205,7 +211,7 @@ export const congressApiBillSubcommitteeSchema = z.looseObject({
  * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/committees` — a bill–committee relationship, not a
  * committee, so not {@link congressApiCommitteeSchema}. It states the chamber, which lets the bill page link inward.
  */
-export const congressApiBillCommitteeSchema = z.looseObject({
+const congressApiBillCommitteeSchema = z.looseObject({
   systemCode: optionalString,
   name: optionalString,
   chamber: optionalString,
@@ -223,7 +229,7 @@ export const congressApiBillCommitteesResponseSchema = z.looseObject({
  * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/cosponsors`. `isOriginalCosponsor` is read rather than
  * inferred from dates. `sponsorshipWithdrawnDate` is rare but documented.
  */
-export const congressApiCosponsorSchema = z.looseObject({
+const congressApiCosponsorSchema = z.looseObject({
   bioguideId: optionalString,
   fullName: optionalString,
   party: optionalString,
@@ -244,7 +250,7 @@ export const congressApiCosponsorsResponseSchema = z.looseObject({
  *
  * @see RelatedBillRelationship
  */
-export const congressApiRelationshipDetailSchema = z.looseObject({
+const congressApiRelationshipDetailSchema = z.looseObject({
   type: optionalString,
   identifiedBy: optionalString,
 });
@@ -253,7 +259,7 @@ export const congressApiRelationshipDetailSchema = z.looseObject({
  * Shape of one entry in `GET /v3/bill/{congress}/{type}/{number}/relatedbills` — a reference with identity, title, and
  * latest action, not a full bill.
  */
-export const congressApiRelatedBillSchema = z.looseObject({
+const congressApiRelatedBillSchema = z.looseObject({
   congress: optionalNumber,
   type: optionalString,
   number: z.union([z.string(), z.number()]).optional().catch(undefined),
@@ -291,13 +297,15 @@ export const congressApiBillAmendmentsResponseSchema = z.looseObject({
   amendments: z.array(congressApiBillAmendmentSchema).optional().catch(undefined),
 });
 
+// Members.
+
 /**
  * One term entry inside a *list*-level member record: chamber and years only, with no `memberType` or `congress`. Hence
  * chamber comes from the last term and non-voting seats from the jurisdiction.
  *
  * @see isNonVotingJurisdiction
  */
-export const congressApiMemberTermSchema = z.looseObject({
+const congressApiMemberTermSchema = z.looseObject({
   chamber: optionalString,
   startYear: optionalNumber,
   endYear: optionalNumber,
@@ -307,7 +315,7 @@ export const congressApiMemberTermSchema = z.looseObject({
  * A member's official portrait and its required credit line, published on both list and item records (so a roster can
  * show faces without per-member requests). `attribution` is genuinely absent on a few records.
  */
-export const congressApiDepictionSchema = z.looseObject({
+const congressApiDepictionSchema = z.looseObject({
   imageUrl: optionalString,
   /** An HTML fragment, sometimes carrying a link to the holding archive — sanitize before rendering. */
   attribution: optionalString,
@@ -318,7 +326,7 @@ export const congressApiDepictionSchema = z.looseObject({
  *
  * @see congressApiDepictionSchema for why `depiction` is read here and not only on the item record.
  */
-export const congressApiMemberSchema = z.looseObject({
+const congressApiMemberSchema = z.looseObject({
   bioguideId: optionalString,
   name: optionalString,
   partyName: optionalString,
@@ -341,7 +349,7 @@ export const congressApiMemberListResponseSchema = z.looseObject({
  * One term entry inside an *item*-level member record, which adds the `congress` and the `memberType` (distinguishing
  * Delegates and the Resident Commissioner) that list-level terms lack.
  */
-export const congressApiMemberDetailTermSchema = z.looseObject({
+const congressApiMemberDetailTermSchema = z.looseObject({
   chamber: optionalString,
   congress: optionalNumber,
   startYear: optionalNumber,
@@ -352,7 +360,7 @@ export const congressApiMemberDetailTermSchema = z.looseObject({
 });
 
 /** One leadership office inside an item-level member record. */
-export const congressApiLeadershipSchema = z.looseObject({
+const congressApiLeadershipSchema = z.looseObject({
   type: optionalString,
   congress: optionalNumber,
 });
@@ -361,7 +369,7 @@ export const congressApiLeadershipSchema = z.looseObject({
  * Shape of `GET /v3/member/{bioguideId}` (the member *item* endpoint). `terms` is a bare array here but nested under
  * `terms.item[]` on the list endpoint; both are accepted. `birthYear` arrives as a string (`"1940"`).
  */
-export const congressApiMemberDetailSchema = z.looseObject({
+const congressApiMemberDetailSchema = z.looseObject({
   bioguideId: optionalString,
   invertedOrderName: optionalString,
   directOrderName: optionalString,
@@ -410,11 +418,13 @@ export const congressApiCosponsoredLegislationResponseSchema = z.looseObject({
   cosponsoredLegislation: z.array(congressApiBillSchema).optional().catch(undefined),
 });
 
+// Committees.
+
 /**
  * A committee named from inside another committee's record — a `parent` on a subcommittee, or an entry in a parent's
  * `subcommittees` array. Both spellings carry the same three fields, so one schema covers both.
  */
-export const congressApiCommitteeRefSchema = z.looseObject({
+const congressApiCommitteeRefSchema = z.looseObject({
   systemCode: optionalString,
   name: optionalString,
   url: optionalString,
@@ -426,7 +436,7 @@ export const congressApiCommitteeRefSchema = z.looseObject({
  * `committeeTypeCode` is the list endpoint's spelling of what the item endpoint calls `type`; both are accepted here so
  * one schema and one mapper cover a committee arriving from either.
  */
-export const congressApiCommitteeSchema = z.looseObject({
+const congressApiCommitteeSchema = z.looseObject({
   systemCode: optionalString,
   name: optionalString,
   chamber: optionalString,
@@ -447,7 +457,7 @@ export const congressApiCommitteeListResponseSchema = z.looseObject({
  *
  * @see CommitteeHistoryEntry for why this is worth rendering.
  */
-export const congressApiCommitteeHistorySchema = z.looseObject({
+const congressApiCommitteeHistorySchema = z.looseObject({
   officialName: optionalString,
   libraryOfCongressName: optionalString,
   startDate: optionalString,
@@ -470,7 +480,7 @@ const congressApiCommitteeCollectionSchema = z.looseObject({
  *
  * @see mapCommitteeProfile, which is where both of those are resolved.
  */
-export const congressApiCommitteeDetailSchema = z.looseObject({
+const congressApiCommitteeDetailSchema = z.looseObject({
   systemCode: optionalString,
   type: optionalString,
   isCurrent: z.boolean().optional().catch(undefined),
@@ -496,11 +506,13 @@ export const congressApiCommitteeDetailResponseSchema = z.looseObject({
   committee: congressApiCommitteeDetailSchema.optional().catch(undefined),
 });
 
+// Committee records.
+
 /**
  * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/bills` — a bill–committee relationship with a
  * `relationshipType` and no title, so not {@link congressApiBillSchema}.
  */
-export const congressApiCommitteeBillSchema = z.looseObject({
+const congressApiCommitteeBillSchema = z.looseObject({
   congress: optionalNumber,
   type: optionalString,
   number: z.union([z.string(), z.number()]).optional().catch(undefined),
@@ -532,7 +544,7 @@ export const congressApiCommitteeBillsResponseSchema = z.looseObject({
  * Shape of one entry in `GET /v3/committee/{chamber}/{systemCode}/reports`. `updateDate` uses a space instead of `T`;
  * the mapper normalizes it.
  */
-export const congressApiCommitteeReportSchema = z.looseObject({
+const congressApiCommitteeReportSchema = z.looseObject({
   citation: optionalString,
   congress: optionalNumber,
   chamber: optionalString,
@@ -556,7 +568,7 @@ export const congressApiCommitteeReportsResponseSchema = z.looseObject({
  * States Marshal for …") inline, so — unlike the bills list — a nomination row needs no second request to say what it
  * is about.
  */
-export const congressApiCommitteeNominationSchema = z.looseObject({
+const congressApiCommitteeNominationSchema = z.looseObject({
   citation: optionalString,
   congress: optionalNumber,
   description: optionalString,
@@ -572,6 +584,8 @@ export const congressApiCommitteeNominationsResponseSchema = z.looseObject({
   nominations: z.array(congressApiCommitteeNominationSchema).optional().catch(undefined),
   pagination: congressApiPaginationSchema.optional().catch(undefined),
 });
+
+// Parsed shapes, one per schema.
 
 /** The parsed shape of {@link congressApiPaginationSchema}. */
 export type CongressApiPagination = z.infer<typeof congressApiPaginationSchema>;

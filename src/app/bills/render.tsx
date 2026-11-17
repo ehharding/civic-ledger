@@ -27,15 +27,15 @@ export const BILLS_METADATA: Metadata = pageMetadata({
  * Any other Congress lives at `/bills/[congress]`, reachable from the switcher rendered here. The two fetches — the
  * deep-link query and the snapshot — are awaited together, since neither depends on the other.
  *
- * Shared by `/bills`, which passes no query and is therefore static, and `/query/bills`, which passes the request's own
- * and renders on demand.
+ * Shared by the static `/bills` (no query) and the on-demand `/query/bills`.
  *
  * @param searchParams - Carries the shareable `?q=` and `?stage=` deep link.
  * @param cachedAs - The cached route this render is stored as, omitted by the uncached `/query` twin. See
  *   {@link refuseDegradedRender}.
  * @returns The directory page for the current Congress.
- * @see src/lib/query-routes.ts
+ * @see getCongressSnapshot
  * @see resolveBillDirectoryQuery
+ * @see src/lib/query-routes.ts
  */
 export async function renderBillsRoute(
   searchParams: Promise<RouteSearchParams>,

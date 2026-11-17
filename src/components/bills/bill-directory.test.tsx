@@ -16,18 +16,7 @@ import { BillDirectory } from "@/components/bills/bill-directory";
 import { billSearchRequestUrl } from "@/lib/api-contract";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { firstPreviewBill, previewBills } from "@/lib/congress/upstream/fixtures";
-
-function makeBill(overrides: Partial<LegislativeBill>): LegislativeBill {
-  return { ...firstPreviewBill, ...overrides };
-}
-
-/** A resolved /api/bills/search response for the given bills. */
-function searchResponse(bills: LegislativeBill[], truncated = false): { ok: true; json: () => Promise<unknown> } {
-  return {
-    ok: true,
-    json: (): Promise<unknown> => Promise.resolve({ bills, congressesSearched: 27, truncated }),
-  };
-}
+import { makeBill, searchResponse } from "@/test/bills";
 
 /*
  * The address bar is shared state across a file's tests, and this directory reads it as well as writing it — so a view
@@ -424,7 +413,7 @@ describe("BillDirectory following a URL it did not write", (): void => {
 describe("BillDirectory when the search was capped", (): void => {
   it("says the results were capped, rather than implying they are all of them", async (): Promise<void> => {
     const user: UserEvent = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(previewBills, true)));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(searchResponse(previewBills, 27, true)));
     render(<BillDirectory bills={previewBills} initialQuery="" canLoadMore={false} />);
 
     await user.type(screen.getByRole("searchbox", { name: "Search bill records" }), "broadband");

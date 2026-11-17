@@ -35,11 +35,14 @@ import { compareText } from "@/lib/format";
  * @see docs/architecture.md, "Bills Search on the Server; Members and Committees Filter in the Browser".
  */
 
+// Filters.
+
 /** The chamber facet's selection: one chamber, or any. */
 export type ChamberFilter = FacetFilter<CongressChamber>;
 
 /** The party facet's selection: one party group, or any. */
 export type PartyFilter = FacetFilter<PartyGroup>;
+
 /** A represented jurisdiction by full name (e.g., `"Vermont"`), or {@link ANY_FACET}. */
 export type StateFilter = string;
 
@@ -113,6 +116,8 @@ export function filterMembers(entries: MemberDirectoryEntry[], filters: MemberFi
   });
 }
 
+// Sorts.
+
 /**
  * The orders the directory can be read in.
  *
@@ -182,6 +187,8 @@ export function sortMembers(entries: MemberDirectoryEntry[], sort: MemberSort): 
   return sortWithTiebreak(entries, MEMBER_SORT_COMPARATORS[sort], compareMembersByName);
 }
 
+// Facet options.
+
 /**
  * One selectable facet value with its member count — {@link FacetOption} under a member-scoped name.
  *
@@ -248,6 +255,8 @@ export function listMemberPartyOptions(entries: MemberDirectoryEntry[]): MemberF
     (party: PartyGroup): string => partyGroupLabels[party],
   );
 }
+
+// The shareable URL.
 
 /**
  * The query-param names the directory reads and writes.

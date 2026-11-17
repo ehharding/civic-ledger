@@ -12,8 +12,7 @@ import { logError, logWarning } from "@/lib/observability/log";
  * and the guards that keep route-derived values out of outbound URLs. What the data *means* is `mappers.ts`'s job.
  */
 
-/** Base URL for every Congress.gov v3 request this app makes. */
-export const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
+// Cache windows.
 
 /**
  * How long Next caches a Congress.gov response before revalidating, in seconds. One shared constant so the app's
@@ -77,6 +76,11 @@ export function billPageCacheWindow(
 ): CacheWindow {
   return Number(congress) < currentCongress ? UNCACHED : REVALIDATE_SECONDS;
 }
+
+// Requests: every upstream read goes through these.
+
+/** Base URL for every Congress.gov v3 request this app makes. */
+export const CONGRESS_API_BASE: string = "https://api.congress.gov/v3";
 
 /**
  * The most records Congress.gov will return from a single request, on any endpoint that paginates. Requested explicitly
@@ -236,6 +240,24 @@ export async function requestCongressJson<Payload>(
   }
 }
 
+/** How many schema issue paths a single log line carries. A drifted payload fails the same way in every record. */
+const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
+
+/**
+ * Summarizes a Zod failure as just the failing field paths — the full error is long and can quote the response body.
+ *
+ * @param issues - The issues from a failed `safeParse`.
+ * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated, with the root spelled `(root)`.
+ */
+function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): string {
+  return issues
+    .slice(0, MAX_REPORTED_SCHEMA_ISSUES)
+    .map((issue: { path: PropertyKey[] }): string =>
+      issue.path.length === 0 ? "(root)" : issue.path.map(String).join("."),
+    )
+    .join(", ");
+}
+
 /**
  * Fetches every page of a paginated list, across as many requests as it takes.
  *
@@ -275,23 +297,7 @@ export async function fetchAllPages<Page extends { pagination?: CongressApiPagin
   return [...firstItems, ...laterPages.flatMap((page: Page | null): Item[] => (page ? (itemsOf(page) ?? []) : []))];
 }
 
-/** How many schema issue paths a single log line carries. A drifted payload fails the same way in every record. */
-const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
-
-/**
- * Summarizes a Zod failure as just the failing field paths — the full error is long and can quote the response body.
- *
- * @param issues - The issues from a failed `safeParse`.
- * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated, with the root spelled `(root)`.
- */
-function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): string {
-  return issues
-    .slice(0, MAX_REPORTED_SCHEMA_ISSUES)
-    .map((issue: { path: PropertyKey[] }): string =>
-      issue.path.length === 0 ? "(root)" : issue.path.map(String).join("."),
-    )
-    .join(", ");
-}
+// Cache tags, one list tag and one per-record tag set for each record type.
 
 /** Cache tag shared by every bill *list* request, regardless of which Congress or page it asks for. */
 export const BILL_LIST_CACHE_TAG: string = "congress-bills";
@@ -326,20 +332,6 @@ export function memberCacheTags(bioguideId: string): string[] {
   return [MEMBER_LIST_CACHE_TAG, `member-${bioguideId}`];
 }
 
-/**
- * Validates a route's Bioguide ID before it goes into an outbound URL.
- *
- * @param raw - The raw `bioguideId` route param.
- * @returns The upper-cased ID, or `null` when malformed. Preview fixture IDs fail this deliberately and resolve
- *   locally.
- * @see normalizeBillRouteParams
- * @see isBioguideId
- */
-export function normalizeBioguideId(raw: string): string | null {
-  const value: string = raw.trim().toUpperCase();
-  return isBioguideId(value) ? value : null;
-}
-
 /** Cache tag shared by every committee-list request, regardless of which Congress it asks for. */
 export const COMMITTEE_LIST_CACHE_TAG: string = "congress-committees";
 
@@ -352,6 +344,22 @@ export const COMMITTEE_LIST_CACHE_TAG: string = "congress-committees";
  */
 export function committeeCacheTags(systemCode: string): string[] {
   return [COMMITTEE_LIST_CACHE_TAG, `committee-${systemCode}`];
+}
+
+// Path segments: every identifier from a URL is proven safe here before it is interpolated into an outbound path.
+
+/**
+ * Validates a route's Bioguide ID before it goes into an outbound URL.
+ *
+ * @param raw - The raw `bioguideId` route param.
+ * @returns The upper-cased ID, or `null` when malformed. Preview fixture IDs fail this deliberately and resolve
+ *   locally.
+ * @see normalizeBillRouteParams
+ * @see isBioguideId
+ */
+export function normalizeBioguideId(raw: string): string | null {
+  const value: string = raw.trim().toUpperCase();
+  return isBioguideId(value) ? value : null;
 }
 
 /**
@@ -378,13 +386,6 @@ export function normalizeCommitteeChamberSegment(raw: string): CommitteeChamber 
   const value: string = raw.trim().toLowerCase();
   return committeeChambers.find((chamber: CommitteeChamber): boolean => chamber === value) ?? null;
 }
-
-/**
- * The bill type path segments Congress.gov's bill endpoint accepts.
- *
- * @see BILL_TYPE_PATH_SEGMENTS
- */
-export const BILL_PATH_TYPES: ReadonlySet<string> = BILL_TYPE_PATH_SEGMENTS;
 
 /** A `congress` route segment: one to three digits. */
 const CONGRESS_SEGMENT_PATTERN: RegExp = /^\d{1,3}$/;
@@ -419,7 +420,7 @@ export function normalizeBillRouteParams(input: BillRouteParams): NormalizedBill
   const number: string = input.number.trim();
 
   if (!CONGRESS_SEGMENT_PATTERN.test(congress)) return null;
-  if (!BILL_PATH_TYPES.has(type)) return null;
+  if (!BILL_TYPE_PATH_SEGMENTS.has(type)) return null;
   if (!BILL_NUMBER_SEGMENT_PATTERN.test(number)) return null;
 
   return { congress, type, number };
