@@ -14,6 +14,7 @@ import {
   fetchAllPages,
   getCongressApiKey,
   MAX_API_PAGE_SIZE,
+  type PagedList,
   requestCongressJson,
 } from "@/lib/congress/upstream/http";
 import { mapCongressCommittee, mapUsable } from "@/lib/congress/upstream/mappers";
@@ -110,13 +111,15 @@ async function fetchCommitteePage(input: CommitteePageRequest): Promise<Congress
  *   still a usable directory, and it is labeled live either way.
  * @see fetchAllPages
  */
-function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressApiCommittee[] | null> {
-  return fetchAllPages(
+async function fetchAllCommittees(apiKey: string, congress: number): Promise<CongressApiCommittee[] | null> {
+  const list: PagedList<CongressApiCommittee> | null = await fetchAllPages(
     (offset: number): Promise<CongressApiCommitteeListResponse | null> =>
       fetchCommitteePage({ apiKey, congress, offset }),
     (page: CongressApiCommitteeListResponse): CongressApiCommittee[] | undefined => page.committees,
     MAX_COMMITTEE_PAGES,
   );
+
+  return list?.items ?? null;
 }
 
 /**

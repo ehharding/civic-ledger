@@ -18,6 +18,7 @@ import {
   getSearchResults,
 } from "@/lib/congress/client";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
+import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 import { jsonResponse, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 
 /**
@@ -237,6 +238,17 @@ describe("getSearchResults", (): void => {
 
     expect(result.source).toBe("live");
     expect(result.bills.map((bill: LegislativeBill): string => bill.title)).toEqual(["Broadband Access Act"]);
+    // Only the one Congress that answered counts as searched; the rest contributed nothing and must not be claimed.
+    expect(result.congressesSearched).toBe(1);
+  });
+
+  it("falls back to labeled preview matches when no Congress answers, rather than a live-labeled empty result", async (): Promise<void> => {
+    stubLiveApi(vi.fn().mockRejectedValue(new Error("upstream unavailable")));
+    const result: BillSearchResponse = await getSearchResults(firstPreviewBill.title);
+
+    expect(result.source).toBe("preview");
+    expect(result.congressesSearched).toBe(0);
+    expect(result.bills.map((bill: LegislativeBill): string => bill.title)).toContain(firstPreviewBill.title);
   });
 
   it("orders undated matches after dated ones rather than dropping them", async (): Promise<void> => {

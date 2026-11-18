@@ -6,7 +6,7 @@ import { type QueryRewrite, queryRewrites } from "@/lib/query-routes";
 /**
  * Whether this is the GitHub Pages demo build. The default build is a full Next.js server app: dynamic routes, ISR, and
  * a server-only Congress.gov API key all need one. STATIC_EXPORT=true builds the demo instead, which can't hold a
- * secret and so always renders labeled preview data. See the "GitHub Pages" section of the README.
+ * secret and so always renders labeled preview data. See "Secondary: GitHub Pages Static Demo" in docs/deployment.md.
  */
 const isStaticExport: boolean = process.env.STATIC_EXPORT === "true";
 
@@ -20,6 +20,22 @@ const basePath: string = isStaticExport ? (process.env.GITHUB_PAGES_BASE_PATH ??
  */
 const isSentryBuild: boolean = !isStaticExport && process.env.NODE_ENV === "production";
 
+/** One response header, in the shape Next's `headers()` takes. */
+type ResponseHeader = {
+  /** The header name. */
+  key: string;
+  /** Its value. */
+  value: string;
+};
+
+/** A set of headers and the path pattern they apply to, as `headers()` returns them. */
+type HeaderRule = {
+  /** The path pattern, in Next's route-matching syntax. */
+  source: string;
+  /** The headers sent on every response the pattern matches. */
+  headers: ResponseHeader[];
+};
+
 /**
  * Response headers on every document. Each states a browser default rather than inheriting it, so it can't change
  * without a diff here.
@@ -31,7 +47,7 @@ const isSentryBuild: boolean = !isStaticExport && process.env.NODE_ENV === "prod
  * There's no `Content-Security-Policy`: a useful one here needs per-request nonces, which would give up static
  * rendering. `docs/roadmap.md` tracks it under Deferred Tooling.
  */
-const SECURITY_HEADERS: readonly { key: string; value: string }[] = [
+const SECURITY_HEADERS: readonly ResponseHeader[] = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // If a CSP is added, move this into it as `frame-ancestors 'none'`.
@@ -60,8 +76,7 @@ const nextConfig: NextConfig = {
       }
     : {
         // `headers()` and `rewrites()` are server features; a static export would silently ignore them.
-        headers: (): Promise<{ source: string; headers: { key: string; value: string }[] }[]> =>
-          Promise.resolve([{ source: "/:path*", headers: [...SECURITY_HEADERS] }]),
+        headers: (): Promise<HeaderRule[]> => Promise.resolve([{ source: "/:path*", headers: [...SECURITY_HEADERS] }]),
         // Sends a URL with a view in its query string to that route's on-demand `/query` twin, so the route itself can
         // stay static. See src/lib/query-routes.ts.
         rewrites: (): Promise<{ beforeFiles: QueryRewrite[] }> => Promise.resolve({ beforeFiles: queryRewrites() }),

@@ -10,6 +10,7 @@ import {
   buildChamberComposition,
   type CongressComposition,
   type CongressMember,
+  describeRosterShortfall,
   type MemberDirectoryEntry,
 } from "@/lib/congress/members/model";
 import { previewMemberProfiles } from "@/lib/congress/upstream/fixtures";
@@ -195,6 +196,26 @@ describe("getMemberDirectory with an API key", (): void => {
       "Alvarez, Priya R.",
       "Bennett, Marcus T.",
     ]);
+  });
+
+  it("carries a short roster's shortfall and says so, in the chamber diagram's own words", async (): Promise<void> => {
+    stubLiveApi(
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          ...liveMemberListPayload([
+            liveMember(),
+            liveMember({ bioguideId: "A000002", terms: { item: [{ chamber: "Senate" }] } }),
+          ]),
+          pagination: { count: 3 },
+        }),
+      ),
+    );
+
+    const result: MemberDirectoryResult = await getMemberDirectory(119);
+
+    expect(result.source).toBe("live");
+    expect(result.shortfall).toEqual({ expected: 3, received: 2 });
+    expect(result.notice).toBe(describeRosterShortfall({ expected: 3, received: 2 }));
   });
 
   it("falls back to placeholders when the roster can't be read, rather than showing an empty directory", async (): Promise<void> => {

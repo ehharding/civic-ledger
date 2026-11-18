@@ -22,7 +22,7 @@ updates:
   - package-ecosystem: github-actions
     # `directory: /` scans `.github/workflows` only. `pnpm/action-setup` and `actions/setup-node` are referenced from
     # the composite action in `.github/actions/setup`, which every job calls — so without the second entry the two
-    # actions every run depends on were the two Dependabot never looked at.
+    # actions every run depends on would be the two Dependabot never looks at.
     directories:
       - /
       - /.github/actions/*

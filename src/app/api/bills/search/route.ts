@@ -6,10 +6,9 @@ import { getSearchResults } from "@/lib/congress/client";
 import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
 
 // NOTE: like /api/bills, this reads the request URL (the `q` query param), which a static export can't do — there's no
-// server left at request time. It lives under the same src/app/api/bills directory, so the GitHub Pages static-demo
-// workflow's existing `rm -rf src/app/api/bills` step (see .github/workflows/deploy-gh-pages.yml) already removes this
-// route too, with no separate change needed there. BillDirectory falls back to filtering its already-loaded bills
-// client-side whenever this route can't be reached — see useBillSearch.
+// server left at request time. It lives under the same src/app/api/bills directory, so the static-demo build's
+// `rm -rf src/app/api/bills` step (in .github/actions/build-static-demo) removes this route too. BillDirectory falls
+// back to filtering its already-loaded bills client-side whenever this route can't be reached — see useBillSearch.
 
 /**
  * Serves a cross-Congress bill search for the bill directory's search box and the site header's search form, which

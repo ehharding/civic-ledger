@@ -37,6 +37,7 @@ import type { CommitteeBillReferral, CommitteeNomination, CommitteeReport } from
 import {
   type CongressChamber,
   type CongressMember,
+  isBioguideId,
   type MemberDepiction,
   type MemberLeadershipRole,
   type MemberProfile,
@@ -104,10 +105,12 @@ export function asOriginChamber(value?: string): LegislativeBill["originChamber"
  * @returns The mapped bill, or `null` when it lacks a congress, title, type, or number.
  */
 export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
-  const type: string | undefined = bill.type ?? bill.billType;
-  const number: string | number | undefined = bill.number ?? bill.billNumber;
-
-  if (!bill.congress || !bill.title || !type || !number) return null;
+  const identity: MappedIdentity | null = mapIdentity(
+    bill.congress,
+    bill.type ?? bill.billType,
+    bill.number ?? bill.billNumber,
+  );
+  if (!identity || !bill.title) return null;
 
   const actionText: string = bill.latestAction?.text ?? NO_LATEST_ACTION_TEXT;
   const sponsor: CongressApiSponsor | undefined = bill.sponsors?.[0];
@@ -116,9 +119,7 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
   const originChamber: LegislativeBill["originChamber"] = asOriginChamber(bill.originChamber);
 
   return {
-    congress: bill.congress,
-    type: type.toUpperCase(),
-    number: String(number),
+    ...identity,
     title: bill.title,
     originChamber,
     introducedDate: bill.introducedDate,
@@ -135,13 +136,13 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
     // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
     // 403s without a key of the reader's own). See congressGovBillUrl.
-    officialUrl: bill.legislationUrl ?? congressGovBillUrl({ congress: bill.congress, type, number: String(number) }),
+    officialUrl: bill.legislationUrl ?? congressGovBillUrl(identity),
     sponsor: sponsor?.fullName
       ? ({
           fullName: sponsor.fullName,
           party: sponsor.party,
           state: sponsor.state,
-          bioguideId: sponsor.bioguideId,
+          bioguideId: mapBioguideId(sponsor.bioguideId),
         } satisfies BillSponsor)
       : undefined,
     cosponsorTally: mapCosponsorTally(bill),
@@ -310,7 +311,7 @@ export function mapBillCosponsor(cosponsor: CongressApiCosponsor): BillCosponsor
 
   return {
     fullName: cosponsor.fullName,
-    bioguideId: cosponsor.bioguideId,
+    bioguideId: mapBioguideId(cosponsor.bioguideId),
     party: cosponsor.party,
     state: cosponsor.state,
     sponsorshipDate: cosponsor.sponsorshipDate,
@@ -342,14 +343,13 @@ function mapRelatedBillRelationship(detail: CongressApiRelationshipDetail): Rela
  * @returns The mapped reference, or `null` without the congress, type, number, or title its link and label need.
  */
 export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | null {
-  if (!related.congress || !related.type || related.number === undefined || !related.title) return null;
+  const identity: MappedIdentity | null = mapIdentity(related.congress, related.type, related.number);
+  if (!identity || !related.title) return null;
 
   const actionText: string | undefined = related.latestAction?.text;
 
   return {
-    congress: related.congress,
-    type: related.type.toUpperCase(),
-    number: String(related.number),
+    ...identity,
     title: related.title,
     // Carried only when it says something, like `mapCommitteeNomination`'s: a latest action with a date and no text
     // renders as a stray date rather than as a sentence.
@@ -369,24 +369,20 @@ export function mapRelatedBill(related: CongressApiRelatedBill): RelatedBill | n
  *   built from.
  */
 export function mapBillAmendment(amendment: CongressApiBillAmendment): BillAmendment | null {
-  if (!amendment.congress || !amendment.type || amendment.number === undefined) return null;
-
-  const type: string = amendment.type.toUpperCase();
-  const number: string = String(amendment.number);
+  const identity: MappedIdentity | null = mapIdentity(amendment.congress, amendment.type, amendment.number);
+  if (!identity) return null;
   // `purpose` is the amendment's own statement of what it does; `description` is the House's longer contextual note on
   // an amendment printed in a report. Preferring the first keeps the row in the amendment's voice where it has one.
   const purpose: string | undefined = amendment.purpose?.trim() || amendment.description?.trim() || undefined;
   const actionText: string | undefined = amendment.latestAction?.text;
 
   return {
-    congress: amendment.congress,
-    type,
-    number,
+    ...identity,
     purpose,
     // Carried only when it says something, like `mapRelatedBill`'s: a latest action with a date and no text renders as
     // a stray date rather than as a sentence.
     latestAction: actionText ? { date: amendment.latestAction?.actionDate, text: actionText } : undefined,
-    officialUrl: congressGovAmendmentUrl({ congress: amendment.congress, type, number }),
+    officialUrl: congressGovAmendmentUrl(identity),
   };
 }
 
@@ -490,7 +486,7 @@ export function mapCongressMember(member: CongressApiMember): SeatedMember | nul
   return {
     chamber,
     member: {
-      bioguideId: member.bioguideId,
+      bioguideId: mapBioguideId(member.bioguideId),
       name,
       party: normalizePartyName(member.partyName),
       partyName: member.partyName,
@@ -560,7 +556,7 @@ export function mapLeadershipRole(role: CongressApiLeadership): MemberLeadership
  * title, and (when the top-level fields are absent) the jurisdiction.
  *
  * @param member - A validated record from the member item endpoint.
- * @param bioguideId - The ID that was looked up, used when the payload itself omits one.
+ * @param bioguideId - The ID that was looked up, used when the payload's own is absent or malformed.
  * @returns The mapped profile, or `null` without a name or a recognizable term.
  */
 export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: string): MemberProfile | null {
@@ -580,7 +576,7 @@ export function mapMemberProfile(member: CongressApiMemberDetail, bioguideId: st
   const partyName: string | undefined = member.partyName ?? member.partyHistory?.at(-1)?.partyName;
 
   return {
-    bioguideId: (member.bioguideId ?? bioguideId).trim().toUpperCase(),
+    bioguideId: mapBioguideId(member.bioguideId) ?? bioguideId.trim().toUpperCase(),
     name,
     directOrderName: member.directOrderName,
     party: normalizePartyName(partyName),
@@ -675,7 +671,7 @@ export function mapCommitteeHistory(entry: CongressApiCommitteeHistory): Committ
  * requested path) and no `name` (its current name is the latest `history` entry's), so both are supplied here.
  *
  * @param committee - A validated record from the committee item endpoint.
- * @param systemCode - The code that was looked up, used when the payload itself omits one.
+ * @param systemCode - The code that was looked up, used when the payload's own is absent or blank.
  * @param chamber - The chamber whose endpoint was asked, since the record doesn't say.
  * @returns The mapped profile, or `null` when no history entry names the committee.
  */
@@ -699,7 +695,7 @@ export function mapCommitteeProfile(
   );
 
   return {
-    systemCode: (committee.systemCode ?? systemCode).trim().toLowerCase(),
+    systemCode: (committee.systemCode?.trim() || systemCode).trim().toLowerCase(),
     name: current.name,
     chamber,
     type: normalizeCommitteeType(committee.type),
@@ -726,16 +722,13 @@ export function mapCommitteeProfile(
  * @returns The mapped referral, or `null` without a congress, type, or number — with no title, those are the record.
  */
 export function mapCommitteeBillReferral(referral: CongressApiCommitteeBill): CommitteeBillReferral | null {
-  const number: string | number | undefined = referral.number;
-
-  if (!referral.congress || !referral.type || number === undefined) return null;
+  // Normalized here rather than at the view, so this reads and keys identically to a `LegislativeBill` — which matters
+  // because the two sit in the same row once the title lookup fills one in.
+  const identity: MappedIdentity | null = mapIdentity(referral.congress, referral.type, referral.number);
+  if (!identity) return null;
 
   return {
-    congress: referral.congress,
-    // Upper-cased here rather than at the view, so this reads and keys identically to a `LegislativeBill.type` — which
-    // matters because the two sit in the same row once the title lookup fills one in.
-    type: referral.type.trim().toUpperCase(),
-    number: String(number),
+    ...identity,
     relationship: referral.relationshipType,
     actionDate: referral.actionDate,
   };
@@ -786,6 +779,57 @@ export function mapCommitteeNomination(nomination: CongressApiCommitteeNominatio
 }
 
 // Shared helpers.
+
+/**
+ * Reads a member's Bioguide ID from any record that names one — a sponsor, a cosponsor, a roster entry, a
+ * profile — under the one rule every member link is built on.
+ *
+ * @param value - The upstream ID, if any.
+ * @returns The ID trimmed and upper-cased, or `undefined` when it isn't a well-formed Bioguide ID. A malformed one
+ *   would build a member link that 404s; dropping it costs only the link, which every caller already handles.
+ * @see isBioguideId
+ */
+function mapBioguideId(value: string | undefined): string | undefined {
+  if (value === undefined || !isBioguideId(value)) return undefined;
+
+  return value.trim().toUpperCase();
+}
+
+/** A citation's three parts as {@link mapIdentity} normalizes them — the shape every link and key is built from. */
+type MappedIdentity = {
+  /** The Congress, positive. */
+  congress: number;
+  /** The type code, trimmed and upper-cased (`"HR"`, `"SAMDT"`). */
+  type: string;
+  /** The number, as a trimmed, non-empty string. */
+  number: string;
+};
+
+/**
+ * Reads the congress, type, and number that name a bill, amendment, or referral — the one rule every mapper of a
+ * citable record applies, so a related bill, an amendment, and a referral are kept or dropped on the same terms as a
+ * bill itself.
+ *
+ * Blank parts are rejected rather than carried: an empty number builds a link like `/bills/119/hr/`, which goes nowhere
+ * while looking like a record.
+ *
+ * @param congress - The upstream Congress number.
+ * @param type - The upstream type code, in any case.
+ * @param number - The upstream number, which some endpoints send as a string and others as a number.
+ * @returns The normalized identity, or `null` when any part is missing or blank.
+ */
+function mapIdentity(
+  congress: number | undefined,
+  type: string | undefined,
+  number: string | number | undefined,
+): MappedIdentity | null {
+  const normalizedType: string = (type ?? "").trim().toUpperCase();
+  const normalizedNumber: string = String(number ?? "").trim();
+
+  if (!congress || normalizedType.length === 0 || normalizedNumber.length === 0) return null;
+
+  return { congress, type: normalizedType, number: normalizedNumber };
+}
 
 /**
  * Normalizes a Congress.gov timestamp to ISO 8601. The committee-reports endpoint sends `"2015-03-20 00:05:31+00:00"`

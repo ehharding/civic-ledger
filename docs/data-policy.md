@@ -113,6 +113,11 @@ chart carries that caveat in its own caption rather than leaving a reader to ass
   honest reading: a Congress that has risen has a closed roster, and the members who have since left office are part of
   it rather than absent from it. The 117th answers `currentMember=true` with 377 members against a true 557.
 - **Vacant seats are absent rather than drawn.** The API reports who holds a seat, not how many seats are authorized.
+- **A roster that arrived short says so.** The member list comes in pages of 250, and a later page can fail or come
+  back empty after the first has answered. The seats that arrived are still drawn, but the chart and the member
+  directory both state Congress.gov's own count beside the number that arrived (`describeRosterShortfall`), since party
+  counts drawn from part of a chamber are not the chamber's. The home page and `/members` refuse to cache such a render
+  (`refuseDegradedRender`), so on a production server a short roster is never what the cached page shows.
 - **The House's six non-voting seats are counted and labeled separately** — the five Delegates and Puerto Rico's
   Resident Commissioner. A diagram that renders all 441 identically quietly asserts something false about how the
   chamber votes. The list-level record doesn't carry the `memberType` field that would say so directly (that is

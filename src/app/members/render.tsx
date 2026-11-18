@@ -42,8 +42,10 @@ export async function renderMembersRoute(
   searchParams: Promise<RouteSearchParams>,
   cachedAs?: string,
 ): Promise<JSX.Element> {
-  const { members, congress, source, notice, retrievedAt }: MemberDirectoryResult = await getMemberDirectory();
-  refuseDegradedRender(source === "preview", cachedAs);
+  const { members, congress, source, notice, retrievedAt, shortfall }: MemberDirectoryResult =
+    await getMemberDirectory();
+  // A short roster is degraded too: cached, it would stand as the whole Congress for the route's window.
+  refuseDegradedRender(source === "preview" || shortfall !== undefined, cachedAs);
 
   const initialQuery: MemberDirectoryQuery = await resolveMemberDirectoryQuery(
     searchParams,

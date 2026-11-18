@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   bioguideUrl,
+  describeMemberLegislation,
   describeMemberService,
   formatMemberName,
   formatMemberTitle,
@@ -113,6 +114,30 @@ describe("formatTermYears", (): void => {
 
   it("returns an empty string when there is no start year, so callers can omit the line", (): void => {
     expect(formatTermYears(term())).toBe("");
+  });
+});
+
+describe("describeMemberLegislation", (): void => {
+  it("says the page holds the whole list when the published count agrees", (): void => {
+    expect(describeMemberLegislation({ shown: 3, total: 3, limit: 12 })).toBe("3 on file.");
+  });
+
+  it("names the published total, with separators, when the page holds only the most recent", (): void => {
+    expect(describeMemberLegislation({ shown: 12, total: 1204, limit: 12 })).toBe(
+      "Showing the 12 most recent of 1,204 on file. The complete list lives on the official record.",
+    );
+  });
+
+  it("does not call a full page complete when Congress.gov published no count", (): void => {
+    // The case the old wording got wrong: twelve back at a cap of twelve, no count, and the line said "12 on file."
+    const line: string = describeMemberLegislation({ shown: 12, total: undefined, limit: 12 });
+
+    expect(line).not.toBe("12 on file.");
+    expect(line).toContain("didn't say how many more there are");
+  });
+
+  it("calls a short page complete even without a count, since a page that didn't fill had nothing left", (): void => {
+    expect(describeMemberLegislation({ shown: 5, total: undefined, limit: 12 })).toBe("5 on file.");
   });
 });
 

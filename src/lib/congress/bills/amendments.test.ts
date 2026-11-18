@@ -159,6 +159,9 @@ describe("getBillAmendments", (): void => {
             { type: "SAMDT", number: 10, purpose: "No congress." },
             { congress: 119, number: 11, purpose: "No type." },
             { congress: 119, type: "SAMDT", purpose: "No number." },
+            // Present but blank: still nothing to cite, and a link built from it would end in a bare slash.
+            { congress: 119, type: "  ", number: 13, purpose: "Blank type." },
+            { congress: 119, type: "SAMDT", number: " ", purpose: "Blank number." },
             { congress: 119, type: "SAMDT", number: 12, purpose: "Complete." },
           ],
         }),

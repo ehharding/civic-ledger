@@ -17,7 +17,7 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 import GlobalError from "@/app/global-error";
-import { expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
+import { type DigestedError, expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
 
 beforeEach((): void => {
   captureException.mockClear();
@@ -40,7 +40,7 @@ describe("GlobalError", (): void => {
 
   it("reports the error, which is the only signal this failure has", (): void => {
     // Nothing else is watching: there is no error boundary above this one, and in production no console either.
-    const error: Error & { digest?: string } = leakyError();
+    const error: DigestedError = leakyError();
     render(<GlobalError error={error} />);
 
     expect(captureException).toHaveBeenCalledWith(error);

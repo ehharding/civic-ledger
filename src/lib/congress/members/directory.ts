@@ -6,7 +6,9 @@ import {
   type CongressComposition,
   type CongressMember,
   compareMembersByName,
+  describeRosterShortfall,
   type MemberDirectoryEntry,
+  type RosterShortfall,
 } from "@/lib/congress/members/model";
 import { previewMemberDirectory } from "@/lib/congress/upstream/fixtures";
 
@@ -34,8 +36,14 @@ export type MemberDirectoryResult = {
   source: CongressSnapshot["source"];
   /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
-  /** User-facing explanation shown when `source` is "preview". */
+  /** User-facing explanation: why preview data is shown, or what a live roster is missing. */
   notice?: string;
+  /**
+   * Carried over from the composition when the live roster arrived short, so the route can refuse to cache it.
+   *
+   * @see CongressComposition.shortfall
+   */
+  shortfall?: RosterShortfall;
 };
 
 /**
@@ -104,5 +112,10 @@ export async function getMemberDirectory(congress: number = getCurrentCongress()
     members: buildMemberDirectory(composition),
     source: "live",
     retrievedAt: composition.retrievedAt,
+    // The same shortfall the chamber diagram reports, in the same words: the two views share one roster, so a missing
+    // page is missing from both, and a directory short a hundred people must not read as the whole Congress.
+    ...(composition.shortfall
+      ? { shortfall: composition.shortfall, notice: describeRosterShortfall(composition.shortfall) }
+      : {}),
   };
 }

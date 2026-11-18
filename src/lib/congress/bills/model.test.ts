@@ -312,6 +312,12 @@ describe("billStageLabels", (): void => {
  * at by counting what it fetched is a claim about this page. Nothing here may state one and mean the other.
  */
 describe("describeBillCollection", (): void => {
+  it("separates thousands, which a defense authorization's amendment count reaches", (): void => {
+    expect(describeBillCollection({ shown: 250, published: 1204, noun: "amendment" })).toBe(
+      "Congress.gov records 1,204 amendments on this bill; this page shows 250.",
+    );
+  });
+
   it("credits Congress.gov when its published count matches what is shown", (): void => {
     expect(describeBillCollection({ shown: 59, published: 59, noun: "action" })).toBe(
       "Congress.gov records 59 actions on this bill.",

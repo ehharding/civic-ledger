@@ -712,6 +712,8 @@ describe("getCongressComposition", (): void => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(chamberOf(composition, "house").members).toHaveLength(250);
     expect(chamberOf(composition, "senate").members).toHaveLength(500);
+    // Everything Congress.gov counted arrived, so nothing is flagged as missing.
+    expect(composition.shortfall).toBeUndefined();
   });
 
   it("drops records with no recognizable chamber instead of misfiling them", async (): Promise<void> => {
@@ -827,9 +829,32 @@ describe("getCongressComposition pagination edges", (): void => {
 
     const composition: CongressComposition = await getCongressComposition(119);
 
-    // A chart of most of the chamber still beats no chart at all; the missing seats simply aren't drawn.
+    // A chart of most of the chamber still beats no chart at all — but it says it is short, with both figures, rather
+    // than letting 250 seats stand as the whole of a 400-member roster.
     expect(composition.source).toBe("live");
     expect(chamberOf(composition, "house").members).toHaveLength(125);
     expect(chamberOf(composition, "senate").members).toHaveLength(125);
+    expect(composition.shortfall).toEqual({ expected: 400, received: 250 });
+  });
+
+  it("flags the roster as short when a later page fails outright", async (): Promise<void> => {
+    stubLiveApi(
+      vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+        const offset: string = new URL(String(input)).searchParams.get("offset") ?? "0";
+        if (offset !== "0") return Promise.resolve(jsonResponse({}, 503));
+
+        return Promise.resolve(
+          jsonResponse({
+            members: [apiMember({}), apiMember({ bioguideId: "S000001", chamber: "Senate" })],
+            pagination: { count: 541 },
+          }),
+        );
+      }),
+    );
+
+    const composition: CongressComposition = await getCongressComposition(119);
+
+    expect(composition.source).toBe("live");
+    expect(composition.shortfall).toEqual({ expected: 541, received: 2 });
   });
 });

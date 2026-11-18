@@ -28,7 +28,10 @@ export default async function Page(): Promise<JSX.Element> {
     getCongressComposition(),
   ]);
 
-  refuseDegradedRender(snapshot.source === "preview" || composition.source === "preview", "/");
+  refuseDegradedRender(
+    snapshot.source === "preview" || composition.source === "preview" || composition.shortfall !== undefined,
+    "/",
+  );
 
   return <HomePage composition={composition} snapshot={snapshot} />;
 }

@@ -177,7 +177,7 @@ describe("sentryInitOptions", (): void => {
   });
 
   it("redacts a span before it is sent, not only an error", (): void => {
-    // Tracing is the path that carries outbound Congress.gov URLs most often, so leaving it out would have left the
+    // Tracing is the path that carries outbound Congress.gov URLs most often, so leaving it out would leave the
     // likeliest leak uncovered. The fixture is the streamed-span shape SDK v11 hands `beforeSendSpan` — `name` and
     // `attributes` where v10's transaction had `description` and `data` — including the `url.query` attribute v11
     // splits a query string into.

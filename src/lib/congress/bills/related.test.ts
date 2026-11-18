@@ -118,6 +118,9 @@ describe("getRelatedBills", (): void => {
             { type: "S", number: 10, title: "No Congress Act" },
             { congress: 119, number: 11, title: "No Type Act" },
             { congress: 119, type: "S", title: "No Number Act" },
+            // Present but blank: an inward link built from it would be `/bills/119/s/`, which opens nothing.
+            { congress: 119, type: "S", number: "", title: "Blank Number Act" },
+            { congress: 119, type: " ", number: 14, title: "Blank Type Act" },
             { congress: 119, type: "S", number: 12 },
             { congress: 119, type: "S", number: 13, title: "Complete Act" },
           ],

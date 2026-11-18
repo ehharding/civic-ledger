@@ -1,4 +1,6 @@
+import type { BillSearchResponse } from "@/lib/api-contract";
 import { BILL_TYPE_CODES, type BillStage, billStages, type LegislativeBill } from "@/lib/congress/bills/model";
+import { EARLIEST_COVERED_CONGRESS, listCongresses } from "@/lib/congress/congress-history";
 import {
   ANY_FACET,
   type FacetFilter,
@@ -6,6 +8,7 @@ import {
   parseQueryFilter,
   toQueryString,
 } from "@/lib/congress/directory-filter";
+import { formatOrdinal } from "@/lib/format";
 
 // The shareable URL.
 
@@ -89,6 +92,36 @@ export function matchesQuery(bill: LegislativeBill, query: string): boolean {
   return [bill.title, bill.type, bill.number, bill.policyArea, bill.latestAction.text].some(
     (value: string | undefined): boolean => value?.toLowerCase().includes(normalizedQuery) ?? false,
   );
+}
+
+/** What a finished search reports about its own reach — the half of {@link BillSearchResponse} the scope line reads. */
+export type BillSearchScope = Pick<BillSearchResponse, "congressesSearched" | "truncated">;
+
+/**
+ * The sentence under a finished search saying what it covered, worded from what the sweep reports rather than from what
+ * it set out to do. A Congress that didn't answer was not searched, and a scope line that claimed it would tell a
+ * reader "no bill matches" about records nobody looked at.
+ *
+ * @param scope - {@link BillSearchScope}.
+ * @param currentCongress - The Congress now sitting, which bounds the range this app covers.
+ * @returns The scope line: the full covered range when every Congress answered, the count that did when only some
+ *   answered, and a preview-only statement when none was searched (no key, or Congress.gov not answering at all).
+ */
+export function describeBillSearchScope(scope: BillSearchScope, currentCongress: number): string {
+  const covered: number = listCongresses(currentCongress).length;
+  const range: string = `${formatOrdinal(EARLIEST_COVERED_CONGRESS)}–${formatOrdinal(currentCongress)} Congresses`;
+  const truncation: string = scope.truncated ? " Showing the most recent matches." : "";
+
+  if (scope.congressesSearched === 0) {
+    return `Matched against the labeled preview records only — Congress.gov was not searched.${truncation}`;
+  }
+
+  const reach: string =
+    scope.congressesSearched >= covered
+      ? `across the ${range}`
+      : `across ${scope.congressesSearched} of the ${range} — the others didn't answer, so their records weren't searched`;
+
+  return `Matched against titles, policy areas, and latest actions — ${reach}, but only each Congress's most recently updated records rather than every bill it holds.${truncation}`;
 }
 
 // Reading a bill citation out of a search.

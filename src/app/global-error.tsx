@@ -4,14 +4,18 @@ import * as Sentry from "@sentry/nextjs";
 import type { JSX } from "react";
 import { useEffect } from "react";
 
-import { logError } from "@/lib/observability/log";
+import { errorDigest, logError } from "@/lib/observability/log";
 
 import "./globals.css";
 
 /** Props for {@link GlobalError}. */
 type GlobalErrorProps = {
-  /** The caught error, including Next's `digest` for correlating it with a server log entry. */
-  error: Error & { digest?: string };
+  /**
+   * Whatever was thrown — not necessarily an `Error`, so it is narrowed before anything reads it.
+   *
+   * @see errorDigest
+   */
+  error: unknown;
 };
 
 /**
@@ -29,7 +33,7 @@ export default function GlobalError({ error }: GlobalErrorProps): JSX.Element {
     // See error.tsx for why both. The `boundary` attribute is what separates the two in a query — reaching this one
     // means the root layout itself failed, which is a categorically worse fact than a failed segment.
     logError("Global error boundary caught a root-layout failure", {
-      attributes: { event: "error-boundary.caught", boundary: "global", digest: error.digest ?? "none" },
+      attributes: { event: "error-boundary.caught", boundary: "global", digest: errorDigest(error) },
       cause: error,
     });
     Sentry.captureException(error);

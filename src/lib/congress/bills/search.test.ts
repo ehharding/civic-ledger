@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { LegislativeBill } from "@/lib/congress/bills/model";
 import {
   billDirectoryQueryString,
+  describeBillSearchScope,
   matchesQuery,
   parseBillCitation,
   parseBillStageFilter,
@@ -49,6 +50,40 @@ describe("matchesQuery", (): void => {
   it("skips a bill with no policy area rather than throwing", (): void => {
     const noPolicyArea: LegislativeBill = makeBill({ policyArea: undefined });
     expect(matchesQuery(noPolicyArea, "anything")).toBe(false);
+  });
+});
+
+describe("describeBillSearchScope", (): void => {
+  /* The 119th, so the covered range is the 93rd through the 119th: twenty-seven Congresses. */
+  const CURRENT: number = 119;
+
+  it("names the whole covered range when every Congress answered", (): void => {
+    expect(describeBillSearchScope({ congressesSearched: 27, truncated: false }, CURRENT)).toBe(
+      "Matched against titles, policy areas, and latest actions — across the 93rd–119th Congresses, but only each Congress's most recently updated records rather than every bill it holds.",
+    );
+  });
+
+  it("says how many answered when some did not, rather than claiming the range", (): void => {
+    // The failure this exists to prevent: "no bill matches" stated over Congresses nobody actually looked in.
+    const line: string = describeBillSearchScope({ congressesSearched: 20, truncated: false }, CURRENT);
+
+    expect(line).toContain("across 20 of the 93rd–119th Congresses");
+    expect(line).toContain("the others didn't answer");
+  });
+
+  it("claims no Congress at all for a preview-only search", (): void => {
+    expect(describeBillSearchScope({ congressesSearched: 0, truncated: false }, CURRENT)).toBe(
+      "Matched against the labeled preview records only — Congress.gov was not searched.",
+    );
+  });
+
+  it("adds the truncation note whatever the reach", (): void => {
+    expect(describeBillSearchScope({ congressesSearched: 27, truncated: true }, CURRENT)).toMatch(
+      / Showing the most recent matches\.$/,
+    );
+    expect(describeBillSearchScope({ congressesSearched: 0, truncated: true }, CURRENT)).toMatch(
+      / Showing the most recent matches\.$/,
+    );
   });
 });
 

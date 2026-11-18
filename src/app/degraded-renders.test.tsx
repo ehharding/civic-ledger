@@ -82,6 +82,51 @@ describe("cached routes refuse a rate-limited render", (): void => {
   });
 });
 
+describe("cached routes refuse a roster that arrived short", (): void => {
+  /*
+   * Everything answers except the member list's second page. The bills are live and the first page seats both chambers,
+   * so the only thing wrong with these renders is the missing tail — which, cached, would stand as the whole Congress
+   * for the route's window.
+   */
+  beforeEach((): void => {
+    stubLiveApi(
+      vi.fn().mockImplementation((input: unknown): Promise<Response> => {
+        const url: URL = new URL(String(input));
+
+        if (url.pathname.startsWith("/v3/member/congress/")) {
+          if (url.searchParams.get("offset") !== "0") return Promise.resolve(RATE_LIMITED.clone());
+
+          return Promise.resolve(
+            jsonResponse({
+              members: Array.from({ length: 250 }, (_unused: unknown, index: number) => ({
+                bioguideId: `A${String(index).padStart(6, "0")}`,
+                name: `Member ${index}`,
+                partyName: "Independent",
+                state: "Ohio",
+                terms: { item: [{ chamber: index % 2 === 0 ? "House of Representatives" : "Senate" }] },
+              })),
+              pagination: { count: 400 },
+            }),
+          );
+        }
+
+        return Promise.resolve(
+          jsonResponse({
+            bills: [{ congress: getCurrentCongress(), type: "HR", number: "1", title: "A Live Bill Act" }],
+          }),
+        );
+      }),
+    );
+  });
+
+  it.each([
+    ["/", (): Promise<unknown> => HomePage()],
+    ["/members", (): Promise<unknown> => MembersPage()],
+  ])("%s", async (_route: string, renderRoute: () => Promise<unknown>): Promise<void> => {
+    await expect(renderRoute()).rejects.toBeInstanceOf(LiveDataUnavailableError);
+  });
+});
+
 describe("the bill page under a rate limit", (): void => {
   it("refuses instead of 404ing a real bill that only failed to load", async (): Promise<void> => {
     // No fixture covers this bill, so before the refusal it rendered "Bill Not Found" — and cached that for a day.

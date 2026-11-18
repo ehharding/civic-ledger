@@ -8,7 +8,10 @@ import type { CongressSnapshot } from "@/lib/congress/bills/model";
 type DataSourceNoticeProps = {
   /** Whether the surrounding data is live or preview. */
   source: CongressSnapshot["source"];
-  /** Why preview data is being shown, when it is. Ignored for live data. */
+  /**
+   * Why preview data is being shown, when it is — or, on live data, what the read is missing (a roster that arrived
+   * short of Congress.gov's own count). Live data with no notice says only where it came from.
+   */
   notice?: string;
   /**
    * When the data was fetched, rendered as "Updated 5 minutes ago" — `docs/data-policy.md` requires freshness to be
@@ -44,7 +47,7 @@ export function DataSourceNotice({ source, notice, retrievedAt }: DataSourceNoti
         <strong>{isLive ? "Live Congress.gov Data" : "Preview Data"}</strong>
         <span className="source-notice__copy">
           {isLive
-            ? " Refreshed from the official API every five minutes."
+            ? ` Refreshed from the official API every five minutes.${notice ? ` ${notice}` : ""}`
             : ` ${notice ?? "Add a server-only API key to use live records."}`}
         </span>
         {updated ? (

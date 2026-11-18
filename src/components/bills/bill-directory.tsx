@@ -24,12 +24,12 @@ import {
   type BillDirectoryQuery,
   type BillStageFilter,
   billDirectoryQueryString,
+  describeBillSearchScope,
   parseBillDirectoryQuery,
 } from "@/lib/congress/bills/search";
-import { EARLIEST_COVERED_CONGRESS } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { ANY_FACET } from "@/lib/congress/directory-filter";
-import { formatOrdinal, pluralize } from "@/lib/format";
+import { pluralize } from "@/lib/format";
 
 /** The stage control's options: every stage, preceded by the "no filter" choice. */
 const STAGE_FILTER_OPTIONS: readonly BillStageFilter[] = [ANY_FACET, ...billStages];
@@ -125,13 +125,10 @@ export function BillDirectory({
       ? `${displayedBills.length} ${pluralize(displayedBills.length, "Match", "Matches")}${search.isSearching ? " · Updating…" : ""}`
       : `Showing ${displayedBills.length} ${pluralize(displayedBills.length, "Record")}`;
 
-  const congressRangeLabel: string = `${formatOrdinal(EARLIEST_COVERED_CONGRESS)}–${formatOrdinal(getCurrentCongress())} Congresses`;
   const searchScopeNote: string | null = search.degraded
     ? "Broader search isn't available right now — showing matches from what's already loaded."
     : search.meta
-      ? `Matched against titles, policy areas, and latest actions — across the ${congressRangeLabel}, but only each Congress's most recently updated records rather than every bill it holds.${
-          search.meta.truncated ? " Showing the most recent matches." : ""
-        }`
+      ? describeBillSearchScope(search.meta, getCurrentCongress())
       : null;
 
   const showNoRecordsYet: boolean = !isSearchActive && allBills.length === 0;

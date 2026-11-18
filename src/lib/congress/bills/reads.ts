@@ -416,6 +416,18 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
 }
 
 /**
+ * The search a reader gets without Congress.gov: the preview fixtures, filtered. Reports no Congress as searched, since
+ * none was.
+ *
+ * @param query - The trimmed search text.
+ * @returns The matching fixtures, labeled as preview.
+ */
+function searchPreviewBills(query: string): BillSearchResponse {
+  const bills: LegislativeBill[] = previewBills.filter((bill: LegislativeBill): boolean => matchesQuery(bill, query));
+  return { bills, source: "preview", congressesSearched: 0, truncated: false };
+}
+
+/**
  * Searches for bills matching `query` across every supported Congress.
  *
  * Congress.gov has no keyword search, so this sweeps each Congress's most recently updated bills (up to the API's
@@ -425,21 +437,20 @@ function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey:
  * A query that parses as a citation ("HR 284" — see `parseBillCitation`) also gets a direct lookup, pinned first. The
  * sweep reuses browsing's cached page fetches, so repeated searches cost nothing extra upstream.
  *
- * @param query - The raw search text, as typed.
+ * @param query - The raw search text, as typed. `congressesSearched` counts the Congresses that *answered*, not the
+ *   ones asked: a Congress whose request failed contributed nothing, and the scope line under the results says so (see
+ *   `describeBillSearchScope`).
+ *
  * @returns Matching bills (citation hit first, then newest-first), capped at {@link MAX_SEARCH_RESULTS}, with the
  *   sweep's provenance and whether the cap truncated the results. Falls back to filtering the small preview fixture set
- *   when no key is configured.
+ *   when no key is configured, or when no Congress answered at all — a sweep nothing answered is not a live search, and
+ *   reporting it as one would present "no matches" as a fact about the record.
  */
 export async function getSearchResults(query: string): Promise<BillSearchResponse> {
   const trimmedQuery: string = query.trim();
   const apiKey: string | undefined = getCongressApiKey();
 
-  if (!apiKey) {
-    const bills: LegislativeBill[] = previewBills.filter((bill: LegislativeBill): boolean =>
-      matchesQuery(bill, trimmedQuery),
-    );
-    return { bills, source: "preview", congressesSearched: 0, truncated: false };
-  }
+  if (!apiKey) return searchPreviewBills(trimmedQuery);
 
   const currentCongress: number = getCurrentCongress();
   const congresses: number[] = listCongresses(currentCongress).map((entry): number => entry.number);
@@ -463,8 +474,13 @@ export async function getSearchResults(query: string): Promise<BillSearchRespons
     ),
   ]);
 
-  const swept: LegislativeBill[] = pages
-    .flatMap((page: LegislativeBill[] | null): LegislativeBill[] => page ?? [])
+  const answered: LegislativeBill[][] = pages.filter(
+    (page: LegislativeBill[] | null): page is LegislativeBill[] => page !== null,
+  );
+  if (answered.length === 0) return searchPreviewBills(trimmedQuery);
+
+  const swept: LegislativeBill[] = answered
+    .flat()
     .filter((bill: LegislativeBill): boolean => matchesQuery(bill, trimmedQuery));
 
   const pinnedKey: string | undefined = citationBill ? billIdentityKey(citationBill) : undefined;
@@ -476,7 +492,7 @@ export async function getSearchResults(query: string): Promise<BillSearchRespons
   return {
     bills: deduped.slice(0, MAX_SEARCH_RESULTS),
     source: "live",
-    congressesSearched: congresses.length,
+    congressesSearched: answered.length,
     truncated: deduped.length > MAX_SEARCH_RESULTS,
   };
 }

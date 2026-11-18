@@ -270,11 +270,12 @@ recipe on every pull request, so that failure arrives before the change lands ra
 
 ### Reproducing the Static Build Locally
 
-The recipe's first step is `rm -rf src/app/api/bills src/app/api/health`, which is safe on a throwaway CI checkout and
-is **destructive on a working tree**. To run it by hand, start from a clean tree so the removal is recoverable:
+The recipe's first step is `rm -rf src/app/api/bills src/app/api/health src/app/query`, which is safe on a throwaway CI
+checkout and is **destructive on a working tree**. To run it by hand, start from a clean tree so the removal is
+recoverable:
 
 ```bash
-rm -rf src/app/api/bills src/app/api/health
+rm -rf src/app/api/bills src/app/api/health src/app/query
 ```
 
 ```bash
@@ -282,7 +283,7 @@ STATIC_EXPORT=true GITHUB_PAGES_BASE_PATH=/civic-ledger CONGRESS_API_KEY="" pnpm
 ```
 
 ```bash
-git restore src/app/api
+git restore src/app/api src/app/query
 ```
 
 The result lands in `out/`. Serve it through any static file server — the export has no Node server, so `pnpm start`
@@ -296,7 +297,7 @@ output, including the header's plain `<form action>`, the sitemap, and robots.tx
   bill-directory page per Congress the fixtures cover, and a member page per placeholder member. A static export can't
   look up arbitrary bills, Congresses, or members on demand.
 - **Drops the `/query` twins** before building (`src/app/query`). They exist only to be reached through rewrites,
-  which a static export has no server to apply; every deep link in the demo renders the default view, as it always has.
+  which a static export has no server to apply; every deep link in the demo renders the default view.
 - **Drops all three route handlers** before building. `/api/bills` and `/api/bills/search` need to read the request URL
   (for `offset`/`congress`, or `q`), and `/api/health` is `force-dynamic` so its timestamp reflects real request
   time — none of which a static export has a server left to do. Pagination is only offered when live data is active

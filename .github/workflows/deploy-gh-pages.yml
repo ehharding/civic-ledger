@@ -2,8 +2,8 @@ name: Deploy (GitHub Pages Demo)
 
 # This publishes a STATIC DEMO ONLY. GitHub Pages cannot hold the server-only CONGRESS_API_KEY and cannot run Next.js
 # route handlers or a database, so this build always renders the clearly labeled preview fixtures — never live
-# congressional data. For the real, live-data app, use the Vercel workflow (deploy-vercel.yml) instead. See the "GitHub
-# Pages" section of the README before enabling this workflow.
+# congressional data. For the real, live-data app, use the Vercel workflow (deploy-vercel.yml) instead. Read "Secondary:
+# GitHub Pages Static Demo" in docs/deployment.md before enabling this workflow.
 #
 # The build itself lives in .github/actions/build-static-demo, shared with the `static-export` job in ci.yml so a pull
 # request finds out it broke the demo before the change lands rather than after.

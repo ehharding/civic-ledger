@@ -13,10 +13,16 @@ import path from "node:path";
 /** The only route prefixes allowed to render per request, for the reasons the module header gives. */
 const ON_DEMAND_PREFIXES: readonly string[] = ["/api/", "/query/"];
 
+/** One prerendered path's entry in `prerender-manifest.json`. */
+type PrerenderedRoute = {
+  /** The dynamic pattern the path was generated from, or `null` for a route that has no pattern of its own. */
+  srcRoute: string | null;
+};
+
 /** The slice of `prerender-manifest.json` this check reads. */
 type PrerenderManifest = {
-  /** Every prerendered path, keyed by its concrete URL; `srcRoute` names the dynamic pattern it came from, if any. */
-  routes: Record<string, { srcRoute: string | null }>;
+  /** Every prerendered path, keyed by its concrete URL. */
+  routes: Record<string, PrerenderedRoute>;
   /** Every dynamic route pattern that prerenders on demand (ISR), keyed by pattern. */
   dynamicRoutes: Record<string, unknown>;
 };
@@ -40,7 +46,7 @@ const prerender: PrerenderManifest = readManifest<PrerenderManifest>("prerender-
 const cached: Set<string> = new Set([
   ...Object.keys(prerender.dynamicRoutes),
   ...Object.entries(prerender.routes).map(
-    ([route, entry]: [string, { srcRoute: string | null }]): string => entry.srcRoute ?? route,
+    ([route, entry]: [string, PrerenderedRoute]): string => entry.srcRoute ?? route,
   ),
 ]);
 

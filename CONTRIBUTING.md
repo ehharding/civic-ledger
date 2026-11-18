@@ -44,8 +44,10 @@ out of it.
 `pnpm test:coverage` shows what the suite actually reaches, and `pnpm check` above runs it — the thresholds exist only
 inside the coverage pass, so a `check` running the bare suite would leave them stated and unenforced. Statements,
 branches, functions, and lines are all at 100%, and `vitest.config.mts` sets all four thresholds there, so dropping
-below it fails the build. Only test data, test infrastructure, and declarative files are excluded outright — the preview
-fixtures, the shared helpers in `src/test/`, and the Drizzle schema.
+below it fails the build. Only test data, test infrastructure, declarative files, and SDK entry points are excluded
+outright — the preview fixtures, the shared helpers in `src/test/`, the Drizzle schema, and the Sentry and
+instrumentation files, which only initialize the SDK or re-export its hooks — the options they pass are tested where
+`src/lib/observability/` builds them. The `exclude` list in `vitest.config.mts` is the enforcement point.
 
 Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
 was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether
@@ -151,11 +153,13 @@ default — a few current positions, so they don't have to be relitigated per pu
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import
   anything server-side. A client component has to be able to import them without dragging the adapter, and the API key
   it reads, into the browser bundle.
-- Import with the `@/` alias, never a relative path. It is what let the adapter and the component tree be regrouped
-  into folders without touching a single import statement, and it keeps a module's imports readable in a diff that
-  doesn't say which directory the file is in. The grouping — Node builtins, then packages, a blank line, then this
-  app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so `pnpm lint` reports a run-together
-  block and `pnpm format` fixes it.
+- Inside `src/`, import with the `@/` alias, never a relative path. It is what let the adapter and the component tree be
+  regrouped into folders without touching a single import statement, and it keeps a module's imports readable in a diff
+  that doesn't say which directory the file is in. The alias maps only `src/`, so the two places outside it go without:
+  `tests/e2e/` specs share `./routes`, and `scripts/` run under bare Node, which can't resolve `@/` at all — so a value
+  a script needs from `src/` is restated there with a comment naming its source. The grouping — Node builtins, then
+  packages, a blank line, then this app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so
+  `pnpm lint` reports a run-together block and `pnpm format` fixes it.
 - A new file goes in the folder named for its _subject_, not for whoever calls it — `src/components/bills/` for
   anything that draws a bill, `src/lib/congress/members/` for anything that knows what a member is. Two exceptions,
   both stated in [Architecture](docs/architecture.md): `src/components/ui/` is for pieces that could render a record

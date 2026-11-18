@@ -209,6 +209,14 @@ describe("CongressSeatingChart", (): void => {
     expect(screen.getByText(/Membership from the Congress.gov member API/)).toBeInTheDocument();
   });
 
+  it("says a short live roster is short, so its party counts don't read as the chamber's", (): void => {
+    render(<CongressSeatingChart composition={composition({ shortfall: { expected: 541, received: 250 } })} />);
+
+    expect(
+      screen.getByText(/Congress\.gov lists 541 members for this Congress, but only 250 arrived/),
+    ).toBeInTheDocument();
+  });
+
   it("labels preview seats as placeholders rather than letting them read as real membership", (): void => {
     render(
       <CongressSeatingChart composition={composition({ source: "preview", notice: "No API key is configured." })} />,

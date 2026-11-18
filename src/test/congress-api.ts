@@ -41,7 +41,7 @@ export function stubPreviewApi(): Mock {
  * @param status - The HTTP status. Defaults to 200.
  * @returns A fresh, unread `Response`.
  */
-export function jsonResponse(body: unknown, status = 200): Response {
+export function jsonResponse(body: unknown, status: number = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
@@ -53,6 +53,6 @@ export function jsonResponse(body: unknown, status = 200): Response {
  * @param index - Which call to read. Defaults to the first.
  * @returns The requested URL.
  */
-export function requestedUrl(fetchMock: Mock, index = 0): URL {
+export function requestedUrl(fetchMock: Mock, index: number = 0): URL {
   return new URL(String(fetchMock.mock.calls[index]?.[0]));
 }

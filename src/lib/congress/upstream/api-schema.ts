@@ -490,7 +490,7 @@ const congressApiCommitteeDetailSchema = z.looseObject({
    * Read rather than derived, which is the whole reason it can be linked at all: congress.gov's own committee URLs
    * embed a name slug this API has never published, and guessing one produces an authoritative-looking 404.
    *
-   * @see docs/data-policy.md, "The Committee Page Has No Roster".
+   * @see docs/data-policy.md, "The Committee Page Has No Roster, and No Deep Link".
    */
   committeeWebsiteUrl: optionalString,
   history: z.array(congressApiCommitteeHistorySchema).optional().catch(undefined),

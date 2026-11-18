@@ -83,7 +83,7 @@ function toSearchParams(params: RouteSearchParams): URLSearchParams {
  * page still works; it just can't be pre-filled from the URL.
  *
  * @returns `false` in the static export, `true` everywhere else.
- * @see the GitHub Pages section of the README.
+ * @see docs/deployment.md, "Secondary: GitHub Pages Static Demo".
  */
 function canReadRequest(): boolean {
   return process.env.STATIC_EXPORT !== "true";

@@ -1,8 +1,8 @@
 import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/model";
 
 /**
- * The response bodies and request URLs of this app's own API routes, declared once so the handler and the browser
- * caller share one type. `api-query.ts` parses the request side.
+ * The response bodies and request URLs of this app's own API routes, declared once so the handler and its caller — the
+ * browser, or for `/api/health` an external probe — share one type. `api-query.ts` parses the request side.
  *
  * Isomorphic: every type resolves through pure model code, so client components can import it without reaching the
  * server adapter, and without `api-query.ts`'s zod dependency. Response bodies aren't validated at runtime — they're
@@ -37,6 +37,28 @@ export type BillSearchResponse = {
   congressesSearched: number;
   /** Whether more matches existed than the adapter's cap allows returning. */
   truncated: boolean;
+};
+
+/**
+ * `/api/health` — the liveness check's fixed-shape body. Its only callers are external probes, which is why the shape
+ * is declared here anyway: a probe's alert rule is as much a caller as a component is, and a renamed field breaks it as
+ * silently.
+ *
+ * @see docs/deployment.md
+ */
+export type HealthResponse = {
+  /** Always `"ok"`: a response at all is the liveness signal. */
+  status: "ok";
+  /** Always `"civic-ledger"`, so a probe pointed at the wrong deployment can tell. */
+  service: "civic-ledger";
+  /**
+   * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise.
+   *
+   * @see getCongressApiKey
+   */
+  records: CongressSnapshot["source"];
+  /** When this response was generated, so a cached or stale reply is recognizable as one. */
+  timestamp: string;
 };
 
 /**

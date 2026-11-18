@@ -92,6 +92,22 @@ export function describeCause(cause: unknown, secrets: readonly string[] = []): 
 }
 
 /**
+ * The `digest` Next attaches to an error forwarded from a Server Component, which correlates a boundary's log line with
+ * the server's line for the same failure.
+ *
+ * Narrowed rather than read, because an error boundary receives whatever was thrown: a Client Component can throw a
+ * value that is not an `Error` at all, and Next forwards it as-is.
+ *
+ * @param error - The value an error boundary caught.
+ * @returns The digest when the value carries a string one, otherwise `"none"`, so the attribute is always present and a
+ *   query for boundaries with no server-side twin is a plain equality filter.
+ */
+export function errorDigest(error: unknown): string {
+  if (typeof error !== "object" || error === null || !("digest" in error)) return "none";
+  return typeof error.digest === "string" ? error.digest : "none";
+}
+
+/**
  * Turns a non-`Error` thrown value into a string without trusting it.
  *
  * @param value - The thrown value.

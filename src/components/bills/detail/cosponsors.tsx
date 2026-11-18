@@ -110,16 +110,21 @@ function CosponsorList({ cosponsors, tally, source }: CosponsorListProps): JSX.E
 }
 
 /**
+ * Props for {@link CosponsorsPanel}: the shared section props, with the bare `published` count traded for the
+ * publisher's full tally, which also says how many withdrew.
+ */
+type CosponsorsPanelProps = Omit<BillSectionProps<BillCosponsor>, "published"> & {
+  /** Congress.gov's own figures for the bill, including anyone who later withdrew. */
+  tally?: BillCosponsorTally;
+};
+
+/**
  * Everyone who signed on after the sponsor.
  *
- * @param props - {@link BillSectionProps}, plus the publisher's own tally.
+ * @param props - {@link CosponsorsPanelProps}.
  * @returns The cosponsors panel.
  */
-export function CosponsorsPanel({
-  resource,
-  source,
-  tally,
-}: Omit<BillSectionProps<BillCosponsor>, "published"> & { tally?: BillCosponsorTally }): JSX.Element {
+export function CosponsorsPanel({ resource, source, tally }: CosponsorsPanelProps): JSX.Element {
   const { entries: cosponsors, unavailable } = resource;
 
   return (

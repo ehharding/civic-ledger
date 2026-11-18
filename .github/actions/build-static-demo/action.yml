@@ -6,8 +6,8 @@ description: Produces the preview-data-only static export published to GitHub Pa
 #
 # Sharing it is the whole point. The static export is the one build in this repository that can be broken by a change
 # that passes everything else: adding a route handler, reading `request.url`, or reaching for a dynamic API compiles and
-# tests clean, and then fails only in `output: "export"`. Before CI checked it, that failure surfaced on `main` — after
-# the change had already landed. Two copies of this recipe would have re-opened the same gap the moment they disagreed.
+# tests clean, and then fails only in `output: "export"`. CI runs this recipe on every pull request so that failure
+# arrives before the change lands; a second copy of it would reopen that gap the moment the two disagreed.
 #
 # See "Secondary: GitHub Pages Static Demo" in docs/deployment.md for what this build can and cannot serve.
 

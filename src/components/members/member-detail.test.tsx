@@ -142,7 +142,7 @@ describe("MemberDetail", (): void => {
   it("says a capped list is a slice rather than letting it read as the whole record", (): void => {
     renderMember({ sponsored: [bill], profile: profile({ sponsoredCount: 1753 }), legislationLimit: 12 });
 
-    expect(screen.getByText(/Showing the 1 most recent of 1753 on file/)).toBeInTheDocument();
+    expect(screen.getByText(/Showing the 1 most recent of 1,753 on file/)).toBeInTheDocument();
   });
 
   it("does not claim truncation when the list is complete", (): void => {

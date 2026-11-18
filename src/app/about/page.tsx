@@ -1,14 +1,17 @@
-import { CheckCircle2, Database, type LucideProps, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Database, type LucideIcon, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-import type { ForwardRefExoticComponent, JSX, RefAttributes } from "react";
+import type { JSX } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { SiteShell } from "@/components/layout/site-shell";
 import { pageMetadata } from "@/lib/metadata";
 
-/** The route's title, description, and canonical path. */
+/**
+ * The route's title, description, and canonical path. Titled for what the primary nav and the page's own eyebrow call
+ * it, so the tab and a shared link name the page a reader clicked; the path stays `/about`, which links already use.
+ */
 export const metadata: Metadata = pageMetadata({
-  title: "About",
+  title: "Methodology",
   description: "How Civic Ledger sources its records, labels its data, and links back to the official register.",
   path: "/about",
 });
@@ -16,7 +19,7 @@ export const metadata: Metadata = pageMetadata({
 /** One product principle shown on the /about (Methodology) page: its icon, title, and one-line explanation. */
 type Principle = {
   /** The Lucide icon drawn beside the title. */
-  icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+  icon: LucideIcon;
   /** The principle, as a short heading. */
   title: string;
   /** One sentence on what the principle means in practice. */
@@ -51,7 +54,7 @@ const principles: Principle[] = [
 /**
  * Static "Methodology" route explaining the product's editorial principles.
  *
- * @returns The about page.
+ * @returns The Methodology page.
  */
 export default function AboutPage(): JSX.Element {
   return (

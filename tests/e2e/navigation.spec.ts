@@ -47,7 +47,7 @@ test("primary nav links land on the right page", async ({ page }: TestFixtures):
 
   await primaryNav.getByRole("link", { name: "Methodology" }).click();
   await expect(page).toHaveURL(/\/about$/);
-  await expect(page).toHaveTitle("About — Civic Ledger");
+  await expect(page).toHaveTitle("Methodology — Civic Ledger");
 });
 
 /*

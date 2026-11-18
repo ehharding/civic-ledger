@@ -23,7 +23,7 @@ import { jsonResponse, stubLiveApi } from "@/test/congress-api";
  * @param status - The HTTP status every response carries.
  * @returns A `fetch` implementation.
  */
-function alwaysRespond(body: unknown, status = 200): () => Promise<Response> {
+function alwaysRespond(body: unknown, status: number = 200): () => Promise<Response> {
   return (): Promise<Response> => Promise.resolve(jsonResponse(body, status));
 }
 

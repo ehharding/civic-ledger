@@ -14,6 +14,7 @@ import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/
 import {
   bioguideUrl,
   chamberLabels,
+  describeMemberLegislation,
   describeMemberService,
   formatMemberName,
   formatMemberParty,
@@ -89,8 +90,6 @@ function LegislationSection({
   total,
   limit,
 }: LegislationSectionProps): JSX.Element {
-  const isTruncated: boolean = total !== undefined && total > limit;
-
   return (
     <section className="member-legislation" aria-labelledby={headingId}>
       <div className="section-heading">
@@ -102,11 +101,7 @@ function LegislationSection({
 
       {bills.length > 0 ? (
         <>
-          <p className="muted-copy">
-            {isTruncated
-              ? `Showing the ${bills.length} most recent of ${total} on file. The complete list lives on the official record.`
-              : `${bills.length} on file.`}
-          </p>
+          <p className="muted-copy">{describeMemberLegislation({ shown: bills.length, total, limit })}</p>
           <div className="activity-grid">
             {bills.map(
               (bill: LegislativeBill): JSX.Element => (

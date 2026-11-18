@@ -1,4 +1,4 @@
-import { compareText } from "@/lib/format";
+import { compareText, type NamedRecord } from "@/lib/format";
 
 /**
  * The committee domain model, built on the same rules as `members/model.ts`: upstream free text is narrowed at the
@@ -242,7 +242,7 @@ export const CONGRESS_GOV_COMMITTEES: string = "https://www.congress.gov/committ
  * @returns A standard comparator result.
  * @see compareText
  */
-export function compareCommitteesByName(a: { name: string }, b: { name: string }): number {
+export function compareCommitteesByName(a: NamedRecord, b: NamedRecord): number {
   return compareText(a.name, b.name);
 }
 

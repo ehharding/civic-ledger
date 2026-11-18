@@ -26,6 +26,14 @@ describe("DataSourceNotice", (): void => {
     expect(screen.queryByText(/Add a server-only API key/)).not.toBeInTheDocument();
   });
 
+  it("adds a live read's own caveat after the refresh line, rather than dropping it as it would for no notice", (): void => {
+    render(<DataSourceNotice source="live" notice="Congress.gov lists 541 members, but only 250 arrived." />);
+
+    expect(
+      screen.getByText(/every five minutes\. Congress\.gov lists 541 members, but only 250 arrived\./),
+    ).toBeInTheDocument();
+  });
+
   it("reflects the source in its modifier class", (): void => {
     const { container } = render(<DataSourceNotice source="live" />);
     expect(container.querySelector("aside")).toHaveClass("source-notice--live");

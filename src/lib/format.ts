@@ -21,6 +21,15 @@ export function compareText(a: string, b: string): number {
 }
 
 /**
+ * Any record ordered or labeled by its display name — a member, a committee, a subcommittee. Structural on purpose, so
+ * the name comparators accept every shape that carries one without each record type declaring the relationship.
+ */
+export type NamedRecord = {
+  /** The name as the record displays it, which is also the order a reader scans a list in. */
+  name: string;
+};
+
+/**
  * Orders two ISO date strings newest first — the one newest-first ordering in the app. Plain string comparison is
  * chronological for fixed-width ISO dates and timestamps.
  *

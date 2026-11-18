@@ -27,6 +27,7 @@ import {
   collectRecordedVotes,
   mapBillCommittee,
   mapBillCommitteeActivity,
+  mapBillCosponsor,
   mapBillSubcommittee,
   mapCommitteeBillReferral,
   mapCommitteeHistory,
@@ -196,6 +197,7 @@ describe("mapCongressBill", (): void => {
     expect(mapCongressBill(apiBill({ title: undefined }))).toBeNull();
     expect(mapCongressBill(apiBill({ type: undefined, billType: undefined }))).toBeNull();
     expect(mapCongressBill(apiBill({ number: undefined, billNumber: undefined }))).toBeNull();
+    expect(mapCongressBill(apiBill({ number: "  " }))).toBeNull();
   });
 
   it("keeps a record that is merely sparse, which is a different thing from incomplete", (): void => {
@@ -457,6 +459,18 @@ describe("mapCongressMember", (): void => {
     expect(seated?.chamber).toBe("senate");
   });
 
+  it("normalizes a usable Bioguide ID and drops a malformed one, which would build a member link that 404s", (): void => {
+    const terms: CongressApiMember["terms"] = { item: [{ chamber: "Senate" }] };
+
+    expect(
+      mapCongressMember({ name: "Alvarez, Priya R.", bioguideId: " a000001 ", terms } as CongressApiMember)?.member
+        .bioguideId,
+    ).toBe("A000001");
+    expect(
+      mapCongressMember({ name: "Alvarez, Priya R.", bioguideId: "A1", terms } as CongressApiMember)?.member.bioguideId,
+    ).toBeUndefined();
+  });
+
   it("keeps the last recognizable chamber when a later term names none", (): void => {
     const seated: SeatedMember | null = mapCongressMember({
       name: "Bennett, Marcus T.",
@@ -539,6 +553,12 @@ describe("mapMemberProfile", (): void => {
     const profile: MemberProfile | null = mapMemberProfile(apiMember(), "B000001");
 
     expect(profile).toMatchObject({ bioguideId: "B000001", name: "Bennett, Marcus T.", chamber: "house" });
+  });
+
+  it("falls back to the looked-up ID when the payload's own is blank or malformed, not only when it is absent", (): void => {
+    // `??` alone would let a present-but-blank ID win over the one the route already validated.
+    expect(mapMemberProfile(apiMember({ bioguideId: "  " }), "B000001")?.bioguideId).toBe("B000001");
+    expect(mapMemberProfile(apiMember({ bioguideId: "not-an-id" }), "B000001")?.bioguideId).toBe("B000001");
   });
 
   it("falls back to the looked-up ID when the payload omits one", (): void => {
@@ -894,6 +914,10 @@ describe("mapCommitteeProfile", (): void => {
     } as CongressApiCommitteeDetail;
   }
 
+  it("falls back to the looked-up code when the payload's own is blank, not only when it is absent", (): void => {
+    expect(mapCommitteeProfile(apiCommitteeDetail({ systemCode: " " }), "hspw00", "house")?.systemCode).toBe("hspw00");
+  });
+
   it("names the committee from its most recent history entry and takes the chamber from the route", (): void => {
     const profile: CommitteeProfile | null = mapCommitteeProfile(apiCommitteeDetail(), "hspw00", "house");
 
@@ -987,6 +1011,15 @@ describe("the committee record mappers", (): void => {
     expect(mapCommitteeBillReferral({ type: "HR", number: "1" })).toBeNull();
     expect(mapCommitteeBillReferral({ congress: 119, number: "1" })).toBeNull();
     expect(mapCommitteeBillReferral({ congress: 119, type: "HR" })).toBeNull();
+    expect(mapCommitteeBillReferral({ congress: 119, type: "HR", number: "  " })).toBeNull();
+    expect(mapCommitteeBillReferral({ congress: 119, type: " ", number: "1" })).toBeNull();
+  });
+
+  it("trims each part, so a padded referral keys the same as the bill it names", (): void => {
+    expect(mapCommitteeBillReferral({ congress: 119, type: " hr ", number: " 1 " })).toMatchObject({
+      type: "HR",
+      number: "1",
+    });
   });
 
   it("keeps a referral numbered zero, which is falsy but not absent", (): void => {
@@ -1053,6 +1086,29 @@ describe("mapUsable", (): void => {
 
   it("treats an omitted collection as an empty one", (): void => {
     expect(mapUsable(undefined, (n: number): number => n)).toEqual([]);
+  });
+});
+
+describe("Bioguide IDs on a bill's people", (): void => {
+  it("normalizes the sponsor's ID and drops a malformed one rather than linking to a page that does not exist", (): void => {
+    const sponsor = { fullName: "Rep. Bennett, Marcus T. [D-OH-9]" };
+
+    expect(mapCongressBill(apiBill({ sponsors: [{ ...sponsor, bioguideId: "b000001" }] }))?.sponsor).toMatchObject({
+      bioguideId: "B000001",
+    });
+    expect(
+      mapCongressBill(apiBill({ sponsors: [{ ...sponsor, bioguideId: "" }] }))?.sponsor?.bioguideId,
+    ).toBeUndefined();
+  });
+
+  it("keeps a cosponsor whose ID is malformed, without the link", (): void => {
+    expect(mapBillCosponsor({ fullName: "Sen. Alvarez, Priya R. [I-ME]", bioguideId: "a000001" })?.bioguideId).toBe(
+      "A000001",
+    );
+    expect(mapBillCosponsor({ fullName: "Sen. Alvarez, Priya R. [I-ME]", bioguideId: "?" })).toMatchObject({
+      fullName: "Sen. Alvarez, Priya R. [I-ME]",
+      bioguideId: undefined,
+    });
   });
 });
 

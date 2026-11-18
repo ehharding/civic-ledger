@@ -25,7 +25,7 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 import AppError from "@/app/error";
-import { expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
+import { type DigestedError, expectNothingLeaked, FAKE_API_KEY, LEAKY_DIGEST, leakyError } from "@/test/leaky-error";
 
 let user: UserEvent;
 
@@ -37,21 +37,21 @@ beforeEach((): void => {
 
 describe("AppError", (): void => {
   it("shows a generic message rather than anything about the failure", (): void => {
-    render(<AppError error={leakyError()} reset={(): void => {}} />);
+    render(<AppError error={leakyError()} retry={(): void => {}} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("We Could Not Load This Civic Record.");
     expect(screen.getByText("Something Went Wrong")).toBeInTheDocument();
   });
 
   it("never puts the error, its digest, or an API key into the DOM", (): void => {
-    const { container } = render(<AppError error={leakyError()} reset={(): void => {}} />);
+    const { container } = render(<AppError error={leakyError()} retry={(): void => {}} />);
 
     expectNothingLeaked(container);
   });
 
   it("logs the error instead, so it stays available where only operators can read it", (): void => {
-    const error: Error & { digest?: string } = leakyError();
-    render(<AppError error={error} reset={(): void => {}} />);
+    const error: DigestedError = leakyError();
+    render(<AppError error={error} retry={(): void => {}} />);
 
     expect(console.error).toHaveBeenCalledWith(
       "[civic-ledger] Error boundary caught a render failure",
@@ -59,12 +59,12 @@ describe("AppError", (): void => {
     );
   });
 
-  it("strips the API key from the line it logs, which the raw `console.error` it replaced did not", (): void => {
-    // The reason this boundary logs through `log.ts` at all. `redact.ts` was wired into Sentry's callbacks only, so the
-    // console — a real sink, and on a managed host a third-party one — was the single path out of this process with no
-    // redaction on it. The error this suite throws is the exact shape that made that a leak rather than a tidiness
-    // problem: a URL with the credential still on it.
-    render(<AppError error={leakyError()} reset={(): void => {}} />);
+  it("strips the API key from the line it logs, which a bare `console.error` would not", (): void => {
+    // The reason this boundary logs through `log.ts` at all. Sentry's callbacks redact only what goes to Sentry, and
+    // the console — a real sink, and on a managed host a third-party one — is a separate path out of this process that
+    // only `log.ts` redacts. The error this suite throws is the exact shape that makes skipping it a leak rather than a
+    // tidiness problem: a URL with the credential still on it.
+    render(<AppError error={leakyError()} retry={(): void => {}} />);
 
     const [, attributes] = vi.mocked(console.error).mock.calls[0] as [string, { cause?: string }];
 
@@ -73,29 +73,29 @@ describe("AppError", (): void => {
   });
 
   it("reports the error to Sentry, so a failure nobody saw is still a failure someone hears about", (): void => {
-    const error: Error & { digest?: string } = leakyError();
-    render(<AppError error={error} reset={(): void => {}} />);
+    const error: DigestedError = leakyError();
+    render(<AppError error={error} retry={(): void => {}} />);
 
     expect(captureException).toHaveBeenCalledWith(error);
   });
 
   it("offers a retry, because most failures here are transient upstream ones", async (): Promise<void> => {
-    const reset = vi.fn();
-    render(<AppError error={leakyError()} reset={reset} />);
+    const retry = vi.fn();
+    render(<AppError error={leakyError()} retry={retry} />);
 
     await user.click(screen.getByRole("button", { name: "Try Again" }));
 
-    expect(reset).toHaveBeenCalledTimes(1);
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it("re-logs when a different error arrives, rather than only on first mount", (): void => {
     const first: Error = leakyError();
-    const { rerender } = render(<AppError error={first} reset={(): void => {}} />);
+    const { rerender } = render(<AppError error={first} retry={(): void => {}} />);
     expect(console.error).toHaveBeenCalledTimes(1);
 
     // Same props object identity would legitimately skip the effect; a genuinely new error must not.
     const second: Error = new Error("A different failure");
-    rerender(<AppError error={second} reset={(): void => {}} />);
+    rerender(<AppError error={second} retry={(): void => {}} />);
 
     expect(console.error).toHaveBeenCalledTimes(2);
     expect(console.error).toHaveBeenLastCalledWith(
@@ -103,5 +103,17 @@ describe("AppError", (): void => {
       expect.objectContaining({ cause: "Error: A different failure", digest: "none" }),
     );
     expect(captureException).toHaveBeenLastCalledWith(second);
+  });
+
+  it("still logs and reports a thrown value that is not an error at all", (): void => {
+    // A Client Component can throw anything, and Next forwards it as-is. Reading `.digest` off it unguarded would turn
+    // the boundary itself into the next crash, with nothing left above it to catch that one.
+    render(<AppError error="a bare string" retry={(): void => {}} />);
+
+    expect(console.error).toHaveBeenCalledWith(
+      "[civic-ledger] Error boundary caught a render failure",
+      expect.objectContaining({ cause: "a bare string", digest: "none" }),
+    );
+    expect(captureException).toHaveBeenCalledWith("a bare string");
   });
 });

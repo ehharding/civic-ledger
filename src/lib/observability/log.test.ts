@@ -20,7 +20,7 @@ vi.mock("@sentry/nextjs", () => ({
   },
 }));
 
-import { describeCause, logError, logWarning } from "@/lib/observability/log";
+import { describeCause, errorDigest, logError, logWarning } from "@/lib/observability/log";
 import { FAKE_API_KEY } from "@/test/leaky-error";
 
 beforeEach((): void => {
@@ -102,6 +102,26 @@ describe("describeCause", (): void => {
 
     expect(described.endsWith("…")).toBe(true);
     expect(described.length).toBeLessThan(320);
+  });
+});
+
+describe("errorDigest", (): void => {
+  it("reads the digest Next attaches to a forwarded server error", (): void => {
+    expect(errorDigest(Object.assign(new Error("boom"), { digest: "1234567890" }))).toBe("1234567890");
+  });
+
+  it("answers none for an error with no digest, which is what a client-side throw looks like", (): void => {
+    expect(errorDigest(new Error("boom"))).toBe("none");
+  });
+
+  it("answers none for a thrown value that is not an object, rather than reading a property off it", (): void => {
+    expect(errorDigest("a bare string")).toBe("none");
+    expect(errorDigest(undefined)).toBe("none");
+    expect(errorDigest(null)).toBe("none");
+  });
+
+  it("ignores a digest that is not a string, since it would not match any server line", (): void => {
+    expect(errorDigest({ digest: 42 })).toBe("none");
   });
 });
 

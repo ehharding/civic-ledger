@@ -1,4 +1,4 @@
-import type { ZodType } from "zod";
+import type { core, ZodSafeParseResult, ZodType } from "zod";
 
 import { BILL_TYPE_PATH_SEGMENTS, type BillRouteParams } from "@/lib/congress/bills/model";
 import { type CommitteeChamber, committeeChambers, isCommitteeSystemCode } from "@/lib/congress/committees/model";
@@ -16,8 +16,8 @@ import { logError, logWarning } from "@/lib/observability/log";
 
 /**
  * How long Next caches a Congress.gov response before revalidating, in seconds. One shared constant so the app's
- * "five-minute caching" story (see `docs/architecture.md` and the README's Data Policy) lives in a single place instead
- * of a separately-edited literal per endpoint.
+ * "five-minute caching" story (see `docs/architecture.md` and `docs/data-policy.md`) lives in a single place instead of
+ * a separately-edited literal per endpoint.
  */
 export const REVALIDATE_SECONDS: number = 300;
 
@@ -207,7 +207,7 @@ export async function requestCongressJson<Payload>(
       return { outcome: "failed" };
     }
 
-    const parsed = schema.safeParse(await response.json());
+    const parsed: ZodSafeParseResult<Payload> = schema.safeParse(await response.json());
     if (!parsed.success) {
       // A defect, and the one upstream failure that is: a 200 whose body no longer matches `api-schema.ts` means either
       // Congress.gov changed its contract or this app reads it wrongly. Nothing retries its way out of that, and the
@@ -249,14 +249,28 @@ const MAX_REPORTED_SCHEMA_ISSUES: number = 5;
  * @param issues - The issues from a failed `safeParse`.
  * @returns Up to {@link MAX_REPORTED_SCHEMA_ISSUES} dotted paths, comma-separated, with the root spelled `(root)`.
  */
-function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): string {
+function describeSchemaIssues(issues: readonly core.$ZodIssue[]): string {
   return issues
     .slice(0, MAX_REPORTED_SCHEMA_ISSUES)
-    .map((issue: { path: PropertyKey[] }): string =>
-      issue.path.length === 0 ? "(root)" : issue.path.map(String).join("."),
-    )
+    .map((issue: core.$ZodIssue): string => (issue.path.length === 0 ? "(root)" : issue.path.map(String).join(".")))
     .join(", ");
 }
+
+/**
+ * What {@link fetchAllPages} gathered, beside the publisher's own count of what there was to gather.
+ *
+ * @typeParam Item - One unmapped record.
+ */
+export type PagedList<Item> = {
+  /** Every record that arrived, in page order. */
+  items: Item[];
+  /**
+   * How many records Congress.gov says the list holds — its `pagination.count`, or the first page's length when it
+   * published none. Fewer `items` than this means part of the list didn't arrive: a later page failed, came back empty,
+   * or sat past the page ceiling.
+   */
+  total: number;
+};
 
 /**
  * Fetches every page of a paginated list, across as many requests as it takes.
@@ -270,14 +284,15 @@ function describeSchemaIssues(issues: readonly { path: PropertyKey[] }[]): strin
  * @param itemsOf - Reads the records off a page.
  * @param maxPages - Hard ceiling on pages requested, so a malformed `pagination.count` cannot turn one page render into
  *   an unbounded fetch loop.
- * @returns Every record found, or `null` only when the *first* page fails. A later page failing yields what did arrive:
- *   a list missing its tail is still worth rendering, and the callers would rather show most of a roster than none.
+ * @returns Every record found with the publisher's count beside it, or `null` only when the *first* page fails. A later
+ *   page failing yields what did arrive — a list missing its tail can still be worth rendering — and `total` lets the
+ *   caller say so rather than present it as the whole list.
  */
 export async function fetchAllPages<Page extends { pagination?: CongressApiPagination | undefined }, Item>(
   fetchPage: (offset: number) => Promise<Page | null>,
   itemsOf: (page: Page) => Item[] | undefined,
   maxPages: number,
-): Promise<Item[] | null> {
+): Promise<PagedList<Item> | null> {
   const firstPage: Page | null = await fetchPage(0);
   if (!firstPage) return null;
 
@@ -285,7 +300,7 @@ export async function fetchAllPages<Page extends { pagination?: CongressApiPagin
   const total: number = firstPage.pagination?.count ?? firstItems.length;
   const pageCount: number = Math.min(maxPages, Math.ceil(total / MAX_API_PAGE_SIZE));
 
-  if (pageCount <= 1) return firstItems;
+  if (pageCount <= 1) return { items: firstItems, total };
 
   const laterPages: (Page | null)[] = await Promise.all(
     Array.from(
@@ -294,7 +309,10 @@ export async function fetchAllPages<Page extends { pagination?: CongressApiPagin
     ),
   );
 
-  return [...firstItems, ...laterPages.flatMap((page: Page | null): Item[] => (page ? (itemsOf(page) ?? []) : []))];
+  return {
+    items: [...firstItems, ...laterPages.flatMap((page: Page | null): Item[] => (page ? (itemsOf(page) ?? []) : []))],
+    total,
+  };
 }
 
 // Cache tags, one list tag and one per-record tag set for each record type.

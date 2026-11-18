@@ -15,6 +15,7 @@ import {
   type CongressMember,
   compositionForSeating,
   describeChamberSeats,
+  describeRosterShortfall,
   formatMemberParty,
   formatMemberSeat,
   formatMemberSummary,
@@ -271,6 +272,14 @@ describe("formatSeatShare", (): void => {
 
   it("does not divide by zero on an empty chamber", (): void => {
     expect(formatSeatShare(0, 0)).toBe("0%");
+  });
+});
+
+describe("describeRosterShortfall", (): void => {
+  it("credits each figure to whoever produced it, with separators", (): void => {
+    expect(describeRosterShortfall({ expected: 1041, received: 250 })).toBe(
+      "Congress.gov lists 1,041 members for this Congress, but only 250 arrived, so some seats are missing and the counts here are incomplete.",
+    );
   });
 });
 

@@ -53,21 +53,8 @@ pnpm test          # Unit tests alone, without the coverage pass
 pnpm test:coverage # Unit tests with a V8 coverage report
 ```
 
-`check` runs the coverage pass rather than the bare test run, because the thresholds below are only enforced by the
-command that measures them — and a threshold CI does not run is a comment. The measurement costs about two seconds on
-the current suite, which is a low price for the difference between a stated guarantee and an enforced one. `pnpm test`
-is still there for the inner loop, where the number is not the question.
-
-`test:coverage` reports on every source file rather than only the ones a test happens to import, so a module with no
-test at all shows up as a `0%` row instead of being absent from the summary. It writes a browsable report to
-`coverage/index.html`.
-
-Statements, branches, functions, and lines all sit at **100%**, and `vitest.config.mts` sets all four thresholds to 100
-so a regression fails the build rather than waiting to be noticed in a diff. That number is only meaningful because the
-handful of genuinely unreachable guards — `noUncheckedIndexedAccess` fallbacks over indices a loop bound has already
-proven valid, and handlers guarding against state their own render condition excludes — are excluded at their own lines
-with a `v8 ignore` comment and a stated reason, rather than being hidden inside a slack threshold. Anything reachable
-gets a test instead.
+`pnpm test:coverage` writes a browsable report to `coverage/index.html`. Coverage is held at 100% and enforced by
+`pnpm check`; [CONTRIBUTING](CONTRIBUTING.md#before-opening-a-pull-request) says how, and what may be excluded from it.
 
 To prepare browsers once for local Playwright runs:
 

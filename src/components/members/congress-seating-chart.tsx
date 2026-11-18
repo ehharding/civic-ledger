@@ -24,6 +24,7 @@ import {
   chamberLabels,
   chamberShortLabels,
   describeChamberSeats,
+  describeRosterShortfall,
   formatMemberParty,
   formatMemberSeat,
   formatMemberSummary,
@@ -518,7 +519,9 @@ export function CongressSeatingChart({ composition }: CongressSeatingChartProps)
       <p className={`seating__source seating__source--${composition.source}`}>
         {isPreview
           ? `Illustrative placeholder seats, not a real party breakdown. ${composition.notice ?? ""}`.trim()
-          : "Membership from the Congress.gov member API, refreshed every five minutes. Vacant seats are simply absent."}
+          : `Membership from the Congress.gov member API, refreshed every five minutes. Vacant seats are simply absent.${
+              composition.shortfall ? ` ${describeRosterShortfall(composition.shortfall)}` : ""
+            }`}
       </p>
     </section>
   );

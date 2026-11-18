@@ -165,7 +165,7 @@ export default async function BillPage({ params }: BillPageProps): Promise<JSX.E
 
   refuseDegradedRender(
     [summaries, textVersions, actions, committees, cosponsors, related, amendments].some(
-      (collection: { unavailable: boolean }): boolean => collection.unavailable,
+      (collection: BillSubResource<unknown>): boolean => collection.unavailable,
     ),
     BILL_ROUTE,
   );

@@ -1,4 +1,4 @@
-import { compareText, formatOrdinal, pluralize, toTitleCase } from "@/lib/format";
+import { compareText, formatCount, formatOrdinal, type NamedRecord, pluralize, toTitleCase } from "@/lib/format";
 
 // Parties.
 
@@ -282,7 +282,7 @@ export type MemberSeatFields = {
  * @returns A standard comparator result.
  * @see compareText
  */
-export function compareMembersByName(a: { name: string }, b: { name: string }): number {
+export function compareMembersByName(a: NamedRecord, b: NamedRecord): number {
   return compareText(a.name, b.name);
 }
 
@@ -352,7 +352,7 @@ export function formatMemberSeat(member: MemberSeatFields, chamber: CongressCham
  *   carries no jurisdiction.
  */
 export function formatMemberSummary(
-  member: MemberPartyFields & MemberSeatFields & { name: string },
+  member: MemberPartyFields & MemberSeatFields & NamedRecord,
   chamber: CongressChamber,
 ): string {
   const seat: string = formatMemberSeat(member, chamber);
@@ -493,6 +493,42 @@ export function describeMemberService(profile: MemberProfile): string {
   return endYears.length > 0 ? `Served ${earliest}–${Math.max(...endYears)}` : `Served from ${earliest}`;
 }
 
+/** One of a member's legislation lists, as {@link describeMemberLegislation} reads it. */
+export type MemberLegislationCount = {
+  /** How many bills the page is showing. */
+  shown: number;
+  /** Congress.gov's own count for the whole list, when it published one. */
+  total: number | undefined;
+  /** How many the list was requested at, so a full page with no published count can be read as possibly partial. */
+  limit: number;
+};
+
+/**
+ * The line above one of a member's legislation lists, saying how much of the list the page holds.
+ *
+ * Whether more exist is read from Congress.gov's count when it published one, and from the page being full when it
+ * didn't: a list that came back exactly at the cap with no count beside it may be the whole record or a sliver of it,
+ * and "12 on file" would claim the first.
+ *
+ * @param count - {@link MemberLegislationCount}.
+ * @returns e.g., `"Showing the 12 most recent of 1,204 on file. The complete list lives on the official record."`, or
+ *   `"3 on file."` when the page holds all of it.
+ */
+export function describeMemberLegislation(count: MemberLegislationCount): string {
+  const { shown, total, limit } = count;
+  const shownLabel: string = formatCount(shown);
+
+  if (total !== undefined && total > shown) {
+    return `Showing the ${shownLabel} most recent of ${formatCount(total)} on file. The complete list lives on the official record.`;
+  }
+
+  if (total === undefined && shown >= limit) {
+    return `Showing the ${shownLabel} most recent. Congress.gov didn't say how many more there are; the complete list lives on the official record.`;
+  }
+
+  return `${shownLabel} on file.`;
+}
+
 // Chamber composition, as the seating chart draws it.
 
 /** How many seats one party holds in a chamber. */
@@ -532,7 +568,35 @@ export type CongressComposition = {
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview" (no API key, or a transient upstream failure). */
   notice?: string;
+  /**
+   * Set on a live roster that arrived short of Congress.gov's own count — a later page of the member list failed or
+   * came back empty. The seats that did arrive are real, but the chamber totals and party counts drawn from them are
+   * not the chamber's, so every surface showing them says so.
+   *
+   * @see describeRosterShortfall
+   */
+  shortfall?: RosterShortfall;
 };
+
+/** How far a live member roster fell short of the count Congress.gov published for it. */
+export type RosterShortfall = {
+  /** How many members Congress.gov says the roster holds. */
+  expected: number;
+  /** How many records actually arrived. */
+  received: number;
+};
+
+/**
+ * The sentence a short roster carries wherever it is shown — the chamber diagram's source line and the member
+ * directory's data notice — attributing each figure to whoever produced it.
+ *
+ * @param shortfall - {@link RosterShortfall}.
+ * @returns e.g., `"Congress.gov lists 541 members for this Congress, but only 250 arrived, so some seats are missing
+ *   and the counts here are incomplete."`
+ */
+export function describeRosterShortfall(shortfall: RosterShortfall): string {
+  return `Congress.gov lists ${formatCount(shortfall.expected)} members for this Congress, but only ${formatCount(shortfall.received)} arrived, so some seats are missing and the counts here are incomplete.`;
+}
 
 /**
  * The same composition without portraits — what the seating chart is handed. The chart is a client component that draws

@@ -49,8 +49,8 @@ describe("AboutPage", (): void => {
   });
 
   it("names itself and its canonical path rather than inheriting the site-wide card", (): void => {
-    expect(metadata.title).toBe("About");
+    expect(metadata.title).toBe("Methodology");
     expect(metadata.alternates?.canonical).toBe("/about");
-    expect(metadata.openGraph?.title).toBe(`About — ${SITE_NAME}`);
+    expect(metadata.openGraph?.title).toBe(`Methodology — ${SITE_NAME}`);
   });
 });

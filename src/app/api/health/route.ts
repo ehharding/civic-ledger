@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import type { HealthResponse } from "@/lib/api-contract";
 import { getCongressApiKey } from "@/lib/congress/upstream/http";
 
 /**
@@ -8,22 +9,6 @@ import { getCongressApiKey } from "@/lib/congress/upstream/http";
  * removes this route before building, the same way it removes `/api/bills`.
  */
 export const dynamic = "force-dynamic";
-
-/** The health check's response body. */
-type HealthResponse = {
-  /** Always `"ok"`: a response at all is the liveness signal. */
-  status: "ok";
-  /** Always `"civic-ledger"`. */
-  service: string;
-  /**
-   * `"live"` when a Congress.gov key is configured, `"preview"` (labeled fixtures) otherwise.
-   *
-   * @see getCongressApiKey
-   */
-  records: "live" | "preview";
-  /** When this response was generated, so a cached or stale reply is recognizable as one. */
-  timestamp: string;
-};
 
 /**
  * Minimal liveness check. Makes no upstream call, so the app's health doesn't depend on Congress.gov or spend its rate

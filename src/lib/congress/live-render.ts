@@ -5,8 +5,8 @@ import { getCongressApiKey } from "@/lib/congress/upstream/http";
  *
  * Next keeps serving the last good copy when a revalidation throws, and retries on the next request; a render with no
  * copy yet shows the error boundary, which is a 500 and never cached. Returning the degraded page instead stores it for
- * the route's whole window: a day for a concluded Congress's pages, and an outage-time bill lookup that resolved to
- * nothing was cached as that bill's 404.
+ * the route's whole window: a day for a concluded Congress's pages, and an outage-time bill lookup that resolves to
+ * nothing would be cached as that bill's 404.
  *
  * The message names the route and never the query, per `docs/data-policy.md`.
  */

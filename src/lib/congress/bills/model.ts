@@ -1,4 +1,4 @@
-import { compareIsoDatesDesc, formatOrdinal, pluralize } from "@/lib/format";
+import { compareIsoDatesDesc, formatCount, formatOrdinal, pluralize } from "@/lib/format";
 
 // Stages: the progress cue's vocabulary.
 
@@ -343,12 +343,12 @@ export function describeBillCollection(options: BillCollectionTally): string {
 
   if (published === undefined) {
     if (shown === 0) return "";
-    return `This page shows ${shown} ${pluralize(shown, noun, pluralNoun)} for this bill.`;
+    return `This page shows ${formatCount(shown)} ${pluralize(shown, noun, pluralNoun)} for this bill.`;
   }
 
-  const recorded: string = `Congress.gov records ${published} ${pluralize(published, noun, pluralNoun)} on this bill`;
+  const recorded: string = `Congress.gov records ${formatCount(published)} ${pluralize(published, noun, pluralNoun)} on this bill`;
 
-  return shown === published ? `${recorded}.` : `${recorded}; this page shows ${shown}.`;
+  return shown === published ? `${recorded}.` : `${recorded}; this page shows ${formatCount(shown)}.`;
 }
 
 /**

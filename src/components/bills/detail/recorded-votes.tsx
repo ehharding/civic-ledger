@@ -75,13 +75,20 @@ function RecordedVotes({ votes, unavailable }: RecordedVotesProps): JSX.Element 
 }
 
 /**
+ * Props for {@link RecordedVotesPanel}: the shared section props over the bill's actions, without a published count.
+ * The votes are found in the actions rather than fetched as their own collection, and the published action count says
+ * nothing about how many of those actions are roll calls.
+ */
+type RecordedVotesPanelProps = Omit<BillSectionProps<BillAction>, "published">;
+
+/**
  * The roll calls found in the action history — derived rather than fetched.
  *
- * @param props - {@link BillSectionProps}.
+ * @param props - {@link RecordedVotesPanelProps}.
  * @returns The recorded-votes panel.
  * @see collectRecordedVotes
  */
-export function RecordedVotesPanel({ resource, source }: Omit<BillSectionProps<BillAction>, "published">): JSX.Element {
+export function RecordedVotesPanel({ resource, source }: RecordedVotesPanelProps): JSX.Element {
   return (
     <DetailPanel
       accent

@@ -6,6 +6,7 @@ import {
   type CongressComposition,
   type CongressMember,
   congressChambers,
+  type RosterShortfall,
 } from "@/lib/congress/members/model";
 import {
   type CongressApiMember,
@@ -20,6 +21,7 @@ import {
   getCongressApiKey,
   MAX_API_PAGE_SIZE,
   MEMBER_LIST_CACHE_TAG,
+  type PagedList,
   requestCongressJson,
 } from "@/lib/congress/upstream/http";
 import { mapCongressMember, mapUsable, type SeatedMember } from "@/lib/congress/upstream/mappers";
@@ -84,11 +86,16 @@ async function fetchMemberPage(input: MemberPageRequest): Promise<CongressApiMem
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
  * @param currentOnly - Whether to ask only for sitting members.
- * @returns Every member found, or `null` only when the *first* page fails; a later failure yields what arrived.
+ * @returns Every member found with Congress.gov's count beside it, or `null` only when the *first* page fails; a later
+ *   failure yields what arrived, and the count is what lets the composition say it is short.
  * @see fetchMemberPage for why this varies by Congress.
  * @see fetchAllPages
  */
-function fetchAllMembers(apiKey: string, congress: number, currentOnly: boolean): Promise<CongressApiMember[] | null> {
+function fetchAllMembers(
+  apiKey: string,
+  congress: number,
+  currentOnly: boolean,
+): Promise<PagedList<CongressApiMember> | null> {
   return fetchAllPages(
     (offset: number): Promise<CongressApiMemberListResponse | null> =>
       fetchMemberPage({ apiKey, congress, offset, currentOnly }),
@@ -120,7 +127,8 @@ function buildComposition(members: SeatedMember[]): ChamberComposition[] {
  *
  * @param congress - The Congress whose membership to read. Defaults to the one currently seated, and reading any other
  *   one changes the question asked upstream.
- * @returns The composition, labeled live or preview; a missing key or failed request yields placeholder seats.
+ * @returns The composition, labeled live or preview; a missing key or failed request yields placeholder seats. A live
+ *   roster that arrived short of Congress.gov's own count is still drawn, and carries a `shortfall` saying so.
  * @see fetchMemberPage
  */
 export async function getCongressComposition(congress: number = getCurrentCongress()): Promise<CongressComposition> {
@@ -136,10 +144,10 @@ export async function getCongressComposition(congress: number = getCurrentCongre
     );
   }
 
-  const raw: CongressApiMember[] | null = await fetchAllMembers(apiKey, congress, currentOnly);
-  const chambers: ChamberComposition[] = buildComposition(mapUsable(raw ?? [], mapCongressMember));
+  const list: PagedList<CongressApiMember> | null = await fetchAllMembers(apiKey, congress, currentOnly);
+  const chambers: ChamberComposition[] = buildComposition(mapUsable(list?.items ?? [], mapCongressMember));
 
-  if (chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0)) {
+  if (!list || chambers.some((chamber: ChamberComposition): boolean => chamber.members.length === 0)) {
     return buildPreviewComposition(
       congress,
       retrievedAt,
@@ -147,5 +155,10 @@ export async function getCongressComposition(congress: number = getCurrentCongre
     );
   }
 
-  return { congress, chambers, source: "live", retrievedAt };
+  // Measured on the raw records rather than the mapped seats: a record the mapper drops for having no chamber did
+  // arrive, and calling it missing would blame Congress.gov for a record this app chose not to draw.
+  const shortfall: RosterShortfall | undefined =
+    list.items.length < list.total ? { expected: list.total, received: list.items.length } : undefined;
+
+  return { congress, chambers, source: "live", retrievedAt, ...(shortfall ? { shortfall } : {}) };
 }
