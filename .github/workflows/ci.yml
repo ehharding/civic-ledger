@@ -39,8 +39,9 @@ jobs:
       # Gated at `high` rather than at everything. The bar is what should *stop a merge*, and this project's
       # dependencies are almost entirely build and test tooling: a moderate advisory in a dev-only transitive is worth
       # seeing and is not worth blocking a documentation fix over. `pnpm audit` with no threshold reports the full list
-      # either way — see the `overrides` block in pnpm-workspace.yaml for how a finding is closed. Lower the bar here
-      # the moment a runtime dependency makes it the wrong one.
+      # either way — see the `overrides` block in pnpm-workspace.yaml for how a finding is closed, and `auditConfig`
+      # below it for the rarer finding that has no fixed version to close it with. Lower the bar here the moment a
+      # runtime dependency makes it the wrong one.
       - name: Audit Dependencies
         run: pnpm audit --audit-level high
 

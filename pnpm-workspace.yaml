@@ -31,3 +31,19 @@ minimumReleaseAge: 1440
 # or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. See docs/roadmap.md.
 overrides:
   "@esbuild-kit/core-utils>esbuild": "^0.25.0"
+
+# Advisories `pnpm audit` is told to skip, each by its exact GHSA ID. This is the last resort after an override: it is
+# for a finding with no fixed version to override *to*, and it silences only that one advisory — any other finding
+# against the same package still fails CI.
+#
+# GHSA-fc5q-39xc-vjpf (picomatch <= 4.0.7, ReDoS via repeated extglobs, high): no patched release exists — 4.0.7 is
+# `latest` — so neither an update nor an override can clear it. Exploiting it requires an attacker to supply the *glob
+# pattern*. Here picomatch is reached only through build and test tooling (`@sentry/nextjs`'s bundler plugin via
+# `@rollup/plugin-commonjs`, and `vite`/`vitest` via `tinyglobby`), whose patterns come from this repository's own
+# config; nothing in `src/` matches globs, and nothing at runtime takes a pattern from a request.
+#
+# Remove this the day picomatch ships a fix: delete the entry, run `pnpm update`, and `pnpm audit --audit-level high`
+# should come back clean. If it still reports this advisory after that, the fixed version has not reached the tree yet.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf
