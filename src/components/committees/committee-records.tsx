@@ -4,6 +4,7 @@ import type { JSX } from "react";
 
 import { previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
 import { RecordLink } from "@/components/ui/record-link";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { type CommitteeChamber, type CommitteeProfile, isCommitteeSystemCode } from "@/lib/congress/committees/model";
 import {
   COMMITTEE_RECORDS_PARAMS,
@@ -489,12 +490,11 @@ export function CommitteeRecordsSection({ profile, result }: CommitteeRecordsSec
 
   return (
     <section className="committee-records" aria-labelledby="committee-records-heading">
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">In the Record</p>
-          <h2 id="committee-records-heading">What Has Come Through Here</h2>
-        </div>
-      </div>
+      <SectionHeading
+        heading="What Has Come Through Here"
+        headingId="committee-records-heading"
+        kicker="In the Record"
+      />
 
       <p className="muted-copy">
         Counted across this committee's whole existence, not the current Congress alone. Choose a collection to read the

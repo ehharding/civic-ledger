@@ -9,6 +9,7 @@ import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { OutboundLink } from "@/components/ui/outbound-link";
 import { RecordLink } from "@/components/ui/record-link";
+import { SectionHeading } from "@/components/ui/section-heading";
 import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import {
   CONGRESS_GOV_COMMITTEES,
@@ -173,12 +174,7 @@ export function CommitteeDetail({ profile, source, notice, retrievedAt, records 
       <CommitteeRecordsSection profile={profile} result={records} />
 
       <section className="committee-subcommittees" aria-labelledby="committee-subcommittees-heading">
-        <div className="section-heading">
-          <div>
-            <p className="section-kicker">One Level Down</p>
-            <h2 id="committee-subcommittees-heading">Subcommittees</h2>
-          </div>
-        </div>
+        <SectionHeading heading="Subcommittees" headingId="committee-subcommittees-heading" kicker="One Level Down" />
 
         {profile.subcommittees.length > 0 ? (
           <ul className="committee-subcommittee-list">

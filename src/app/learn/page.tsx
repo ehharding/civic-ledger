@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { SiteShell } from "@/components/layout/site-shell";
 import { LessonIndex } from "@/components/learn/lesson-index";
 import { CalloutCard } from "@/components/ui/callout-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { formatSpelledCount } from "@/lib/format";
 import { type GlossaryTerm, glossary, glossaryEntryId } from "@/lib/glossary";
 import { lessons } from "@/lib/lessons";
@@ -39,23 +40,24 @@ export default function LearnPage(): JSX.Element {
         description="Short, source-conscious explanations that turn legislative jargon into plain English."
       />
 
-      <section className="section-heading" aria-labelledby="lessons-heading">
-        <div>
-          <p className="section-kicker">Lessons</p>
-          {/* The count is derived from the registry rather than typed, so a module added to `lessons` cannot leave this
-              heading confidently wrong about how many there are. See formatSpelledCount. */}
-          <h2 id="lessons-heading">{formatSpelledCount(lessons.length)} Walkthroughs, Each Citing Its Sources.</h2>
-        </div>
-      </section>
+      {/* The count is derived from the registry rather than typed, so a module added to `lessons` cannot leave this
+          heading confidently wrong about how many there are. See formatSpelledCount. */}
+      <SectionHeading
+        as="section"
+        heading={`${formatSpelledCount(lessons.length)} Walkthroughs, Each Citing Its Sources.`}
+        headingId="lessons-heading"
+        kicker="Lessons"
+      />
 
       <LessonIndex />
 
-      <section className="section-heading learn-glossary-heading" aria-labelledby="glossary-heading">
-        <div>
-          <p className="section-kicker">Glossary</p>
-          <h2 id="glossary-heading">The Vocabulary, Term by Term.</h2>
-        </div>
-      </section>
+      <SectionHeading
+        as="section"
+        className="learn-glossary-heading"
+        heading="The Vocabulary, Term by Term."
+        headingId="glossary-heading"
+        kicker="Glossary"
+      />
 
       <div className="glossary-grid">
         {glossary.map(

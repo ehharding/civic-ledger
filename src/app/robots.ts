@@ -30,10 +30,9 @@ export type RobotsPathRules = {
  * Keeps crawlers off bill pages from a concluded Congress while leaving the sitting Congress's open.
  *
  * Those pages are the site's long tail, about ten thousand per Congress back to the 93rd, and a crawler walking them
- * pays a cold render, an ISR write that is almost never read back, and up to eight Congress.gov requests per page. One
- * such walk through of the 100th Congress used up the API key's hourly quota, and every page on the site fell back to
- * preview data. A concluded Congress's bills stay reachable to readers, and its directory stays crawlable; only the
- * individual records are withheld from crawlers.
+ * pays a cold render, an ISR write that is almost never read back, and up to eight Congress.gov requests per
+ * page — enough to spend the API key's hourly quota and drop every page to preview data. A concluded Congress's bills
+ * stay reachable to readers, and its directory stays crawlable; only the individual records are withheld from crawlers.
  *
  * Robots rules resolve by the longest matching path, so an allowed Congress's prefix outranks the shorter wildcard
  * rule. The next Congress is allowed too, because this file is built once per deploy, and a new Congress convenes every

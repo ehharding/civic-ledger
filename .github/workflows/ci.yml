@@ -8,9 +8,8 @@ on:
 permissions:
   contents: read
 
-# One in-flight run per branch or pull request. Pushing a fixup while CI is still chewing on the previous commit should
-# replace that run, not queue behind it — the older commit's result is about to be irrelevant either way. `main` is
-# excluded from cancellation so every commit that lands keeps a result of its own.
+# One in-flight run per branch or pull request: a new push replaces the older run. `main` is excluded so every commit
+# that lands keeps a result of its own.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -24,36 +23,21 @@ jobs:
       - run: pnpm check
       - run: pnpm build
 
-      # A route that stops being static still builds clean — it just renders on every visit, which is metered server
-      # work on Vercel and what got this project's team paused once already. This reads the build's own manifests and
-      # fails on any per-request route outside `/api/*` and the `/query/*` twins.
-      # See scripts/check-route-rendering.mts.
+      # A route that stops being static still builds clean; it just renders on every visit, which is metered server
+      # work. Fails on any per-request route outside `/api/*` and `/query/*`. See scripts/check-route-rendering.mts.
       - name: Check Route Rendering
         run: pnpm check:routes
 
-      # Dependabot opens a pull request per outdated package; it does not answer "is anything installed right now
-      # known-vulnerable". Those are different questions, and only the second one has an answer that can regress
-      # between dependency bumps — a transitive package can have an advisory published against a version this lockfile
-      # already pins, with no update to prompt a bot. This asks it on every run.
-      #
-      # Gated at `high` rather than at everything. The bar is what should *stop a merge*, and this project's
-      # dependencies are almost entirely build and test tooling: a moderate advisory in a dev-only transitive is worth
-      # seeing and is not worth blocking a documentation fix over. `pnpm audit` with no threshold reports the full list
-      # either way — see the `overrides` block in pnpm-workspace.yaml for how a finding is closed, and `auditConfig`
-      # below it for the rarer finding that has no fixed version to close it with. Lower the bar here the moment a
-      # runtime dependency makes it the wrong one.
+      # Dependabot proposes updates; it does not report an advisory published against a version the lockfile already
+      # pins. Gated at `high` because the dependencies are almost all build and test tooling — lower it if a runtime
+      # dependency makes that the wrong bar. How a finding is closed: `overrides` and `auditConfig` in
+      # pnpm-workspace.yaml.
       - name: Audit Dependencies
         run: pnpm audit --audit-level high
 
-  # The static export is the one build a change can break while passing everything above: `pnpm build` is the *server*
-  # build, so a new route handler or a fresh `request.url` read compiles, type-checks, and tests clean and then fails
-  # only under `output: "export"`. deploy-gh-pages.yml runs only on pushes to `main`, after the change has landed; this
-  # job surfaces the failure on the pull request instead, using the same composite action the deploy workflow builds
-  # with so the two cannot diverge.
-  #
-  # The base path and site URL are the values the real demo is published under, so `basePath`-sensitive output — the
-  # header's plain `<form action>`, the sitemap, robots.txt — is exercised the way it actually ships rather than at a
-  # bare root that hides prefix bugs.
+  # The one build a change can break while passing everything above, since `pnpm build` is the server build. Uses the
+  # deploy workflow's own composite action and the demo's real base path and URL, so the pull request sees the failure
+  # (and any prefix bug in the header form, sitemap, or robots.txt) before `main` does.
   static-export:
     runs-on: ubuntu-latest
     steps:
@@ -73,10 +57,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
 
-      # `playwright.config.ts` sets `trace: "on-first-retry"` and the HTML reporter, both of which exist to make a
-      # failure diagnosable — and both of which were being written into a runner that then evaporated. A red e2e job is
-      # exactly when that output is worth having, so it is kept only then: a passing run's report says nothing a green
-      # check does not already say, and uploading it every time would be paying storage for that silence.
+      # The trace and HTML report exist to diagnose a failure, so they are kept only when there is one.
       - name: Upload Playwright Report
         if: failure()
         uses: actions/upload-artifact@v7

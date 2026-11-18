@@ -1,32 +1,40 @@
 import type { APIRequestContext, APIResponse } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
+import { FIXTURE_CONGRESS_BILLS, PAGE_ROUTES, type PageRoute } from "./routes";
+
 /**
  * Compiles and primes every route the suite touches, once, before any spec runs. The suite runs against `pnpm dev`, so
  * without this, parallel specs race cold Turbopack compiles into navigation timeouts. With a `CONGRESS_API_KEY` set it
  * also warms the upstream cache. Sequential on purpose: concurrent compiles are what's being avoided.
  */
 
-/** Every route with a shape of its own, in the order a reader meets them. Kept to route *shapes*, not to URLs. */
+/** Every page the specs sweep, plus the fixture Congress's directory and the two API routes the specs call. */
 const ROUTES: readonly string[] = [
-  "/",
-  "/bills",
-  "/members",
-  "/committees",
-  "/learn",
-  "/learn/how-a-bill-becomes-law",
-  "/about",
+  ...PAGE_ROUTES.map((route: PageRoute): string => route.path),
+  FIXTURE_CONGRESS_BILLS,
   "/api/bills?offset=0",
   "/api/bills/search?q=broadband",
 ];
+
+/** A member page's href in served HTML. The nav's bare `/members` carries no ID, so it never matches. */
+const MEMBER_HREF: RegExp = /href="(\/members\/[A-Za-z0-9-]+)"/;
+
+/** A directory to warm, and the pattern its first record link matches. */
+type RecordRoute = {
+  /** The directory's path. */
+  directory: string;
+  /** Captures the first record href in the directory's HTML. */
+  href: RegExp;
+};
 
 /**
  * The three record routes, found by matching the first record href in each directory's served HTML. A directory with no
  * match is left unwarmed; the real specs report an empty grid.
  */
-const RECORD_ROUTES: readonly { directory: string; href: RegExp }[] = [
+const RECORD_ROUTES: readonly RecordRoute[] = [
   { directory: "/bills", href: /href="(\/bills\/\d+\/[a-z]+\/\d+)"/ },
-  { directory: "/members", href: /href="(\/members\/[A-Za-z0-9-]+)"/ },
+  { directory: "/members", href: MEMBER_HREF },
   { directory: "/committees", href: /href="(\/committees\/(?:house|senate|joint)\/[a-z0-9-]+)"/ },
 ];
 
@@ -59,11 +67,8 @@ test("every route is compiled and its upstream reads are cached", async ({ reque
     if (match?.[1]) records.push(await warm(request, match[1]));
   }
 
-  // One more hop, for the spec that follows the first bill's sponsor. Warming `/members` above compiled the member
-  // route, but its upstream reads are per person: the sponsor is almost never the directory's first member, so their
-  // page would otherwise be the one live Congress.gov round trip left in the suite — and a slow one outran the default
-  // assertion timeout locally while CI, with no key, never saw it. The bill's first member link is its sponsor line;
-  // the nav's `/members` has no ID and cannot match.
-  const sponsor: RegExpMatchArray | null = (records[0] ?? "").match(/href="(\/members\/[A-Za-z0-9-]+)"/);
+  // One more hop, for the spec that follows the first bill's sponsor: member pages' upstream reads are per person, and
+  // the sponsor is rarely the directory's first member. A bill page's first member link is its sponsor line.
+  const sponsor: RegExpMatchArray | null = (records[0] ?? "").match(MEMBER_HREF);
   if (sponsor?.[1]) await warm(request, sponsor[1]);
 });

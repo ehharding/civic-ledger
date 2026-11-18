@@ -9,6 +9,7 @@ import { CongressSeatingChart } from "@/components/members/congress-seating-char
 import { CalloutCard } from "@/components/ui/callout-card";
 import { DataSourceNotice } from "@/components/ui/data-source-notice";
 import { RecordLink } from "@/components/ui/record-link";
+import { SectionHeading } from "@/components/ui/section-heading";
 import {
   billIdentityKey,
   type CongressSnapshot,
@@ -100,15 +101,16 @@ export function HomePage({ composition, snapshot }: HomePageProps): JSX.Element 
 
       <CongressSeatingChart composition={compositionForSeating(composition)} />
 
-      <section className="section-heading" aria-labelledby="activity-heading">
-        <div>
-          <p className="section-kicker">Latest Activity</p>
-          <h2 id="activity-heading">Start With What Is Moving.</h2>
-        </div>
+      <SectionHeading
+        as="section"
+        heading="Start With What Is Moving."
+        headingId="activity-heading"
+        kicker="Latest Activity"
+      >
         <Link href="/bills" className="text-link">
           Browse All Records <ArrowRight aria-hidden="true" size={16} />
         </Link>
-      </section>
+      </SectionHeading>
 
       <section className="activity-grid" aria-label="Recent bill activity">
         {byActivity.slice(1, 4).map(

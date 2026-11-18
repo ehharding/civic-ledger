@@ -4,25 +4,19 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    # The same one-day distance `minimumReleaseAge` in pnpm-workspace.yaml enforces for a person running `pnpm add`.
-    # Without it the two disagree: Dependabot proposes a release minutes after it ships, and the policy that exists to
-    # keep a compromised-then-yanked publish out of the lockfile is answered by a bot that never asked it.
+    # The same one-day distance `minimumReleaseAge` in pnpm-workspace.yaml enforces for `pnpm add`.
     cooldown:
       default-days: 1
     groups:
       development-dependencies:
         dependency-type: development
     ignore:
-      # `@types/node`'s major tracks the Node major it describes: 24.x is the type surface of Node 24, 26.x of Node 26.
-      # This project runs Node 26, so a major bump here would declare APIs the runtime does not have — and quietly: the
-      # code compiles, `pnpm check` is green, and the call is missing when it runs. Minors and patches are still taken.
-      # Raise this the same day `.nvmrc` and `engines` move, as one change; the policy is in CONTRIBUTING.md.
+      # `@types/node`'s major is the Node major it describes, so it moves with `.nvmrc` and `engines`, not on its own.
+      # See CONTRIBUTING.md.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
-    # `directory: /` scans `.github/workflows` only. `pnpm/action-setup` and `actions/setup-node` are referenced from
-    # the composite action in `.github/actions/setup`, which every job calls — so without the second entry the two
-    # actions every run depends on would be the two Dependabot never looks at.
+    # `/` scans `.github/workflows` only; the composite actions reference `pnpm/action-setup` and `actions/setup-node`.
     directories:
       - /
       - /.github/actions/*
@@ -30,8 +24,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 1
-    # One pull request per week for the whole set, not one per action. These move together often (a runtime bump across
-    # `actions/*`), and each is a one-line change reviewed the same way.
+    # One pull request per week for the whole set: they often move together, and each is a one-line change.
     groups:
       github-actions:
         patterns: ["*"]

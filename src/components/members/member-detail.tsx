@@ -10,6 +10,7 @@ import { DetailBackLink } from "@/components/ui/detail-back-link";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { EmptySectionNote } from "@/components/ui/empty-section-note";
 import { OutboundLink } from "@/components/ui/outbound-link";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { billIdentityKey, type CongressSnapshot, type LegislativeBill } from "@/lib/congress/bills/model";
 import {
   bioguideUrl,
@@ -92,12 +93,7 @@ function LegislationSection({
 }: LegislationSectionProps): JSX.Element {
   return (
     <section className="member-legislation" aria-labelledby={headingId}>
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">{kicker}</p>
-          <h2 id={headingId}>{heading}</h2>
-        </div>
-      </div>
+      <SectionHeading heading={heading} headingId={headingId} kicker={kicker} />
 
       {bills.length > 0 ? (
         <>

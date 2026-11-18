@@ -1,7 +1,5 @@
-# `@sentry/cli`'s install script downloads the platform binary the Sentry bundler plugin shells out to. Without it the
-# build still succeeds and events still arrive — only the source-map upload is lost, which is the difference between a
-# stack trace naming `bill-detail.tsx:42` and one naming `page-4f2a9c.js:1:28471`. That upload is most of what an error
-# tracker is *for* on a minified bundle, so the script is allowed. It only ever runs when `SENTRY_AUTH_TOKEN` is set.
+# `@sentry/cli`'s install script downloads the binary the source-map upload shells out to; without it, stack traces name
+# minified chunks. The upload only runs when `SENTRY_AUTH_TOKEN` is set.
 allowBuilds:
   "@sentry/cli": true
   esbuild: true
@@ -9,23 +7,17 @@ allowBuilds:
 
 # Refuse to resolve any version published less than a day ago (the unit is minutes).
 #
-# This is aimed at one specific failure mode: an npm account is compromised, a malicious patch release goes out, and it
-# is yanked within hours once someone notices. A weekly Dependabot run that happens to land inside that window is
-# exactly how such a release reaches a lockfile. A day of distance costs nothing here — nothing in this project needs a
-# dependency the hour it ships — and removes the whole window.
-#
-# CI is unaffected: `pnpm install --frozen-lockfile` installs what the lockfile already pins and resolves nothing.
+# A compromised publish is usually yanked within hours; a day of distance keeps it out of the lockfile at no cost. CI is
+# unaffected, since `--frozen-lockfile` resolves nothing.
 minimumReleaseAge: 1440
 
 # Pins one transitive dependency past a published advisory. Kept narrow on purpose: an override is a claim that this
 # project knows better than a package's own range, so each one names the single edge it rewrites and says why.
 #
-# `@esbuild-kit/core-utils` asks for `esbuild@0.18.20`, which is inside GHSA-67mh-4wv8-2f99 — a development-server flaw
-# that lets any website a developer visits issue requests to their local esbuild server and read the responses. It
-# reaches this project only through `drizzle-kit`, which still carries the deprecated `@esbuild-kit/*` pair alongside
-# the `tsx` that replaced them, and it was the sole finding of `pnpm audit`. Dev-only and low-consequence here, and
-# still worth closing: it is the difference between an audit that reports nothing and one that reports one line
-# everybody learns to scroll past. `pnpm db:generate` is verified against this override.
+# `@esbuild-kit/core-utils` asks for `esbuild@0.18.20`, inside GHSA-67mh-4wv8-2f99 (any website a developer visits can
+# query their local esbuild server). It arrives only through `drizzle-kit`'s deprecated `@esbuild-kit/*` dependency.
+# Dev-only, and closed anyway so the audit stays empty rather than one line everybody scrolls past. `pnpm db:generate`
+# works with this override.
 #
 # Remove this the day `drizzle-kit` drops `@esbuild-kit/*` — or the day the deferred persistence layer is either built
 # or abandoned, since drizzle-kit is a dev tool for a feature that has no code calling it yet. See docs/roadmap.md.
@@ -36,11 +28,9 @@ overrides:
 # for a finding with no fixed version to override *to*, and it silences only that one advisory — any other finding
 # against the same package still fails CI.
 #
-# GHSA-fc5q-39xc-vjpf (picomatch <= 4.0.7, ReDoS via repeated extglobs, high): no patched release exists — 4.0.7 is
-# `latest` — so neither an update nor an override can clear it. Exploiting it requires an attacker to supply the *glob
-# pattern*. Here picomatch is reached only through build and test tooling (`@sentry/nextjs`'s bundler plugin via
-# `@rollup/plugin-commonjs`, and `vite`/`vitest` via `tinyglobby`), whose patterns come from this repository's own
-# config; nothing in `src/` matches globs, and nothing at runtime takes a pattern from a request.
+# GHSA-fc5q-39xc-vjpf (picomatch <= 4.0.7, ReDoS via repeated extglobs, high): no patched release exists. Exploiting it
+# requires an attacker-supplied glob pattern, and picomatch is reached only through build and test tooling whose
+# patterns come from this repository's own config; nothing at runtime matches globs.
 #
 # Remove this the day picomatch ships a fix: delete the entry, run `pnpm update`, and `pnpm audit --audit-level high`
 # should come back clean. If it still reports this advisory after that, the fixed version has not reached the tree yet.

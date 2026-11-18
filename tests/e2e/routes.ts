@@ -3,14 +3,22 @@ import type { PlaywrightTestArgs, PlaywrightTestOptions } from "@playwright/test
 /** The per-test fixtures a spec destructures (`page`, `request`, …). */
 export type TestFixtures = PlaywrightTestArgs & PlaywrightTestOptions;
 
+/** One page route the suite sweeps. */
+export type PageRoute = {
+  /** The URL a reader meets it by. */
+  path: string;
+  /** How a test title names it. */
+  name: string;
+};
+
 /**
  * Every page route with a shape of its own, at the URLs a reader actually meets them by — shared by the specs that
- * sweep each one, so the accessibility sweep and the layout checks cannot quietly come to cover different pages.
+ * sweep each one and by the warmup that compiles them, so none of the three can quietly cover different pages.
  *
  * The three record pages are absent because they have no fixed URL; each spec reaches them by following the first link
  * off their directory.
  */
-export const PAGE_ROUTES: readonly { path: string; name: string }[] = [
+export const PAGE_ROUTES: readonly PageRoute[] = [
   { path: "/", name: "home" },
   { path: "/bills", name: "bill directory" },
   { path: "/members", name: "member directory" },
