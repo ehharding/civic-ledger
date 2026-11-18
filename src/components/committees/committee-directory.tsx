@@ -37,7 +37,6 @@ import {
   sortCommittees,
 } from "@/lib/congress/committees/filter";
 import {
-  type CommitteeChamber,
   type CommitteeSummary,
   type CommitteeType,
   committeeChamberShortLabels,
@@ -133,7 +132,7 @@ export function CommitteeDirectory({
 
         <SegmentedFilter
           labelFor={(option: CommitteeChamberFilter): string =>
-            option === ANY_FACET ? "All Chambers" : committeeChamberShortLabels[option as CommitteeChamber]
+            option === ANY_FACET ? "All Chambers" : committeeChamberShortLabels[option]
           }
           legend="Filter by chamber"
           onSelect={(chamber: CommitteeChamberFilter): void => update({ chamber })}

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/directory-controls";
 import { type BillSearchState, useBillSearch } from "@/hooks/use-bill-search";
 import { useDirectoryUrlSync } from "@/hooks/use-directory-url-sync";
-import { type BillPageResponse, billPageRequestUrl } from "@/lib/api-contract";
+import { type BillPageResponse, billPageRequestUrl, readApiResponse } from "@/lib/api-contract";
 import {
   billIdentityKey,
   billStageLabels,
@@ -97,9 +97,7 @@ export function BillDirectory({
 
     try {
       const response: Response = await fetch(billPageRequestUrl(allBills.length, congress));
-      if (!response.ok) throw new Error(`Request failed with ${response.status}`);
-
-      const payload = (await response.json()) as BillPageResponse;
+      const payload: BillPageResponse = await readApiResponse<BillPageResponse>(response);
 
       if (payload.bills.length === 0) {
         setHasMore(false);

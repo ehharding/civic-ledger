@@ -6,7 +6,7 @@ import type { CongressSnapshot, LegislativeBill } from "@/lib/congress/bills/mod
  *
  * Isomorphic: every type resolves through pure model code, so client components can import it without reaching the
  * server adapter, and without `api-query.ts`'s zod dependency. Response bodies aren't validated at runtime — they're
- * same-origin, and both callers already degrade on failure.
+ * same-origin, and both callers already degrade on failure. {@link readApiResponse} is where that trust is placed.
  */
 
 /**
@@ -98,4 +98,22 @@ export function billPageRequestUrl(offset: number, congress?: number): string {
  */
 export function billSearchRequestUrl(query: string): string {
   return `/api/bills/search?${new URLSearchParams({ [BILL_API_PARAMS.query]: query }).toString()}`;
+}
+
+/**
+ * Reads the body of a response from one of this app's own routes, as the type its handler declared above.
+ *
+ * The one place a body is trusted to match its declared type rather than parsed into it (see this module's header for
+ * why that is safe here), so the cast is written once instead of at every `fetch`.
+ *
+ * @typeParam Body - The route's declared response type, e.g., {@link BillPageResponse}.
+ * @param response - The response to read.
+ * @returns The parsed body.
+ * @throws When the response is not a 2xx, or its body is not JSON — both of which a caller treats as the request
+ *   failing.
+ */
+export async function readApiResponse<Body>(response: Response): Promise<Body> {
+  if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+
+  return (await response.json()) as Body;
 }

@@ -43,12 +43,20 @@ export const QUERY_ROUTES: readonly QueryRoute[] = [
   { source: "/committees/:chamber/:systemCode", keys: ["records", "page"] },
 ];
 
+/** One condition on a rewrite rule: the request must carry this query param, whatever its value. */
+export type QueryParamCondition = {
+  /** Which part of the request to test. Always the query string here. */
+  type: "query";
+  /** The param's name. */
+  key: string;
+};
+
 /** The shape of one `next.config.ts` rewrite rule, as far as this module builds it. */
 export type QueryRewrite = {
   /** The path pattern to match. */
   source: string;
   /** Query params whose presence triggers the rewrite. */
-  has: { type: "query"; key: string }[];
+  has: QueryParamCondition[];
   /** The `/query` twin to rewrite to. */
   destination: string;
 };

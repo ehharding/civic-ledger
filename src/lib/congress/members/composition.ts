@@ -81,7 +81,7 @@ async function fetchMemberPage(input: MemberPageRequest): Promise<CongressApiMem
 }
 
 /**
- * Fetches every currently-seated member of a Congress, across as many pages as it takes.
+ * Fetches a Congress's whole member roster, across as many pages as it takes.
  *
  * @param apiKey - The server-only Congress.gov key.
  * @param congress - The Congress whose roster to read.
@@ -136,13 +136,8 @@ export async function getCongressComposition(congress: number = getCurrentCongre
   const retrievedAt: string = new Date().toISOString();
   const currentOnly: boolean = congress >= getCurrentCongress();
 
-  if (!apiKey) {
-    return buildPreviewComposition(
-      congress,
-      retrievedAt,
-      "Placeholder seats are shown until a server-only Congress.gov API key is configured.",
-    );
-  }
+  // The missing-key notice is `buildPreviewComposition`'s default, so it is spelled once, beside the placeholders.
+  if (!apiKey) return buildPreviewComposition(congress, retrievedAt);
 
   const list: PagedList<CongressApiMember> | null = await fetchAllMembers(apiKey, congress, currentOnly);
   const chambers: ChamberComposition[] = buildComposition(mapUsable(list?.items ?? [], mapCongressMember));

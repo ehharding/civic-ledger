@@ -42,7 +42,6 @@ import {
   sortMembers,
 } from "@/lib/congress/members/filter";
 import {
-  type CongressChamber,
   chamberShortLabels,
   congressChambers,
   type MemberDirectoryEntry,
@@ -182,7 +181,7 @@ export function MemberDirectory({
 
         <SegmentedFilter
           labelFor={(option: ChamberFilter): string =>
-            option === ANY_FACET ? "Both Chambers" : chamberShortLabels[option as CongressChamber]
+            option === ANY_FACET ? "Both Chambers" : chamberShortLabels[option]
           }
           legend="Filter by chamber"
           onSelect={(chamber: ChamberFilter): void => update({ chamber })}

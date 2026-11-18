@@ -25,11 +25,19 @@ export function captureRouterTransitionStart(): undefined {
   return undefined;
 }
 
+/** The levels of `Sentry.logger` that `log.ts` writes to, each a no-op here. */
+type StubLogger = {
+  /** Stands in for `Sentry.logger.warn`. */
+  warn: () => undefined;
+  /** Stands in for `Sentry.logger.error`. */
+  error: () => undefined;
+};
+
 /**
  * Stands in for `Sentry.logger`, which `log.ts` indexes by level. A missing key wouldn't fail the build (`log.ts`
  * swallows the error), so `sentry-stub.test.ts` pins the key set.
  */
-export const logger: { warn: () => undefined; error: () => undefined } = {
+export const logger: StubLogger = {
   warn: (): undefined => undefined,
   error: (): undefined => undefined,
 };

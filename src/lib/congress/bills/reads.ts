@@ -8,6 +8,7 @@ import {
   type BillTextVersion,
   billIdentityKey,
   type CongressSnapshot,
+  compareBillsByActivity,
   DEFAULT_PAGE_SIZE,
   type LegislativeBill,
 } from "@/lib/congress/bills/model";
@@ -50,7 +51,7 @@ import {
   mapCongressTextVersion,
   mapUsable,
 } from "@/lib/congress/upstream/mappers";
-import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
+import { formatOrdinal } from "@/lib/format";
 
 /**
  * Everything this app reads about *bills*: list snapshots, pagination, single-bill lookup, sub-resources, and
@@ -64,7 +65,10 @@ import { compareIsoDatesDesc, formatOrdinal } from "@/lib/format";
  */
 
 /**
- * The bill list endpoint's "most recently touched first" order.
+ * The bill list endpoint's "most recently touched first" order, which every bill-list request asks for. Required rather
+ * than left to the default, because `/v3/bill/{congress}` otherwise returns *ascending* latest-action order — a
+ * Congress's least active bills — and every surface in this app leads with what is current. It is also the only sort
+ * that endpoint honors, so there is nothing for a caller to choose.
  *
  * **The separator is a space.** The docs' `updateDate+desc` is the URL-encoded form; passing it as a value sends `%2B`,
  * which the API silently ignores, returning an unsorted page. Spelled once here and pinned by the `sort` assertions in
@@ -82,6 +86,9 @@ const SEARCH_PAGE_LIMIT: number = MAX_API_PAGE_SIZE;
 
 /** Max bills returned from a single search, across every Congress swept together. */
 const MAX_SEARCH_RESULTS: number = 60;
+
+/** The notice on a render that fell back to preview data because Congress.gov didn't answer. */
+const LIVE_UNAVAILABLE_NOTICE: string = "Live records are temporarily unavailable, so preview records are shown.";
 
 /**
  * Locates a matching fixture in `previewBills` by natural bill identifier.
@@ -114,17 +121,11 @@ type BillPageRequest = {
   limit: number;
   /** The Congress to read. */
   congress: number;
-  /**
-   * The Congress.gov sort to request. Required because `/v3/bill/{congress}` defaults to *ascending* latest-action
-   * order — a Congress's least active bills — and every surface in this app leads with what is current. Callers pass
-   * {@link RECENTLY_UPDATED_FIRST}.
-   */
-  sort: string;
 };
 
 /**
- * Fetches one page of the bill list for a specific Congress, filtered by path. The unfiltered `/v3/bill` list mixes
- * bills from every Congress.
+ * Fetches one page of the bill list for a specific Congress, filtered by path and most recently updated first. The
+ * unfiltered `/v3/bill` list mixes bills from every Congress.
  *
  * @param input - {@link BillPageRequest}.
  * @returns The mapped bills, or `null` on any failure — so callers can choose their own fallback (preview data for a
@@ -134,7 +135,7 @@ async function fetchBillsPage(input: BillPageRequest): Promise<LegislativeBill[]
   const url: URL = buildCongressUrl(`/bill/${input.congress}`, input.apiKey, {
     limit: String(input.limit),
     offset: String(input.offset),
-    sort: input.sort,
+    sort: RECENTLY_UPDATED_FIRST,
   });
 
   const result: CongressRequestResult<CongressApiListResponse> = await requestCongressJson(
@@ -183,7 +184,6 @@ export async function getCongressSnapshotForCongress(congress: number): Promise<
     offset: 0,
     limit: DEFAULT_PAGE_SIZE,
     congress,
-    sort: RECENTLY_UPDATED_FIRST,
   });
 
   if (!bills || bills.length === 0) {
@@ -191,7 +191,7 @@ export async function getCongressSnapshotForCongress(congress: number): Promise<
       bills: previewForCongress,
       source: "preview",
       retrievedAt,
-      notice: "Live records are temporarily unavailable, so preview records are shown.",
+      notice: LIVE_UNAVAILABLE_NOTICE,
     };
   }
 
@@ -229,7 +229,6 @@ export async function getMoreBills(
     offset,
     limit: DEFAULT_PAGE_SIZE,
     congress,
-    sort: RECENTLY_UPDATED_FIRST,
   });
 
   return bills ?? [];
@@ -311,7 +310,7 @@ async function lookUpBill(input: BillRouteParams): Promise<BillLookupResult> {
   return {
     bill: findPreviewBill(input),
     source: "preview",
-    notice: "Live records are temporarily unavailable, so preview records are shown.",
+    notice: LIVE_UNAVAILABLE_NOTICE,
     retrievedAt,
     unavailable: true,
   };
@@ -394,28 +393,6 @@ export async function getBillTextVersions(input: BillRouteParams): Promise<BillS
 }
 
 /**
- * Sorts search matches for display: an exact citation hit (`pinnedKey`) first, then by latest action, newest first.
- *
- * @param a - One bill to compare.
- * @param b - The other bill to compare.
- * @param pinnedKey - The `billIdentityKey` of the citation hit to pin first, if the query named one.
- * @returns A standard comparator result.
- */
-function compareSearchMatches(a: LegislativeBill, b: LegislativeBill, pinnedKey: string | undefined): number {
-  if (pinnedKey) {
-    const aPinned: boolean = billIdentityKey(a) === pinnedKey;
-    const bPinned: boolean = billIdentityKey(b) === pinnedKey;
-    // The `-1` arm never runs: the caller prepends the pinned bill, so V8's sort never presents it as `a`. Kept anyway
-    // so the comparator is correct on its own terms rather than only in the one order it is called in today.
-    /* v8 ignore start */
-    if (aPinned !== bPinned) return aPinned ? -1 : 1;
-    /* v8 ignore stop */
-  }
-
-  return compareIsoDatesDesc(a.latestAction.date ?? "", b.latestAction.date ?? "");
-}
-
-/**
  * The search a reader gets without Congress.gov: the preview fixtures, filtered. Reports no Congress as searched, since
  * none was.
  *
@@ -469,7 +446,7 @@ export async function getSearchResults(query: string): Promise<BillSearchRespons
     Promise.all(
       congresses.map(
         (congress: number): Promise<LegislativeBill[] | null> =>
-          fetchBillsPage({ apiKey, offset: 0, limit: SEARCH_PAGE_LIMIT, congress, sort: RECENTLY_UPDATED_FIRST }),
+          fetchBillsPage({ apiKey, offset: 0, limit: SEARCH_PAGE_LIMIT, congress }),
       ),
     ),
   ]);
@@ -483,16 +460,18 @@ export async function getSearchResults(query: string): Promise<BillSearchRespons
     .flat()
     .filter((bill: LegislativeBill): boolean => matchesQuery(bill, trimmedQuery));
 
+  // The citation hit leads outright rather than through the comparator: it is the bill the reader named, so it is not
+  // ranked against the sweep at all, and the sweep's own copy of it (if any) is dropped so it isn't listed twice.
   const pinnedKey: string | undefined = citationBill ? billIdentityKey(citationBill) : undefined;
-  const deduped: LegislativeBill[] = citationBill
-    ? [citationBill, ...swept.filter((bill: LegislativeBill): boolean => billIdentityKey(bill) !== pinnedKey)]
-    : swept;
-  deduped.sort((a: LegislativeBill, b: LegislativeBill): number => compareSearchMatches(a, b, pinnedKey));
+  const rest: LegislativeBill[] = swept
+    .filter((bill: LegislativeBill): boolean => billIdentityKey(bill) !== pinnedKey)
+    .sort(compareBillsByActivity);
+  const ranked: LegislativeBill[] = citationBill ? [citationBill, ...rest] : rest;
 
   return {
-    bills: deduped.slice(0, MAX_SEARCH_RESULTS),
+    bills: ranked.slice(0, MAX_SEARCH_RESULTS),
     source: "live",
     congressesSearched: answered.length,
-    truncated: deduped.length > MAX_SEARCH_RESULTS,
+    truncated: ranked.length > MAX_SEARCH_RESULTS,
   };
 }

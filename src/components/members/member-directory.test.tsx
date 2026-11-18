@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { MemberDirectory } from "@/components/members/member-directory";
 import { DEFAULT_MEMBER_DIRECTORY_QUERY, type MemberDirectoryQuery } from "@/lib/congress/members/filter";
 import type { MemberDirectoryEntry } from "@/lib/congress/members/model";
+import { shownCardNames } from "@/test/directory-cards";
 import { memberEntry } from "@/test/directory-entries";
 
 const roster: MemberDirectoryEntry[] = [
@@ -55,20 +56,12 @@ beforeEach((): void => {
   window.history.replaceState(null, "", "/members");
 });
 
-/** The names currently rendered as cards, in order. */
-function shownNames(): string[] {
-  return screen
-    .getAllByRole("heading", { level: 3 })
-    .map((heading: HTMLElement): string => heading.textContent ?? "")
-    .filter((name: string): boolean => name.length > 0);
-}
-
 describe("MemberDirectory", (): void => {
   it("lists every member as a card linking to their own page", (): void => {
     renderDirectory();
 
     expect(screen.getByRole("link", { name: "Bennett, Marcus T." })).toHaveAttribute("href", "/members/B000001");
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
   });
 
   it("states how many members are showing", (): void => {
@@ -90,7 +83,7 @@ describe("MemberDirectory", (): void => {
 
     await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "alvarez");
 
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
   });
 
   it("filters by the place a member represents, not just their name", async (): Promise<void> => {
@@ -99,7 +92,7 @@ describe("MemberDirectory", (): void => {
 
     await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "georgia");
 
-    expect(shownNames()).toEqual(["Okafor, Daniel K."]);
+    expect(shownCardNames()).toEqual(["Okafor, Daniel K."]);
   });
 
   it("filters by chamber", async (): Promise<void> => {
@@ -108,7 +101,7 @@ describe("MemberDirectory", (): void => {
 
     await user.click(screen.getByRole("button", { name: "Senate" }));
 
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
   });
 
   it("marks the active chamber as pressed, so the control's state is announced", async (): Promise<void> => {
@@ -127,7 +120,7 @@ describe("MemberDirectory", (): void => {
 
     await user.selectOptions(screen.getByLabelText("Party"), "republican");
 
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
   });
 
   it("filters by state", async (): Promise<void> => {
@@ -136,7 +129,7 @@ describe("MemberDirectory", (): void => {
 
     await user.selectOptions(screen.getByLabelText("State or Territory"), "Ohio");
 
-    expect(shownNames()).toEqual(["Bennett, Marcus T."]);
+    expect(shownCardNames()).toEqual(["Bennett, Marcus T."]);
   });
 
   it("offers only jurisdictions that are actually in the roster", (): void => {
@@ -184,7 +177,7 @@ describe("MemberDirectory", (): void => {
     await user.click(screen.getByRole("button", { name: "House" }));
     await user.selectOptions(screen.getByLabelText("Party"), "democratic");
 
-    expect(shownNames()).toEqual(["Bennett, Marcus T.", "Okafor, Daniel K."]);
+    expect(shownCardNames()).toEqual(["Bennett, Marcus T.", "Okafor, Daniel K."]);
   });
 
   it("says how many of the whole roster are showing once filtered", async (): Promise<void> => {
@@ -214,7 +207,7 @@ describe("MemberDirectory", (): void => {
     await user.type(screen.getByRole("searchbox", { name: /Search members/ }), "alvarez");
     await user.click(screen.getByRole("button", { name: "Clear Filters" }));
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(screen.getByRole("searchbox", { name: /Search members/ })).toHaveValue("");
   });
 
@@ -245,7 +238,7 @@ describe("MemberDirectory", (): void => {
     const emptyState: HTMLElement = container.querySelector(".no-results") as HTMLElement;
     await user.click(within(emptyState).getByRole("button", { name: "Clear Filters" }));
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(screen.getByRole("searchbox", { name: /Search members/ })).toHaveValue("");
   });
 
@@ -269,7 +262,7 @@ describe("MemberDirectory", (): void => {
 
     await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
 
-    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
   });
 
   it("names a non-default order in the live region, so a reorder is announced and not merely visible", async (): Promise<void> => {
@@ -290,7 +283,7 @@ describe("MemberDirectory", (): void => {
     await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
     await user.click(screen.getByRole("button", { name: "House" }));
 
-    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T."]);
+    expect(shownCardNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T."]);
   });
 
   it("leaves the order alone when the filters are cleared, since order is not a filter", async (): Promise<void> => {
@@ -301,7 +294,7 @@ describe("MemberDirectory", (): void => {
     await user.click(screen.getByRole("button", { name: "Senate" }));
     await user.click(screen.getByRole("button", { name: "Clear Filters" }));
 
-    expect(shownNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Okafor, Daniel K.", "Bennett, Marcus T.", "Alvarez, Priya R."]);
     expect(screen.getByLabelText(/Sort By/)).toHaveValue("name-desc");
   });
 });
@@ -324,7 +317,7 @@ describe("MemberDirectory, opened from a link", (): void => {
   it("renders already narrowed rather than showing everyone first", (): void => {
     renderDirectory({ initialQuery: view({ chamber: "senate" }) });
 
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
   });
 
   it("shows the controls in the state the link asked for, not just the grid", (): void => {
@@ -432,11 +425,11 @@ describe("MemberDirectory following a URL it did not write", (): void => {
         source="live"
       />,
     );
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
 
     navigate(rerender, "", { filters: { query: "", chamber: "all", party: "all", state: "all" }, sort: "name" });
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(window.location.search).toBe("");
   });
 
@@ -456,7 +449,7 @@ describe("MemberDirectory following a URL it did not write", (): void => {
       sort: "name",
     });
 
-    expect(shownNames()).toEqual(["Okafor, Daniel K."]);
+    expect(shownCardNames()).toEqual(["Okafor, Daniel K."]);
     expect(screen.getByLabelText("State or Territory")).toHaveValue("Georgia");
   });
 
@@ -465,14 +458,14 @@ describe("MemberDirectory following a URL it did not write", (): void => {
     renderDirectory();
 
     await user.click(screen.getByRole("button", { name: "Senate" }));
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
 
     await act(async (): Promise<void> => {
       window.history.replaceState(null, "", "/members");
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
     });
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(screen.getByRole("button", { name: "Both Chambers" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -482,7 +475,7 @@ describe("MemberDirectory following a URL it did not write", (): void => {
     window.history.replaceState(null, "", "/members?chamber=senate&sort=name-desc");
     renderDirectory({ initialQuery: DEFAULT_MEMBER_DIRECTORY_QUERY });
 
-    expect(shownNames()).toEqual(["Alvarez, Priya R."]);
+    expect(shownCardNames()).toEqual(["Alvarez, Priya R."]);
     expect(screen.getByLabelText(/Sort By/)).toHaveValue("name-desc");
   });
 
@@ -493,7 +486,7 @@ describe("MemberDirectory following a URL it did not write", (): void => {
 
     await user.click(screen.getByRole("button", { name: "Both Chambers" }));
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(window.location.search).toBe("");
   });
 
@@ -503,7 +496,7 @@ describe("MemberDirectory following a URL it did not write", (): void => {
     window.history.replaceState(null, "", "/members?state=Wyoming");
     renderDirectory({ initialQuery: DEFAULT_MEMBER_DIRECTORY_QUERY });
 
-    expect(shownNames()).toHaveLength(3);
+    expect(shownCardNames()).toHaveLength(3);
     expect(screen.getByLabelText("State or Territory")).toHaveValue("all");
   });
 });

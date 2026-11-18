@@ -289,8 +289,8 @@ describe("getSearchResults", (): void => {
   });
 
   it("pins a citation hit ahead of a sweep match that also mentions it", async (): Promise<void> => {
-    // The comparator's pinned branch only runs when the pinned bill has something to be compared *against* — a sweep
-    // that returned nothing else would never exercise it.
+    // The pin only means anything when there is something to rank it against — a sweep that returned nothing else would
+    // pass whether or not the pin were honored.
     const currentCongress: number = getCurrentCongress();
     stubLiveApi(
       vi.fn().mockImplementation((input: unknown): Promise<Response> => {
@@ -339,9 +339,8 @@ describe("getSearchResults", (): void => {
     expect(result.bills[1]?.number).toBe("999");
   });
 
-  it("keeps the pin first no matter which side of a comparison it lands on", async (): Promise<void> => {
-    // The comparator's pinned check has two outcomes, and which one a sort reaches depends on the order the engine
-    // happens to compare in. Several sweep matches, all newer than the pin, forces both.
+  it("keeps the pin first ahead of several newer sweep matches", async (): Promise<void> => {
+    // Several matches, every one newer than the pin: a date ordering alone would sink the pin to the bottom.
     const currentCongress: number = getCurrentCongress();
     const sweep = Array.from({ length: 5 }, (_unused: unknown, index: number) => ({
       congress: currentCongress,

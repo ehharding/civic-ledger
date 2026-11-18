@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { CommitteeDirectory } from "@/components/committees/committee-directory";
 import type { CommitteeDirectoryQuery } from "@/lib/congress/committees/filter";
 import type { CommitteeSummary } from "@/lib/congress/committees/model";
+import { shownCardNames } from "@/test/directory-cards";
 import { committee } from "@/test/directory-entries";
 
 const list: CommitteeSummary[] = [
@@ -38,14 +39,6 @@ beforeEach((): void => {
   window.history.replaceState(null, "", "/committees");
 });
 
-/** The committee names currently rendered as cards, in order. */
-function shownNames(): string[] {
-  return screen
-    .getAllByRole("heading", { level: 3 })
-    .map((heading: HTMLElement): string => heading.textContent ?? "")
-    .filter((name: string): boolean => name.length > 0);
-}
-
 describe("CommitteeDirectory", (): void => {
   it("lists every committee as a card linking to its own page", (): void => {
     renderDirectory();
@@ -54,7 +47,7 @@ describe("CommitteeDirectory", (): void => {
       "href",
       "/committees/house/hsag00",
     );
-    expect(shownNames()).toHaveLength(4);
+    expect(shownCardNames()).toHaveLength(4);
   });
 
   it("states how many committees are showing", (): void => {
@@ -80,7 +73,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.type(screen.getByRole("searchbox", { name: /Search committees/ }), "intelligence");
 
-    expect(shownNames()).toEqual(["Intelligence Committee"]);
+    expect(shownCardNames()).toEqual(["Intelligence Committee"]);
     expect(screen.getByText("1 of 4 Committees")).toBeInTheDocument();
   });
 
@@ -91,7 +84,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.type(screen.getByRole("searchbox", { name: /Search committees/ }), "Committee on Agriculture");
 
-    expect(shownNames()).toEqual(["Agriculture Committee"]);
+    expect(shownCardNames()).toEqual(["Agriculture Committee"]);
   });
 
   it("filters by chamber from the segmented control", async (): Promise<void> => {
@@ -100,7 +93,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.click(screen.getByRole("button", { name: "Senate" }));
 
-    expect(shownNames()).toEqual(["Appropriations Committee"]);
+    expect(shownCardNames()).toEqual(["Appropriations Committee"]);
   });
 
   it("offers a Joint chamber the member directory has no equivalent of", async (): Promise<void> => {
@@ -109,7 +102,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.click(screen.getByRole("button", { name: "Joint" }));
 
-    expect(shownNames()).toEqual(["Joint Economic Committee"]);
+    expect(shownCardNames()).toEqual(["Joint Economic Committee"]);
   });
 
   it("filters by committee type, with each option carrying its count", async (): Promise<void> => {
@@ -118,7 +111,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.selectOptions(screen.getByLabelText("Committee Type"), "select");
 
-    expect(shownNames()).toEqual(["Intelligence Committee"]);
+    expect(shownCardNames()).toEqual(["Intelligence Committee"]);
     expect(screen.getByRole("option", { name: "Standing (2)" })).toBeInTheDocument();
   });
 
@@ -150,7 +143,7 @@ describe("CommitteeDirectory", (): void => {
     const emptyState: HTMLElement = container.querySelector(".no-results") as HTMLElement;
     await user.click(within(emptyState).getByRole("button", { name: "Clear Filters" }));
 
-    expect(shownNames()).toHaveLength(list.length);
+    expect(shownCardNames()).toHaveLength(list.length);
     expect(screen.getByRole("searchbox", { name: /Search committees/ })).toHaveValue("");
   });
 
@@ -162,7 +155,7 @@ describe("CommitteeDirectory", (): void => {
 
     await user.selectOptions(screen.getByLabelText(/Sort By/), "name-desc");
 
-    expect(shownNames()[0]).toBe("Joint Economic Committee");
+    expect(shownCardNames()[0]).toBe("Joint Economic Committee");
     expect(screen.getByText(/Sorted by Name \(Z–A\)/)).toBeInTheDocument();
   });
 
@@ -176,7 +169,7 @@ describe("CommitteeDirectory", (): void => {
     await user.click(screen.getByRole("button", { name: "Senate" }));
     await user.click(screen.getByRole("button", { name: /Clear Filters/ }));
 
-    expect(shownNames()).toHaveLength(4);
+    expect(shownCardNames()).toHaveLength(4);
   });
 
   /* A shared link should render narrowed on its first paint rather than flashing the whole list and then filtering. */
@@ -187,7 +180,7 @@ describe("CommitteeDirectory", (): void => {
     };
     renderDirectory({ initialQuery });
 
-    expect(shownNames()).toEqual(["Joint Economic Committee"]);
+    expect(shownCardNames()).toEqual(["Joint Economic Committee"]);
   });
 
   it("mirrors the narrowed view into the address bar", async (): Promise<void> => {
@@ -210,7 +203,7 @@ describe("CommitteeDirectory", (): void => {
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(shownNames()).toEqual(["Appropriations Committee"]);
+    expect(shownCardNames()).toEqual(["Appropriations Committee"]);
     expect(screen.getByRole("button", { name: "Senate" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -218,14 +211,14 @@ describe("CommitteeDirectory", (): void => {
     renderDirectory({
       initialQuery: { filters: { query: "", chamber: "joint", type: "all" }, sort: "name" },
     });
-    expect(shownNames()).toEqual(["Joint Economic Committee"]);
+    expect(shownCardNames()).toEqual(["Joint Economic Committee"]);
 
     act((): void => {
       window.history.replaceState(null, "", "/committees");
       window.dispatchEvent(new PopStateEvent("popstate"));
     });
 
-    expect(shownNames()).toHaveLength(4);
+    expect(shownCardNames()).toHaveLength(4);
   });
 
   /* A preview list is placeholder data, and the scope note has to say so rather than describing a real Congress. */

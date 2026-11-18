@@ -1,10 +1,17 @@
 /**
  * Covers the request half of the API contract as round trips: each URL the browser builds is parsed exactly as the
  * route handler does and fed to the same `api-query.ts` parser, so a change to either side that breaks the other fails.
+ * The response half is a type plus {@link readApiResponse}, whose failure cases are pinned at the bottom.
  */
 import { describe, expect, it } from "vitest";
 
-import { BILL_API_PARAMS, billPageRequestUrl, billSearchRequestUrl } from "@/lib/api-contract";
+import {
+  BILL_API_PARAMS,
+  type BillPageResponse,
+  billPageRequestUrl,
+  billSearchRequestUrl,
+  readApiResponse,
+} from "@/lib/api-contract";
 import { MAX_QUERY_LENGTH, parseCongressQueryParam, parseOffsetParam, parseQueryParam } from "@/lib/api-query";
 
 /** Reads a built request URL the way a route handler does, against an arbitrary origin it never sees. */
@@ -60,5 +67,21 @@ describe("billSearchRequestUrl", (): void => {
     // The directory doesn't search on an empty box, but the hook's guard is the only thing stopping it — so the route
     // stays well-defined if that ever changes. See the search handler, which treats a blank query as matching all.
     expect(parseQueryParam(paramsOf(billSearchRequestUrl("")).get(BILL_API_PARAMS.query))).toBe("");
+  });
+});
+
+describe("readApiResponse", (): void => {
+  it("returns a successful response's body", async (): Promise<void> => {
+    const body: BillPageResponse = { bills: [] };
+
+    await expect(readApiResponse<BillPageResponse>(Response.json(body))).resolves.toEqual(body);
+  });
+
+  it("rejects an error status rather than reading its body as the declared type", async (): Promise<void> => {
+    await expect(readApiResponse(Response.json({ bills: [] }, { status: 503 }))).rejects.toThrow("503");
+  });
+
+  it("rejects a body that isn't JSON", async (): Promise<void> => {
+    await expect(readApiResponse(new Response("<html>"))).rejects.toThrow();
   });
 });

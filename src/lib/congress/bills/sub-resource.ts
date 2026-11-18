@@ -31,6 +31,16 @@ import { mapUsable, sortByDateDesc } from "@/lib/congress/upstream/mappers";
  */
 
 /**
+ * The upstream path of one bill's own record, which each of its sub-resources hangs off.
+ *
+ * @param route - The bill's identifier, already proven safe to interpolate.
+ * @returns e.g., `"/bill/119/hr/284"`.
+ */
+function billPath(route: NormalizedBillRoute): string {
+  return `/bill/${route.congress}/${route.type}/${route.number}`;
+}
+
+/**
  * Requests one bill's own record from the detail endpoint.
  *
  * Two callers reach a single bill by identifier and they want opposite things from a failure — `getBillById` falls back
@@ -55,7 +65,7 @@ export function requestBillDetail(
   revalidate: CacheWindow = revalidateSecondsForCongress(route.congress),
 ): Promise<CongressRequestResult<CongressApiDetailResponse>> {
   return requestCongressJson(
-    buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}`, apiKey),
+    buildCongressUrl(billPath(route), apiKey),
     billCacheTags(route),
     congressApiDetailResponseSchema,
     context,
@@ -148,7 +158,7 @@ export async function fetchBillSubResource<Payload, Raw, Entry>(
   if (!route) return answeredEmpty();
 
   // The max page size, requested explicitly so a single call covers the rare bill with more than the default 20.
-  const url: URL = buildCongressUrl(`/bill/${route.congress}/${route.type}/${route.number}/${config.path}`, apiKey, {
+  const url: URL = buildCongressUrl(`${billPath(route)}/${config.path}`, apiKey, {
     limit: String(MAX_API_PAGE_SIZE),
   });
 
