@@ -59,16 +59,11 @@ fictional and is never presented as live congressional data.
   unmistakable: the IDs (`PREVIEW-1`…) deliberately fail `isBioguideId`, so a placeholder is never sent upstream _and_
   can never produce a link to a real person's biography; and placeholder members carry no official website, since a
   fabricated deep link is the easiest way for preview content to be taken for the record.
-- **No placeholder has a face.** The member directory shows portraits, which makes this the sharpest form of the rule
-  above: a fabricated deep link is the easiest way for preview content to be mistaken for the record, and a photograph
-  is easier still. Nothing about a placeholder is real enough to illustrate, so `depiction` is absent from every fixture
-  and `src/lib/congress/members/directory.test.ts` asserts it rather than leaving it to whoever edits the fixtures next.
-- **Preview cosponsors reuse the placeholder members and widen the fiction by nobody.** The no-key build serves fixture
-  cosponsors so the static demo — the only build a UI reviewer can see — shows that section working rather than showing
-  its empty state. Every name in `previewCosponsors` is one of the seven placeholder people the fixtures already name as
-  sponsors: each already has a preview page, and each carries a `PREVIEW-n` id that deliberately fails `isBioguideId`.
-  `src/lib/congress/bills/cosponsors.test.ts` asserts that membership rather than leaving it to whoever edits the
-  fixtures next.
+- **No placeholder has a face.** A photograph is easier still to take for the record than a deep link, so `depiction` is
+  absent from every fixture, asserted in `src/lib/congress/members/directory.test.ts`.
+- **Preview cosponsors widen the fiction by nobody.** The no-key build serves fixture cosponsors so the static demo
+  shows that section working, and every name in `previewCosponsors` is one of the seven placeholder sponsors
+  above — asserted in `src/lib/congress/bills/cosponsors.test.ts`.
 - **A preview record never credits Congress.gov with a count.** This is sharper for cosponsors than for any other
   collection, because a fixture bill genuinely _does_ carry a cosponsor tally — the fixtures set one so the bill hero's
   meta row has a number to show. Passing it into the section's count sentence would print "Congress.gov records 12
@@ -291,20 +286,14 @@ Two honest limits follow, and the result-count copy states them rather than impl
 - It cannot see a bill's full legislative text.
 - For a large or old Congress it sees only that Congress's most recently touched slice, not every bill introduced in it.
 
-**The sort separator is a space, and getting it wrong is silent.** `sort=updateDate+desc` is the _encoded_
-spelling — the plus is an encoded space, not part of the value — so the value handed to `URLSearchParams` has to be
-`updateDate desc`. Passing the documented string through literally percent-encodes the plus to `%2B`, and the endpoint
-does not reject the result: an unrecognized sort value is ignored, and the response comes back in an arbitrary order
-that is neither the endpoint's default nor sorted by anything. This app shipped that mistake and could not see it,
-because a wrong order and a right one are the same shape. It is pinned now by a test that reads the raw query string
-rather than `searchParams.get`, which decodes and therefore cannot tell the two apart — `RECENTLY_UPDATED_FIRST` in
-`src/lib/congress/bills/reads.ts`.
+**The sort separator is a space, and getting it wrong is silent.** `sort=updateDate+desc` is the _encoded_ spelling, so
+the value handed to `URLSearchParams` is `updateDate desc`. A literal plus is encoded to `%2B`, which the endpoint
+ignores rather than rejects, returning an arbitrary order of the same shape. `RECENTLY_UPDATED_FIRST` in
+`src/lib/congress/bills/reads.ts` holds the spelling, pinned by a test that reads the raw query string, since
+`searchParams.get` decodes and so cannot tell the two apart.
 
-Worth knowing for anyone weighing a change here: **neither order sees more of a Congress than the other.** Both draw
-250 distinct bills whose latest actions span nearly the Congress's whole range — about 1.4% of the 119th either way.
-Which 250 differs, so individual queries gain and lose hits between them, and that is sampling luck rather than
-coverage. What the corrected order buys is that the slice is _defined_: it is the one this page describes, reproducible
-between two requests, and not a side effect of the API discarding an input it declined to complain about.
+The order does not change how much of a Congress the sweep sees — about 1.4% of the 119th either way. What it buys is a
+_defined_ slice: the one this page describes, reproducible between two requests.
 
 A query that parses as a bill citation (`parseBillCitation` — "HR 284", "H.J.Res. 66", "119 HR 284") also gets a direct
 single-bill lookup, pinned first. That is the one case where the API can answer exactly rather than by approximation.
@@ -328,8 +317,7 @@ because those sit under the words "Latest Activity" and "A Bill in Motion" and a
 Neither half is the endpoint's default, and the default is the reason both are written down. `/v3/bill/{congress}`
 answers in _ascending_ latest-action order — the least recently active records of a Congress, which for the 119th is
 several thousand bills whose only action is the day they were introduced. A page that leads with those is not a neutral
-page; it is a confident claim that nothing is happening in Congress, made by accident. This app made it, on its home
-page, for as long as it took someone to check the dates against the heading above them.
+page; it is a confident claim that nothing is happening in Congress.
 
 **Members (`/members`)** lists whoever currently holds a seat, from the same `currentMember=true` request the chamber
 diagram uses — so it is a roster of _now_, not of everyone who served during a Congress, and vacant seats are absent
@@ -537,5 +525,5 @@ ordinary cache windows (five minutes, or a day for a concluded Congress) rather 
   something needing its own throttling.
 - **The home page** fetches membership alongside the bill snapshot — one page-0 request to read `pagination.count`, then
   the remaining pages in parallel, issued concurrently with the bill fetch rather than after it. If the home page ever
-  needs a fourth independent dataset, that is the point to revisit whether these belong in the scheduled-ingestion path
+  needs a third independent dataset, that is the point to revisit whether these belong in the scheduled-ingestion path
   in [architecture.md](architecture.md#persistence-plan) instead of on-demand reads.

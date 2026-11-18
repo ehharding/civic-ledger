@@ -10,7 +10,7 @@ one** — the point is reliable history and freshness for the records this app a
 register. See [Persistence Plan](architecture.md#persistence-plan) for the table shapes this is waiting on.
 
 This is first in the list because three other things want it: sitemap coverage for individual records
-([Crawlability](architecture.md#crawlability)), a home page that needs a fourth dataset without a fourth round trip, and
+([Crawlability](architecture.md#crawlability)), a home page that needs a third dataset without a third round trip, and
 anything resembling notification.
 
 ## 2. Sign-In and Saved Bills
@@ -38,10 +38,6 @@ body titled "U.S. Senate: 404 Error Page", so a link check that reads status cod
 senate.gov citation by its page title. congress.gov, separately, refuses automated requests outright with a `403`, so a
 `403` there is not evidence the page is missing.
 
-The glossary stays uncited by design. The line is length, not rigor: a one-line definition is vocabulary anyone can
-confirm in a sentence, and a five-step explanation is a claim. What it owes instead is coverage of the terms the lessons
-lean on.
-
 ## 4. Committee Membership — Blocked
 
 The committee directory and committee pages exist, but Congress.gov publishes no roster, and this project will not infer
@@ -51,7 +47,7 @@ one. **This unblocks only when a citable source exists** — not when a plausibl
 Last checked against the API's committee endpoints in August 2026: no membership resource. (The committee page does link
 the committee's own site, via the published `committeeWebsiteUrl`.)
 
-## 4a. Senate Roll-Call Votes — Partly Blocked
+## 5. Senate Roll-Call Votes — Partly Blocked
 
 A bill's page names every recorded vote taken on it, for both chambers, read from its action history. What is not
 reachable is anything past the reference: Congress.gov publishes `/house-vote` (list, item, and per-member levels, 117th
@@ -66,7 +62,7 @@ One implementation note for whoever gets there: the member-level path is
 `/house-vote/{congress}/{session}/{roll}/members`, not the `/votes` the API's own documentation gives, and that endpoint
 spells the member key `bioguideID` — capital D — unlike every other endpoint in the API.
 
-## 5. Notifications
+## 6. Notifications
 
 Only after freshness, provenance, and opt-in controls are solid. A notification is a claim made without the reader
 present to check it, which raises the bar on everything above it rather than adding to it.

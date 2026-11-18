@@ -132,10 +132,10 @@ export function mapCongressBill(bill: CongressApiBill): LegislativeBill | null {
     // one line of prose, which is right whenever that sentence is the latest action and silent whenever a later one
     // displaced it; `laws` is the record stating the outcome regardless of what the newest row happens to say.
     stage: enactedLaw ? "law" : inferBillStage(actionText, originChamber),
-    // `legislationUrl` is the public congress.gov page, published by the item-level endpoint since August 2025;
-    // `congressGovBillUrl` derives the same string and still covers the list endpoint, which does not send it. What is
-    // deliberately never used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and
-    // 403s without a key of the reader's own). See congressGovBillUrl.
+    // `legislationUrl` is the public congress.gov page, published only by the item-level endpoint; `congressGovBillUrl`
+    // derives the same string and still covers the list endpoint, which does not send it. What is deliberately never
+    // used is `bill.url` — that field is the record's own *API* endpoint, which serves JSON (and 403s without a key of
+    // the reader's own). See congressGovBillUrl.
     officialUrl: bill.legislationUrl ?? congressGovBillUrl(identity),
     sponsor: sponsor?.fullName
       ? ({

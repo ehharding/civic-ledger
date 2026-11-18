@@ -9,12 +9,12 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/health/route";
+import type { HealthResponse } from "@/lib/api-contract";
+import { type RouteReply, readRouteReply } from "@/test/api-route";
 
-type HealthBody = { status: string; service: string; records: string; timestamp: string };
-
-async function get(): Promise<{ status: number; body: HealthBody }> {
-  const response = GET();
-  return { status: response.status, body: (await response.json()) as HealthBody };
+/** Calls the handler the way a platform probe would. */
+async function get(): Promise<RouteReply<HealthResponse>> {
+  return readRouteReply<HealthResponse>(GET());
 }
 
 describe("GET /api/health", (): void => {

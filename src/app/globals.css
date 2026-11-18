@@ -5,22 +5,16 @@
  * nothing here needed component-scoped styles to stay easy to find.
  *
  * The four cascade layers below are what make that split safe. Many of responsive.css's breakpoint rules are the same
- * specificity as the component rules they override, so plain CSS would resolve them by source order alone — making the
- * order of the @import list load-bearing, and enforced by nothing but a comment asking you not to move a line.
- *
- * Layers take that ordering out of the import list and state it directly: every rule in `overrides` beats every rule in
- * `components` no matter which file loaded first or how specific either selector is. The list on the next line is where
- * that ordering is declared, and the only place it is stated.
+ * specificity as the component rules they override, so without layers the @import order would decide them. The list on
+ * the next line declares that ordering instead, and is the only place it is stated:
  *
  *   tokens     — custom properties only; no selectors that paint anything
  *   base       — the reset, bare element styles, and the small global utilities; no component classes
  *   components — every component file below, sharing one layer; a rule here never needs to out-specify a base one
  *   overrides  — breakpoints, and only breakpoints
  *
- * What layers fix is ordering *between* those four: a breakpoint rule beats a component rule whatever their
- * specificities and whatever order the two files loaded in. Within `components` the files still share one layer, so
- * among equally specific selectors source order still decides — which the next paragraph relies on rather than works
- * around, and which is the reason the import list below is grouped rather than alphabetical.
+ * Within `components` the files share one layer, so among equally specific selectors source order still decides — which
+ * is why the import list below is grouped rather than alphabetical.
  *
  * The shared card surface is a `components` rule, in surfaces.css, and is imported ahead of the six files whose
  * components wear it so each can still specialize. It is a selector list rather than a class the markup opts into — see

@@ -146,5 +146,5 @@ should never be represented as the live product. Full instructions and the stati
 [pages-workflow]: https://github.com/ehharding/civic-ledger/actions/workflows/deploy-gh-pages.yml
 [pages-demo]: https://ehharding.github.io/civic-ledger/
 [coverage-badge]: https://img.shields.io/badge/coverage-100%25-brightgreen
-[node-badge]: https://img.shields.io/badge/node-24-brightgreen?logo=node.js&logoColor=white
+[node-badge]: https://img.shields.io/badge/node-26-brightgreen?logo=node.js&logoColor=white
 [license-badge]: https://img.shields.io/badge/license-MIT-blue

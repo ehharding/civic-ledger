@@ -13,6 +13,7 @@ import type { BillSearchResponse } from "@/lib/api-contract";
 import { MAX_QUERY_LENGTH } from "@/lib/api-query";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 import { EDGE_CACHE_CONTROL } from "@/lib/edge-cache";
+import { type RouteReply, readRouteReply } from "@/test/api-route";
 
 const { getSearchResults } = vi.hoisted(() => ({ getSearchResults: vi.fn() }));
 
@@ -26,9 +27,10 @@ const EMPTY_RESULT: BillSearchResponse = {
 };
 
 /** Calls the handler with a raw query string, exactly as the browser would send it. */
-async function get(search: string): Promise<{ status: number; body: BillSearchResponse }> {
-  const response = await GET(new Request(`https://civic-ledger.test/api/bills/search${search}`));
-  return { status: response.status, body: (await response.json()) as BillSearchResponse };
+async function get(search: string): Promise<RouteReply<BillSearchResponse>> {
+  return readRouteReply<BillSearchResponse>(
+    await GET(new Request(`https://civic-ledger.test/api/bills/search${search}`)),
+  );
 }
 
 beforeEach((): void => {

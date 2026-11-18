@@ -39,25 +39,20 @@ a fresh dev server rather than reusing the one you have open:
 CI=1 CONGRESS_API_KEY= pnpm test:e2e
 ```
 
-`pnpm dev` is the loop you work in. `pnpm preview` builds and serves the _production_ output on port 3001 — a different
-port on purpose, so it can run beside a dev server rather than fighting it for 3000. Reach for it when the thing you
-changed behaves differently once built: ISR and `revalidate`, the analytics gate, route segment caching, bundle size,
-or anything the dev overlay sits on top of. It is also what `pnpm build` succeeding does _not_ tell you, which is
-whether the built app is any good to look at.
+`pnpm dev` is the loop you work in. `pnpm preview` builds and serves the _production_ output on port 3001, beside a dev
+server rather than fighting it for 3000. Reach for it when the change behaves differently once built: ISR and
+`revalidate`, the analytics gate, route segment caching, bundle size, or anything the dev overlay sits on top of.
 
-Both are declared in `.claude/launch.json`, which is checked in for the same reason `.nvmrc` is: how to run this app is
-a fact about the project, not about one person's machine. An agent or editor that reads that file starts the right
-server on the right port instead of guessing. Its neighbor `.claude/settings.local.json` is machine-local and
-gitignored. Add a configuration there whenever a new way to run the app becomes worth naming; leave personal settings
-out of it.
+Both are declared in `.claude/launch.json`, checked in for the same reason `.nvmrc` is: how to run this app is a fact
+about the project. Add a configuration there when a new way to run the app is worth naming; personal settings go in the
+gitignored `.claude/settings.local.json`.
 
-`pnpm test:coverage` shows what the suite actually reaches, and `pnpm check` above runs it — the thresholds exist only
-inside the coverage pass, so a `check` running the bare suite would leave them stated and unenforced. Statements,
-branches, functions, and lines are all at 100%, and `vitest.config.mts` sets all four thresholds there, so dropping
-below it fails the build. Only test data, test infrastructure, declarative files, and SDK entry points are excluded
-outright — the preview fixtures, the shared helpers in `src/test/`, the Drizzle schema, and the Sentry and
-instrumentation files, which only initialize the SDK or re-export its hooks — the options they pass are tested where
-`src/lib/observability/` builds them. The `exclude` list in `vitest.config.mts` is the enforcement point.
+`pnpm check` runs the suite through `pnpm test:coverage`, because the thresholds exist only inside the coverage pass.
+Statements, branches, functions, and lines are all held at 100% by `vitest.config.mts`, so dropping below fails the
+build. Only test data, test infrastructure, declarative files, and SDK entry points are excluded outright — the preview
+fixtures, the shared helpers in `src/test/`, the Drizzle schema, and the Sentry and instrumentation files, which only
+initialize the SDK or re-export its hooks — the options they pass are tested where `src/lib/observability/` builds them.
+The `exclude` list in `vitest.config.mts` is the enforcement point.
 
 Treat the report as a way to find untested code rather than a number to defend. Coverage says a line ran, not that it
 was checked: a `0%` row on a module with real branches is the useful signal, and a green 100 says nothing about whether
@@ -125,13 +120,11 @@ default — a few current positions, so they don't have to be relitigated per pu
 - **`date-fns` earns its place on one job.** `DataSourceNotice`'s "Updated 5 minutes ago" line, via
   `formatDistanceToNow`. Bill and member dates stay on native `Intl.DateTimeFormat` in `src/lib/format.ts`, which
   already handles a subtle UTC rollback bug in Congress.gov's date-only strings correctly.
-- **`@axe-core/playwright` is the accessibility baseline's enforcement point.** It overlaps nothing else here: Biome
-  lints source text, Vitest renders into jsdom — which has no layout and no computed colors, so it cannot see a
-  contrast failure at all — and Playwright on its own drives behavior without judging markup. This is the only check
-  that reads a rendered page, which is what makes it the only one that can catch a token that fails contrast, a control
-  inheriting user-agent chrome, or an `aria-labelledby` pointing at nothing. It adds one dependency and no build step,
-  and runs inside the Playwright job that already exists. It covers only the machine-checkable half of WCAG — see the
-  header of `tests/e2e/accessibility.spec.ts` for what stays with review.
+- **`@axe-core/playwright` is the accessibility baseline's enforcement point.** It overlaps nothing else here: jsdom has
+  no layout and no computed colors, so it is the only check that can catch a token failing contrast, a control
+  inheriting user-agent chrome, or an `aria-labelledby` pointing at nothing. It runs inside the existing Playwright job
+  and covers only the machine-checkable half of WCAG — see the header of `tests/e2e/accessibility.spec.ts` for what
+  stays with review.
 - **No Storybook yet.** Add it when the component inventory justifies it.
 - **`@types/node` is held at the Node major this project runs.** Its major version _is_ a Node version — 24.x describes
   Node 24, 26.x describes Node 26 — so it is the one dependency here where "update to latest" is the wrong instinct.
@@ -163,9 +156,8 @@ default — a few current positions, so they don't have to be relitigated per pu
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import
   anything server-side. A client component has to be able to import them without dragging the adapter, and the API key
   it reads, into the browser bundle.
-- Inside `src/`, import with the `@/` alias, never a relative path. It is what let the adapter and the component tree be
-  regrouped into folders without touching a single import statement, and it keeps a module's imports readable in a diff
-  that doesn't say which directory the file is in. The alias maps only `src/`, so the two places outside it go without:
+- Inside `src/`, import with the `@/` alias, never a relative path, so a file can move without touching its imports and
+  an import reads the same in any diff. The alias maps only `src/`, so the two places outside it go without:
   `tests/e2e/` specs share `./routes`, and `scripts/` run under bare Node, which can't resolve `@/` at all — so a value
   a script needs from `src/` is restated there with a comment naming its source. The grouping — Node builtins, then
   packages, a blank line, then this app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so

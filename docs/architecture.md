@@ -31,11 +31,12 @@ flowchart LR
     C --> F[Clearly Marked Preview Fixtures]
     P --> U[UI Components]
     U --> O[Official Congress.gov Links]
-    N --> D[(PostgreSQL/Drizzle)]
-    J[Scheduled Refresh Job] --> A
-    J --> D
-    D --> N
+    N -.-> D[(PostgreSQL/Drizzle — planned)]
+    J[Scheduled Refresh Job — planned] -.-> A
+    J -.-> D
 ```
+
+Dashed edges are the [Persistence Plan](#persistence-plan): a schema exists, but nothing reads or writes it yet.
 
 Everything upstream is reached through one server-side adapter rather than from the browser. That is first a secrecy
 requirement — a Congress.gov key travels in the request URL, so a browser request is a published key — and second a
@@ -166,13 +167,9 @@ is keyed on the Bioguide ID because it is already unique and, unlike a name slug
 `/v3/member/congress/{congress}` is paginated at the API's 250-record ceiling, so `getCongressComposition` (in
 `members/composition.ts`) reads `pagination.count` from the first page and then requests the remainder in parallel.
 
-**`currentMember` is decided per Congress, not fixed.** For the Congress currently seated it is `true`, which makes the
-request "who holds a seat right now" — without it, a member who resigned mid-term and their replacement both come back
-and the chamber over-counts. For any earlier Congress the same value is straightforwardly wrong, and Congress.gov's own
-documentation makes the mirror-image recommendation. The 117th answers `currentMember=true` with the 377 of its members
-still serving today, against the 557 who actually served in it; a diagram drawn from the first would be missing a third
-of its seats while presenting itself as the whole body. No surface reads a past Congress's roster today, so the flag is
-correct in advance of the route that will need it rather than after one ships wrong.
+**`currentMember` is decided per Congress, not fixed**: `true` for the Congress now seated, `false` for any earlier one.
+Why each is the only honest reading is in
+[What the Chamber Diagram Claims](data-policy.md#what-the-chamber-diagram-claims).
 
 Chart geometry is computed separately, in a pure module (`src/lib/congress/members/seating.ts`) that knows nothing about
 Congress.gov — see [Data Policy](data-policy.md#what-the-chamber-diagram-claims) for what the resulting picture does and
@@ -253,21 +250,10 @@ committee that named none of its activities still appears, with no activity line
 
 `bills/amendments.ts` reads `/v3/bill/{congress}/{type}/{number}/amendments`, and the shape of that payload is the whole
 design constraint. Every entry carries `congress`, `type`, and `number`. Roughly one in fifteen carries a `purpose` or a
-`latestAction`, and fewer than one in fifty carries a `description` — measured across the two most amended bills in
-recent Congresses, HR 1 of the 119th (493 amendments) and HR 3684 of the 117th (539).
-
-Three consequences follow, and each is a decision rather than an accident.
-
-**The completeness bar is identity alone.** `mapRelatedBill` drops a measure with no title, because the title _is_ the
-row. `mapBillAmendment` drops nothing but an entry it could not cite or link, because an amendment's row is labeled by
-its own citation. Applying the related-measures bar here would discard fourteen entries in fifteen and leave the section
-showing thirty rows under a published count of 493.
-
-**The section says the sparseness is the record's.** `describeAmendmentDetail` counts how many of the listed amendments
-carry a purpose and prints that figure. A screen of bare citations with no explanation reads as this app having failed
-to load something; the same screen under "Congress.gov publishes no purpose text for any of them here" reads as the
-record. The count is this app's tally of a published field, not a published figure, and the sentence is worded to say
-so — the same distinction `describeOriginalCosponsors` keeps.
+`latestAction`, and fewer than one in fifty carries a `description` — measured across HR 1 of the 119th (493 amendments)
+and HR 3684 of the 117th (539). What the page therefore claims and declines to claim — the identity-only completeness
+bar (`mapBillAmendment`), the purpose tally (`describeAmendmentDetail`), and the publisher's order — is in
+[Amendments Are Named and Linked](data-policy.md#amendments-are-named-and-linked-and-almost-never-described).
 
 **The link goes outward, and it is the only collection on that page where it does.** Cosponsors, committees, and related
 measures each have a page here that collects more than the row does. An amendment does not, so the honest destination is
@@ -276,10 +262,6 @@ which is the self-referential API link — the same rule `congressGovBillUrl` fo
 pattern is read from the `latestAction.links` array Congress.gov publishes on an amendment's own item-level record, and
 that record is not fetched at runtime only because doing so would cost one request per amendment on a collection that
 runs to several hundred.
-
-The publisher's order is kept and `dateKey` is omitted, as in `related.ts`. The only date on an entry is `updateDate`,
-which records when Congress.gov last touched the row rather than when anything happened to the amendment; ordering by it
-would present a maintenance timestamp to a reader as chronology.
 
 ### A Committee's Own Records
 
@@ -467,25 +449,20 @@ most-significant-field-first, so direct string comparison already _is_ chronolog
 more and buy nothing on ASCII digits. Undated records falling last stops being a special case in each caller and becomes
 a consequence of the ordering, since an empty string is less than every real timestamp.
 
-Relatedly, a list documented as "most recent first" is sorted, not hoped for. `MemberProfileResult`'s `sponsored` and
-`cosponsored` lists go through `compareBillsByRecency` rather than trusting the order Congress.gov returned them in.
-Congress.gov does return them newest first, so this was never visibly broken — which is the problem. A promise kept by
-an upstream convention breaks silently the day the convention does, on a page where the ordering is the only thing
-telling a reader which of a member's bills is recent. The preview path sorts on the same rule, since a fixture's
-ordering is no more authoritative than an upstream one.
+Relatedly, a list documented as "most recent first" is sorted, not hoped for. A promise kept by an upstream convention
+breaks silently the day the convention does, and a fixture's ordering is no more authoritative than an upstream one, so
+the preview path sorts on the same rules. There are two, deliberately siblings rather than one:
 
-The home page is the same rule with the failure actually realized. Its featured card and activity grid ran on the order
-the bill list arrived in, under headings reading "Latest Activity" and "A Bill in Motion" — and that order was ascending
-by latest action, so the two most prominent bills on the site were reliably among the _least_ active in Congress. It now
-sorts by `compareBillsByActivity`. The comparator is deliberately a sibling of `compareBillsByRecency` rather than a
-reuse of it: "recent" for a bill means _introduced_ lately on a member's page and _acted on_ lately here, a member's
-body of work would be scrambled by the second, and a home page is wrong under the first. One name for both would have
-made the pages agree by hiding that they were asking different questions.
+- **`compareBillsByRecency`** — _introduced_ lately. A member's `sponsored` and `cosponsored` lists, where it orders a
+  body of work.
+- **`compareBillsByActivity`** — _acted on_ lately, falling back to introduction. The home page's featured card and
+  activity grid, which sit under "Latest Activity" and "A Bill in Motion", and the bill search's results. Congress.gov's
+  list endpoint answers in ascending latest-action order, so without it the most prominent bills on the site would be
+  among the least active in Congress.
 
-The fixture ordering deserves the same suspicion the upstream ordering gets. `previewBills` already happens to be in
-descending activity order, so every existing assertion about the home page would pass against a component that did no
-sorting at all — which is why the test that pins this hands it a deliberately reversed snapshot. A test that only ever
-sees data already in the right order is testing the fixture.
+One name for both would make the pages agree by hiding that they ask different questions. `previewBills` happens to be
+in descending activity order already, which is why the home page's ordering test hands it a deliberately reversed
+snapshot: a test that only sees data already in order is testing the fixture.
 
 Normalization happens at the mapping boundary, not at the view, for the same reason. `normalizeJurisdiction` title-cases
 the represented state in `upstream/mappers.ts` alongside `normalizePartyName` and `type.toUpperCase()`, because the
@@ -602,11 +579,10 @@ reviewer who does not use dark mode.
     and the glossary bubble make, and the one a nav has least excuse for breaking: a hamburger with nothing behind it
     does not degrade to a smaller menu, it degrades to no menu at all. `tests/e2e/navigation.spec.ts` runs a context
     with JavaScript disabled to hold that.
-  - One consequence worth knowing before touching the header's styles: the header's blur is drawn by
-    `.site-header::before` rather than by `.site-header`, because `backdrop-filter` makes an element the containing
-    block for its `position: fixed` descendants. Held one level up, it laid the drawer out against a 65px bar and put
-    262px of horizontal scroll on every page at the 320px reflow width. The reflow sweep in
-    `tests/e2e/layout.spec.ts` fails if it moves back.
+  - The header's blur is drawn by `.site-header::before` rather than by `.site-header`, because `backdrop-filter` makes
+    an element the containing block for its `position: fixed` descendants — on the header itself it would lay the drawer
+    out against the bar and scroll every page sideways at the 320px reflow width. The reflow sweep in
+    `tests/e2e/layout.spec.ts` enforces it.
 - Links that open a new tab say so in their accessible name (`ExternalLinkHint`); the external-link glyph beside them is
   decorative and `aria-hidden`, so on its own it told a screen-reader user nothing.
 - **Reordering in place needs announcing, not advising.** The directories' sort controls reorder the grid without

@@ -100,9 +100,8 @@ const congressApiBillSchema = z.looseObject({
   /**
    * The record's *public* congress.gov page, as opposed to the self-referential API `url` above.
    *
-   * Added to the item-level endpoint in August 2025, which is after `congressGovBillUrl` was written to derive the same
-   * string from the bill's identity. The derivation is still needed — the list endpoint does not send this — so the two
-   * coexist, with the published value preferred wherever it arrives.
+   * Item-level only: the list endpoint does not send it, so `congressGovBillUrl` derives the same string from the
+   * bill's identity there, and the published value is preferred wherever it arrives.
    *
    * @see mapCongressBill
    */
@@ -485,7 +484,7 @@ const congressApiCommitteeDetailSchema = z.looseObject({
   type: optionalString,
   isCurrent: z.boolean().optional().catch(undefined),
   /**
-   * The committee's own site (e.g., `https://agriculture.house.gov/`), added to this endpoint in December 2025.
+   * The committee's own site (e.g., `https://agriculture.house.gov/`).
    *
    * Read rather than derived, which is the whole reason it can be linked at all: congress.gov's own committee URLs
    * embed a name slug this API has never published, and guessing one produces an authoritative-looking 404.

@@ -153,9 +153,9 @@ describe("useDirectoryUrlSync", (): void => {
 
   describe("when the URL moves underneath the view", (): void => {
     it("adopts a navigation to another view of the same route instead of overwriting it", (): void => {
-      // This is the regression the hook was written for: the header's own "Bills"/"Members" link, followed from an
-      // already-narrowed directory. The component's state is stale, the router's URL is current, and writing the former
-      // over the latter is what made the link appear to do nothing.
+      // The case the hook exists for: the header's own "Bills"/"Members" link, followed from an already-narrowed
+      // directory. The component's state is stale, the router's URL is current, and writing the former over the latter
+      // would make the link appear to do nothing.
       setUrl(`${PATH}?party=democratic`);
       const { rerender } = renderSync({
         queryString: "?party=democratic",

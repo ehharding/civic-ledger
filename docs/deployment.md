@@ -55,29 +55,19 @@ the only one of the two that uploads source maps — and it is the one whose bui
 **Neither pipeline waits for `pnpm check`.** `ci.yml` and `deploy-vercel.yml` are separate workflows on the same
 triggers, so they run in parallel and a deploy can finish while the quality job is still going — or after it has gone
 red. What CI gives you is a failing check on the commit, not a block on the deploy; branch protection on `main` is what
-turns that check into a gate, and it belongs in the repository's settings rather than in a workflow file. This paragraph
-is here because the alternative — a reader assuming the workflow is gated because a deploy workflow usually is — is a
-wrong assumption this file would otherwise have invited.
+turns that check into a gate, and it belongs in the repository's settings rather than in a workflow file.
 
 ### Keeping Server Work Bounded
 
-On 2026-10-10 Vercel paused this project's Hobby team for exceeding the plan's fair-use limit on **Fluid Active CPU**,
-and it was still paused more than a month later, serving `402 DEPLOYMENT_DISABLED` on every URL. The cause was not
-upstream traffic but rendering: every directory (`/bills`, `/bills/[congress]`, `/members`, `/committees`) and every
-committee page read its `searchParams`, which made each of them render on the server for every single visit. A crawler
-walking the sitemap, or every facet combination, paid a full render per URL.
+The Hobby plan's limits that matter here are **Fluid Active CPU**, ISR writes, and the Congress.gov key's hourly quota,
+and crawlers are what threaten all three: a route that renders per visit pays a full render for every URL a crawler
+walks, and a crawler walking bill pages across old Congresses spends the API quota and writes ISR pages nobody reads
+back. Exceeding the CPU limit pauses the whole team (`402 DEPLOYMENT_DISABLED` on every URL). Most of that traffic comes
+from clients that do not identify as bots, so `robots.txt` alone does not bound it.
 
-On 2026-11-15, two days after the pause was lifted, every page showed preview data. Congress.gov was answering `429`:
-something walking bill pages in order through the 100th Congress had used up the key's hourly quota (each bill page was
-nine requests then), and every route that revalidated during the outage cached its preview fallback. A concluded
-Congress's bill page kept it for a day, and a bill no fixture covered was cached as "Bill Not Found". The same walk
-drove ISR writes to 283K against 9.7K reads in two days: pages written once and never read back. The Bot Name breakdown
-accounted for under a thousand of the 74K requests in those twelve hours, so most of it came from clients that do not
-identify as bots, which `robots.txt` does not bind.
+What keeps it bounded:
 
-What keeps that bounded now:
-
-- **Plain routes are static.** None of those routes reads its query any more, so each is prerendered and regenerated at
+- **Plain routes are static.** No directory or record route reads its query, so each is prerendered and regenerated at
   most once per five-minute window. In `pnpm build`'s route table, the only `ƒ (Dynamic)` entries should be the `/api/*`
   route handlers and the `/query/*` twins. CI holds that: `pnpm check:routes` runs after the build in the `quality` job
   and fails on a per-visit route anywhere else (`scripts/check-route-rendering.mts`). Run it locally after `pnpm build`
@@ -86,27 +76,26 @@ What keeps that bounded now:
   to its twin under `src/app/query/`, which renders the narrowed view server-side. The rewrite is a routing rule rather
   than a Proxy, so the static half costs no function invocation at all. A query the route ignores (`?utm_source=`) is
   served the static page. See `src/lib/query-routes.ts`.
-- **AI training crawlers are refused the whole site.** The Bot Name breakdown on the dashboard's CDN Requests page
-  showed GPTBot at 43K of 44K requests in six hours: one training crawler, on course to cross the Hobby limits by
-  itself. `robots.txt` now disallows `/` for GPTBot and the other documented training-only crawlers
-  (`AI_TRAINING_CRAWLERS` in `src/app/robots.ts`). Search and user-fetch agents (`OAI-SearchBot`, `ChatGPT-User`,
-  `PerplexityBot`, `Googlebot`) are untouched, since they are how readers find the site. The list is short on purpose:
-  `robots.txt` only binds crawlers polite enough to read it. Enforcement is the Vercel Firewall's **AI Bots** managed
-  ruleset, set to **AI Crawlers → Deny** and **AI Assistants → Log**, whose bot list Vercel maintains and which stops a
-  crawler before any function runs, whether or not it honors this file.
+- **AI training crawlers are refused the whole site.** One training crawler alone can cross the Hobby limits.
+  `robots.txt` disallows `/` for GPTBot and the other documented training-only crawlers (`AI_TRAINING_CRAWLERS` in
+  `src/app/robots.ts`). Search and user-fetch agents (`OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Googlebot`) are
+  untouched, since they are how readers find the site. The list is short on purpose: `robots.txt` only binds crawlers
+  polite enough to read it. Enforcement is the Vercel Firewall's **AI Bots** managed ruleset, set to **AI Crawlers →
+  Deny** and **AI Assistants → Log**, whose bot list Vercel maintains and which stops a crawler before any function
+  runs, whether or not it honors this file.
 - **Crawlers are kept off the query variants.** `robots.txt` disallows `/query/` and each route's `?` form. Those pages
   already canonicalize to the plain route, so they were never going to be indexed — they were only ever going to be
   rendered.
 - **Record links do not prefetch on sight.** `next/link` prefetches every link that scrolls into view, and for a bill,
-  member, or committee page that is not cached yet that prefetch is a server render. A reader scrolling `/members` used
-  to render every member page they passed. Links to individual records, and to a committee's query-carrying tabs and
-  pager, go through `RecordLink` (`src/components/ui/record-link.tsx`), which prefetches only once a pointer or finger
-  reaches the link. (Plain `prefetch={false}` would also turn off hover prefetching in the App Router.) Use it for any
-  new link to a record; plain `next/link` stays right for links to the static top-level routes.
+  member, or committee page that is not cached yet that prefetch is a server render — scrolling `/members` would render
+  every member page passed. Links to individual records, and to a committee's query-carrying tabs and pager, go through
+  `RecordLink` (`src/components/ui/record-link.tsx`), which prefetches only once a pointer or finger reaches the link.
+  (Plain `prefetch={false}` would also turn off hover prefetching in the App Router.) Use it for any new link to a
+  record; plain `next/link` stays right for links to the static top-level routes.
 - **A concluded Congress is cached for a day.** Its record is closed, so `/bills/118`, every bill page under it, and
   that Congress's slice of the search sweep are regenerated daily rather than every five minutes. Only the Congress now
-  sitting stays on the five-minute window. `revalidateSecondsForCongress` in `congress/upstream/http.ts` decides which;
-  most of what crawlers walk is concluded Congresses, so this is where most of the remaining ISR work went.
+  sitting stays on the five-minute window. `revalidateSecondsForCongress` in `congress/upstream/http.ts` decides which.
+  Most of what crawlers walk is concluded Congresses.
 - **A bill page's requests are not cached twice.** Crawlers walk bill pages across every Congress, almost never
   repeating, and each cold render would write eight Congress.gov responses into the metered Data Cache for nothing. A
   concluded Congress's bill page makes those requests uncached (`billPageCacheWindow` in `congress/upstream/http.ts`);
@@ -125,7 +114,7 @@ What keeps that bounded now:
   thousand per Congress back to the 93rd, and each cold one cost a render, an ISR write that was rarely read again, and
   up to eight API requests. Every Congress's directory stays crawlable.
 - **A bill page looks the bill up before anything else.** A failed lookup refuses the render after one request instead
-  of nine, and a collection the record publishes with a count of `0` is not requested at all. An absent count is not
+  of eight, and a collection the record publishes with a count of `0` is not requested at all. An absent count is not
   treated as zero: whether Congress.gov omits an empty collection or publishes `0` has not been confirmed against a live
   response. If it turns out to omit them, skipping on absence would save most of the remaining requests, at the cost of
   trusting that omission.
@@ -218,11 +207,9 @@ code that prevents that is not optional.
 
    Create it as an **organization token**, at
    [Settings → Developer Settings → Organization Tokens](https://sentry.io/orgredirect/organizations/:orgslug/settings/auth-tokens/).
-   Sentry offers three kinds and only this one is right for CI: its permissions are fixed to what CI tasks need and
-   cannot be widened, and it belongs to the organization rather than to a person — a _personal_ token keeps working only
-   as long as its owner's account does, which makes "the deploy stopped uploading source maps" a thing that happens
-   months later for a reason nobody connects to a departure. The token is shown **once**, at creation; there is no way
-   to read it back, so if it is lost the fix is to revoke it and issue another.
+   Its permissions are fixed to what CI needs, and it belongs to the organization rather than to a person, so it does
+   not stop working when someone's account does. The token is shown **once**, at creation; if it is lost, revoke it and
+   issue another.
 
 4. Nothing needs enabling in the Sentry UI. The scrubbing this project relies on is in code, deliberately, so that it
    shows up in a diff rather than in a dashboard setting someone can flip.
@@ -326,17 +313,8 @@ incoming deep link, per the bullet above.
 
 ### One Known Trade in the Static Build
 
-The analytics gate is a server-side `STATIC_EXPORT` check, which means it holds at render time rather than at bundle
-time. `STATIC_EXPORT` is not `NEXT_PUBLIC_`-prefixed, so the bundler cannot fold the check away. Nothing is mounted, no
-script tag is emitted, and no `/_vercel/…` request is ever made — which is the part that matters — but roughly 7 KB of
-never-executed collector code still rides along in the demo build's shared client chunk.
-
-Removing it would mean either a second `NEXT_PUBLIC_` flag mirroring the first or a bundler alias in `next.config.ts`,
-both of which split one gate across two places to save a couple of kilobytes on the deployment target that is explicitly
-a preview. The trade goes the other way, deliberately, and this paragraph is the record of it rather than a silence
-someone else has to rediscover.
-
-Sentry is the case where the same arithmetic comes out the other way, stated here so the two do not read as
-inconsistent. The SDK is roughly 65 KB gzipped against the collectors' 7 KB — close to a third of the demo's JavaScript,
-on a page whose entire purpose is to load quickly for someone glancing at a portfolio link. At ten times the cost, the
-bundler alias earns the second place it has to be configured.
+The analytics gate is a server-side `STATIC_EXPORT` check, so it holds at render time rather than at bundle time:
+nothing is mounted and no `/_vercel/…` request is made, but roughly 7 KB of never-executed collector code still rides in
+the demo's shared client chunk. Removing it would take a second `NEXT_PUBLIC_` flag or a bundler alias — one gate split
+across two places — to save a few kilobytes on a preview build. Sentry gets that alias anyway because its cost is ten
+times larger (the bullet above).

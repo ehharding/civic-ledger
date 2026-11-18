@@ -29,7 +29,7 @@ export type BillPageResponse = {
  * @see BillDirectory
  */
 export type BillSearchResponse = {
-  /** The matching bills, most recent first. */
+  /** The matching bills, a citation hit first and the rest most recently active first. */
   bills: LegislativeBill[];
   /** Whether these are live records or labeled placeholders. */
   source: CongressSnapshot["source"];

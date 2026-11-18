@@ -129,7 +129,7 @@ describe("describeMemberLegislation", (): void => {
   });
 
   it("does not call a full page complete when Congress.gov published no count", (): void => {
-    // The case the old wording got wrong: twelve back at a cap of twelve, no count, and the line said "12 on file."
+    // Twelve back at a cap of twelve with no count may not be all of them, so the line must not read "12 on file."
     const line: string = describeMemberLegislation({ shown: 12, total: undefined, limit: 12 });
 
     expect(line).not.toBe("12 on file.");

@@ -409,19 +409,18 @@ function searchPreviewBills(query: string): BillSearchResponse {
  *
  * Congress.gov has no keyword search, so this sweeps each Congress's most recently updated bills (up to the API's
  * per-request ceiling) and matches title, type, number, policy area, and latest action. The UI states both limits: no
- * full text, and only a recent slice of each Congress — `congressesSearched` counts Congresses, not every bill.
+ * full text, and only a recent slice of each Congress. `congressesSearched` counts the Congresses that *answered*, not
+ * the ones asked, and the scope line under the results says so (see `describeBillSearchScope`).
  *
  * A query that parses as a citation ("HR 284" — see `parseBillCitation`) also gets a direct lookup, pinned first. The
  * sweep reuses browsing's cached page fetches, so repeated searches cost nothing extra upstream.
  *
- * @param query - The raw search text, as typed. `congressesSearched` counts the Congresses that *answered*, not the
- *   ones asked: a Congress whose request failed contributed nothing, and the scope line under the results says so (see
- *   `describeBillSearchScope`).
- *
- * @returns Matching bills (citation hit first, then newest-first), capped at {@link MAX_SEARCH_RESULTS}, with the
- *   sweep's provenance and whether the cap truncated the results. Falls back to filtering the small preview fixture set
- *   when no key is configured, or when no Congress answered at all — a sweep nothing answered is not a live search, and
- *   reporting it as one would present "no matches" as a fact about the record.
+ * @param query - The raw search text, as typed.
+ * @returns Matching bills (citation hit first, then by {@link compareBillsByActivity}), capped at
+ *   {@link MAX_SEARCH_RESULTS}, with the sweep's provenance and whether the cap truncated the results. Falls back to
+ *   filtering the small preview fixture set when no key is configured, or when no Congress answered at all — a sweep
+ *   nothing answered is not a live search, and reporting it as one would present "no matches" as a fact about the
+ *   record.
  */
 export async function getSearchResults(query: string): Promise<BillSearchResponse> {
   const trimmedQuery: string = query.trim();

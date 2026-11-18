@@ -6,20 +6,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET } from "@/app/api/bills/route";
+import type { BillPageResponse } from "@/lib/api-contract";
 import { MAX_BILL_OFFSET } from "@/lib/api-query";
-import type { LegislativeBill } from "@/lib/congress/bills/model";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 import { EDGE_CACHE_CONTROL, NO_STORE_CACHE_CONTROL } from "@/lib/edge-cache";
+import { type RouteReply, readRouteReply } from "@/test/api-route";
 
 const { getMoreBills } = vi.hoisted(() => ({ getMoreBills: vi.fn() }));
 
 vi.mock("@/lib/congress/client", () => ({ getMoreBills }));
 
 /** Calls the handler with a query string, the way a request from the directory would arrive. */
-async function get(search: string): Promise<{ status: number; body: { bills: LegislativeBill[] } }> {
-  const response = await GET(new Request(`https://civic-ledger.test/api/bills${search}`));
-  return { status: response.status, body: (await response.json()) as { bills: LegislativeBill[] } };
+async function get(search: string): Promise<RouteReply<BillPageResponse>> {
+  return readRouteReply<BillPageResponse>(await GET(new Request(`https://civic-ledger.test/api/bills${search}`)));
 }
 
 beforeEach((): void => {
