@@ -5,8 +5,7 @@ import type { BillSectionProps } from "@/components/bills/detail/section";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { previewPendingCopy, unavailableCopy } from "@/components/ui/empty-section-note";
 import { OutboundLink } from "@/components/ui/outbound-link";
-import type { BillAction, RecordedVote } from "@/lib/congress/bills/model";
-import { collectRecordedVotes } from "@/lib/congress/upstream/mappers";
+import { type BillAction, collectRecordedVotes, type RecordedVote } from "@/lib/congress/bills/model";
 import { formatDate, pluralize } from "@/lib/format";
 import { lessonHref } from "@/lib/routes";
 

@@ -1,7 +1,6 @@
 /** Covers CongressSwitcher's rendered options (label, year range, current-Congress flag) and its navigation on change. */
 import { render, screen } from "@testing-library/react";
-import type { UserEvent } from "@testing-library/user-event";
-import userEvent from "@testing-library/user-event";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CongressSwitcher } from "@/components/bills/congress-switcher";

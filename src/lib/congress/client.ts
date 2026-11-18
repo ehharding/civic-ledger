@@ -3,8 +3,8 @@
  * Each module's role is tabulated in docs/architecture.md, "Inside the Congress Adapter".
  *
  * Everything here never throws and reports whether it's live or preview. The transport (`upstream/http.ts`,
- * `sub-resource.ts`) isn't re-exported, except the `BillSubResource` shape the reads return. `getSearchResults`'s shape
- * lives in `@/lib/api-contract` so the browser can import it.
+ * `sub-resource.ts`) isn't re-exported. The shapes the reads return live in each record type's pure `model.ts`, and
+ * `getSearchResults`'s in `@/lib/api-contract`, so the browser can import them without this module.
  */
 export { getBillAmendments } from "@/lib/congress/bills/amendments";
 export { getBillCommittees } from "@/lib/congress/bills/committees";
@@ -21,7 +21,6 @@ export {
   getSearchResults,
 } from "@/lib/congress/bills/reads";
 export { getRelatedBills } from "@/lib/congress/bills/related";
-export type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 export { getCommitteeRecords } from "@/lib/congress/committees/activity";
 export {
   buildCommitteeDirectory,

@@ -3,7 +3,6 @@
  * failing doesn't drag the other onto preview data.
  */
 import { render, screen } from "@testing-library/react";
-import type React from "react";
 import type { JSX } from "react";
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
@@ -71,7 +70,7 @@ describe("Page (home)", (): void => {
       ),
     );
 
-    const pending: Promise<React.JSX.Element> = Page();
+    const pending: Promise<JSX.Element> = Page();
     await Promise.resolve();
 
     expect(getCongressSnapshot).toHaveBeenCalledTimes(1);

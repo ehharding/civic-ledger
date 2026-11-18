@@ -36,3 +36,42 @@ export const PAGE_ROUTES: readonly PageRoute[] = [
  * Congress currently seated — which stops matching the fixtures' Congress once a new one convenes.
  */
 export const FIXTURE_CONGRESS_BILLS: string = "/bills/119";
+
+/** The three record pages, which the suite reaches by following the first link off their directory. */
+export type RecordKind = "bill" | "member" | "committee";
+
+/**
+ * Each record page's path shape, as regex source: the one spelling {@link RECORD_URL} and {@link RECORD_HREF} are both
+ * built from, so a spec's URL assertion and the warmup's link match cannot drift apart. Mirrors the builders in
+ * `src/lib/routes.ts`.
+ */
+const RECORD_PATHS: Readonly<Record<RecordKind, string>> = {
+  bill: String.raw`/bills/\d+/[a-z]+/\d+`,
+  member: "/members/[A-Za-z0-9-]+",
+  committee: "/committees/(?:house|senate|joint)/[a-z0-9-]+",
+};
+
+/**
+ * Builds one pattern per record kind from {@link RECORD_PATHS}.
+ *
+ * @param pattern - Wraps a path's regex source into the full pattern.
+ * @returns The three patterns, keyed by record kind.
+ */
+function recordPatterns(pattern: (path: string) => string): Readonly<Record<RecordKind, RegExp>> {
+  return {
+    bill: new RegExp(pattern(RECORD_PATHS.bill)),
+    member: new RegExp(pattern(RECORD_PATHS.member)),
+    committee: new RegExp(pattern(RECORD_PATHS.committee)),
+  };
+}
+
+/** Matches a page URL that has landed on a record, for `toHaveURL`. Anchored at the end, so a query string fails it. */
+export const RECORD_URL: Readonly<Record<RecordKind, RegExp>> = recordPatterns((path: string): string => `${path}$`);
+
+/**
+ * Captures the first link to a record in served HTML. The nav's bare `/members` and friends carry no ID, so they never
+ * match.
+ */
+export const RECORD_HREF: Readonly<Record<RecordKind, RegExp>> = recordPatterns(
+  (path: string): string => `href="(${path})"`,
+);

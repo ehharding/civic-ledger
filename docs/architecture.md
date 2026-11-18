@@ -95,7 +95,7 @@ committees, `committees/model.ts` is what a committee _is_, and neither name has
 | `upstream/http.ts`          | Key access, URL building, caching, the request and paging helpers, guards.    |
 | `upstream/mappers.ts`       | Upstream shapes into this app's stable model. Pure; performs no I/O.          |
 | `upstream/fixtures.ts`      | The labeled preview records every read falls back to. Fiction, marked as it.  |
-| `bills/model.ts`            | The bill model: identity, stages, official URLs, display helpers. Pure.       |
+| `bills/model.ts`            | The bill model: identity, stages, collection shapes, display helpers. Pure.   |
 | `bills/sub-resource.ts`     | The reads shared by every module that reaches for one bill.                   |
 | `bills/reads.ts`            | Bill snapshots, pagination, lookup, summaries, text, actions, search.         |
 | `bills/committees.ts`       | Which committees held a bill, and what each of them did with it.              |

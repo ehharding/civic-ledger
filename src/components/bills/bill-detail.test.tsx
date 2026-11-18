@@ -13,12 +13,12 @@ import type {
   BillAction,
   BillAmendment,
   BillCosponsor,
+  BillSubResource,
   BillSummary,
   BillTextVersion,
   LegislativeBill,
   RelatedBill,
 } from "@/lib/congress/bills/model";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import type { BillCommittee } from "@/lib/congress/committees/model";
 import { firstPreviewBill } from "@/lib/congress/upstream/fixtures";
 import { readerText } from "@/test/reader-text";

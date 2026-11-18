@@ -4,6 +4,7 @@ import type { BillSearchResponse } from "@/lib/api-contract";
 import {
   type BillAction,
   type BillRouteParams,
+  type BillSubResource,
   type BillSummary,
   type BillTextVersion,
   billIdentityKey,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/congress/bills/model";
 import { sanitizeSummaryHtml } from "@/lib/congress/bills/sanitize-summary";
 import { matchesQuery, type ParsedBillCitation, parseBillCitation } from "@/lib/congress/bills/search";
-import { type BillSubResource, fetchBillSubResource, requestBillDetail } from "@/lib/congress/bills/sub-resource";
+import { fetchBillSubResource, requestBillDetail } from "@/lib/congress/bills/sub-resource";
 import { listCongresses } from "@/lib/congress/congress-history";
 import { getCurrentCongress } from "@/lib/congress/current-congress";
 import {

@@ -1,7 +1,6 @@
-import type { APIRequestContext, APIResponse } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { type APIRequestContext, type APIResponse, expect, test } from "@playwright/test";
 
-import { FIXTURE_CONGRESS_BILLS, PAGE_ROUTES, type PageRoute } from "./routes";
+import { FIXTURE_CONGRESS_BILLS, PAGE_ROUTES, type PageRoute, RECORD_HREF } from "./routes";
 
 /**
  * Compiles and primes every route the suite touches, once, before any spec runs. The suite runs against `pnpm dev`, so
@@ -17,9 +16,6 @@ const ROUTES: readonly string[] = [
   "/api/bills/search?q=broadband",
 ];
 
-/** A member page's href in served HTML. The nav's bare `/members` carries no ID, so it never matches. */
-const MEMBER_HREF: RegExp = /href="(\/members\/[A-Za-z0-9-]+)"/;
-
 /** A directory to warm, and the pattern its first record link matches. */
 type RecordRoute = {
   /** The directory's path. */
@@ -33,9 +29,9 @@ type RecordRoute = {
  * match is left unwarmed; the real specs report an empty grid.
  */
 const RECORD_ROUTES: readonly RecordRoute[] = [
-  { directory: "/bills", href: /href="(\/bills\/\d+\/[a-z]+\/\d+)"/ },
-  { directory: "/members", href: MEMBER_HREF },
-  { directory: "/committees", href: /href="(\/committees\/(?:house|senate|joint)\/[a-z0-9-]+)"/ },
+  { directory: "/bills", href: RECORD_HREF.bill },
+  { directory: "/members", href: RECORD_HREF.member },
+  { directory: "/committees", href: RECORD_HREF.committee },
 ];
 
 /**
@@ -69,6 +65,6 @@ test("every route is compiled and its upstream reads are cached", async ({ reque
 
   // One more hop, for the spec that follows the first bill's sponsor: member pages' upstream reads are per person, and
   // the sponsor is rarely the directory's first member. A bill page's first member link is its sponsor line.
-  const sponsor: RegExpMatchArray | null = (records[0] ?? "").match(MEMBER_HREF);
+  const sponsor: RegExpMatchArray | null = (records[0] ?? "").match(RECORD_HREF.member);
   if (sponsor?.[1]) await warm(request, sponsor[1]);
 });

@@ -24,7 +24,6 @@ import type {
 } from "@/lib/congress/upstream/api-schema";
 import {
   asOriginChamber,
-  collectRecordedVotes,
   mapBillCommittee,
   mapBillCommitteeActivity,
   mapBillCosponsor,
@@ -351,48 +350,6 @@ describe("mapCongressAction", (): void => {
 
     expect(mapped).not.toBeNull();
     expect(mapped?.recordedVotes).toEqual([]);
-  });
-});
-
-describe("collectRecordedVotes", (): void => {
-  /** One vote reference, spread across however many actions a caller wants to attach it to. */
-  const roll190: RecordedVote = {
-    chamber: "House",
-    congress: 119,
-    date: "2025-07-03T18:31:38Z",
-    rollNumber: 190,
-    sessionNumber: 1,
-    url: "https://clerk.house.gov/evs/2025/roll190.xml",
-  };
-
-  it("reports one vote once, however many actions reference it", (): void => {
-    // HR 1 in the 119th genuinely lists roll 190 twice — once from House floor actions, once from the Library of
-    // Congress. Printing it twice would read as two separate votes on the same question.
-    const votes: RecordedVote[] = collectRecordedVotes([
-      { text: "On motion that the House agree…", recordedVotes: [roll190] },
-      { text: "Resolving differences -- House actions…", recordedVotes: [roll190] },
-    ]);
-
-    expect(votes).toEqual([roll190]);
-  });
-
-  it("keeps distinct votes apart, including across chambers", (): void => {
-    const senateVote: RecordedVote = { ...roll190, chamber: "Senate", rollNumber: 329, date: "2025-07-01T12:00:00Z" };
-    const votes: RecordedVote[] = collectRecordedVotes([
-      { text: "House passage.", recordedVotes: [roll190] },
-      { text: "Senate passage.", recordedVotes: [senateVote] },
-    ]);
-
-    // Same roll number in different chambers, or different sessions, are different votes — so identity has to carry
-    // more than the number.
-    expect(votes).toHaveLength(2);
-    // Most recent first, like every other date-ordered list in this adapter.
-    expect(votes[0]).toEqual(roll190);
-  });
-
-  it("returns nothing for a history with no recorded votes, which is the ordinary case", (): void => {
-    expect(collectRecordedVotes([{ text: "Referred to the Committee on Finance.", recordedVotes: [] }])).toEqual([]);
-    expect(collectRecordedVotes([])).toEqual([]);
   });
 });
 

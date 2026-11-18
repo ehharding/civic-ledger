@@ -292,7 +292,53 @@ export function formatEnactedLaw(law: EnactedLaw): string {
   return `${law.type} ${law.number}`;
 }
 
+/**
+ * Collects every distinct roll-call vote in a bill's action history. Congress.gov reports each event from several
+ * source systems, so one roll call can arrive on two or three actions; listing it twice would read as two votes.
+ *
+ * @param actions - The bill's actions, in any order.
+ * @returns One entry per distinct vote, most recent first.
+ */
+export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVote[] {
+  const byIdentity: Map<string, RecordedVote> = new Map<string, RecordedVote>();
+
+  for (const action of actions) {
+    for (const vote of action.recordedVotes) {
+      byIdentity.set(`${vote.congress}-${vote.chamber}-${vote.sessionNumber ?? ""}-${vote.rollNumber}`, vote);
+    }
+  }
+
+  return [...byIdentity.values()].sort((a: RecordedVote, b: RecordedVote): number =>
+    compareIsoDatesDesc(a.date ?? "", b.date ?? ""),
+  );
+}
+
 // Sub-resource collections, and how their counts are worded.
+
+/**
+ * One sub-resource collection, and whether the app actually got an answer about it.
+ *
+ * Carried together because provenance travels with the data: an empty list is a claim ("no member has cosponsored this
+ * bill"); an unanswered request is not, and a page that can't tell them apart states the first whenever the second
+ * happens.
+ *
+ * This is the same distinction `committees/activity.ts` keeps for a committee's record collections, spelled the same
+ * way (`FetchedRecords`) — and for the same reason its `emptyCopy` gives failure its own sentence.
+ *
+ * @typeParam Entry - The app's mapped entry type for this collection.
+ */
+export type BillSubResource<Entry> = {
+  /** The mapped entries, in the publisher's order. */
+  entries: Entry[];
+  /**
+   * Congress.gov did not answer, so `entries` being empty says nothing about the record.
+   *
+   * A 404 is deliberately *not* this: a bill with no summaries yet has no summaries resource, and an empty collection
+   * is the true answer rather than an unreported one. Only an outright failure — a 5xx, a timeout, a dropped
+   * connection, an unparseable payload — sets this.
+   */
+  unavailable: boolean;
+};
 
 /**
  * Congress.gov's own counts for the collections hanging off a bill. Read rather than inferred from the fetched arrays,

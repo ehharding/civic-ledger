@@ -4,8 +4,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import type { BillCosponsor, BillRouteParams } from "@/lib/congress/bills/model";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillCosponsor, BillRouteParams, BillSubResource } from "@/lib/congress/bills/model";
 import { getBillCosponsors } from "@/lib/congress/client";
 import { previewCosponsors } from "@/lib/congress/upstream/fixtures";
 import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";

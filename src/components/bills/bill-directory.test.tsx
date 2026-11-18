@@ -8,8 +8,7 @@
 // React's `void` overload. TypeScript resolves it to the `Promise<T>` one, so the `await` is required. Remove once
 // fixed.
 import { act, render, screen, waitFor, within } from "@testing-library/react";
-import type { UserEvent } from "@testing-library/user-event";
-import userEvent from "@testing-library/user-event";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BillDirectory } from "@/components/bills/bill-directory";

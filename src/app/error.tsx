@@ -1,8 +1,7 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import type { JSX } from "react";
-import { useEffect } from "react";
+import { type JSX, useEffect } from "react";
 
 import { errorDigest, logError } from "@/lib/observability/log";
 

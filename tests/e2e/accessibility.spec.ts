@@ -1,8 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import type { Page, TestInfo } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, type TestInfo, test } from "@playwright/test";
 
-import { PAGE_ROUTES, type TestFixtures } from "./routes";
+import { PAGE_ROUTES, RECORD_URL, type TestFixtures } from "./routes";
 
 /**
  * An axe sweep of every route shape, enforcing the accessibility baseline in `docs/architecture.md` — the
@@ -105,7 +104,7 @@ for (const scheme of ["light", "dark"] as const) {
     }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/bills");
       await page.locator(".bill-card h3 a").first().click();
-      await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
+      await expect(page).toHaveURL(RECORD_URL.bill);
 
       await expectNoViolations(page, testInfo);
     });
@@ -115,7 +114,7 @@ for (const scheme of ["light", "dark"] as const) {
     }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/members");
       await page.locator(".member-card h3 a").first().click();
-      await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
+      await expect(page).toHaveURL(RECORD_URL.member);
 
       await expectNoViolations(page, testInfo);
     });
@@ -125,7 +124,7 @@ for (const scheme of ["light", "dark"] as const) {
     }: TestFixtures, testInfo: TestInfo): Promise<void> => {
       await page.goto("/committees");
       await page.locator(".committee-card h3 a").first().click();
-      await expect(page).toHaveURL(/\/committees\/(house|senate|joint)\/[a-z0-9-]+$/);
+      await expect(page).toHaveURL(RECORD_URL.committee);
 
       await expectNoViolations(page, testInfo);
     });

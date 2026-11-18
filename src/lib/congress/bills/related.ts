@@ -1,5 +1,5 @@
-import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
-import { type BillSubResource, fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillRouteParams, BillSubResource, RelatedBill } from "@/lib/congress/bills/model";
+import { fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type CongressApiRelatedBill,
   type CongressApiRelatedBillsResponse,

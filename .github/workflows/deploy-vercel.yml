@@ -39,9 +39,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # Skip pull requests from forks: GitHub withholds secrets from them, so the first step could only fail. CI's own
-    # jobs need no secrets and still check the change.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Skip pull requests from forks and from Dependabot: GitHub withholds Actions secrets from both, so the first step
+    # could only fail. Dependabot is matched on the pull request's author, which stays the same on every push to it.
+    # CI's own jobs need no secrets and still check the change.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]')
 
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     # The Vercel CLI step needs both IDs to find the project, so they are stated once for the job rather than per step.

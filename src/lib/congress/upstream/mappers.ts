@@ -282,25 +282,6 @@ export function mapRecordedVote(vote: CongressApiRecordedVote): RecordedVote | n
 }
 
 /**
- * Collects every distinct roll-call vote in a bill's action history. Congress.gov reports each event from several
- * source systems, so one roll call can arrive on two or three actions; listing it twice would read as two votes.
- *
- * @param actions - The bill's actions, in any order.
- * @returns One entry per distinct vote, most recent first.
- */
-export function collectRecordedVotes(actions: readonly BillAction[]): RecordedVote[] {
-  const byIdentity: Map<string, RecordedVote> = new Map<string, RecordedVote>();
-
-  for (const action of actions) {
-    for (const vote of action.recordedVotes) {
-      byIdentity.set(`${vote.congress}-${vote.chamber}-${vote.sessionNumber ?? ""}-${vote.rollNumber}`, vote);
-    }
-  }
-
-  return sortByDateDesc([...byIdentity.values()], "date");
-}
-
-/**
  * Maps one entry from a bill's `/cosponsors` collection.
  *
  * @param cosponsor - A validated cosponsor entry.

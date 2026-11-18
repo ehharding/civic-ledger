@@ -1,5 +1,5 @@
-import type { BillAmendment, BillRouteParams } from "@/lib/congress/bills/model";
-import { type BillSubResource, fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillAmendment, BillRouteParams, BillSubResource } from "@/lib/congress/bills/model";
+import { fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type CongressApiBillAmendment,
   type CongressApiBillAmendmentsResponse,

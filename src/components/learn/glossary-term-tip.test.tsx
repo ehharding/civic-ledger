@@ -7,8 +7,7 @@
  * it without moving focus. Each of those is a WCAG 1.4.13 clause the component's own comment names.
  */
 import { render, screen } from "@testing-library/react";
-import type { UserEvent } from "@testing-library/user-event";
-import userEvent from "@testing-library/user-event";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TIP_PLACEMENT, fitTipToViewport, GlossaryTermTip } from "@/components/learn/glossary-term-tip";

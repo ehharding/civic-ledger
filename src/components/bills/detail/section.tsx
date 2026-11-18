@@ -1,7 +1,6 @@
 import { Fragment, type JSX } from "react";
 
-import type { CongressSnapshot } from "@/lib/congress/bills/model";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillSubResource, CongressSnapshot } from "@/lib/congress/bills/model";
 
 /**
  * What every record section on the bill page needs to word itself, including its empty state: what arrived, whether the

@@ -19,6 +19,7 @@ import type {
   BillAmendment,
   BillCosponsor,
   BillStage,
+  BillSubResource,
   BillSummary,
   BillTextVersion,
   CongressSnapshot,
@@ -26,7 +27,6 @@ import type {
   RelatedBill,
 } from "@/lib/congress/bills/model";
 import { resolveBillStage } from "@/lib/congress/bills/stage";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
 import type { BillCommittee } from "@/lib/congress/committees/model";
 
 /** Props for {@link BillDetail} — everything the bill detail route resolves server-side. */

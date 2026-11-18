@@ -8,8 +8,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
-import type { BillRouteParams, RelatedBill } from "@/lib/congress/bills/model";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillRouteParams, BillSubResource, RelatedBill } from "@/lib/congress/bills/model";
 import { getRelatedBills } from "@/lib/congress/client";
 import { jsonResponse, requestedUrl, stubLiveApi, stubPreviewApi } from "@/test/congress-api";
 

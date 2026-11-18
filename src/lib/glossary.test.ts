@@ -16,8 +16,7 @@ import {
   glossaryEntryId,
   glossaryHref,
 } from "@/lib/glossary";
-import type { Lesson } from "@/lib/lessons";
-import { lessons } from "@/lib/lessons";
+import { type Lesson, lessons } from "@/lib/lessons";
 
 /** The terms an annotation run found, in order, as the entries they resolved to. */
 function matchedTerms(segments: GlossarySegment[]): string[] {

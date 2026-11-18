@@ -21,6 +21,10 @@
   // are deliberately left off:
   //   - `style/noInferrableTypes` contradicts the house style of annotating every `const x: string = "…"`.
   //   - `suspicious/noUnnecessaryConditions` doesn't model `noUncheckedIndexedAccess`, so it flags required guards.
+  //
+  // Biome has no flag that fails on `info` diagnostics, and a group can't take a blanket severity alongside per-rule
+  // entries, so every recommended rule that defaults to `info` is listed in its group as an error. Biome adds such
+  // rules in minor releases: after a bump, list any new ones (`biome explain <rule>` shows "Default severity: info").
   "linter": {
     "enabled": true,
     "rules": {
@@ -31,11 +35,35 @@
         // type errors.
         "useLiteralKeys": "off",
         // `.test()` over `.exec()`/`.match()` when only the boolean is used.
-        "useRegexpTest": "error"
+        "useRegexpTest": "error",
+
+        // Recommended rules that default to `info`, which `pnpm lint` prints without failing. See the note above.
+        "noExtraBooleanCast": "error",
+        "noFlatMapIdentity": "error",
+        "noUselessCatch": "error",
+        "noUselessConstructor": "error",
+        "noUselessContinue": "error",
+        "noUselessEmptyExport": "error",
+        "noUselessEscapeInRegex": "error",
+        "noUselessFragments": "error",
+        "noUselessLabel": "error",
+        "noUselessLoneBlockStatements": "error",
+        "noUselessRename": "error",
+        "noUselessStringRaw": "error",
+        "noUselessSwitchCase": "error",
+        "noUselessTernary": "error",
+        "noUselessThisAlias": "error",
+        "noUselessTypeConstraint": "error",
+        "noUselessUndefinedInitialization": "error",
+        "useFlatMap": "error",
+        "useIndexOf": "error"
       },
       "correctness": {
         // Importing a transitive dependency breaks whenever the package that pulls it in changes its range.
-        "noUndeclaredDependencies": "error"
+        "noUndeclaredDependencies": "error",
+
+        // Recommended rules that default to `info`, which `pnpm lint` prints without failing. See the note above.
+        "useParseIntRadix": "error"
       },
       "nursery": {
         // Unstable by definition, but a nursery rule that changes fails CI loudly rather than quietly.
@@ -57,7 +85,25 @@
         // `.startsWith()`/`.endsWith()` over an index comparison or a slice.
         "useStringStartsEndsWith": "error",
         // An inferred return type is a signature that changes silently when the body does.
-        "useExplicitReturnType": "error"
+        "useExplicitReturnType": "error",
+
+        // Recommended rules that default to `info`, which `pnpm lint` prints without failing. See the note above.
+        "noInvalidPropertyInitValue": "error",
+        "noMagicArrayFlatDepth": "error",
+        "noNegatedArrayPredicate": "error",
+        "noReturnInFinally": "error",
+        "noScssNullComparison": "error",
+        "noUnnecessaryStringTrim": "error",
+        "noUselessCall": "error",
+        "noUselessLengthCheck": "error",
+        "noUselessSpread": "error",
+        "noZeroLengthUnit": "error",
+        "useBlockStatementOverIife": "error",
+        "useConsistentHeadingLevel": "error",
+        "useFencedCodeLanguage": "error",
+        "useSimplifiedBooleanReturn": "error",
+        "useSingleTopLevelHeading": "error",
+        "useWhileLoopCondition": "error"
       },
       "style": {
         // `value === 0`, not `0 === value`.
@@ -78,7 +124,15 @@
         "useErrorCause": "error",
         // `throw new Error(…)`, never `throw Error(…)`.
         "useThrowNewError": "error",
-        "useTestHooksOnTop": "error"
+        // `beforeEach` and friends before the tests they set up, so a suite reads top to bottom.
+        "useTestHooksOnTop": "error",
+
+        // Recommended rules that default to `info`, which `pnpm lint` prints without failing. See the note above.
+        "useArrayLiterals": "error",
+        "useExponentiationOperator": "error",
+        "useNodejsImportProtocol": "error",
+        "useShorthandFunctionType": "error",
+        "useTemplate": "error"
       },
       "suspicious": {
         // A duplicated `beforeEach` runs twice and reads as one.
@@ -92,7 +146,11 @@
         // A skipped test is a coverage gap that reports as a pass.
         "noSkippedTests": "error",
         // `new Error()` with no message reaches an operator as a stack and nothing else.
-        "useErrorMessage": "error"
+        "useErrorMessage": "error",
+
+        // Recommended rules that default to `info`, which `pnpm lint` prints without failing. See the note above.
+        "noDuplicateFields": "error",
+        "noQuickfixBiome": "error"
       }
     }
   },

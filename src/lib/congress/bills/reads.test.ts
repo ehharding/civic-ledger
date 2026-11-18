@@ -6,8 +6,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { BillSearchResponse } from "@/lib/api-contract";
-import type { BillAction, BillRouteParams, LegislativeBill } from "@/lib/congress/bills/model";
-import type { BillSubResource } from "@/lib/congress/bills/sub-resource";
+import type { BillAction, BillRouteParams, BillSubResource, LegislativeBill } from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
   getBillActions,

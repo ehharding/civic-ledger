@@ -1,7 +1,6 @@
-import type { APIResponse, Locator } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { type APIResponse, expect, type Locator, test } from "@playwright/test";
 
-import { FIXTURE_CONGRESS_BILLS, type TestFixtures } from "./routes";
+import { FIXTURE_CONGRESS_BILLS, RECORD_URL, type TestFixtures } from "./routes";
 
 /**
  * Smoke coverage for the primary navigation shell. `playwright.config.ts` points `testDir` at this directory — keep at
@@ -239,7 +238,7 @@ test("opening a bill card leads to a detail page with the official-record link",
   const billTitle: string | null = await firstCardLink.textContent();
   await firstCardLink.click();
 
-  await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
+  await expect(page).toHaveURL(RECORD_URL.bill);
   if (billTitle) await expect(page.getByRole("heading", { level: 1, name: billTitle })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open the Official Record" })).toBeVisible();
 
@@ -374,14 +373,14 @@ test("an unknown lesson slug is a 404, not an empty lesson", async ({ page }: Te
 test("a bill's sponsor leads to their member page", async ({ page }: TestFixtures): Promise<void> => {
   await page.goto(FIXTURE_CONGRESS_BILLS);
   await page.locator(".bill-card h3 a").first().click();
-  await expect(page).toHaveURL(/\/bills\/\d+\/[a-z]+\/\d+$/);
+  await expect(page).toHaveURL(RECORD_URL.bill);
 
   // The sponsor line links inward to this app's own page for that person, not out to the Biographical Directory.
   const sponsorLink: Locator = page.locator('.bill-detail-meta a[href^="/members/"]').first();
   const sponsorName: string | null = await sponsorLink.textContent();
   await sponsorLink.click();
 
-  await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
+  await expect(page).toHaveURL(RECORD_URL.member);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("region", { name: "Bills They Introduced" })).toBeVisible();
 
@@ -409,7 +408,7 @@ test("the member directory filters in place and opens a member's page", async ({
   await page.getByRole("searchbox", { name: /Search members/ }).fill(surname);
 
   await page.locator(".member-card h3 a").first().click();
-  await expect(page).toHaveURL(/\/members\/[A-Za-z0-9-]+$/);
+  await expect(page).toHaveURL(RECORD_URL.member);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(surname);
 
   // A member page leads back to the list it came from, not only to the home page.
@@ -454,7 +453,7 @@ test("a committee page explains what its kind of committee is and lists its subc
   const firstSubcommittee: Locator = page.locator(".committee-subcommittee-list a").first();
   await firstSubcommittee.click();
 
-  await expect(page).toHaveURL(/\/committees\/(house|senate|joint)\/[a-z0-9-]+$/);
+  await expect(page).toHaveURL(RECORD_URL.committee);
   await expect(page.getByText(/Subcommittee of/)).toBeVisible();
 });
 

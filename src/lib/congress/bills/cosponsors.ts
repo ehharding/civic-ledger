@@ -1,5 +1,10 @@
-import { type BillCosponsor, type BillRouteParams, billIdentityKey } from "@/lib/congress/bills/model";
-import { type BillSubResource, fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
+import {
+  type BillCosponsor,
+  type BillRouteParams,
+  type BillSubResource,
+  billIdentityKey,
+} from "@/lib/congress/bills/model";
+import { fetchBillSubResource } from "@/lib/congress/bills/sub-resource";
 import {
   type CongressApiCosponsor,
   type CongressApiCosponsorsResponse,

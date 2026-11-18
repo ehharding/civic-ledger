@@ -8,6 +8,7 @@ import {
   type BillAmendment,
   type BillCosponsor,
   type BillRouteParams,
+  type BillSubResource,
   type BillSummary,
   type BillTextVersion,
   type LegislativeBill,
@@ -16,7 +17,6 @@ import {
 } from "@/lib/congress/bills/model";
 import {
   type BillLookupResult,
-  type BillSubResource,
   getBillActions,
   getBillAmendments,
   getBillById,
