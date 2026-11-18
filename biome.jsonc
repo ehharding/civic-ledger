@@ -175,6 +175,70 @@
           }
         }
       }
+    },
+    {
+      // CONTRIBUTING: inside `src/`, import with the `@/` alias, never a relative path. `tests/e2e/` and `scripts/`
+      // can't resolve the alias, so they stay out of scope.
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["./**", "../**"],
+                    "message": "Import with the `@/` alias, so the file can move without touching its imports."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // CONTRIBUTING: the pure, isomorphic modules must not import anything server-side, or a client component that
+      // imports them drags the adapter, and the API key it reads, into the browser bundle. An allowlist rather than a
+      // denylist, so a new fetching module is out of bounds without anyone remembering to list it. Comes after the
+      // `src/**` override, whose options this one replaces — and whose relative-path ban the allowlist already covers.
+      "includes": [
+        "src/lib/format.ts",
+        "src/lib/congress/*/model.ts",
+        "src/lib/congress/*/filter.ts",
+        "src/lib/congress/directory-filter.ts",
+        "src/lib/congress/bills/search.ts",
+        "src/lib/congress/committees/records.ts",
+        "src/lib/congress/members/seating.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**",
+                      "!@/lib/format",
+                      "!@/lib/api-contract",
+                      "!@/lib/congress/*/model",
+                      "!@/lib/congress/*/filter",
+                      "!@/lib/congress/directory-filter",
+                      "!@/lib/congress/congress-history",
+                      "!@/lib/congress/current-congress",
+                      "!@/lib/congress/committees/records"
+                    ],
+                    "message": "A pure, isomorphic module imports only other pure modules, so the browser can import it."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ],
   "javascript": {
@@ -183,8 +247,9 @@
       "semicolons": "always"
     }
   },
-  // Enforces CONTRIBUTING's import grouping: builtins, packages, then `@/` app imports. `:PATH:` is last and should
-  // stay empty, so a stray relative import lands visibly at the bottom.
+  // Enforces CONTRIBUTING's import grouping: builtins, packages, then `@/` app imports. `:PATH:` is last for
+  // `tests/e2e/` and `scripts/`; inside `src/` it stays empty, which the `src/**` override's `noRestrictedImports`
+  // enforces.
   "assist": {
     "actions": {
       "source": {

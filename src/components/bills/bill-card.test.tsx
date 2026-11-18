@@ -25,9 +25,11 @@ describe("BillCard", (): void => {
     expect(screen.getByText(bill.latestAction.text)).toBeInTheDocument();
   });
 
-  // The list endpoint every one of this card's surfaces reads from publishes no `policyArea`, so this is the live case
-  // rather than an edge one — and what it must not do is print a placeholder standing in for a value nothing is
-  // fetching. See BillCard.
+  /*
+   * The list endpoint every one of this card's surfaces reads from publishes no `policyArea`, so this is the live case
+   * rather than an edge one — and what it must not do is print a placeholder standing in for a value nothing is
+   * fetching. See BillCard.
+   */
   it("says nothing about the policy area when the record carries none", (): void => {
     const bill: LegislativeBill = { ...firstPreviewBill, policyArea: undefined };
     const { container } = render(<BillCard bill={bill} />);
@@ -43,9 +45,11 @@ describe("BillCard", (): void => {
     expect(screen.getByText(bill.policyArea as string)).toBeInTheDocument();
   });
 
-  // Every surface this card appears on is ordered by recency, so an undated action asks the reader to take that
-  // ordering on trust. Asserted through the rendered text rather than the raw ISO value, since `formatDate` is what
-  // stands between the two.
+  /*
+   * Every surface this card appears on is ordered by recency, so an undated action asks the reader to take that
+   * ordering on trust. Asserted through the rendered text rather than the raw ISO value, since `formatDate` is what
+   * stands between the two.
+   */
   it("dates the latest action, in the same words the bill page uses", (): void => {
     const bill: LegislativeBill = { ...firstPreviewBill, latestAction: { date: "2026-07-14", text: "Referred." } };
     const { container } = render(<BillCard bill={bill} />);

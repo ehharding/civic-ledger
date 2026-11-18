@@ -1,3 +1,4 @@
+import type { CongressSnapshot } from "@/lib/congress/bills/model";
 import { compareText, formatCount, formatOrdinal, type NamedRecord, pluralize, toTitleCase } from "@/lib/format";
 
 // Parties.
@@ -563,7 +564,7 @@ export type CongressComposition = {
   /** One composition per chamber, in `congressChambers` order. */
   chambers: ChamberComposition[];
   /** Whether these are live records or labeled placeholders. */
-  source: "live" | "preview";
+  source: CongressSnapshot["source"];
   /** When the read happened, as an ISO timestamp. */
   retrievedAt: string;
   /** User-facing explanation shown when `source` is "preview" (no API key, or a transient upstream failure). */

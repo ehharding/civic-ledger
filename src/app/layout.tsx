@@ -5,7 +5,7 @@ import { SiteAnalytics } from "@/components/layout/site-analytics";
 import { SITE_DEFAULT_TITLE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE_TEMPLATE } from "@/lib/metadata";
 import { getSiteUrl } from "@/lib/site";
 
-import "./globals.css";
+import "@/app/globals.css";
 
 /**
  * The site-wide defaults, which double as the home page's metadata; every other route replaces them via `pageMetadata`.

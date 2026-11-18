@@ -36,8 +36,10 @@ describe("getCurrentCongress", (): void => {
     expect(getCurrentCongress()).toBe(getCurrentCongress(new Date()));
   });
 
-  // The suite's frozen clock (vitest.setup.ts) has to fall inside a Congress the preview fixtures cover, or every test
-  // that reads "the current Congress" from them would quietly find nothing.
+  /*
+   * The suite's frozen clock (vitest.setup.ts) has to fall inside a Congress the preview fixtures cover, or every test
+   * that reads "the current Congress" from them would quietly find nothing.
+   */
   it("resolves the suite's frozen clock to a Congress the preview fixtures cover", (): void => {
     expect(previewBills.some((bill: LegislativeBill): boolean => bill.congress === getCurrentCongress())).toBe(true);
   });

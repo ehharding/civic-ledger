@@ -69,7 +69,9 @@ export function useDirectoryUrlSync({ queryString, requestedQueryString, adopt }
     adopt(current);
   });
 
-  // Follows Back and Forward, which restore a URL without re-rendering.
+  /*
+   * Follows Back and Forward, which restore a URL without re-rendering.
+   */
   useEffect((): (() => void) => {
     function onPopState(): void {
       lastWritten.current = window.location.search;

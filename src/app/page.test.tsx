@@ -18,16 +18,19 @@ vi.mock("@/lib/congress/client", async (importOriginal): Promise<typeof import("
 });
 
 const { previewBills, buildPreviewComposition } = await import("@/lib/congress/upstream/fixtures");
-
-/** A placeholder roster, stamped with a fixed time so nothing in these tests depends on the clock. */
-function composition(): CongressComposition {
-  return buildPreviewComposition(119, "2026-07-31T12:00:00.000Z");
-}
 const Page: () => Promise<JSX.Element> = (await import("@/app/page")).default;
+
+/** Every read's timestamp, fixed so nothing in these tests depends on the clock. */
+const RETRIEVED_AT: string = "2026-07-31T12:00:00.000Z";
+
+/** A placeholder roster. */
+function composition(): CongressComposition {
+  return buildPreviewComposition(119, RETRIEVED_AT);
+}
 
 /** A snapshot standing in for a healthy live bill fetch. */
 function liveSnapshot(): CongressSnapshot {
-  return { bills: previewBills, source: "live", retrievedAt: "2026-07-31T12:00:00.000Z" };
+  return { bills: previewBills, source: "live", retrievedAt: RETRIEVED_AT };
 }
 
 /** A snapshot standing in for a bill fetch that fell back. */
@@ -35,7 +38,7 @@ function previewSnapshot(): CongressSnapshot {
   return {
     bills: previewBills,
     source: "preview",
-    retrievedAt: "2026-07-31T12:00:00.000Z",
+    retrievedAt: RETRIEVED_AT,
     notice: "Live records are temporarily unavailable, so preview records are shown.",
   };
 }
@@ -100,7 +103,7 @@ describe("Page (home)", (): void => {
   });
 
   it("still renders when the bill snapshot comes back empty", async (): Promise<void> => {
-    getCongressSnapshot.mockResolvedValue({ bills: [], source: "preview", retrievedAt: "2026-07-31T12:00:00.000Z" });
+    getCongressSnapshot.mockResolvedValue({ bills: [], source: "preview", retrievedAt: RETRIEVED_AT });
 
     render(await Page());
 

@@ -5,7 +5,7 @@ import { type JSX, useEffect } from "react";
 
 import { errorDigest, logError } from "@/lib/observability/log";
 
-import "./globals.css";
+import "@/app/globals.css";
 
 /** Props for {@link GlobalError}. */
 type GlobalErrorProps = {

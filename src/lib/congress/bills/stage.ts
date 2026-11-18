@@ -1,16 +1,21 @@
-import { type BillAction, type BillStage, billStages } from "@/lib/congress/bills/model";
+import { type BillAction, type BillStage, billStages, type LegislativeBill } from "@/lib/congress/bills/model";
+
+/** A stage and the action-text phrases that place a bill at it. */
+type StageMarker = {
+  /** The stage these phrases establish. */
+  stage: BillStage;
+  /** Lowercase substrings matched against the lowercased action text. */
+  phrases: readonly string[];
+};
 
 /**
  * Phrases that indicate a bill has reached a stage, most advanced first so text mentioning both a committee and
  * enactment reads as enacted. Conservative: anything unrecognized falls through to "introduced".
  */
-const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[] = [
+const STAGE_MARKERS: readonly StageMarker[] = [
   { stage: "law", phrases: ["became public law", "became private law", "signed by president"] },
   { stage: "president", phrases: ["presented to president", "sent to president"] },
-  {
-    stage: "chamber",
-    phrases: ["passed senate", "passed house", "agreed to in senate", "agreed to in house"],
-  },
+  { stage: "chamber", phrases: ["passed senate", "passed house", "agreed to in senate", "agreed to in house"] },
   { stage: "committee", phrases: ["committee", "referred to", "reported by", "subcommittee"] },
 ];
 
@@ -20,7 +25,7 @@ const STAGE_MARKERS: readonly { stage: BillStage; phrases: readonly string[] }[]
  * the House, though it reads as a referral. Whole-word so "Housing" and "courthouse" don't match; checked against 1,500
  * bills of the 119th Congress.
  */
-const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
+const OTHER_CHAMBER: Readonly<Record<Exclude<LegislativeBill["originChamber"], "Unknown">, RegExp>> = {
   House: /\bsenate\b/,
   Senate: /\bhouse\b/,
 };
@@ -37,12 +42,13 @@ const OTHER_CHAMBER: Readonly<Record<"House" | "Senate", RegExp>> = {
  */
 export function inferBillStage(
   actionText: string,
-  originChamber: "House" | "Senate" | "Unknown" = "Unknown",
+  originChamber: LegislativeBill["originChamber"] = "Unknown",
 ): BillStage {
   const action: string = actionText.toLowerCase();
   const stage: BillStage =
-    STAGE_MARKERS.find(({ phrases }): boolean => phrases.some((phrase: string): boolean => action.includes(phrase)))
-      ?.stage ?? "introduced";
+    STAGE_MARKERS.find(({ phrases }: StageMarker): boolean =>
+      phrases.some((phrase: string): boolean => action.includes(phrase)),
+    )?.stage ?? "introduced";
 
   if (originChamber === "Unknown" || billStages.indexOf(stage) >= billStages.indexOf("chamber")) return stage;
 

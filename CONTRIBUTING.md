@@ -155,13 +155,15 @@ default — a few current positions, so they don't have to be relitigated per pu
   point is a wish.
 - Pure, isomorphic modules (`*/filter.ts`, `bills/search.ts`, `members/seating.ts`, `format.ts`) must not import
   anything server-side. A client component has to be able to import them without dragging the adapter, and the API key
-  it reads, into the browser bundle.
+  it reads, into the browser bundle. `biome.jsonc` enforces it with a `noRestrictedImports` allowlist over those files
+  and each `model.ts`: they import only one another, so a new pure module joins both its `includes` and its allowlist.
 - Inside `src/`, import with the `@/` alias, never a relative path, so a file can move without touching its imports and
   an import reads the same in any diff. The alias maps only `src/`, so the two places outside it go without:
   `tests/e2e/` specs share `./routes`, and `scripts/` run under bare Node, which can't resolve `@/` at all — so a value
-  a script needs from `src/` is restated there with a comment naming its source. The grouping — Node builtins, then
-  packages, a blank line, then this app's own modules — is enforced by `biome.jsonc`'s `organizeImports` assist, so
-  `pnpm lint` reports a run-together block and `pnpm format` fixes it.
+  a script needs from `src/` is restated there with a comment naming its source. Inside `src/` the rule covers
+  stylesheets too (`@/app/globals.css`), and a relative path fails `pnpm lint` (`noRestrictedImports` in `biome.jsonc`).
+  The grouping — Node builtins, then packages, a blank line, then this app's own modules — is enforced by
+  `biome.jsonc`'s `organizeImports` assist, so `pnpm lint` reports a run-together block and `pnpm format` fixes it.
 - A new file goes in the folder named for its _subject_, not for whoever calls it — `src/components/bills/` for
   anything that draws a bill, `src/lib/congress/members/` for anything that knows what a member is. Two exceptions,
   both stated in [Architecture](docs/architecture.md): `src/components/ui/` is for pieces that could render a record
