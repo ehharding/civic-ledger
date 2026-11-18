@@ -299,14 +299,21 @@ test("searching the directory reports the scope it actually swept", async ({ pag
   // all — leaving the slower one below to mean what it says.
   await expect(page).toHaveURL(/\?q=broadband/);
 
-  // Built from `congressesSearched` and `truncated`. Seeing this sentence at all also rules out the degraded local
-  // fallback, which words itself differently on purpose when the route cannot be reached.
+  // Built from `congressesSearched` and `truncated` by `describeBillSearchScope`, whose every sentence opens "Matched
+  // against" — and the degraded local fallback, worded differently on purpose for when the route cannot be reached,
+  // does not. So the opening alone proves the route's fields reached the page.
+  //
+  // Asserted no further than that because which sentence follows depends on the machine, not the code: with a key the
+  // route sweeps Congress.gov and says "titles, policy areas, and latest actions"; CI has no key, sweeps nothing, and
+  // says "the labeled preview records only". Pinning either one fails on the other — pinning the live one is what kept
+  // this test red in CI while it passed on any machine with a `.env.local`. The wording itself is
+  // `describeBillSearchScope`'s unit tests' to hold.
   //
   // Given room well past the default, because the work behind it is real: with a key configured the route sweeps every
-  // covered Congress, and on a cold cache against a dev server that is seconds rather than milliseconds. CI has no key
-  // and answers from the preview fixture immediately — the wait is headroom for a contributor's own machine, not a
-  // duration anything here depends on.
-  await expect(page.locator(".directory-search-note")).toContainText(/Matched against titles/, { timeout: 30_000 });
+  // covered Congress, and on a cold cache against a dev server that is seconds rather than milliseconds. Without one it
+  // answers from the preview fixture immediately — the wait is headroom for a contributor's own machine, not a duration
+  // anything here depends on.
+  await expect(page.locator(".directory-search-note")).toContainText(/^Matched against /, { timeout: 30_000 });
 });
 
 test("the bill-lifecycle lesson is reachable from /learn and links onward to /bills", async ({

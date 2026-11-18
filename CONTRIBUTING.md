@@ -29,6 +29,16 @@ anything a control inherits from the user agent, because `tests/e2e/accessibilit
 check that reads the page as a browser paints it. Every data adapter change should include a fixture or unit test for
 the upstream shape it supports.
 
+A local `pnpm test:e2e` is not the run CI makes if `.env.local` holds a `CONGRESS_API_KEY`: the dev server reads it and
+answers with live records, where CI has no key and answers from the preview fixtures. A spec that pins wording only one
+of those produces passes on one side and fails on the other. Before pushing a change to user-facing copy that differs by
+data source, run the suite the way CI does — an empty variable in the environment overrides the file, and `CI=1` starts
+a fresh dev server rather than reusing the one you have open:
+
+```bash
+CI=1 CONGRESS_API_KEY= pnpm test:e2e
+```
+
 `pnpm dev` is the loop you work in. `pnpm preview` builds and serves the _production_ output on port 3001 — a different
 port on purpose, so it can run beside a dev server rather than fighting it for 3000. Reach for it when the thing you
 changed behaves differently once built: ISR and `revalidate`, the analytics gate, route segment caching, bundle size,
